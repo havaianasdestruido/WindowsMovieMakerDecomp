@@ -1,0 +1,41 @@
+#include <winver.h>
+#include "resource.h"
+
+IDI_MOVIEMAKER         ICON                    "resources\\MovieMaker.ico"
+
+// Manifest resource ID 2 as required by the binary (RT_MANIFEST)
+2                      RT_MANIFEST             "resources\\MovieMaker.exe.manifest"
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Version
+//
+
+VS_VERSION_INFO VERSIONINFO
+ FILEVERSION     16,4,3528,331
+ PRODUCTVERSION  16,4,3528,331
+ FILEFLAGSMASK   0x3fL
+ FILEFLAGS       0x0L
+ FILEOS          VOS_NT_WINDOWS32
+ FILETYPE        VFT_APP
+ FILESUBTYPE     0x0L
+BEGIN
+    BLOCK "StringFileInfo"
+    BEGIN
+        BLOCK "040904B0"
+        BEGIN
+            VALUE "CompanyName",      "Microsoft Corporation"
+            VALUE "FileDescription",  "Windows Live Movie Maker"
+            VALUE "FileVersion",      "16.4.3528.331"
+            VALUE "InternalName",     "MovieMaker"
+            VALUE "LegalCopyright",   "\xa9 Microsoft Corporation. All rights reserved."
+            VALUE "OriginalFilename", "MovieMaker.exe"
+            VALUE "ProductName",      "Windows Live Movie Maker"
+            VALUE "ProductVersion",   "16.4.3528.331"
+        END
+    END
+    BLOCK "VarFileInfo"
+    BEGIN
+        VALUE "Translation", 0x409, 1200
+    END
+END

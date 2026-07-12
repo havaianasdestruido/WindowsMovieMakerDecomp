@@ -1,0 +1,88 @@
+LIBRARY WLXPhotoBase
+EXPORTS
+    ; Base::Exception
+    ??0Exception@Base@@QAE@ABV01@@Z
+    ??0Exception@Base@@QAE@J@Z
+    ??1Exception@Base@@UAE@XZ
+    ??BException@Base@@QBEJXZ
+    ??RException@Base@@UAEPAXI@Z
+
+    ; Base::Throw / ThrowLastError
+    ?Throw@Base@@SAXJ@Z
+    ?ThrowLastError@Base@@SAXXZ
+
+    ; Base::GdiplusStatusToHresult
+    ?GdiplusStatusToHresult@Base@@SAJW4Status@Gdiplus@@@Z
+
+    ; Base::String
+    ?GetBaseStringManager@String@Base@@SAPAUIAtlStringMgr@ATL@@XZ
+
+    ; Base::OS
+    ?IsWin7OrGreater@OS@Base@@SA_NXZ
+    ?IsWin8OrGreater@OS@Base@@SA_NXZ
+
+    ; Base::Private
+    ?Delete@Private@Base@@SAXPAX@Z
+    ?New@Private@Base@@SAPAXI_N@Z
+
+    ; Base::CPU
+    ?GetProcessorCount@CPU@Base@@SAHXZ
+
+    ; ATL::BaseAtlThrow
+    ?BaseAtlThrow@ATL@@YAXJ@Z
+
+    ; Base::Exception virtual table
+    ??_7Exception@Base@@6B@
+
+    ; Base::RefCountBase stuff
+    ?AddRef@?$RefCountBase@VCriticalSection@ATL@@@@UAEXXZ
+    ?Release@?$RefCountBase@VCriticalSection@ATL@@@@UAEIXZ
+
+    ; Additional Base utilities
+    ?Format@?$CStringT@DV?$StrTraitMFC@DV?$ChTraitsCRT@D@ATL@@@ATL@@@@QBEIPBDZZ
+    ?GetBuffer@?$CStringT@DV?$StrTraitMFC@DV?$ChTraitsCRT@D@ATL@@@ATL@@@@QAEPADH@Z
+    ?ReleaseBuffer@?$CStringT@DV?$StrTraitMFC@DV?$ChTraitsCRT@D@ATL@@@ATL@@@@QAEXH@Z
+    ?FreeExtra@?$CSimpleStringT@D$0A@@ATL@@QAEXXZ
+
+    ; Base::Exception::operator= 
+    ??4Exception@Base@@QAEAAV01@ABV01@@Z
+
+    ; Base::String helpers
+    ?LoadString@?$CStringT@DV?$StrTraitMFC@DV?$ChTraitsCRT@D@ATL@@@ATL@@@@QAEHI@Z
+    ?CompareNoCase@?$CSimpleStringT@D$0A@@ATL@@QBEHPBD@Z
+
+    ; Base::File
+    ?GetFileName@File@Base@@QBE?AV?$CStringT@DV?$StrTraitMFC@DV?$ChTraitsCRT@D@ATL@@@ATL@@@@XZ
+    ?GetPath@File@Base@@QBE?AV?$CStringT@DV?$StrTraitMFC@DV?$ChTraitsCRT@D@ATL@@@ATL@@@@XZ
+    ?IsValid@File@Base@@QBE_NXZ
+    ?GetFileSize@File@Base@@QBE_KXZ
+
+    ; Base::TempFile
+    ?Create@TempFile@Base@@QAE_NPBD@Z
+    ?Close@TempFile@Base@@QAEXXZ
+    ?GetPath@TempFile@Base@@QBE?AV?$CStringT@DV?$StrTraitMFC@DV?$ChTraitsCRT@D@ATL@@@ATL@@@@XZ
+
+    ; Base::Thread
+    ?Start@Thread@Base@@QAEJXZ
+    ?Stop@Thread@Base@@QAEXXZ
+    ?Wait@Thread@Base@@QAEJK@Z
+    ?IsRunning@Thread@Base@@QBE_NXZ
+
+    ; Base::FindFile
+    ?FindFirstFile@FindFile@Base@@QAE_NPBD@Z
+    ?FindNextFile@FindFile@Base@@QAE_NXZ
+    ?Close@FindFile@Base@@QAEXXZ
+    ?GetFileName@FindFile@Base@@QBE?AV?$CStringT@DV?$StrTraitMFC@DV?$ChTraitsCRT@D@ATL@@@ATL@@@@XZ
+    ?IsDirectory@FindFile@Base@@QBE_NXZ
+
+    ; Base::GdiException
+    ??0GdiException@Base@@QAE@W4Status@Gdiplus@@@Z
+    ?GetGdiplusStatus@GdiException@Base@@QBE?AW4Status@Gdiplus@@XZ
+    ??1GdiException@Base@@UAE@XZ
+    ??_7GdiException@Base@@6B@
+
+    ; Base::DataStructs::IntSet
+    ?Add@DataStructs@Base@@QAEXH@Z
+    ?Remove@DataStructs@Base@@QAEXH@Z
+    ?Contains@DataStructs@Base@@QBE_NH@Z
+    ?GetCount@DataStructs@Base@@QBEIXZ

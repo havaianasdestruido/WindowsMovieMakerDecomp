@@ -39,6 +39,24 @@ add_library(${TARGET} SHARED
     HMRAVSource/AudioCapture.cpp
     HMRAVSource/AVCaptureSession.cpp
     HMRAVSource/CachedWFSection.cpp
+    HMRAVSource/AVSourceFactory.cpp
+    HMRAVSource/AVSourceProxy.cpp
+    HMRAVSource/AVSink.cpp
+    HMRAVSource/StreamSinkHost.cpp
+    HMRAVSource/StreamSinkHelper.cpp
+    HMRAVSource/SAXProfileBuilder.cpp
+    HMRAVSource/MFRateControlHelper.cpp
+    HMRAVSource/NativeMFSourceReaderBuilder.cpp
+    HMRAVSource/AsyncSourceResolver.cpp
+    HMRAVSource/DShowMFSourceReaderBuilder.cpp
+    HMRAVSource/MFSourceReaderBuilder.cpp
+    HMRAVSource/MFByteStreamOnStream.cpp
+    HMRAVSource/VideoProc.cpp
+    HMRAVSource/SyncVideoSource.cpp
+    HMRAVSource/TextureInterop.cpp
+    HMRAVSource/AuthProvider.cpp
+    HMRAVSource/ImageThumbnail.cpp
+    HMRAVSource/TranscodeMetadata.cpp
     HMRAVSource/Audio/Waveform.cpp
     HMRAVSource/Audio/AudioOutput.cpp
     HMRAVSource/Audio/AudioQueue.cpp
@@ -63,6 +81,12 @@ add_library(${TARGET} SHARED
     StoryboardManager/Serialization/BoundPlaceholder.cpp
     StoryboardManager/Serialization/SnapShot.cpp
     StoryboardManager/MediaItems/MediaItem.cpp
+    StoryboardManager/Background/BackgroundOrchestrator.cpp
+    StoryboardManager/Background/BackgroundRequests.cpp
+    StoryboardManager/Background/AutofitProcess.cpp
+    StoryboardManager/Background/Conductor.cpp
+    StoryboardManager/Transport/TransportBase.cpp
+    StoryboardManager/Transport/CommandBin.cpp
     HMREngine/AsyncWorker.cpp
     HMREngine/DXResources/EngineDX.cpp
     HMREngine/DXResources/TextureResourceDX.cpp
@@ -139,6 +163,7 @@ target_link_libraries(${TARGET} PRIVATE
     d2d1
     dwrite
     uxctl
+    wininet
 )
 
 # Delay-loaded DLLs (resolved at runtime on first call)

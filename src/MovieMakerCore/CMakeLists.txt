@@ -23,6 +23,19 @@ add_library(${TARGET} SHARED
     StoryboardManager/Templates.cpp
     StoryboardManager/TimelineTrack.cpp
     StoryboardManager/StoryboardManagerExceptions.cpp
+    HMRAVSource/HMRAVSource.cpp
+    HMRAVSource/AVSource.cpp
+    HMRAVSource/MFSource.cpp
+    HMRAVSource/DShowSource.cpp
+    HMRAVSource/EncodeProfile.cpp
+    HMRAVSource/StreamSink.cpp
+    HMRAVSource/TranscodeManager.cpp
+    HMRAVSource/VideoCapture.cpp
+    HMRAVSource/AudioCapture.cpp
+    HMRAVSource/AVCaptureSession.cpp
+    HMRAVSource/CachedWFSection.cpp
+    DataStructs/IntSet.cpp
+    DataStructs/StringSet.cpp
 )
 
 set_target_properties(${TARGET} PROPERTIES
@@ -67,6 +80,10 @@ target_link_libraries(${TARGET} PRIVATE
     dxva2
     mfplat
     mf
+    mfuuid
+    mfreadwrite
+    strmiids
+    quartz
     dwmapi
     uxtheme
     version

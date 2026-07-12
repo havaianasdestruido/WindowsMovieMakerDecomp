@@ -1,0 +1,19 @@
+# original extracted wlive2012 setup (copyright)
+undecomp/
+intro/
+readme.txt
+
+# binaries
+*.exe
+*.dll
+*.pdb
+*.lib
+*.exp
+
+# build artifacts
+build/
+out/
+*.obj
+*.o
+*.ilk
+*.pch

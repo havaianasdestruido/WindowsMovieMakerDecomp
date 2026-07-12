@@ -1,0 +1,210 @@
+/*
+ * StoryboardManager.cpp
+ *
+ * Implementation of the StoryboardManager namespace initialization and
+ * global state management for MovieMakerCore.dll.
+ *
+ * The StoryboardManager manages the entire project model, timeline extents,
+ * templates/themes, and .wlmp file serialization. This file provides the
+ * subsystem lifecycle (initialize/shutdown) and global state.
+ *
+ * Built with MSVC 11.0 (VS2012), targets Windows 6.2+ (Win8+).
+ *
+ * Copyright (c) Microsoft Corporation. All rights reserved.
+ * Source recreation for research and interoperability purposes.
+ */
+
+#include "StoryboardManager.h"
+
+// ============================================================================
+// Internal state
+// ============================================================================
+namespace
+{
+    bool g_fStoryboardInitialized = false;
+
+    // Global template table, created once during initialization
+    StoryboardManager::TemplateTable* g_pGlobalTemplateTable = nullptr;
+
+    // Cached CLSID for the X3D transitions effect
+    CLSID g_clsidX3dTransition = { 0 };
+    bool g_fX3dTransitionCLSIDResolved = false;
+}
+
+// ============================================================================
+// StoryboardManager namespace implementation
+// ============================================================================
+namespace StoryboardManager
+{
+
+// ============================================================================
+// StoryboardManagerInitialize
+// ============================================================================
+STORYBOARD_API HRESULT StoryboardManagerInitialize()
+{
+    if (g_fStoryboardInitialized)
+        return S_FALSE; // already initialized
+
+    g_fStoryboardInitialized = true;
+
+    return S_OK;
+}
+
+// ============================================================================
+// StoryboardManagerShutdown
+// ============================================================================
+STORYBOARD_API void StoryboardManagerShutdown()
+{
+    if (!g_fStoryboardInitialized)
+        return;
+
+    if (g_pGlobalTemplateTable)
+    {
+        delete g_pGlobalTemplateTable;
+        g_pGlobalTemplateTable = nullptr;
+    }
+
+    g_fStoryboardInitialized = false;
+}
+
+// ============================================================================
+// StoryboardManagerIsInitialized
+// ============================================================================
+STORYBOARD_API bool StoryboardManagerIsInitialized()
+{
+    return g_fStoryboardInitialized;
+}
+
+// ============================================================================
+// TemplateTable global access
+// ============================================================================
+
+TemplateTable* GetGlobalTemplateTable()
+{
+    return g_pGlobalTemplateTable;
+}
+
+void SetGlobalTemplateTable(TemplateTable* pTable)
+{
+    if (g_pGlobalTemplateTable && g_pGlobalTemplateTable != pTable)
+    {
+        delete g_pGlobalTemplateTable;
+    }
+    g_pGlobalTemplateTable = pTable;
+}
+
+// ============================================================================
+// ExtentId implementation
+// ============================================================================
+
+ExtentId::ExtentId()
+    : m_dwId(0)
+{
+}
+
+ExtentId::ExtentId(DWORD dwId)
+    : m_dwId(dwId)
+{
+}
+
+ExtentId::ExtentId(const ExtentId& other)
+    : m_dwId(other.m_dwId)
+{
+}
+
+ExtentId& ExtentId::operator=(const ExtentId& other)
+{
+    if (this != &other)
+    {
+        m_dwId = other.m_dwId;
+    }
+    return *this;
+}
+
+bool ExtentId::operator==(const ExtentId& other) const
+{
+    return m_dwId == other.m_dwId;
+}
+
+bool ExtentId::operator!=(const ExtentId& other) const
+{
+    return m_dwId != other.m_dwId;
+}
+
+bool ExtentId::operator<(const ExtentId& other) const
+{
+    return m_dwId < other.m_dwId;
+}
+
+DWORD ExtentId::GetValue() const throw()
+{
+    return m_dwId;
+}
+
+bool ExtentId::IsValid() const throw()
+{
+    return m_dwId != 0;
+}
+
+ExtentId ExtentId::Generate()
+{
+    static DWORD s_dwNextId = 1;
+    return ExtentId(InterlockedIncrement(reinterpret_cast<volatile LONG*>(&s_dwNextId)));
+}
+
+// ============================================================================
+// TranscodeState implementation
+// ============================================================================
+
+TranscodeState::TranscodeState()
+    : m_state(ExtentTranscodeStateNone)
+    , m_hresult(S_OK)
+{
+}
+
+TranscodeState::TranscodeState(ExtentTranscodeState initialState)
+    : m_state(initialState)
+    , m_hresult(S_OK)
+{
+}
+
+TranscodeState::~TranscodeState()
+{
+}
+
+ExtentTranscodeState TranscodeState::GetState() const throw()
+{
+    return m_state;
+}
+
+void TranscodeState::SetState(ExtentTranscodeState state) throw()
+{
+    m_state = state;
+}
+
+HRESULT TranscodeState::GetHResult() const throw()
+{
+    return m_hresult;
+}
+
+void TranscodeState::SetHResult(HRESULT hr) throw()
+{
+    m_hresult = hr;
+}
+
+bool TranscodeState::IsComplete() const throw()
+{
+    return m_state == ExtentTranscodeStateComplete;
+}
+
+bool TranscodeState::IsFailed() const throw()
+{
+    return m_state == ExtentTranscodeStateFailed;
+}
+
+bool TranscodeState::IsInProgress() const throw()
+{
+    return m_state == ExtentTranscodeStateInProgress;
+}
+
+} // namespace StoryboardManager

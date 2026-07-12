@@ -1,0 +1,3 @@
+LIBRARY MOVIECORE
+EXPORTS
+    MovieMakerMain @1

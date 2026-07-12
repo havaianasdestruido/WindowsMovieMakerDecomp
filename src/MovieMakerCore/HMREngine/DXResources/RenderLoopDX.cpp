@@ -1,0 +1,415 @@
+// RenderLoopDX.cpp - D3D11 render loop implementation
+
+#include "RenderLoopDX.h"
+#include "../ErrHandler.h"
+
+namespace HMREngine
+{
+namespace DX
+{
+
+// ============================================================================
+// RenderLoopDX
+// ============================================================================
+RenderLoopDX::RenderLoopDX(EngineDX* engine) : m_engine(engine)
+{
+    QueryPerformanceFrequency(&m_perfFrequency);
+    QueryPerformanceCounter(&m_lastPerfCounter);
+    m_lastTime = static_cast<double>(m_lastPerfCounter.QuadPart) / m_perfFrequency.QuadPart;
+}
+
+RenderLoopDX::~RenderLoopDX()
+{
+    Stop();
+}
+
+void RenderLoopDX::Start()
+{
+    m_running = true;
+    QueryPerformanceCounter(&m_lastPerfCounter);
+    m_lastTime = static_cast<double>(m_lastPerfCounter.QuadPart) / m_perfFrequency.QuadPart;
+}
+
+void RenderLoopDX::Stop()
+{
+    m_running = false;
+}
+
+HRESULT RenderLoopDX::RenderFrame()
+{
+    if (!m_engine || !m_running) return S_FALSE;
+    if (m_paused) return S_OK;
+
+    UpdateTiming();
+
+    if (m_preFrameCb)
+        m_preFrameCb(m_lastTime, m_deltaTime);
+
+    HRESULT hr = m_engine->BeginFrame();
+    if (FAILED(hr)) return hr;
+
+    hr = m_engine->EndFrame();
+    if (FAILED(hr)) return hr;
+
+    hr = m_engine->Present();
+
+    if (m_postFrameCb)
+        m_postFrameCb(m_lastTime, m_deltaTime);
+
+    return hr;
+}
+
+HRESULT RenderLoopDX::RenderSceneToTexture()
+{
+    if (!m_engine) return E_FAIL;
+
+    UpdateTiming();
+
+    if (m_preFrameCb)
+        m_preFrameCb(m_lastTime, m_deltaTime);
+
+    HRESULT hr = m_engine->BeginFrame();
+    if (FAILED(hr)) return hr;
+
+    hr = m_engine->EndFrame();
+
+    if (m_postFrameCb)
+        m_postFrameCb(m_lastTime, m_deltaTime);
+
+    return hr;
+}
+
+void RenderLoopDX::UpdateTiming()
+{
+    LARGE_INTEGER now;
+    QueryPerformanceCounter(&now);
+
+    m_deltaTime = static_cast<double>(now.QuadPart - m_lastPerfCounter.QuadPart) / m_perfFrequency.QuadPart;
+    m_lastPerfCounter = now;
+    m_lastTime = static_cast<double>(now.QuadPart) / m_perfFrequency.QuadPart;
+
+    if (m_deltaTime > 0.25) m_deltaTime = 0.25;
+
+    m_frameAccumulator += m_deltaTime;
+    m_frameCount++;
+
+    if (m_frameAccumulator >= 1.0)
+    {
+        m_fps = m_frameCount / m_frameAccumulator;
+        m_frameCount = 0;
+        m_frameAccumulator = 0.0;
+    }
+}
+
+double RenderLoopDX::GetTime() const
+{
+    LARGE_INTEGER now;
+    QueryPerformanceCounter(&now);
+    return static_cast<double>(now.QuadPart) / m_perfFrequency.QuadPart;
+}
+
+// ============================================================================
+// FrameBufferImplDX
+// ============================================================================
+FrameBufferImplDX::FrameBufferImplDX() = default;
+FrameBufferImplDX::~FrameBufferImplDX() { Release(); }
+
+HRESULT FrameBufferImplDX::Create(UINT width, UINT height, DXGI_FORMAT format, bool depthStencil)
+{
+    if (!m_device || width == 0 || height == 0) return E_INVALIDARG;
+
+    Release();
+
+    m_width = width;
+    m_height = height;
+    m_format = format;
+    m_hasDepthStencil = depthStencil;
+
+    D3D11_TEXTURE2D_DESC td = {};
+    td.Width = width;
+    td.Height = height;
+    td.MipLevels = 1;
+    td.ArraySize = 1;
+    td.Format = format;
+    td.SampleDesc.Count = 1;
+    td.Usage = D3D11_USAGE_DEFAULT;
+    td.BindFlags = D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE;
+
+    HRESULT hr = m_device->CreateTexture2D(&td, nullptr, &m_texture);
+    if (FAILED(hr)) return hr;
+
+    hr = m_device->CreateRenderTargetView(m_texture, nullptr, &m_rtv);
+    if (FAILED(hr)) return hr;
+
+    hr = m_device->CreateShaderResourceView(m_texture, nullptr, &m_srv);
+    if (FAILED(hr)) return hr;
+
+    if (depthStencil)
+    {
+        D3D11_TEXTURE2D_DESC dsd = {};
+        dsd.Width = width;
+        dsd.Height = height;
+        dsd.MipLevels = 1;
+        dsd.ArraySize = 1;
+        dsd.Format = DXGI_FORMAT_D24_UNORM_S8_UINT;
+        dsd.SampleDesc.Count = 1;
+        dsd.Usage = D3D11_USAGE_DEFAULT;
+        dsd.BindFlags = D3D11_BIND_DEPTH_STENCIL;
+
+        hr = m_device->CreateTexture2D(&dsd, nullptr, &m_depthStencil);
+        if (FAILED(hr)) return hr;
+
+        hr = m_device->CreateDepthStencilView(m_depthStencil, nullptr, &m_dsv);
+        if (FAILED(hr)) return hr;
+    }
+
+    return S_OK;
+}
+
+void FrameBufferImplDX::Release()
+{
+    m_dsv.Release();
+    m_depthStencil.Release();
+    m_srv.Release();
+    m_rtv.Release();
+    m_texture.Release();
+    m_width = 0;
+    m_height = 0;
+}
+
+HRESULT FrameBufferImplDX::Resize(UINT width, UINT height)
+{
+    return Create(width, height, m_format, m_hasDepthStencil);
+}
+
+void FrameBufferImplDX::Clear(const Rgba& clearColor)
+{
+    if (m_rtv && m_context)
+    {
+        const float col[4] = { clearColor.x, clearColor.y, clearColor.z, clearColor.w };
+        m_context->ClearRenderTargetView(m_rtv, col);
+    }
+}
+
+void FrameBufferImplDX::ClearDepth(float depth, UINT8 stencil)
+{
+    if (m_dsv && m_context)
+    {
+        m_context->ClearDepthStencilView(m_dsv, D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, depth, stencil);
+    }
+}
+
+HRESULT FrameBufferImplDX::Bind(ID3D11DeviceContext* ctx)
+{
+    if (!ctx) return E_POINTER;
+
+    ID3D11RenderTargetView* rtvs[] = { m_rtv };
+    ctx->OMSetRenderTargets(1, rtvs, m_dsv);
+    return S_OK;
+}
+
+void FrameBufferImplDX::Unbind(ID3D11DeviceContext* ctx)
+{
+    if (!ctx) return;
+    ID3D11RenderTargetView* rtvs[] = { nullptr };
+    ctx->OMSetRenderTargets(1, rtvs, nullptr);
+}
+
+HRESULT FrameBufferImplDX::GetRTV(ID3D11RenderTargetView** ppRTV) const
+{
+    if (!ppRTV) return E_POINTER;
+    if (!m_rtv) return E_FAIL;
+    *ppRTV = m_rtv;
+    (*ppRTV)->AddRef();
+    return S_OK;
+}
+
+HRESULT FrameBufferImplDX::GetDSV(ID3D11DepthStencilView** ppDSV) const
+{
+    if (!ppDSV) return E_POINTER;
+    if (!m_dsv) return E_FAIL;
+    *ppDSV = m_dsv;
+    (*ppDSV)->AddRef();
+    return S_OK;
+}
+
+HRESULT FrameBufferImplDX::GetSRV(ID3D11ShaderResourceView** ppSRV) const
+{
+    if (!ppSRV) return E_POINTER;
+    if (!m_srv) return E_FAIL;
+    *ppSRV = m_srv;
+    (*ppSRV)->AddRef();
+    return S_OK;
+}
+
+HRESULT FrameBufferImplDX::GetTexture(ID3D11Texture2D** ppTex) const
+{
+    if (!ppTex) return E_POINTER;
+    if (!m_texture) return E_FAIL;
+    *ppTex = m_texture;
+    (*ppTex)->AddRef();
+    return S_OK;
+}
+
+// ============================================================================
+// SharedSwapChainDX
+// ============================================================================
+SharedSwapChainDX::SharedSwapChainDX() = default;
+SharedSwapChainDX::~SharedSwapChainDX() { Release(); }
+
+HRESULT SharedSwapChainDX::Initialize(ID3D11Device* dev, IDXGIFactory* factory,
+    HWND hWnd, UINT width, UINT height, DXGI_FORMAT format)
+{
+    if (!dev || !factory || !hWnd) return E_INVALIDARG;
+
+    m_device = dev;
+    m_width = width;
+    m_height = height;
+    m_format = format;
+
+    DXGI_SWAP_CHAIN_DESC scd = {};
+    scd.BufferCount = 2;
+    scd.BufferDesc.Width = width;
+    scd.BufferDesc.Height = height;
+    scd.BufferDesc.Format = format;
+    scd.BufferDesc.RefreshRate.Numerator = 60;
+    scd.BufferDesc.RefreshRate.Denominator = 1;
+    scd.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
+    scd.OutputWindow = hWnd;
+    scd.SampleDesc.Count = 1;
+    scd.Windowed = TRUE;
+    scd.SwapEffect = DXGI_SWAP_EFFECT_DISCARD;
+
+    HRESULT hr = factory->CreateSwapChain(dev, &scd, &m_swapChain);
+    if (FAILED(hr)) return hr;
+
+    return CreateRTV();
+}
+
+void SharedSwapChainDX::Release()
+{
+    ReleaseRTV();
+    m_swapChain.Release();
+    m_device = nullptr;
+}
+
+HRESULT SharedSwapChainDX::CreateRTV()
+{
+    ReleaseRTV();
+
+    HRESULT hr = m_swapChain->GetBuffer(0, __uuidof(ID3D11Texture2D), (void**)&m_backBuffer);
+    if (FAILED(hr)) return hr;
+
+    hr = m_device->CreateRenderTargetView(m_backBuffer, nullptr, &m_rtv);
+    return hr;
+}
+
+void SharedSwapChainDX::ReleaseRTV()
+{
+    m_rtv.Release();
+    m_backBuffer.Release();
+}
+
+HRESULT SharedSwapChainDX::Resize(UINT width, UINT height)
+{
+    if (width == m_width && height == m_height) return S_OK;
+
+    m_width = width;
+    m_height = height;
+
+    ReleaseRTV();
+
+    HRESULT hr = m_swapChain->ResizeBuffers(2, width, height, m_format, 0);
+    if (FAILED(hr)) return hr;
+
+    return CreateRTV();
+}
+
+HRESULT SharedSwapChainDX::Present(UINT syncInterval)
+{
+    return m_swapChain->Present(syncInterval, 0);
+}
+
+HRESULT SharedSwapChainDX::GetBackBuffer(ID3D11Texture2D** ppTex) const
+{
+    if (!ppTex) return E_POINTER;
+    if (!m_backBuffer) return E_FAIL;
+    *ppTex = m_backBuffer;
+    (*ppTex)->AddRef();
+    return S_OK;
+}
+
+HRESULT SharedSwapChainDX::GetBackBufferRTV(ID3D11RenderTargetView** ppRTV) const
+{
+    if (!ppRTV) return E_POINTER;
+    if (!m_rtv) return E_FAIL;
+    *ppRTV = m_rtv;
+    (*ppRTV)->AddRef();
+    return S_OK;
+}
+
+// ============================================================================
+// BackBufferDX
+// ============================================================================
+BackBufferDX::BackBufferDX() = default;
+BackBufferDX::~BackBufferDX() { Release(); }
+
+HRESULT BackBufferDX::Initialize(IDXGISwapChain* swapChain, ID3D11Device* dev)
+{
+    if (!swapChain || !dev) return E_INVALIDARG;
+
+    Release();
+
+    HRESULT hr = swapChain->GetBuffer(0, __uuidof(ID3D11Texture2D), (void**)&m_texture);
+    if (FAILED(hr)) return hr;
+
+    D3D11_TEXTURE2D_DESC td;
+    m_texture->GetDesc(&td);
+    m_width = td.Width;
+    m_height = td.Height;
+
+    hr = dev->CreateRenderTargetView(m_texture, nullptr, &m_rtv);
+    if (FAILED(hr)) return hr;
+
+    hr = dev->CreateShaderResourceView(m_texture, nullptr, &m_srv);
+    return hr;
+}
+
+void BackBufferDX::Release()
+{
+    m_srv.Release();
+    m_rtv.Release();
+    m_texture.Release();
+    m_width = 0;
+    m_height = 0;
+}
+
+HRESULT BackBufferDX::GetTexture(ID3D11Texture2D** ppTex) const
+{
+    if (!ppTex) return E_POINTER;
+    if (!m_texture) return E_FAIL;
+    *ppTex = m_texture;
+    (*ppTex)->AddRef();
+    return S_OK;
+}
+
+HRESULT BackBufferDX::GetRTV(ID3D11RenderTargetView** ppRTV) const
+{
+    if (!ppRTV) return E_POINTER;
+    if (!m_rtv) return E_FAIL;
+    *ppRTV = m_rtv;
+    (*ppRTV)->AddRef();
+    return S_OK;
+}
+
+HRESULT BackBufferDX::GetSRV(ID3D11ShaderResourceView** ppSRV) const
+{
+    if (!ppSRV) return E_POINTER;
+    if (!m_srv) return E_FAIL;
+    *ppSRV = m_srv;
+    (*ppSRV)->AddRef();
+    return S_OK;
+}
+
+} // namespace DX
+} // namespace HMREngine

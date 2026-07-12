@@ -23,6 +23,11 @@ add_library(${TARGET} SHARED
     StoryboardManager/Templates.cpp
     StoryboardManager/TimelineTrack.cpp
     StoryboardManager/StoryboardManagerExceptions.cpp
+    StoryboardManager/Theme/Theme.cpp
+    StoryboardManager/Theme/ThemeTemplates.cpp
+    StoryboardManager/Theme/ThemeStructure.cpp
+    StoryboardManager/Theme/TextComposition.cpp
+    StoryboardManager/MovieEffect/MovieEffect.cpp
     HMRAVSource/HMRAVSource.cpp
     HMRAVSource/AVSource.cpp
     HMRAVSource/MFSource.cpp
@@ -34,8 +39,46 @@ add_library(${TARGET} SHARED
     HMRAVSource/AudioCapture.cpp
     HMRAVSource/AVCaptureSession.cpp
     HMRAVSource/CachedWFSection.cpp
+    HMRAVSource/Audio/Waveform.cpp
+    HMRAVSource/Audio/AudioOutput.cpp
+    HMRAVSource/Audio/AudioQueue.cpp
+    HMRAVSource/Audio/Mixer.cpp
+    HMRAVSource/Audio/AudioBoost.cpp
+    HMRAVSource/Audio/AudioResampler.cpp
+    HMRAVSource/Audio/AudioAnalysis.cpp
     DataStructs/IntSet.cpp
     DataStructs/StringSet.cpp
+    UI/Ribbon/RibbonApp.cpp
+    UI/Ribbon/RibbonSites.cpp
+    Preview/PreviewPresenter.cpp
+    Preview/PreviewDataContext.cpp
+    StoryboardManager/Serialization/SerializationContext.cpp
+    StoryboardManager/Serialization/SerializationReader.cpp
+    StoryboardManager/Serialization/SerializationWriter.cpp
+    StoryboardManager/Serialization/SerializationMemoryReaderWriter.cpp
+    StoryboardManager/Serialization/DatabasePropertyManager.cpp
+    StoryboardManager/Serialization/ModElements.cpp
+    StoryboardManager/Serialization/BoundPropertyDictionary.cpp
+    StoryboardManager/Serialization/TextProperty.cpp
+    StoryboardManager/Serialization/BoundPlaceholder.cpp
+    StoryboardManager/Serialization/SnapShot.cpp
+    StoryboardManager/MediaItems/MediaItem.cpp
+    HMREngine/AsyncWorker.cpp
+    HMREngine/DXResources/EngineDX.cpp
+    HMREngine/DXResources/TextureResourceDX.cpp
+    HMREngine/DXResources/MeshResourceDX.cpp
+    HMREngine/DXResources/EffectResourceDX.cpp
+    HMREngine/DXResources/TextResourceDX.cpp
+    HMREngine/DXResources/RenderLoopDX.cpp
+    HMREngine/DXResources/ResourceCacheDX.cpp
+    HMREngine/X3DNodeImpls/X3DNodeImplBase.cpp
+    HMREngine/X3DNodeImpls/X3DGroupingImpls.cpp
+    HMREngine/X3DNodeImpls/X3DAppearanceImpls.cpp
+    HMREngine/X3DNodeImpls/X3DLayerImpls.cpp
+    HMREngine/X3DNodeImpls/X3DSensorImpls.cpp
+    HMREngine/PatternMesh/PatternMesh.cpp
+    HMREngine/PatternMesh/PatternMeshFactory.cpp
+    HMREngine/TextRender/TextRenderPipeline.cpp
 )
 
 set_target_properties(${TARGET} PROPERTIES

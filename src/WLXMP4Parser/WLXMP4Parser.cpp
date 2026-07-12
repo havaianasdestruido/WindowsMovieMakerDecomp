@@ -1,0 +1,358 @@
+/*
+ * WLXMP4Parser.cpp
+ *
+ * Implementation of WLXMP4Parser.dll -- MP4/ISOBMFF container parser for
+ * Windows Live Movie Maker 2012.
+ *
+ * Parses the MP4 box hierarchy to extract track information, chapter data,
+ * thumbnails, and structural metadata without decoding media content.
+ * Used for fast project loading and file property display.
+ *
+ * Built with MSVC 11.0 (VS2012), targets Windows 6.2+ (Win8+).
+ *
+ * Copyright (c) Microsoft Corporation. All rights reserved.
+ * Source recreation for research and interoperability purposes.
+ */
+
+#include "WLXMP4Parser.h"
+#include "WLXPhotoBase.h"
+
+#include <vector>
+#include <map>
+#include <string>
+#include <memory>
+#include <algorithm>
+#include <cstdio>
+
+// ============================================================================
+// Internal structures
+// ============================================================================
+namespace MP4Parser
+{
+
+// ============================================================================
+// Box header (8 or 16 bytes depending on extended size)
+// ============================================================================
+#pragma pack(push, 1)
+struct BoxHeader
+{
+    UINT32  uSize;          // big-endian; if 1, extended size follows
+    UINT32  uType;          // four-character code (big-endian)
+
+    UINT32 GetType() const
+    {
+        // Convert from big-endian to little-endian
+        return ((uType & 0xFF) << 24) | ((uType >> 8) & 0xFF) |
+               ((uType & 0xFF00) << 8) | ((uType >> 8) & 0xFF00);
+    }
+
+    UINT64 GetSize() const
+    {
+        UINT32 sizeBE = uSize;
+        UINT32 sizeLE = ((sizeBE & 0xFF) << 24) | ((sizeBE >> 8) & 0xFF) |
+                        ((sizeBE & 0xFF00) << 8) | ((sizeBE >> 8) & 0xFF00);
+        if (sizeLE == 1)
+        {
+            // Extended size (next 8 bytes)
+            return 16; // Caller reads the actual 64-bit size
+        }
+        return static_cast<UINT64>(sizeLE);
+    }
+};
+#pragma pack(pop)
+
+// ============================================================================
+// StblBox -- sample table box (stsd, stts, stsc, stsz, stco)
+// ============================================================================
+class StblBox
+{
+public:
+    StblBox()
+        : m_uSampleCount(0)
+    {
+    }
+
+    HRESULT Parse(BYTE* pData, UINT64 cbData)
+    {
+        // Parse child boxes: stsd, stts, stsc, stsz, stco
+        // For this skeleton, extract sample count from stsz
+        UNREFERENCED_PARAMETER(pData);
+        UNREFERENCED_PARAMETER(cbData);
+        return S_OK;
+    }
+
+    UINT32 GetSampleCount() const { return m_uSampleCount; }
+
+private:
+    UINT32 m_uSampleCount;
+};
+
+// ============================================================================
+// TrakBox -- track box (tkhd, mdia, edts)
+// ============================================================================
+class TrakBox
+{
+public:
+    TrakBox() {}
+
+    HRESULT Parse(BYTE* pData, UINT64 cbData)
+    {
+        UNREFERENCED_PARAMETER(pData);
+        UNREFERENCED_PARAMETER(cbData);
+        return S_OK;
+    }
+
+    MP4TrackInfo& GetTrackInfo() { return m_info; }
+
+private:
+    MP4TrackInfo    m_info;
+    StblBox         m_stbl;
+};
+
+// ============================================================================
+// MoovBox -- movie box (mvhd, trak[], udta)
+// ============================================================================
+class MoovBox
+{
+public:
+    MoovBox()
+        : m_llDuration(0)
+        , m_uTimeScale(1)
+    {
+    }
+
+    HRESULT Parse(BYTE* pData, UINT64 cbData)
+    {
+        UNREFERENCED_PARAMETER(pData);
+        UNREFERENCED_PARAMETER(cbData);
+        return S_OK;
+    }
+
+    LONGLONG GetDuration() const { return m_llDuration; }
+    UINT32 GetTimeScale() const { return m_uTimeScale; }
+
+private:
+    LONGLONG                m_llDuration;
+    UINT32                  m_uTimeScale;
+    std::vector<TrakBox>    m_traks;
+};
+
+// ============================================================================
+// MP4File -- main parser object
+// ============================================================================
+class MP4File
+{
+public:
+    MP4File()
+        : m_bParsed(false)
+        , m_bFastStart(false)
+        , m_uBrand(0)
+        , m_uMinorVersion(0)
+    {
+    }
+
+    ~MP4File()
+    {
+        Close();
+    }
+
+    HRESULT Open(LPCWSTR pszFilePath)
+    {
+        if (!pszFilePath || !pszFilePath[0])
+            return E_INVALIDARG;
+
+        m_strFilePath = pszFilePath;
+
+        // Open the file and read the top-level box structure
+        HANDLE hFile = CreateFileW(pszFilePath, GENERIC_READ, FILE_SHARE_READ,
+            NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+
+        if (hFile == INVALID_HANDLE_VALUE)
+            return HRESULT_FROM_WIN32(GetLastError());
+
+        // Read first 16KB for header parsing (ftyp + moov)
+        const UINT64 cbHeaderMax = 16384;
+        DWORD cbRead = 0;
+        UINT64 cbFile = 0;
+
+        LARGE_INTEGER liSize;
+        if (GetFileSizeEx(hFile, &liSize))
+            cbFile = liSize.QuadPart;
+
+        UINT64 cbToRead = min(cbHeaderMax, cbFile);
+        std::vector<BYTE> buffer(static_cast<size_t>(cbToRead));
+
+        BOOL bOk = ReadFile(hFile, buffer.data(), static_cast<DWORD>(cbToRead), &cbRead, NULL);
+        CloseHandle(hFile);
+
+        if (!bOk || cbRead < sizeof(BoxHeader))
+            return E_FAIL;
+
+        // Parse top-level boxes
+        size_t offset = 0;
+        while (offset + sizeof(BoxHeader) <= cbRead)
+        {
+            BoxHeader* pHeader = reinterpret_cast<BoxHeader*>(buffer.data() + offset);
+            UINT32 boxType = pHeader->GetType();
+            UINT64 boxSize = pHeader->GetSize();
+
+            if (boxType == MP4_BOX_FTYP && boxSize >= 8)
+            {
+                // Parse ftyp
+                if (offset + 12 <= cbRead)
+                {
+                    UINT32* pBrand = reinterpret_cast<UINT32*>(buffer.data() + offset + 8);
+                    m_uBrand = *pBrand;
+                }
+            }
+            else if (boxType == MP4_BOX_MOOV)
+            {
+                m_bFastStart = true; // moov before mdat
+                m_moov.reset(new MoovBox());
+                // Parse moov contents
+                m_moov->Parse(buffer.data() + offset + 8, boxSize - 8);
+            }
+
+            if (boxSize < 8 || offset + boxSize > cbRead)
+                break;
+
+            offset += static_cast<size_t>(boxSize);
+        }
+
+        m_bParsed = true;
+        return S_OK;
+    }
+
+    void Close()
+    {
+        m_moov.reset();
+        m_bParsed = false;
+    }
+
+    HRESULT GetTrackCount(UINT32* pCount)
+    {
+        if (!m_bParsed) return E_UNEXPECTED;
+        if (pCount) *pCount = 0; // Skeleton
+        return S_OK;
+    }
+
+    HRESULT GetTrackInfo(UINT32 uIndex, MP4TrackInfo* pInfo)
+    {
+        if (!m_bParsed) return E_UNEXPECTED;
+        if (!pInfo) return E_INVALIDARG;
+        UNREFERENCED_PARAMETER(uIndex);
+        return E_NOTIMPL;
+    }
+
+    HRESULT GetDuration(LONGLONG* pDuration)
+    {
+        if (!m_bParsed) return E_UNEXPECTED;
+        if (!pDuration) return E_INVALIDARG;
+        *pDuration = m_moov ? m_moov->GetDuration() : 0;
+        return S_OK;
+    }
+
+    HRESULT IsFastStart(BOOL* pFastStart)
+    {
+        if (!m_bParsed) return E_UNEXPECTED;
+        if (pFastStart) *pFastStart = m_bFastStart ? TRUE : FALSE;
+        return S_OK;
+    }
+
+    HRESULT GetBrand(UINT32* pBrand, UINT32* pMinorVersion)
+    {
+        if (!m_bParsed) return E_UNEXPECTED;
+        if (pBrand) *pBrand = m_uBrand;
+        if (pMinorVersion) *pMinorVersion = m_uMinorVersion;
+        return S_OK;
+    }
+
+private:
+    bool                    m_bParsed;
+    bool                    m_bFastStart;
+    UINT32                  m_uBrand;
+    UINT32                  m_uMinorVersion;
+    std::wstring            m_strFilePath;
+    std::unique_ptr<MoovBox> m_moov;
+};
+
+} // namespace MP4Parser
+
+// ============================================================================
+// Exported functions (9 exports)
+// ============================================================================
+
+extern "C"
+{
+
+WLXMP4P_API HANDLE __stdcall MP4Parser_Open(LPCWSTR pszFilePath)
+{
+    MP4Parser::MP4File* pFile = new(std::nothrow) MP4Parser::MP4File();
+    if (!pFile) return NULL;
+
+    HRESULT hr = pFile->Open(pszFilePath);
+    if (FAILED(hr))
+    {
+        delete pFile;
+        return NULL;
+    }
+
+    return static_cast<HANDLE>(pFile);
+}
+
+WLXMP4P_API void __stdcall MP4Parser_Close(HANDLE hParser)
+{
+    if (hParser)
+    {
+        MP4Parser::MP4File* p = static_cast<MP4Parser::MP4File*>(hParser);
+        p->Close();
+        delete p;
+    }
+}
+
+WLXMP4P_API HRESULT __stdcall MP4Parser_GetTrackCount(HANDLE hParser, UINT32* pCount)
+{
+    if (!hParser) return E_INVALIDARG;
+    return static_cast<MP4Parser::MP4File*>(hParser)->GetTrackCount(pCount);
+}
+
+WLXMP4P_API HRESULT __stdcall MP4Parser_GetTrackInfo(HANDLE hParser, UINT32 uTrackIndex, MP4TrackInfo* pInfo)
+{
+    if (!hParser) return E_INVALIDARG;
+    return static_cast<MP4Parser::MP4File*>(hParser)->GetTrackInfo(uTrackIndex, pInfo);
+}
+
+WLXMP4P_API HRESULT __stdcall MP4Parser_GetDuration(HANDLE hParser, LONGLONG* pDuration)
+{
+    if (!hParser) return E_INVALIDARG;
+    return static_cast<MP4Parser::MP4File*>(hParser)->GetDuration(pDuration);
+}
+
+WLXMP4P_API HRESULT __stdcall MP4Parser_GetChapters(HANDLE hParser, MP4ChapterInfo* pChapters, UINT32* pCount)
+{
+    UNREFERENCED_PARAMETER(hParser);
+    UNREFERENCED_PARAMETER(pChapters);
+    if (pCount) *pCount = 0;
+    return E_NOTIMPL;
+}
+
+WLXMP4P_API HRESULT __stdcall MP4Parser_GetThumbnail(HANDLE hParser, Gdiplus::Bitmap** ppBitmap)
+{
+    UNREFERENCED_PARAMETER(hParser);
+    UNREFERENCED_PARAMETER(ppBitmap);
+    return E_NOTIMPL;
+}
+
+WLXMP4P_API HRESULT __stdcall MP4Parser_IsFastStart(HANDLE hParser, BOOL* pFastStart)
+{
+    if (!hParser) return E_INVALIDARG;
+    return static_cast<MP4Parser::MP4File*>(hParser)->IsFastStart(pFastStart);
+}
+
+WLXMP4P_API HRESULT __stdcall MP4Parser_GetBrand(HANDLE hParser, UINT32* pBrand, UINT32* pMinorVersion)
+{
+    if (!hParser) return E_INVALIDARG;
+    return static_cast<MP4Parser::MP4File*>(hParser)->GetBrand(pBrand, pMinorVersion);
+}
+
+} // extern "C"

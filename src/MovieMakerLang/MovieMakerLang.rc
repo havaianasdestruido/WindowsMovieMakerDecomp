@@ -1,0 +1,91 @@
+/*
+ * MovieMakerLang.rc
+ *
+ * Resource script for the MovieMakerLang satellite DLL.
+ * Contains 201 RT_STRING tables, icons, cursors, PNG images, and UIFILE resources.
+ *
+ * NOTE: This is a minimal skeleton. The full resource binary would contain
+ * the complete localized string tables for all supported languages.
+ *
+ * Copyright (c) Microsoft Corporation. All rights reserved.
+ */
+
+#include <windows.h>
+#include "resource.h"
+
+// ============================================================================
+// Icons
+// ============================================================================
+// IDI_MAIN_ICON         ICON    "resources\\icons\\MovieMaker.ico"
+// IDI_SMALL_ICON        ICON    "resources\\icons\\MovieMakerSmall.ico"
+
+// ============================================================================
+// Cursors
+// ============================================================================
+// IDC_APPSTARTING       CURSOR  "resources\\cursors\\appstart.cur"
+// IDC_WAIT              CURSOR  "resources\\cursors\\wait.cur"
+
+// ============================================================================
+// UI Images (PNG)
+// ============================================================================
+// IDB_SPLASH            BITMAP  "resources\\images\\splash.png"
+// IDB_TOOLBAR           BITMAP  "resources\\images\\toolbar.png"
+
+// ============================================================================
+// UIFILE resources (DirectUI layouts)
+// ============================================================================
+// RT_UIFILE             100     "resources\\uifile\\mainlayout.xml"
+
+// ============================================================================
+// RT_STRING tables
+// ============================================================================
+// String Table 0 (IDs 0x0000-0x000F)
+// STRINGTABLE
+// BEGIN
+//     0x0000  "Windows Live Movie Maker"
+//     0x0001  "Untitled Project"
+//     0x0002  "Movie Maker"
+//     0x0003  "&File"
+//     0x0004  "&Edit"
+//     0x0005  "&View"
+//     0x0006  "&Tools"
+//     0x0007  "&Help"
+//     0x0008  "&New"
+//     0x0009  "&Open..."
+//     0x000A  "&Save"
+//     0x000B  "Save &As..."
+//     0x000C  "&Import media..."
+//     0x000D  "E&xit"
+//     0x000E  "&Undo"
+//     0x000F  "&Redo"
+// END
+//
+// String Table 1 (IDs 0x0010-0x001F)
+// STRINGTABLE
+// BEGIN
+//     0x0010  "Cu&t"
+//     0x0011  "&Copy"
+//     0x0012  "&Paste"
+//     0x0013  "&Delete"
+//     0x0014  "Select &All"
+//     0x0015  "&Options..."
+//     0x0016  "&About Movie Maker"
+//     0x0017  "&Home"
+//     0x0018  "&Animations"
+//     0x0019  "&Visual Effects"
+//     0x001A  "&Project"
+//     0x001B  "&View"
+//     0x001C  "Add &Videos and Photos"
+//     0x001D  "Add &Music"
+//     0x001E  "Add &Title"
+//     0x001F  "Add &Credits"
+// END
+//
+// ... (Tables 2-200 follow with all remaining UI strings)
+// ... The full binary contains 201 string table entries covering:
+// ...   - Menu items, toolbar labels, dialog text
+// ...   - Error messages, warning dialogs, confirmation prompts
+// ...   - Tooltip text, status bar messages
+// ...   - File format names, codec descriptions
+// ...   - Export profile names, quality settings
+// ...   - Multilingual strings for all supported locales

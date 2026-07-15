@@ -1,9 +1,10 @@
 # Project Summary & Resume Roadmap
 ## Windows Live Movie Maker 2012 - Source Code Recreation
 
-> **Last updated:** Current session
-> **Build command:** `"C:\Program Files\CMake\bin\cmake.exe" --build build --config Debug`
+> **Last updated:** July 15, 2026
+> **Build command:** `& "C:\Program Files\CMake\bin\cmake.exe" --build build --config Debug`
 > **Project root:** `C:\Users\mcmco\Desktop\WMMR`
+> **STATUS: FULL BUILD CLEAN - All 18 targets compile and link with 0 errors**
 
 ---
 
@@ -18,218 +19,155 @@ Recreating the full source code of Windows Live Movie Maker 2012 (`MovieMakerCor
 - Project codename: **Sundance**, version **16.4.3528.0331**
 - Single DLL export: `MovieMakerMain` from MovieMakerCore.dll
 - 1360 RTTI classes across 48 namespaces
-- 375 source files, 18 CMake targets
+- 375+ source files, 18 CMake targets
 
 ---
 
-## Current Build State
+## Current Build State - ALL 18 TARGETS BUILD CLEAN
 
-### What Compiles Successfully
-- MovieMakerLang.dll (output: `build/bin/Debug/MovieMakerLang.dll`)
-- MovieMaker.exe (output: `build/bin/Debug/MovieMaker.exe`)
-- All 16 supporting DLLs (WLXPhotoBase, DuiDirect, DmxBici, MetadataSys, etc.)
-- Most MovieMakerCore .cpp files (approximately 80 out of ~100)
+| Target | Type | Output |
+|--------|------|--------|
+| **MovieMaker.exe** | Launcher EXE | `build/bin/Debug/MovieMaker.exe` |
+| **MovieMakerCore.dll** | Main engine DLL | `build/bin/Debug/MovieMakerCore.dll` (1,027 KB) |
+| **WLXPhotoBase.dll** | Foundation library | `build/bin/Debug/WLXPhotoBase.dll` (48 KB) |
+| **MovieMakerLang.dll** | Localization | `build/bin/Debug/MovieMakerLang.dll` |
+| **WLXPipeline.dll** | Media pipeline | `build/bin/Debug/WLXPipeline.dll` |
+| **WLXVideoTrim.dll** | Video trim | `build/bin/Debug/WLXVideoTrim.dll` |
+| **WLXMovieLibrary.dll** | Movie library | `build/bin/Debug/WLXMovieLibrary.dll` |
+| **WLXPipetran.dll** | Transitions | `build/bin/Debug/WLXPipetran.dll` |
+| **WLXSlideshow.dll** | Slideshow engine | `build/bin/Debug/WLXSlideshow.dll` |
+| **WLXTranscode.exe** | Transcode tool | `build/bin/Debug/WLXTranscode.exe` |
+| **MovieMakerPreviewClient.dll** | Preview renderer | `build/bin/Debug/MovieMakerPreviewClient.dll` |
+| **WLMFDS.dll** | MF/DS bridge | `build/bin/Debug/WLMFDS.dll` |
+| **WLMFReadWrite.dll** | MF read/write | `build/bin/Debug/WLMFReadWrite.dll` |
+| **WLXMediaPublishSubscribe.dll** | Publishing | `build/bin/Debug/WLXMediaPublishSubscribe.dll` |
+| **WLXPhotoCinematic.dll** | Cinematic effects | `build/bin/Debug/WLXPhotoCinematic.dll` |
+| **WLXMP4Parser.dll** | MP4 parser | `build/bin/Debug/WLXMP4Parser.dll` |
+| **WLXFaceRecognition.dll** | Face detection | `build/bin/Debug/WLXFaceRecognition.dll` |
+| **WLXCodecHost.exe** | Codec host | `build/bin/Debug/WLXCodecHost.exe` |
 
-### What Fails (Root Causes Identified)
-
-There are **3 distinct root causes** remaining. Once these are fixed, the build should succeed.
-
----
-
-### Fix 1: Add `#include "pch.h"` to .cpp files missing it (HIGH PRIORITY)
-
-**Problem:** Several .cpp files in HMREngine and HMRAVSource subdirectories do NOT include `pch.h` as their first include. Without the PCH, headers like `DirectXMath.h` fail to compile, causing cascading errors (Vec2 undeclared, namespace syntax errors, etc.).
-
-**Files that need `#include "pch.h"` added as line 1:**
-- `src/MovieMakerCore/HMREngine/PatternMesh/PatternMeshFactory.cpp`
-- `src/MovieMakerCore/HMREngine/PatternMesh/PatternMesh.cpp`
-- `src/MovieMakerCore/HMREngine/TextRender/TextRenderPipeline.cpp`
-- `src/MovieMakerCore/HMRAVSource/ImageThumbnail.cpp`
-
-**Check all .cpp files:** Run this to find any others:
-```powershell
-Get-ChildItem "src\MovieMakerCore" -Recurse -Filter "*.cpp" | ForEach-Object {
-    $first = (Get-Content $_.FullName -First 1).Trim()
-    if ($first -ne '#include "pch.h"' -and $_.Name -ne 'pch.cpp') {
-        Write-Output $_.FullName
-    }
-}
-```
-
-### Fix 2: HMREngine.h line 113 syntax error
-
-**Problem:** `src/MovieMakerCore/HMREngine/HMREngine.h` line 113 has a syntax error: `error C2059: syntax error: '('`. The HMRError enum likely uses C++11 `= 0` initializers inside an enum, which should work in C++14, but there may be a missing semicolon or a conflicting macro.
-
-**Action:** Read `HMREngine.h` lines 100-130 and fix the enum definition. Look for:
-- Missing semicolons after enum values
-- Macros expanding to unexpected tokens
-- The `= 0` assignments conflicting with something
-
-### Fix 3: X3DFieldTypes.h `m_value` access through CComObject
-
-**Problem:** In `src/MovieMakerCore/HMREngine/X3DDFieldTypes.h`, the `Clone()` methods do:
-```cpp
-CComObject<SFVec2f>* p;
-CComObject<SFVec2f>::CreateInstance(&p);
-p->m_value = m_value;  // ERROR: m_value not accessible through CComObject
-```
-
-`CComObject<T>` wraps `T` but does NOT expose `T`'s members through `->`. You need to use the `CComObject<T>::m_pInstance` member or restructure.
-
-**Fix options (choose one):**
-1. Change `p->m_value = m_value;` to use a different approach
-2. Restructure Clone to not use CComObject
-3. Add a `SetValue()` method on the derived classes
-
-**Affected classes:** SFVec2f, SFVec3f, SFVec4f, SFRotation, SFColor, SFColorRGBA, SFMatrix3f, SFMatrix4f, SFNode, and all MF* (MultipleField) types.
+**Build result: 0 compile errors, 0 link errors, 0 RC errors**
 
 ---
 
-## Step-by-Step Resume Plan
+## What's Next (Post-Build Phase)
 
-### Step 1: Fix pch.h includes (15 min)
-1. Open each .cpp file listed in Fix 1
-2. Add `#include "pch.h"` as the VERY FIRST line (before any other includes or #pragma once)
-3. For files that already have `#include "pch.h"` elsewhere, move it to line 1
-4. Verify with the PowerShell script above that no .cpp files are missing pch.h
-
-### Step 2: Fix HMREngine.h enum (5 min)
-1. Read `src/MovieMakerCore/HMREngine/HMREngine.h` lines 100-130
-2. The HMRError enum likely looks like:
-   ```cpp
-   enum HMRError {
-       Success = 0,
-       DeviceLost = 1,
-       // etc.
-   };
-   ```
-3. Check if there's a problematic macro or syntax issue
-4. Fix and verify
-
-### Step 3: Fix X3DFieldTypes.h Clone pattern (30 min)
-1. Read `src/MovieMakerCore/HMREngine/X3DFieldTypes.h`
-2. Every `Clone()` method that does `p->m_value = m_value;` needs to be fixed
-3. The pattern should be changed to something like:
-   ```cpp
-   HRESULT Clone(X3DFieldNode** pp) const override
-   {
-       CComObject<SFVec2f>* p;
-       CComObject<SFVec2f>::CreateInstance(&p);
-       p->SetValue(m_value);  // Use SetValue instead of direct access
-       p->AddRef();
-       *pp = p;
-       return S_OK;
-   }
-   ```
-   Or restructure to not use CComObject at all.
-
-### Step 4: Rebuild & Iterate (30 min)
-1. Run: `"C:\Program Files\CMake\bin\cmake.exe" --build build --config Debug 2>&1`
-2. Check for remaining errors
-3. Fix any remaining issues (likely just cascading errors from the fixes above)
-4. Repeat until build succeeds
-
-### Step 5: Commit (when user asks)
-1. Run `git status` and `git diff`
-2. Stage all new/modified files
-3. Commit with descriptive message
+1. Verify DLL import/export tables match original binaries
+2. Test MovieMaker.exe launches (will fail at runtime without real implementations)
+3. Compare RTTI class layouts between original and rebuilt DLLs
+4. Incrementally replace stub implementations with real code
+5. Improve semantic fidelity of reconstructed source
 
 ---
 
-## Detailed File Map
+## Source Structure
 
-### Source Structure
+### MovieMaker.exe (launcher)
+- `src/MovieMaker/main.cpp` - WinMain entry, delay-loads MovieMakerCore.dll
+- `src/MovieMaker/moviemaker.rc` - Resource script
+- `src/MovieMaker/CMakeLists.txt`
+
+### MovieMakerCore.dll (~350 files)
 ```
-src/
-  common.h                          # Shared PCH-like header (all Windows SDK, ATL, GDI+)
-  exports.h                         # DLL export/import macros
-  WTL/                              # WTL 10 headers (20 files from NuGet)
-  
-  MovieMaker/                       # Launcher EXE target
-    main.cpp                        # WinMain entry, loads MovieMakerCore.dll
-    CMakeLists.txt
-    
-  MovieMakerCore/                   # Main DLL target (~350 files)
-    pch.h                           # Master precompiled header (Windows SDK + ATL + WTL + D3D + MF)
-    pch.cpp                         # PCH compilation unit
-    dllmain.cpp                     # DLL entry point
-    MovieMakerCore.cpp/.h/.def      # Core exports
-    SundanceApp/                    # Application framework (6 files)
-    StoryboardManager/              # Project model (18+ files)
-      Theme/                        # Visual themes (4 files)
-      MovieEffect/                  # Movie effects (1 file)
-      Serialization/                # .wlmp file I/O (9 files)
-      MediaItems/                   # Media item management (1 file)
-      Background/                   # Background processing (4 files)
-      Transport/                    # Playback transport (2 files)
-    HMREngine/                      # 3D rendering engine (30+ files)
-      DXResources/                  # DX11 resource management (7 files)
-      X3DNodeImpls/                 # X3D node implementations (5 files)
-      PatternMesh/                  # Video transition mesh (2 files)
-      TextRender/                   # Text rendering (1 file)
-    HMRAVSource/                    # Media pipeline (25+ files)
-      Audio/                        # Audio processing (7 files)
-    UI/Ribbon/                      # Windows Ribbon (2 files)
-    Preview/                        # Video preview (2 files)
-    DataStructs/                    # Utility containers (2 files)
-    
-  WLXPhotoBase/                     # Foundation library target
-    BaseTypes.h                     # Core type definitions
-    WLXPhotoBase.h/.cpp             # Main implementation
-    
-  MovieMakerLang/                   # Localization target
-  DuiDirect/                        # DirectUI target
-  DmxBici/                          # Analytics target
-  MetadataSys/                      # Metadata target
-  WLXPhotoSqm/                      # SQM telemetry target
-  wlidcli/                          # Live ID target
-  (+ 9 more supporting DLL targets)
+src/MovieMakerCore/
+  pch.h / pch.cpp                 # PCH + SDK compat section
+  dllmain.cpp                     # DLL entry (extern "C" MovieCore_Initialize/Shutdown)
+  MovieMakerCore.cpp              # Stub exports
+  exports.h / common.h
+  SundanceApp/                    # Application framework (7 controller stubs + UI)
+  StoryboardManager/              # Project model
+    MovieProject.h/.cpp           # Core data model
+    TimelineTrack.h/.cpp          # Track management
+    StoryboardManager.h/.cpp      # Top-level manager
+    Templates.h/.cpp              # Transition/effect templates
+    Theme/                        # Visual themes
+    Serialization/                # .wlmp file I/O
+    Background/                   # Background processing
+    Transport/                    # Playback transport
+  HMREngine/                      # 3D rendering engine (X3D/VRML-based)
+    DXResources/                  # DX11 resource management
+    X3DNodes.cpp/.h               # X3D node implementations
+    X3DMath.cpp/.h                # Math (quaternion SLERP, etc.)
+    d3dx11compat.h/.cpp           # D3DX11 stub (removed from Win10 SDK)
+    Shaders.cpp/.h
+    X3DNodeImpls/
+  HMRAVSource/                    # Media Foundation AV pipeline
+    HMRAVSourceTypes.h            # Shared enums (breaks circular include)
+    dxva2stubs.cpp                # DXVA2 stubs (removed from Win10 SDK)
+    Audio/                        # Audio processing
+  UI/Ribbon/                      # Windows Ribbon framework
+  Preview/                        # Video preview
+  Publishing/                     # Video publishing
+  DataStructs/                    # Utility containers
 ```
+
+### Supporting DLLs (12 targets)
+- WLXPhotoBase, WLXPipeline, WLXVideoTrim
+- WLXMovieLibrary (D3D9 video processor), WLXPipetran (transitions)
+- WLXSlideshow, WLXTranscode, MovieMakerPreviewClient (GDI+)
+- WLMFDS (MF/DS bridge), WLMFReadWrite (MF read/write)
+- WLXMediaPublishSubscribe, WLXPhotoCinematic (Ken Burns)
+- WLXMP4Parser, WLXFaceRecognition, WLXCodecHost
 
 ### External Dependencies
 ```
-src/WTL/                            # WTL 10 headers
-  atlapp.h, atlcrack.h, atlctrls.h, atlddx.h, atldlgs.h,
-  atlframe.h, atlmisc.h, atlprint.h, atlscry.h, atlsplit.h, etc.
-
-System (via VS 2022 Build Tools + SDK 10.0.26100.0):
-  ATL:  C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\VC\Tools\MSVC\14.44.35207\atlmfc\include\
-  SDK:  C:\Program Files (x86)\Windows Kits\10\Include\10.0.26100.0\
+src/WTL/                              # WTL 10 headers (20 files from NuGet)
+src/MovieMakerCore/HMREngine/d3dx11compat.h  # D3DX11 stub
+src/MovieMakerCore/HMRAVSource/dxva2stubs.cpp # DXVA2 stubs
 ```
-
-### Key Compatibility Headers
-- `src/MovieMakerCore/HMREngine/d3dx11compat.h` - D3DX11 Effect Framework stub (replaces removed d3dx11.h)
-- `src/MovieMakerCore/HMREngine/X3DMath.h` - Math library on DirectXMath (Vec2/3/4, Matrix3/4, Rotation4f, etc.)
-- `src/MovieMakerCore/HMREngine/X3DFieldTypes.h` - X3D field type system (COM-based)
 
 ---
 
-## Known Gotchas & Notes
+## SDK Compatibility Fixes Applied
 
-1. **`winmm.h` does NOT exist in SDK 10.0.26100.0** - Use `mmsystem.h` instead. This was fixed in both `common.h` and `pch.h`.
+| Original (VS2012/Win8 SDK) | Fix Applied (VS2022/Win10 SDK) |
+|---|---|
+| `d3dx11.h` / d3dx11 effect API | Stub: `d3dx11compat.h/.cpp` (returns `E_NOTIMPL`) |
+| `d3dx9.h` / `d3dx9.lib` | Removed from all targets |
+| `d3dcompiler_46.lib` | Renamed to `d3dcompiler.lib` |
+| `dxva2.h` DXVA2CreateVideoProcessor* | Stub: `dxva2stubs.cpp` |
+| `mferror.lib` | Removed (MF error codes in headers) |
+| `MF_ENABLE_HARDWARE_TRANSFORMS` | Removed (not in Win10 SDK) |
+| `INTERNET_OPTION_ENABLE_FEATURE` | Removed (not in Win10 SDK enum) |
+| `uiribbon.lib` / `IID_IUICommandHandler` | GUID manually defined |
+| `MF_OBJECT_UNKNOWN` | Defined as `((MF_OBJECT_TYPE)0)` |
+| `XmlWriterProperty_ProcessNamespaces` | Defined as `((XmlWriterProperty)1)` |
+| `IXmlReader::GetAttribute` | Replaced with `MoveToAttributeByName` + `GetValue` |
+| `IDXVA2VideoProcessor` interface | Stub interface in `pch.h` |
+| `winmm.h` | Replaced with `mmsystem.h` |
+| `MFAttributes` type (non-standard) | Replaced with `IMFAttributes*` |
 
-2. **`IAtlStringMgr` is in `<atlstr.h>` not `<atlbase.h>`** - WLXPhotoBase.h needs `#include <atlstr.h>`.
+---
 
-3. **ATL 14+ (VS 2022) defines `BaseAtlThrow` natively** - Don't provide custom definitions.
+## Known Gotchas (21 lessons learned)
 
-4. **`CAtlArray` copy constructor is private in modern ATL** - Use `.Copy()` method instead.
-
-5. **`CComObject<T>` does NOT expose T's members through `->`** - Need `m_pInstance` or alternative access.
-
-6. **D3DX11 (d3dx11.h) is completely removed from modern SDKs** - Must use `d3dx11compat.h` stub or rewrite effect system.
-
-7. **GDI+ `Status` enum has fewer values in Windows 10 SDK** - Custom values like `UnsupportedImageFormat` don't exist; use standard GDI+ codes.
-
-8. **WTL is NOT bundled with Visual Studio** - Must be obtained separately (NuGet package or manual download).
-
-9. **All .cpp files MUST include pch.h as first line** - Without it, the PCH context is lost and most headers fail.
-
-10. **The build uses x86 (Win32) architecture** - The original binaries are 32-bit. CMake must be configured with `-A Win32`.
+1. `winmm.h` does NOT exist in SDK 10.0.26100.0 - Use `mmsystem.h`
+2. `IAtlStringMgr` is in `<atlstr.h>` not `<atlbase.h>`
+3. ATL 14+ defines `BaseAtlThrow` natively
+4. `CAtlArray` copy constructor is private - Use `.Copy()`
+5. `CComObject<T>` does NOT expose T's members through `->`
+6. D3DX11 is completely removed - Must use stub
+7. `CComPtr<T>` requires `AddRef/Release` - Not for non-COM types
+8. Circular includes broken by extracting enums into separate header
+9. `RIBBON_API` macro was never defined - Added to `exports.h`
+10. `ATL::CStringMap` does NOT exist - Use `std::map`
+11. `IXmlReader::GetAttribute` does NOT exist - Use `MoveToAttributeByName` + `GetValue`
+12. MF enums removed from Win10 SDK
+13. `IDXVA2VideoProcessor` interface removed
+14. `DrawTextLayout` takes 3 or 4 args (NOT `D2D1_RECT_F` as 4th)
+15. `_itow_s` requires 4 args (value, buf, bufSize, radix)
+16. `WriteEndElement()` and `WriteEndDocument()` take 0 args
+17. Circular include fixed by heap-allocating `ProjectTimeline`
+18. Forward-declared structs must be moved INTO namespace in headers
+19. `DEFINE_STUB_TRANSITION` macro `L##stringId` - Remove L## prefix
+20. `mferror.lib` does not exist in Win10 SDK
+21. `Gdiplus::Graphics::DrawImage` - Takes `Gdiplus::Image*` not `const Bitmap*`
 
 ---
 
 ## Git History
 ```
+d4ef776 All 18 CMake targets build clean: 0 compile errors, 0 link errors
 edb4713 add Background/Transport/Legacy/Publishing/External + HMRAVSource helpers
 0b00926 add Preview, Serialization, Theme, Ribbon, Audio, DXResources, X3DNodeImpls, PatternMesh
 1f64d2d add HMRAVSource media pipeline, DataStructs, and resource IDs
@@ -238,31 +176,3 @@ ac3851a reconstruct HMREngine, UI behaviors, and all supporting DLLs
 d246f1  add analysis scripts and initial source reconstruction
 d92f6e2 initial: project setup with gitignore and PE analysis script
 ```
-
-**Recent uncommitted changes:**
-- `winmm.h` -> `mmsystem.h` in common.h and pch.h
-- Added `#include <atlstr.h>` to WLXPhotoBase.h
-- Removed `#include <mfmp2t.h>` from pch.h
-- Fixed `struct MovieMakerException` space in common.h
-- Created `d3dx11compat.h` D3DX11 compatibility header
-- Added `#include "../../Resources/ResourceIds.h"` to EffectResourceDX.cpp
-- Added `IDR_COMMON_EFFECT` to ResourceIds.h
-- Fixed WLXPhotoBase.h/cpp IAtlStringMgr and BaseAtlThrow issues
-- Created `src/MovieMakerCore/pch.cpp` and `src/MovieMakerPreviewClient/dllmain.cpp`
-
----
-
-## What Success Looks Like
-
-When the build succeeds, we should have:
-- `build/bin/Debug/MovieMaker.exe` (launcher)
-- `build/bin/Debug/MovieMakerCore.dll` (main engine)
-- `build/bin/Debug/MovieMakerLang.dll` (localization)
-- 16 supporting DLLs in `build/bin/Debug/`
-- All 18 CMake targets compile with 0 errors
-
-After that, the next phase would be:
-1. Verify all DLL imports resolve (no missing functions)
-2. Test the launcher loads correctly
-3. Compare RTTI information between original and rebuilt DLLs
-4. Iterate on data structures and string tables to match originals

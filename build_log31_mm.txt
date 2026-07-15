@@ -1,6 +1,0 @@
-﻿Vers├úo do MSBuild 17.14.40+3e7442088 para .NET Framework
-
-  WLXPhotoBase.vcxproj -> C:\Users\mcmco\Desktop\WMMR\build\bin\Debug\WLXPhotoBase.dll
-LINK : warning LNK4075: ignoring '/INCREMENTAL' due to '/LTCG' specification [C:\Users\mcmco\Desktop\WMMR\build\src\MovieMaker\MovieMaker.vcxproj]
-main.obj : error LNK2001: unresolved external symbol __imp__WLXPhotoBase_Init@0 [C:\Users\mcmco\Desktop\WMMR\build\src\MovieMaker\MovieMaker.vcxproj]
-C:\Users\mcmco\Desktop\WMMR\build\bin\Debug\MovieMaker.exe : fatal error LNK1120: 1 unresolved externals [C:\Users\mcmco\Desktop\WMMR\build\src\MovieMaker\MovieMaker.vcxproj]

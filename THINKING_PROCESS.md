@@ -161,23 +161,45 @@
 
 ---
 
+## Phase 6: Achieving Full Clean Build (ALL 18 TARGETS)
+
+**Goal:** Fix all remaining compile and link errors across every CMake target.
+
+**Starting point:** 0 compile errors in MovieMakerCore.dll, but MovieMaker.exe had 1 RC error and 280 compile errors across 12 external stub DLLs.
+
+### Key fixes in this phase:
+
+**MovieMaker.exe (2 errors fixed):**
+1. RC2176 "old DIB in resources\MovieMaker.ico" - Generated .ico was invalid; commented out icon reference in moviemaker.rc
+2. `WLXPhotoBase_Init` unresolved external - Added stub export to WLXPhotoBase.cpp
+
+**External stub DLLs (280 errors fixed):**
+
+Root cause categories identified across 12 targets:
+- **Missing includes** (d3d9.h, memory, algorithm, set, shellapi) - 5 targets
+- **Forward-declared structs outside namespace** - 6 targets (~60+ errors)
+- **Macro token paste bug** (DEFINE_STUB_TRANSITION `L##stringId`) - 1 target (52 errors)
+- **Missing libraries** (mferror.lib, gdiplus.lib) - 2 targets
+- **Deprecated/removed API usage** (INTERNET_OPTION_ENABLE_FEATURE, MF_ENABLE_HARDWARE_TRANSFORMS) - 2 targets
+- **Type mismatches** (const Bitmap*, UINT32 vs DWORD in std::min) - 2 targets
+- **Duplicate DllMain** - 1 target
+
+**SDK compatibility additions:**
+- Removed `mferror.lib` from WLMFDS, WLMFReadWrite, WLXTranscode (doesn't exist in Win10 SDK)
+- Removed `d3dx9.lib` from all targets (removed from Win10 SDK)
+- Replaced `INTERNET_OPTION_ENABLE_FEATURE` (removed from Win10 SDK enum)
+- Replaced `MF_ENABLE_HARDWARE_TRANSFORMS` (removed from Win10 SDK)
+- Fixed `MFAttributes` → `IMFAttributes*` (MFAttributes is not a type in Win10 SDK)
+
+**Final build result: 0 compile errors, 0 link errors, 0 RC errors across all 18 targets.**
+
+---
+
 ## Current Build State
 
-**What compiles successfully:**
-- MovieMakerLang.dll
-- Most MovieMakerCore .cpp files (those that include pch.h)
-- All supporting DLLs
-- MovieMaker.exe
+**ALL 18 TARGETS BUILD CLEAN.** MovieMaker.exe, MovieMakerCore.dll, WLXPhotoBase.dll, and all 15 supporting DLLs/EXEs compile and link successfully.
 
-**What fails:**
-- PatternMeshFactory.cpp, PatternMesh.cpp, TextRenderPipeline.cpp - missing `#include "pch.h"`
-- ImageThumbnail.cpp - IWICImagingFactory template error at line 511
-- HMREngine.h - syntax error at line 113 (HMRError enum issue)
-- Shaders.h - Matrix4f not found (cascading from X3DMath.h failure)
-- X3DFieldTypes.h - Vec2 undeclared (cascading), m_value access pattern wrong
-- WLXPhotoBase - IAtlStringMgr (should be fixed by atlstr.h addition, verify)
-
-**Git status:** 7 commits, all source files created, recent fixes (winmm.h, mmsystem.h, atlstr.h, struct space fix) not yet committed.
+**Git status:** 8 commits total. Full build achieved and committed.
 
 ---
 
@@ -231,6 +253,20 @@
 
 ### External Dependencies
 - `src/WTL/` - WTL 10 headers (20 files from NuGet)
+
+---
+
+## Git History
+```
+d4ef776 All 18 CMake targets build clean: 0 compile errors, 0 link errors
+edb4713 add Background/Transport/Legacy/Publishing/External + HMRAVSource helpers
+0b00926 add Preview, Serialization, Theme, Ribbon, Audio, DXResources, X3DNodeImpls, PatternMesh
+1f64d2d add HMRAVSource media pipeline, DataStructs, and resource IDs
+ac3851a reconstruct HMREngine, UI behaviors, and all supporting DLLs
+728636b reconstruct MovieMakerCore.dll framework, SundanceApp, and StoryboardManager
+d246f1  add analysis scripts and initial source reconstruction
+d92f6e2 initial: project setup with gitignore and PE analysis script
+```
 
 ---
 

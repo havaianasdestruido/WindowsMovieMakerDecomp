@@ -1,0 +1,6 @@
+LIBRARY WLXFaceRecognition
+EXPORTS
+    DllCanUnloadNow
+    DllGetClassObject
+    DllRegisterServer
+    DllUnregisterServer

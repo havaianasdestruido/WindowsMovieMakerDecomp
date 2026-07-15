@@ -1,12 +1,14 @@
 # WLXMP4Parser.dll  --  MP4 container parser
 # Version 16.4.3528.0331
-# 9 exports, 127 imports (gdiplus)
+# 8 exports: AddMP4SourceFilter, BuildMP4FilterGraph, BuildMP4PlayBack, IsMP4FilePlayable,
+#   DllCanUnloadNow, DllGetClassObject, DllRegisterServer, DllUnregisterServer
 
 set(TARGET WLXMP4Parser)
 
 add_library(${TARGET} SHARED
     dllmain.cpp
     WLXMP4Parser.cpp
+    WLXMP4Parser.def
 )
 
 set_target_properties(${TARGET} PROPERTIES

@@ -75,6 +75,7 @@ add_library(${TARGET} SHARED
     DataStructs/StringSet.cpp
     UI/Ribbon/RibbonApp.cpp
     UI/Ribbon/RibbonSites.cpp
+    UI/UIBehaviorClasses.cpp
     Preview/PreviewPresenter.cpp
     Preview/PreviewDataContext.cpp
     StoryboardManager/Serialization/SerializationContext.cpp
@@ -88,6 +89,7 @@ add_library(${TARGET} SHARED
     StoryboardManager/Serialization/BoundPlaceholder.cpp
     StoryboardManager/Serialization/SnapShot.cpp
     StoryboardManager/Serialization/ValueVariantRef.cpp
+    StoryboardManager/Serialization/SerializationClasses.cpp
     StoryboardManager/MediaItems/MediaItem.cpp
     StoryboardManager/Background/BackgroundOrchestrator.cpp
     StoryboardManager/Background/BackgroundRequests.cpp
@@ -104,6 +106,7 @@ add_library(${TARGET} SHARED
     HMREngine/DXResources/TextResourceDX.cpp
     HMREngine/DXResources/RenderLoopDX.cpp
     HMREngine/DXResources/ResourceCacheDX.cpp
+    HMREngine/DXResources/TextureCodecs.cpp
     HMREngine/X3DNodeImpls/X3DNodeImplBase.cpp
     HMREngine/X3DNodeImpls/X3DGroupingImpls.cpp
     HMREngine/X3DNodeImpls/X3DAppearanceImpls.cpp
@@ -114,6 +117,11 @@ add_library(${TARGET} SHARED
     HMREngine/TextRender/TextRenderPipeline.cpp
     HMREngine/d3dx11compat.cpp
     HMRAVSource/dxva2stubs.cpp
+    Publishing/PublishDialogs.cpp
+    Publishing/PublishItem.cpp
+    Publishing/PublishJob.cpp
+    Publishing/PublishClasses.cpp
+    Publishing/XmlManifest.cpp
 )
 
 set_target_properties(${TARGET} PROPERTIES

@@ -211,39 +211,33 @@ public:
 } // namespace PhotoCinematic
 
 // ============================================================================
-// Exported functions (4 exports)
+// Exported functions -- standard COM DLL entry points
 // ============================================================================
 
 extern "C"
 {
 
-WLXPCIN_API HANDLE __stdcall PhotoCinematic_Create()
+STDAPI DllCanUnloadNow()
 {
-    PhotoCinematic::CinematicEngine* pEngine = new(std::nothrow) PhotoCinematic::CinematicEngine();
-    return static_cast<HANDLE>(pEngine);
+    return S_OK;
 }
 
-WLXPCIN_API void __stdcall PhotoCinematic_Destroy(HANDLE hEngine)
+STDAPI DllGetClassObject(REFCLSID rclsid, REFIID riid, LPVOID* ppv)
 {
-    delete static_cast<PhotoCinematic::CinematicEngine*>(hEngine);
+    UNREFERENCED_PARAMETER(rclsid);
+    UNREFERENCED_PARAMETER(riid);
+    UNREFERENCED_PARAMETER(ppv);
+    return CLASS_E_CLASSNOTAVAILABLE;
 }
 
-WLXPCIN_API HRESULT __stdcall PhotoCinematic_RenderFrame(HANDLE hEngine,
-    Gdiplus::Bitmap* pSourceImage, const PhotoCinematic::CinematicParams* pParams,
-    DOUBLE dProgress, Gdiplus::Bitmap** ppBitmap)
+STDAPI DllRegisterServer()
 {
-    if (!hEngine) return E_INVALIDARG;
-    return static_cast<PhotoCinematic::CinematicEngine*>(hEngine)->RenderFrame(
-        pSourceImage, pParams, dProgress, ppBitmap);
+    return S_OK;
 }
 
-WLXPCIN_API HRESULT __stdcall PhotoCinematic_RenderAll(HANDLE hEngine,
-    Gdiplus::Bitmap* pSourceImage, const PhotoCinematic::CinematicParams* pParams,
-    UINT32 uFrameRate, Gdiplus::Bitmap*** ppFrames, UINT32* pFrameCount)
+STDAPI DllUnregisterServer()
 {
-    if (!hEngine) return E_INVALIDARG;
-    return static_cast<PhotoCinematic::CinematicEngine*>(hEngine)->RenderAll(
-        pSourceImage, pParams, uFrameRate, ppFrames, pFrameCount);
+    return S_OK;
 }
 
 } // extern "C"

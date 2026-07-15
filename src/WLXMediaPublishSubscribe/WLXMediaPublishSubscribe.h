@@ -132,7 +132,10 @@ typedef void (CALLBACK* PFN_PUBLISH_PROGRESS)(void* pUserData, UINT uPercent, Pu
 typedef void (CALLBACK* PFN_PUBLISH_COMPLETE)(void* pUserData, const MediaPublish::PublishResult* pResult);
 
 // ============================================================================
-// Exported functions (22 exports)
+// Exported functions -- COM DLL entry points + publishing helpers
+// (DllCanUnloadNow, DllGetClassObject, DllRegisterServer, DllUnregisterServer
+//  are defined in WLXMediaPublishSubscribe.cpp but not declared here to avoid
+//  conflict with combaseapi.h declarations)
 // ============================================================================
 extern "C"
 {

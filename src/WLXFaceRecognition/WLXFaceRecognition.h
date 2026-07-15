@@ -129,28 +129,10 @@ struct WLXDetectorConfig
 };
 
 // ============================================================================
-// Exported functions (4 exports)
+// Exported functions -- standard COM DLL entry points
+// (DllCanUnloadNow, DllGetClassObject, DllRegisterServer, DllUnregisterServer
+//  are defined in WLXFaceRecognition.cpp but not declared here to avoid
+//  conflict with combaseapi.h declarations)
 // ============================================================================
-extern "C"
-{
-    // Creates a face detector instance.
-    WLXFR_API HANDLE __stdcall FaceRecognition_CreateDetector(const WLXDetectorConfig* pConfig);
-
-    // Destroys the detector instance.
-    WLXFR_API void __stdcall FaceRecognition_DestroyDetector(HANDLE hDetector);
-
-    // Detects faces in an image.
-    // pRegions:  caller-allocated array of WLXFaceRegion
-    // pCount:    on input, size of array; on output, number of faces found
-    WLXFR_API HRESULT __stdcall FaceRecognition_DetectFaces(HANDLE hDetector,
-        Gdiplus::Bitmap* pImage, WLXFaceRegion* pRegions, UINT32* pCount);
-
-    // Recognizes faces against the trained face database.
-    // pResults: caller-allocated array of WLXRecognitionResult
-    // pCount:   on input, size of array; on output, number of results
-    WLXFR_API HRESULT __stdcall FaceRecognition_RecognizeFaces(HANDLE hDetector,
-        Gdiplus::Bitmap* pImage, const WLXFaceRegion* pFaces, UINT32 uFaceCount,
-        WLXRecognitionResult* pResults, UINT32* pCount);
-}
 
 #endif // WLXFACERECOGNITION_H

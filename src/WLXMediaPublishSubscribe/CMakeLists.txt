@@ -1,12 +1,13 @@
 # WLXMediaPublishSubscribe.dll  --  Plugin-based publishing system
 # Version 16.4.3528.0331
-# 22 exports, 524 imports (21 DLLs: WLXPhotoSqm, DmxBici, WININET, wlidcli, UXCore)
+# 22 exports: 4 COM exports + 18 publishing helper functions
 
 set(TARGET WLXMediaPublishSubscribe)
 
 add_library(${TARGET} SHARED
     dllmain.cpp
     WLXMediaPublishSubscribe.cpp
+    WLXMediaPublishSubscribe.def
 )
 
 set_target_properties(${TARGET} PROPERTIES

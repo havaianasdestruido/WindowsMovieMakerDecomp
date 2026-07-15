@@ -1,0 +1,6 @@
+LIBRARY WLXMovieLibrary
+EXPORTS
+    DllCanUnloadNow
+    DllGetClassObject
+    DllRegisterServer
+    DllUnregisterServer

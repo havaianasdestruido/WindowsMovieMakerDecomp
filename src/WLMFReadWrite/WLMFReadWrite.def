@@ -1,0 +1,4 @@
+LIBRARY WLMFReadWrite
+EXPORTS
+    DllCanUnloadNow
+    DllGetClassObject

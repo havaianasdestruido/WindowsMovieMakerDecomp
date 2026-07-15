@@ -437,17 +437,33 @@ private:
 } // namespace MovieLibrary
 
 // ============================================================================
-// Exported function (1 export)
+// Exported functions -- standard COM DLL entry points
 // ============================================================================
 
 extern "C"
 {
 
-WLXML_API void* __cdecl MovieLibrary_GetInstance()
+STDAPI DllCanUnloadNow()
 {
-    MovieLibrary::LibraryManager& mgr = MovieLibrary::LibraryManager::GetInstance();
-    mgr.Initialize();
-    return static_cast<void*>(&mgr);
+    return S_OK;
+}
+
+STDAPI DllGetClassObject(REFCLSID rclsid, REFIID riid, LPVOID* ppv)
+{
+    UNREFERENCED_PARAMETER(rclsid);
+    UNREFERENCED_PARAMETER(riid);
+    UNREFERENCED_PARAMETER(ppv);
+    return CLASS_E_CLASSNOTAVAILABLE;
+}
+
+STDAPI DllRegisterServer()
+{
+    return S_OK;
+}
+
+STDAPI DllUnregisterServer()
+{
+    return S_OK;
 }
 
 } // extern "C"

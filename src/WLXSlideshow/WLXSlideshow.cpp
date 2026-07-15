@@ -232,36 +232,33 @@ private:
 } // namespace Slideshow
 
 // ============================================================================
-// Exported functions (4 exports)
+// Exported functions -- standard COM DLL entry points
 // ============================================================================
 
 extern "C"
 {
 
-WLXSLD_API HANDLE __stdcall Slideshow_Create()
+STDAPI DllCanUnloadNow()
 {
-    Slideshow::SlideshowEngine* pEngine = new(std::nothrow) Slideshow::SlideshowEngine();
-    return static_cast<HANDLE>(pEngine);
+    return S_OK;
 }
 
-WLXSLD_API void __stdcall Slideshow_Destroy(HANDLE hSlideshow)
+STDAPI DllGetClassObject(REFCLSID rclsid, REFIID riid, LPVOID* ppv)
 {
-    delete static_cast<Slideshow::SlideshowEngine*>(hSlideshow);
+    UNREFERENCED_PARAMETER(rclsid);
+    UNREFERENCED_PARAMETER(riid);
+    UNREFERENCED_PARAMETER(ppv);
+    return CLASS_E_CLASSNOTAVAILABLE;
 }
 
-WLXSLD_API HRESULT __stdcall Slideshow_Generate(HANDLE hSlideshow,
-    const SlideshowSlideInfo* pSlides, UINT32 uSlideCount,
-    const Slideshow::SlideshowConfig* pConfig, LONGLONG* pTotalDuration)
+STDAPI DllRegisterServer()
 {
-    if (!hSlideshow) return E_INVALIDARG;
-    return static_cast<Slideshow::SlideshowEngine*>(hSlideshow)->Generate(
-        pSlides, uSlideCount, pConfig, pTotalDuration);
+    return S_OK;
 }
 
-WLXSLD_API HRESULT __stdcall Slideshow_EnumerateTemplates(WCHAR* pTemplateIds, UINT32* pCount)
+STDAPI DllUnregisterServer()
 {
-    Slideshow::SlideshowEngine engine;
-    return engine.EnumerateTemplates(pTemplateIds, pCount);
+    return S_OK;
 }
 
 } // extern "C"

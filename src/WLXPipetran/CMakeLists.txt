@@ -1,6 +1,6 @@
 # WLXPipetran.dll  --  Pipeline transforms - transition/effect animations
 # Version 16.4.3528.0331
-# 1 export, 230 imports (PSAPI, gdiplus, d3dx9_32, strmiids)
+# 1 export: GetTFXCreateFunctions
 # Contains 92 RTTI classes for transition and effect animations
 
 set(TARGET WLXPipetran)

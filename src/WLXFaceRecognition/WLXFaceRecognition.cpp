@@ -467,77 +467,32 @@ private:
 static HINSTANCE g_hModule = NULL;
 
 // ============================================================================
-// Exported functions (4 exports)
+// Exported functions -- standard COM DLL entry points
 // ============================================================================
 
 extern "C"
 {
 
-WLXFR_API HANDLE __stdcall FaceRecognition_CreateDetector(const WLXDetectorConfig* pConfig)
+STDAPI DllCanUnloadNow()
 {
-    LiveLabs::CFaceDetector* pDetector = new(std::nothrow) LiveLabs::CFaceDetector();
-    if (!pDetector)
-        return NULL;
-
-    HRESULT hr = pDetector->Initialize(pConfig);
-    if (FAILED(hr))
-    {
-        delete pDetector;
-        return NULL;
-    }
-
-    return static_cast<HANDLE>(pDetector);
+    return S_OK;
 }
 
-WLXFR_API void __stdcall FaceRecognition_DestroyDetector(HANDLE hDetector)
+STDAPI DllGetClassObject(REFCLSID rclsid, REFIID riid, LPVOID* ppv)
 {
-    if (hDetector)
-    {
-        LiveLabs::CFaceDetector* p = static_cast<LiveLabs::CFaceDetector*>(hDetector);
-        delete p;
-    }
+    UNREFERENCED_PARAMETER(rclsid);
+    UNREFERENCED_PARAMETER(riid);
+    UNREFERENCED_PARAMETER(ppv);
+    return CLASS_E_CLASSNOTAVAILABLE;
 }
 
-WLXFR_API HRESULT __stdcall FaceRecognition_DetectFaces(HANDLE hDetector,
-    Gdiplus::Bitmap* pImage, WLXFaceRegion* pRegions, UINT32* pCount)
+STDAPI DllRegisterServer()
 {
-    if (!hDetector)
-        return E_INVALIDARG;
-
-    LiveLabs::CFaceDetector* pDetector = static_cast<LiveLabs::CFaceDetector*>(hDetector);
-    return pDetector->Detect(pImage, pRegions, pCount);
+    return S_OK;
 }
 
-WLXFR_API HRESULT __stdcall FaceRecognition_RecognizeFaces(HANDLE hDetector,
-    Gdiplus::Bitmap* pImage, const WLXFaceRegion* pFaces, UINT32 uFaceCount,
-    WLXRecognitionResult* pResults, UINT32* pCount)
+STDAPI DllUnregisterServer()
 {
-    if (!hDetector)
-        return E_INVALIDARG;
-
-    // Create recognizer on demand
-    static LiveLabs::CFaceRecognizor recognizer;
-    static bool bRecogInit = false;
-
-    if (!bRecogInit)
-    {
-        recognizer.Initialize();
-        bRecogInit = true;
-    }
-
-    if (!pCount)
-        return E_INVALIDARG;
-
-    UINT32 uMaxResults = *pCount;
-    *pCount = 0;
-
-    for (UINT32 i = 0; i < uFaceCount && i < uMaxResults; ++i)
-    {
-        HRESULT hr = recognizer.Recognize(pImage, &pFaces[i], &pResults[i]);
-        if (SUCCEEDED(hr))
-            (*pCount)++;
-    }
-
     return S_OK;
 }
 

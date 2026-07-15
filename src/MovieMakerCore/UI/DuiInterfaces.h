@@ -52,7 +52,7 @@ struct IDuiValue;
 //
 // RTTI: ?AUIDuiBehavior@@
 //
-struct IDuiBehavior : public IUnknown
+struct __declspec(uuid("e773fbf7-37c0-48f1-9507-527a0ee82c48")) IDuiBehavior : public IUnknown
 {
     virtual HRESULT STDMETHODCALLTYPE OnElementAttached(IDuiElement* pElement) = 0;
     virtual HRESULT STDMETHODCALLTYPE OnElementDetached(IDuiElement* pElement) = 0;
@@ -109,7 +109,7 @@ struct IDuiBehaviorImpl : public IDuiBehavior
 //
 // RTTI: ?AVIDuiLayerBehavior@@
 //
-struct IDuiLayerBehavior : public IDuiBehavior
+struct __declspec(uuid("4e90fa69-7bb9-4d5d-a7cd-9bf180dc9731")) IDuiLayerBehavior : public IDuiBehavior
 {
     virtual HRESULT STDMETHODCALLTYPE BeginLayer(HDC hdc, const RECT* prcBounds) = 0;
     virtual HRESULT STDMETHODCALLTYPE EndLayer(HDC hdc, const RECT* prcBounds) = 0;
@@ -160,7 +160,7 @@ struct IDuiLayerBehaviorImpl : public IDuiLayerBehavior
 //
 // RTTI: ?AVIDuiDataSource@@
 //
-struct IDuiDataSource : public IUnknown
+struct __declspec(uuid("7de96de3-dc9d-4c44-9028-4687a4847355")) IDuiDataSource : public IUnknown
 {
     virtual HRESULT STDMETHODCALLTYPE GetCount(UINT* pCount) = 0;
     virtual HRESULT STDMETHODCALLTYPE GetItemData(UINT nIndex, IDuiDataCtx** ppDataCtx) = 0;
@@ -210,7 +210,7 @@ struct IDuiDataSourceImpl : public IDuiDataSource
 // ============================================================================
 // RTTI: ?AVIDuiVirtualLayoutMode@@
 //
-struct IDuiVirtualLayoutMode : public IUnknown
+struct __declspec(uuid("d14877c2-103d-44b5-9e1a-a22e74f39b7f")) IDuiVirtualLayoutMode : public IUnknown
 {
     virtual HRESULT STDMETHODCALLTYPE GetItemSize(UINT nIndex, SIZE* pSize) = 0;
     virtual HRESULT STDMETHODCALLTYPE GetItemCount(UINT* pCount) = 0;

@@ -181,47 +181,33 @@ private:
 } // namespace MFDS
 
 // ============================================================================
-// Exported functions (4 exports)
+// Exported functions -- standard COM DLL entry points
 // ============================================================================
 
 extern "C"
 {
 
-WLMFDS_API HANDLE __stdcall MFDSBridge_Create(const MFBridgeConfig* pConfig)
+STDAPI DllCanUnloadNow()
 {
-    MFDS::BridgeManager* pBridge = new(std::nothrow) MFDS::BridgeManager();
-    if (!pBridge) return NULL;
-
-    HRESULT hr = pBridge->Initialize(pConfig);
-    if (FAILED(hr))
-    {
-        delete pBridge;
-        return NULL;
-    }
-
-    return static_cast<HANDLE>(pBridge);
+    return S_OK;
 }
 
-WLMFDS_API void __stdcall MFDSBridge_Destroy(HANDLE hBridge)
+STDAPI DllGetClassObject(REFCLSID rclsid, REFIID riid, LPVOID* ppv)
 {
-    if (hBridge)
-    {
-        MFDS::BridgeManager* p = static_cast<MFDS::BridgeManager*>(hBridge);
-        p->Shutdown();
-        delete p;
-    }
+    UNREFERENCED_PARAMETER(rclsid);
+    UNREFERENCED_PARAMETER(riid);
+    UNREFERENCED_PARAMETER(ppv);
+    return CLASS_E_CLASSNOTAVAILABLE;
 }
 
-WLMFDS_API HRESULT __stdcall MFDSBridge_ConvertDShowSource(LPCWSTR pszDShowFilter, HANDLE hMFReader)
+STDAPI DllRegisterServer()
 {
-    // In the full implementation, uses a static bridge instance
-    return E_NOTIMPL;
+    return S_OK;
 }
 
-WLMFDS_API HRESULT __stdcall MFDSBridge_SetupEVR(HANDLE hBridge, IBaseFilter* pEVRFilter)
+STDAPI DllUnregisterServer()
 {
-    if (!hBridge) return E_INVALIDARG;
-    return static_cast<MFDS::BridgeManager*>(hBridge)->SetupEVR(pEVRFilter);
+    return S_OK;
 }
 
 } // extern "C"

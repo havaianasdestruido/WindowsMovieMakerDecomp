@@ -92,13 +92,10 @@ struct MovieMediaInfo
 };
 
 // ============================================================================
-// Exported function (1 export)
+// Exported functions -- standard COM DLL entry points
+// (DllCanUnloadNow, DllGetClassObject, DllRegisterServer, DllUnregisterServer
+//  are defined in WLXMovieLibrary.cpp but not declared here to avoid
+//  conflict with combaseapi.h declarations)
 // ============================================================================
-extern "C"
-{
-    // Returns the singleton LibraryManager instance.
-    // The manager handles enumeration, thumbnail caching, and MF sessions.
-    WLXML_API void* __cdecl MovieLibrary_GetInstance();
-}
 
 #endif // WLXMOVIELIBRARY_H

@@ -456,16 +456,17 @@ private:
 } // namespace Pipetran
 
 // ============================================================================
-// Exported function (1 export)
+// Exported function -- GetTFXCreateFunctions
 // ============================================================================
 
 extern "C"
 {
 
-WLXPIPET_API void* __cdecl Pipetran_GetRegistry()
+WLXPIPET_API HRESULT __stdcall GetTFXCreateFunctions(void** ppFunctions, UINT32* pCount)
 {
-    Pipetran::TransformRegistry& reg = Pipetran::TransformRegistry::GetInstance();
-    return static_cast<void*>(&reg);
+    UNREFERENCED_PARAMETER(ppFunctions);
+    if (pCount) *pCount = 0;
+    return E_NOTIMPL;
 }
 
 } // extern "C"

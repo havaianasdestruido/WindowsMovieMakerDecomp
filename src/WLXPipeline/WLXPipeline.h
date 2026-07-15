@@ -77,16 +77,12 @@ struct PipelineConfig
 };
 
 // ============================================================================
-// Exported functions (2 exports)
+// Exported functions -- GetPipelineCreateFunctions + DllRegisterServer
 // ============================================================================
 extern "C"
 {
-    // Creates and initializes the processing pipeline.
-    // Returns an opaque handle to the pipeline instance.
-    WLXPIPE_API HANDLE __stdcall Pipeline_Create(const PipelineConfig* pConfig);
-
-    // Destroys the processing pipeline and releases all resources.
-    WLXPIPE_API void __stdcall Pipeline_Destroy(HANDLE hPipeline);
+    WLXPIPE_API HRESULT __stdcall GetPipelineCreateFunctions(void** ppFunctions, UINT32* pCount);
+    WLXPIPE_API HRESULT __stdcall DllRegisterServer();
 }
 
 #endif // WLXPIPELINE_H

@@ -1,12 +1,13 @@
 # WLXSlideshow.dll  --  Slideshow generation
 # Version 16.4.3528.0331
-# 4 exports, 338 imports (gdiplus, UXCore, d3d9, d3dx9_32, msi)
+# 4 COM exports (DllCanUnloadNow, DllGetClassObject, DllRegisterServer, DllUnregisterServer)
 
 set(TARGET WLXSlideshow)
 
 add_library(${TARGET} SHARED
     dllmain.cpp
     WLXSlideshow.cpp
+    WLXSlideshow.def
 )
 
 set_target_properties(${TARGET} PROPERTIES

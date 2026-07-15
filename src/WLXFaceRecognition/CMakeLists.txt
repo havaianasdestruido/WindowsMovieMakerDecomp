@@ -1,6 +1,6 @@
 # WLXFaceRecognition.dll  --  Face detection and recognition
 # Version 16.4.3528.0331
-# 4 exports, 146 imports (WLXPhotoBase, WLXPhotoSqm, WindowsCodecs)
+# 4 COM exports (DllCanUnloadNow, DllGetClassObject, DllRegisterServer, DllUnregisterServer)
 # Contains ML classes: CFaceDetector, CFaceRecognizor, CNeuralNet, CClassifier
 # Feature extractors: LBP, PCA, Texton (LiveLabs namespace)
 
@@ -9,6 +9,7 @@ set(TARGET WLXFaceRecognition)
 add_library(${TARGET} SHARED
     dllmain.cpp
     WLXFaceRecognition.cpp
+    WLXFaceRecognition.def
 )
 
 set_target_properties(${TARGET} PROPERTIES

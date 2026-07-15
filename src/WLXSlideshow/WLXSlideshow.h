@@ -104,25 +104,10 @@ struct SlideshowSlideInfo
 };
 
 // ============================================================================
-// Exported functions (4 exports)
+// Exported functions -- standard COM DLL entry points
+// (DllCanUnloadNow, DllGetClassObject, DllRegisterServer, DllUnregisterServer
+//  are defined in WLXSlideshow.cpp but not declared here to avoid
+//  conflict with combaseapi.h declarations)
 // ============================================================================
-extern "C"
-{
-    // Creates a slideshow engine instance.
-    WLXSLD_API HANDLE __stdcall Slideshow_Create();
-
-    // Destroys the slideshow engine.
-    WLXSLD_API void __stdcall Slideshow_Destroy(HANDLE hSlideshow);
-
-    // Generates a slideshow from the given slides and configuration.
-    // Returns the total duration in 100ns units.
-    WLXSLD_API HRESULT __stdcall Slideshow_Generate(HANDLE hSlideshow,
-        const SlideshowSlideInfo* pSlides, UINT32 uSlideCount,
-        const Slideshow::SlideshowConfig* pConfig, LONGLONG* pTotalDuration);
-
-    // Retrieves available slideshow template IDs.
-    WLXSLD_API HRESULT __stdcall Slideshow_EnumerateTemplates(WCHAR* pTemplateIds,
-        UINT32* pCount);
-}
 
 #endif // WLXSLIDESHOW_H

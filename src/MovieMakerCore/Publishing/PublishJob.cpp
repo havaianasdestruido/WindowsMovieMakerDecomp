@@ -354,7 +354,7 @@ HRESULT PublishBackgroundWorker::Initialize(DWORD dwMaxJobs)
     if (m_bInitialized)
         return S_FALSE;
 
-    m_dwMaxJobs = max(1, dwMaxJobs);
+    m_dwMaxJobs = (dwMaxJobs < 1) ? 1 : dwMaxJobs;
     m_bInitialized = true;
     s_pInstance = this;
 

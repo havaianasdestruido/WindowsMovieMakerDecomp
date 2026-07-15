@@ -1,0 +1,6 @@
+LIBRARY WLXPhotoCinematic
+EXPORTS
+    DllCanUnloadNow
+    DllGetClassObject
+    DllRegisterServer
+    DllUnregisterServer

@@ -315,33 +315,22 @@ private:
 static HINSTANCE g_hModule = NULL;
 
 // ============================================================================
-// Exported functions (2 exports)
+// Exported functions -- GetPipelineCreateFunctions + DllRegisterServer
 // ============================================================================
 
 extern "C"
 {
 
-WLXPIPE_API HANDLE __stdcall Pipeline_Create(const PipelineConfig* pConfig)
+WLXPIPE_API HRESULT __stdcall GetPipelineCreateFunctions(void** ppFunctions, UINT32* pCount)
 {
-    Pipeline::ProcessingPipeline* pPipeline = new(std::nothrow) Pipeline::ProcessingPipeline();
-    if (!pPipeline)
-        return NULL;
-
-    HRESULT hr = pPipeline->Initialize(pConfig);
-    if (FAILED(hr))
-    {
-        delete pPipeline;
-        return NULL;
-    }
-
-    return static_cast<HANDLE>(pPipeline);
+    UNREFERENCED_PARAMETER(ppFunctions);
+    if (pCount) *pCount = 0;
+    return E_NOTIMPL;
 }
 
-WLXPIPE_API void __stdcall Pipeline_Destroy(HANDLE hPipeline)
+STDAPI DllRegisterServer()
 {
-    if (!hPipeline)
-        return;
-    delete static_cast<Pipeline::ProcessingPipeline*>(hPipeline);
+    return S_OK;
 }
 
 } // extern "C"

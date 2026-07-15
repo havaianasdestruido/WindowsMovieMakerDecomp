@@ -55,6 +55,10 @@
 // Special behaviors (Homer layer, effects, webcam, animations)
 #include "SpecialBehaviors.h"
 
+// Additional UI behavior RTTI classes (timeline family, ribbon, selection,
+// sundance elements, webcam/narration, encode profiles, publish dialogs, misc)
+#include "UIBehaviorClasses.h"
+
 // Clipboard chain window
 #include "SundanceClipboardChainWindow.h"
 

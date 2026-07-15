@@ -1,12 +1,13 @@
 # WLXPipeline.dll  --  Video processing pipeline
 # Version 16.4.3528.0331
-# 2 exports, 224 imports (gdiplus, d3d9, d3dx9_32, DDRAW, msdmo)
+# 2 exports: GetPipelineCreateFunctions, DllRegisterServer
 
 set(TARGET WLXPipeline)
 
 add_library(${TARGET} SHARED
     dllmain.cpp
     WLXPipeline.cpp
+    WLXPipeline.def
 )
 
 set_target_properties(${TARGET} PROPERTIES

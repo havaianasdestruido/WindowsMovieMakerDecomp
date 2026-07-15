@@ -1,0 +1,6 @@
+LIBRARY WLXMP4Parser
+EXPORTS
+    DllCanUnloadNow
+    DllGetClassObject
+    DllRegisterServer
+    DllUnregisterServer

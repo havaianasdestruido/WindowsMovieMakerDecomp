@@ -73,22 +73,10 @@ struct MFBridgeConfig
 };
 
 // ============================================================================
-// Exported functions (4 exports)
+// Exported functions -- standard COM DLL entry points
+// (DllCanUnloadNow, DllGetClassObject, DllRegisterServer, DllUnregisterServer
+//  are defined in WLMFDS.cpp but not declared here to avoid
+//  conflict with combaseapi.h declarations)
 // ============================================================================
-extern "C"
-{
-    // Creates a DShow-to-MF bridge instance.
-    WLMFDS_API HANDLE __stdcall MFDSBridge_Create(const MFBridgeConfig* pConfig);
-
-    // Destroys the bridge instance.
-    WLMFDS_API void __stdcall MFDSBridge_Destroy(HANDLE hBridge);
-
-    // Converts a DirectShow filter graph moniker to an MF source reader.
-    WLMFDS_API HRESULT __stdcall MFDSBridge_ConvertDShowSource(LPCWSTR pszDShowFilter,
-        HANDLE hMFReader);
-
-    // Sets up EVR (Enhanced Video Renderer) for the bridge output.
-    WLMFDS_API HRESULT __stdcall MFDSBridge_SetupEVR(HANDLE hBridge, IBaseFilter* pEVRFilter);
-}
 
 #endif // WLMFDS_H

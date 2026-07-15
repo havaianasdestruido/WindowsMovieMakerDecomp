@@ -1,12 +1,13 @@
 # WLXPhotoCinematic.dll  --  Cinematic photo effects (Ken Burns pan/zoom)
 # Version 16.4.3528.0331
-# 4 exports, 117 imports (WLXPhotoBase, d3dx9_32)
+# 4 COM exports (DllCanUnloadNow, DllGetClassObject, DllRegisterServer, DllUnregisterServer)
 
 set(TARGET WLXPhotoCinematic)
 
 add_library(${TARGET} SHARED
     dllmain.cpp
     WLXPhotoCinematic.cpp
+    WLXPhotoCinematic.def
 )
 
 set_target_properties(${TARGET} PROPERTIES

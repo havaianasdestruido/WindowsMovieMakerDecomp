@@ -1,12 +1,13 @@
 # WLMFReadWrite.dll  --  Media Foundation read/write
 # Version 16.4.3528.0331
-# 7 exports, 147 imports (MFPlat, MF, EVR)
+# 9 exports: DllCanUnloadNow, DllGetClassObject + MFReader/MFWriter functions
 
 set(TARGET WLMFReadWrite)
 
 add_library(${TARGET} SHARED
     dllmain.cpp
     WLMFReadWrite.cpp
+    WLMFReadWrite.def
 )
 
 set_target_properties(${TARGET} PROPERTIES

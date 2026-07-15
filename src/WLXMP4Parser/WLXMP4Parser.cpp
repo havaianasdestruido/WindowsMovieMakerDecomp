@@ -17,6 +17,7 @@
 #include "WLXMP4Parser.h"
 #include "WLXPhotoBase.h"
 
+#include <dshow.h>
 #include <vector>
 #include <map>
 #include <string>
@@ -279,80 +280,61 @@ private:
 } // namespace MP4Parser
 
 // ============================================================================
-// Exported functions (9 exports)
+// Exported functions -- DirectShow filter factory functions + COM exports
 // ============================================================================
 
 extern "C"
 {
 
-WLXMP4P_API HANDLE __stdcall MP4Parser_Open(LPCWSTR pszFilePath)
+WLXMP4P_API HRESULT __stdcall AddMP4SourceFilter(LPCWSTR pszFilePath, IGraphBuilder* pGraph, IBaseFilter** ppFilter)
 {
-    MP4Parser::MP4File* pFile = new(std::nothrow) MP4Parser::MP4File();
-    if (!pFile) return NULL;
-
-    HRESULT hr = pFile->Open(pszFilePath);
-    if (FAILED(hr))
-    {
-        delete pFile;
-        return NULL;
-    }
-
-    return static_cast<HANDLE>(pFile);
-}
-
-WLXMP4P_API void __stdcall MP4Parser_Close(HANDLE hParser)
-{
-    if (hParser)
-    {
-        MP4Parser::MP4File* p = static_cast<MP4Parser::MP4File*>(hParser);
-        p->Close();
-        delete p;
-    }
-}
-
-WLXMP4P_API HRESULT __stdcall MP4Parser_GetTrackCount(HANDLE hParser, UINT32* pCount)
-{
-    if (!hParser) return E_INVALIDARG;
-    return static_cast<MP4Parser::MP4File*>(hParser)->GetTrackCount(pCount);
-}
-
-WLXMP4P_API HRESULT __stdcall MP4Parser_GetTrackInfo(HANDLE hParser, UINT32 uTrackIndex, MP4Parser::MP4TrackInfo* pInfo)
-{
-    if (!hParser) return E_INVALIDARG;
-    return static_cast<MP4Parser::MP4File*>(hParser)->GetTrackInfo(uTrackIndex, pInfo);
-}
-
-WLXMP4P_API HRESULT __stdcall MP4Parser_GetDuration(HANDLE hParser, LONGLONG* pDuration)
-{
-    if (!hParser) return E_INVALIDARG;
-    return static_cast<MP4Parser::MP4File*>(hParser)->GetDuration(pDuration);
-}
-
-WLXMP4P_API HRESULT __stdcall MP4Parser_GetChapters(HANDLE hParser, MP4Parser::MP4ChapterInfo* pChapters, UINT32* pCount)
-{
-    UNREFERENCED_PARAMETER(hParser);
-    UNREFERENCED_PARAMETER(pChapters);
-    if (pCount) *pCount = 0;
+    UNREFERENCED_PARAMETER(pszFilePath);
+    UNREFERENCED_PARAMETER(pGraph);
+    UNREFERENCED_PARAMETER(ppFilter);
     return E_NOTIMPL;
 }
 
-WLXMP4P_API HRESULT __stdcall MP4Parser_GetThumbnail(HANDLE hParser, Gdiplus::Bitmap** ppBitmap)
+WLXMP4P_API HRESULT __stdcall BuildMP4FilterGraph(LPCWSTR pszFilePath, IGraphBuilder** ppGraph)
 {
-    UNREFERENCED_PARAMETER(hParser);
-    UNREFERENCED_PARAMETER(ppBitmap);
+    UNREFERENCED_PARAMETER(pszFilePath);
+    UNREFERENCED_PARAMETER(ppGraph);
     return E_NOTIMPL;
 }
 
-WLXMP4P_API HRESULT __stdcall MP4Parser_IsFastStart(HANDLE hParser, BOOL* pFastStart)
+WLXMP4P_API HRESULT __stdcall BuildMP4PlayBack(LPCWSTR pszFilePath, IGraphBuilder* pGraph)
 {
-    if (!hParser) return E_INVALIDARG;
-    return static_cast<MP4Parser::MP4File*>(hParser)->IsFastStart(pFastStart);
+    UNREFERENCED_PARAMETER(pszFilePath);
+    UNREFERENCED_PARAMETER(pGraph);
+    return E_NOTIMPL;
 }
 
-WLXMP4P_API HRESULT __stdcall MP4Parser_GetBrand(HANDLE hParser, UINT32* pBrand, UINT32* pMinorVersion)
+WLXMP4P_API BOOL __stdcall IsMP4FilePlayable(LPCWSTR pszFilePath)
 {
-    if (!hParser) return E_INVALIDARG;
-    return static_cast<MP4Parser::MP4File*>(hParser)->GetBrand(pBrand, pMinorVersion);
+    UNREFERENCED_PARAMETER(pszFilePath);
+    return FALSE;
+}
+
+STDAPI DllCanUnloadNow()
+{
+    return S_OK;
+}
+
+STDAPI DllGetClassObject(REFCLSID rclsid, REFIID riid, LPVOID* ppv)
+{
+    UNREFERENCED_PARAMETER(rclsid);
+    UNREFERENCED_PARAMETER(riid);
+    UNREFERENCED_PARAMETER(ppv);
+    return CLASS_E_CLASSNOTAVAILABLE;
+}
+
+STDAPI DllRegisterServer()
+{
+    return S_OK;
+}
+
+STDAPI DllUnregisterServer()
+{
+    return S_OK;
 }
 
 } // extern "C"

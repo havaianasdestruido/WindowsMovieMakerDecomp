@@ -92,30 +92,20 @@ struct WLMediaProperties
 };
 
 // ============================================================================
-// Exported functions (7 exports)
+// Exported functions -- COM exports + MF reader/writer functions
+// (DllCanUnloadNow, DllGetClassObject are defined in WLMFReadWrite.cpp but not
+//  declared here to avoid conflict with combaseapi.h declarations)
 // ============================================================================
 extern "C"
 {
-    // Creates a source reader for the specified file.
     WLMFRW_API HANDLE __stdcall MFReader_Open(LPCWSTR pszFilePath);
-
-    // Closes the source reader.
     WLMFRW_API void __stdcall MFReader_Close(HANDLE hReader);
-
-    // Queries media properties.
     WLMFRW_API HRESULT __stdcall MFReader_GetProperties(HANDLE hReader, WLMediaProperties* pProps);
-
-    // Reads a decoded frame at the specified time.
     WLMFRW_API HRESULT __stdcall MFReader_ReadFrame(HANDLE hReader, LONGLONG llTimeMs,
         BYTE* pBuffer, UINT32 cbBuffer, UINT32* pcbRead);
 
-    // Creates a sink writer for the specified output file.
     WLMFRW_API HANDLE __stdcall MFWriter_Create(LPCWSTR pszOutputPath, const WLMediaProperties* pProps);
-
-    // Writes an encoded frame.
     WLMFRW_API HRESULT __stdcall MFWriter_WriteFrame(HANDLE hWriter, const BYTE* pData, UINT32 cbData, LONGLONG llTimeMs);
-
-    // Finalizes the output file.
     WLMFRW_API HRESULT __stdcall MFWriter_Finalize(HANDLE hWriter);
 }
 

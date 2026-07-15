@@ -1,6 +1,7 @@
 # WLXVideoTrim.dll  --  Video trimming with DirectShow transcoders
 # Version 16.4.3528.0331
-# 5 exports, 168 imports (WLXPhotoBase, WMVCore, strmiids)
+# 5 DirectShow filter factory exports: CreateAVICopierDirect, CreateVideoCopierFromMediaType,
+#   CreateVideoFormatContextTranscoder, CreateVideoPlayer, CreateVideoWMVTranscoder
 # Supports AVI/ASF/DV/MPEG2/MP4/WMV container trimming
 
 set(TARGET WLXVideoTrim)

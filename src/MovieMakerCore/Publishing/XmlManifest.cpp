@@ -255,11 +255,11 @@ HRESULT PublishSessionXmlManifestFactory::Generate(IStream* pOutputStream)
 
     // Write root element with default namespace
     if (!m_strDefaultNamespace.IsEmpty())
-        spWriter->WriteAttributeString(L"xmlns", m_strDefaultNamespace);
+        spWriter->WriteAttributeString(nullptr, L"xmlns", m_strDefaultNamespace, m_strDefaultNamespace);
 
     // Write session attributes
     if (!m_strSessionId.IsEmpty())
-        spWriter->WriteAttributeString(L"sessionId", m_strSessionId);
+        spWriter->WriteAttributeString(nullptr, L"sessionId", nullptr, m_strSessionId);
 
     SYSTEMTIME st;
     WCHAR szTime[64];
@@ -270,7 +270,7 @@ HRESULT PublishSessionXmlManifestFactory::Generate(IStream* pOutputStream)
                      L"%04u-%02u-%02uT%02u:%02u:%02uZ",
                      st.wYear, st.wMonth, st.wDay,
                      st.wHour, st.wMinute, st.wSecond);
-    spWriter->WriteAttributeString(L"startTime", szTime);
+    spWriter->WriteAttributeString(nullptr, L"startTime", nullptr, szTime);
 
     // End time
     FileTimeToSystemTime(&m_ftEndTime, &st);
@@ -278,37 +278,37 @@ HRESULT PublishSessionXmlManifestFactory::Generate(IStream* pOutputStream)
                      L"%04u-%02u-%02uT%02u:%02u:%02uZ",
                      st.wYear, st.wMonth, st.wDay,
                      st.wHour, st.wMinute, st.wSecond);
-    spWriter->WriteAttributeString(L"endTime", szTime);
+    spWriter->WriteAttributeString(nullptr, L"endTime", nullptr, szTime);
 
     // Summary
-    spWriter->WriteStartElement(L"summary");
-    spWriter->WriteAttributeString(L"total", L"total");
+    spWriter->WriteStartElement(nullptr, L"summary", nullptr);
+    spWriter->WriteAttributeString(nullptr, L"total", nullptr, L"total");
     WCHAR szNum[32];
     StringCchPrintfW(szNum, ARRAYSIZE(szNum), L"%u", m_dwTotalJobs);
-    spWriter->WriteAttributeString(L"total", szNum);
+    spWriter->WriteAttributeString(nullptr, L"total", nullptr, szNum);
     StringCchPrintfW(szNum, ARRAYSIZE(szNum), L"%u", m_dwSuccessfulJobs);
-    spWriter->WriteAttributeString(L"successful", szNum);
+    spWriter->WriteAttributeString(nullptr, L"successful", nullptr, szNum);
     StringCchPrintfW(szNum, ARRAYSIZE(szNum), L"%u", m_dwFailedJobs);
-    spWriter->WriteAttributeString(L"failed", szNum);
+    spWriter->WriteAttributeString(nullptr, L"failed", nullptr, szNum);
     spWriter->WriteEndElement();
 
     // Job entries
     for (const auto& job : m_jobs)
     {
-        spWriter->WriteStartElement(L"job");
+        spWriter->WriteStartElement(nullptr, L"job", nullptr);
 
         StringCchPrintfW(szNum, ARRAYSIZE(szNum), L"%u", job.dwJobId);
-        spWriter->WriteAttributeString(L"id", szNum);
-        spWriter->WriteAttributeString(L"name", job.strJobName);
-        spWriter->WriteAttributeString(L"service", job.strServiceName);
+        spWriter->WriteAttributeString(nullptr, L"id", nullptr, szNum);
+        spWriter->WriteAttributeString(nullptr, L"name", nullptr, job.strJobName);
+        spWriter->WriteAttributeString(nullptr, L"service", nullptr, job.strServiceName);
 
         if (SUCCEEDED(job.hrResult))
-            spWriter->WriteAttributeString(L"result", L"success");
+            spWriter->WriteAttributeString(nullptr, L"result", nullptr, L"success");
         else
-            spWriter->WriteAttributeString(L"result", L"failed");
+            spWriter->WriteAttributeString(nullptr, L"result", nullptr, L"failed");
 
         if (!job.strResultUrl.IsEmpty())
-            spWriter->WriteAttributeString(L"url", job.strResultUrl);
+            spWriter->WriteAttributeString(nullptr, L"url", nullptr, job.strResultUrl);
 
         spWriter->WriteEndElement();
     }

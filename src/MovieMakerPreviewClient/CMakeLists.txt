@@ -1,12 +1,13 @@
 # MovieMakerPreviewClient.dll  --  Preview client communication DLL
 # Version 16.4.3528.0331
-# 4 exports, 54 imports (RPCRT4, OLE32, GDI32)
+# 4 COM exports (DllCanUnloadNow, DllGetClassObject, DllRegisterServer, DllUnregisterServer)
 # Handles preview window communication within the main Movie Maker application.
 
 set(TARGET MovieMakerPreviewClient)
 
 add_library(${TARGET} SHARED
     MovieMakerPreviewClient.cpp
+    MovieMakerPreviewClient.def
 )
 
 set_target_properties(${TARGET} PROPERTIES

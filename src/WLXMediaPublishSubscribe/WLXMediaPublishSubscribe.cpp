@@ -424,11 +424,34 @@ private:
 } // namespace MediaPublish
 
 // ============================================================================
-// Exported functions (22 exports)
+// Exported functions -- COM DLL entry points + publishing helpers (22 exports)
 // ============================================================================
 
 extern "C"
 {
+
+STDAPI DllCanUnloadNow()
+{
+    return S_OK;
+}
+
+STDAPI DllGetClassObject(REFCLSID rclsid, REFIID riid, LPVOID* ppv)
+{
+    UNREFERENCED_PARAMETER(rclsid);
+    UNREFERENCED_PARAMETER(riid);
+    UNREFERENCED_PARAMETER(ppv);
+    return CLASS_E_CLASSNOTAVAILABLE;
+}
+
+STDAPI DllRegisterServer()
+{
+    return S_OK;
+}
+
+STDAPI DllUnregisterServer()
+{
+    return S_OK;
+}
 
 WLXMPS_API HANDLE __stdcall PublishManager_Create()
 {

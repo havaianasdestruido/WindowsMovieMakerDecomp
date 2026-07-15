@@ -292,68 +292,41 @@ private:
 } // namespace VideoTrim
 
 // ============================================================================
-// Exported functions (5 exports)
+// Exported functions -- DirectShow filter factory functions
 // ============================================================================
 
 extern "C"
 {
 
-WLXVT_API HANDLE __stdcall VideoTrim_Create(LPCWSTR pszInputPath)
+WLXVT_API HRESULT __stdcall CreateAVICopierDirect(IUnknown** ppUnknown)
 {
-    if (!pszInputPath || !pszInputPath[0])
-        return NULL;
-
-    VideoTrim::TrimmerEngine* pEngine = new(std::nothrow) VideoTrim::TrimmerEngine();
-    if (!pEngine)
-        return NULL;
-
-    HRESULT hr = pEngine->Initialize(pszInputPath);
-    if (FAILED(hr))
-    {
-        delete pEngine;
-        return NULL;
-    }
-
-    return static_cast<HANDLE>(pEngine);
+    UNREFERENCED_PARAMETER(ppUnknown);
+    return E_NOTIMPL;
 }
 
-WLXVT_API void __stdcall VideoTrim_Destroy(HANDLE hTrim)
+WLXVT_API HRESULT __stdcall CreateVideoCopierFromMediaType(const GUID* pMediaType, IUnknown** ppUnknown)
 {
-    if (!hTrim)
-        return;
-    delete static_cast<VideoTrim::TrimmerEngine*>(hTrim);
+    UNREFERENCED_PARAMETER(pMediaType);
+    UNREFERENCED_PARAMETER(ppUnknown);
+    return E_NOTIMPL;
 }
 
-WLXVT_API HRESULT __stdcall VideoTrim_Execute(HANDLE hTrim, const TrimParams* pParams)
+WLXVT_API HRESULT __stdcall CreateVideoFormatContextTranscoder(IUnknown** ppUnknown)
 {
-    if (!hTrim)
-        return E_INVALIDARG;
-
-    VideoTrim::TrimmerEngine* pEngine = static_cast<VideoTrim::TrimmerEngine*>(hTrim);
-    return pEngine->Execute(pParams);
+    UNREFERENCED_PARAMETER(ppUnknown);
+    return E_NOTIMPL;
 }
 
-WLXVT_API HRESULT __stdcall VideoTrim_ExecuteAsync(HANDLE hTrim, const TrimParams* pParams,
-    PFN_TRIM_PROGRESS pfnProgress, PFN_TRIM_COMPLETE pfnComplete, void* pUserData)
+WLXVT_API HRESULT __stdcall CreateVideoPlayer(IUnknown** ppUnknown)
 {
-    if (!hTrim)
-        return E_INVALIDARG;
-
-    VideoTrim::TrimmerEngine* pEngine = static_cast<VideoTrim::TrimmerEngine*>(hTrim);
-    pEngine->SetCallbacks(pfnProgress, pfnComplete, pUserData);
-
-    // Launch async execution on a worker thread
-    // For now, execute synchronously (stub)
-    return pEngine->Execute(pParams);
+    UNREFERENCED_PARAMETER(ppUnknown);
+    return E_NOTIMPL;
 }
 
-WLXVT_API HRESULT __stdcall VideoTrim_GetStatus(HANDLE hTrim, UINT* pStatus, UINT* pPercent)
+WLXVT_API HRESULT __stdcall CreateVideoWMVTranscoder(IUnknown** ppUnknown)
 {
-    if (!hTrim)
-        return E_INVALIDARG;
-
-    VideoTrim::TrimmerEngine* pEngine = static_cast<VideoTrim::TrimmerEngine*>(hTrim);
-    return pEngine->GetStatus(pStatus, pPercent);
+    UNREFERENCED_PARAMETER(ppUnknown);
+    return E_NOTIMPL;
 }
 
 } // extern "C"

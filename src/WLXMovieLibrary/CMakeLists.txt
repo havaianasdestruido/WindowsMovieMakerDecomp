@@ -1,12 +1,13 @@
 # WLXMovieLibrary.dll  --  Movie library management with Media Foundation integration
 # Version 16.4.3528.0331
-# 1 export, 157 imports (MFPlat, d3d9, d3d11, dxva2, MF)
+# 4 COM exports (DllCanUnloadNow, DllGetClassObject, DllRegisterServer, DllUnregisterServer)
 
 set(TARGET WLXMovieLibrary)
 
 add_library(${TARGET} SHARED
     dllmain.cpp
     WLXMovieLibrary.cpp
+    WLXMovieLibrary.def
 )
 
 set_target_properties(${TARGET} PROPERTIES

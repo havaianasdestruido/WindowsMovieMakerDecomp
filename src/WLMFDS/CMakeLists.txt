@@ -1,12 +1,13 @@
 # WLMFDS.dll  --  Media Foundation DirectShow bridge
 # Version 16.4.3528.0331
-# 4 exports, 199 imports (MFPlat, MF, EVR, AVRT)
+# 4 COM exports (DllCanUnloadNow, DllGetClassObject, DllRegisterServer, DllUnregisterServer)
 
 set(TARGET WLMFDS)
 
 add_library(${TARGET} SHARED
     dllmain.cpp
     WLMFDS.cpp
+    WLMFDS.def
 )
 
 set_target_properties(${TARGET} PROPERTIES

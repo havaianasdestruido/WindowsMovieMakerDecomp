@@ -99,25 +99,15 @@ typedef void (CALLBACK* PFN_TRIM_PROGRESS)(void* pUserData, UINT uPercentComplet
 typedef void (CALLBACK* PFN_TRIM_COMPLETE)(void* pUserData, HRESULT hrResult);
 
 // ============================================================================
-// Exported functions (5 exports)
+// Exported functions -- DirectShow filter factory functions
 // ============================================================================
 extern "C"
 {
-    // Creates a trim engine instance for the specified input file.
-    WLXVT_API HANDLE __stdcall VideoTrim_Create(LPCWSTR pszInputPath);
-
-    // Destroys the trim engine instance.
-    WLXVT_API void __stdcall VideoTrim_Destroy(HANDLE hTrim);
-
-    // Executes the trim operation synchronously.
-    WLXVT_API HRESULT __stdcall VideoTrim_Execute(HANDLE hTrim, const TrimParams* pParams);
-
-    // Executes the trim operation asynchronously with progress callbacks.
-    WLXVT_API HRESULT __stdcall VideoTrim_ExecuteAsync(HANDLE hTrim, const TrimParams* pParams,
-        PFN_TRIM_PROGRESS pfnProgress, PFN_TRIM_COMPLETE pfnComplete, void* pUserData);
-
-    // Queries the current trim status.
-    WLXVT_API HRESULT __stdcall VideoTrim_GetStatus(HANDLE hTrim, UINT* pStatus, UINT* pPercent);
+    WLXVT_API HRESULT __stdcall CreateAVICopierDirect(IUnknown** ppUnknown);
+    WLXVT_API HRESULT __stdcall CreateVideoCopierFromMediaType(const GUID* pMediaType, IUnknown** ppUnknown);
+    WLXVT_API HRESULT __stdcall CreateVideoFormatContextTranscoder(IUnknown** ppUnknown);
+    WLXVT_API HRESULT __stdcall CreateVideoPlayer(IUnknown** ppUnknown);
+    WLXVT_API HRESULT __stdcall CreateVideoWMVTranscoder(IUnknown** ppUnknown);
 }
 
 #endif // WLXVIDEOTRIM_H

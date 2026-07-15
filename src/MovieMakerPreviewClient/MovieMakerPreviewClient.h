@@ -91,28 +91,11 @@ enum PreviewTransportState
 };
 
 // ============================================================================
-// Exported functions (4 exports)
+// Exported functions -- standard COM DLL entry points
+// (DllCanUnloadNow, DllGetClassObject, DllRegisterServer, DllUnregisterServer
+//  are defined in MovieMakerPreviewClient.cpp but not declared here to avoid
+//  conflict with combaseapi.h declarations)
 // ============================================================================
-extern "C"
-{
-    // Creates and initializes the preview client.
-    // Returns an opaque handle to the client instance.
-    MPC_API HANDLE __stdcall PreviewClient_Create(const Preview::PreviewConfig* pConfig);
-
-    // Destroys the preview client and releases all resources.
-    MPC_API void __stdcall PreviewClient_Destroy(HANDLE hClient);
-
-    // Sends a command to the preview client.
-    //   uCommand: command ID (see PreviewCommand enum below)
-    //   lParam:   command-specific data
-    // Returns S_OK on success.
-    MPC_API HRESULT __stdcall PreviewClient_Command(HANDLE hClient, UINT uCommand, LPARAM lParam);
-
-    // Retrieves the current state of the preview client.
-    //   pState: receives the current PreviewTransportState
-    // Returns S_OK on success.
-    MPC_API HRESULT __stdcall PreviewClient_GetState(HANDLE hClient, UINT* pState);
-}
 
 // ============================================================================
 // Preview command IDs (used with PreviewClient_Command)

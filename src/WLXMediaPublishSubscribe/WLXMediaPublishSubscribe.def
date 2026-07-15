@@ -1,0 +1,6 @@
+LIBRARY WLXMediaPublishSubscribe
+EXPORTS
+    DllCanUnloadNow
+    DllGetClassObject
+    DllRegisterServer
+    DllUnregisterServer

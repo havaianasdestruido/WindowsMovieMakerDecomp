@@ -258,11 +258,24 @@ private:
 static HINSTANCE g_hModule = NULL;
 
 // ============================================================================
-// Exported functions (7 exports)
+// Exported functions -- COM exports + MF reader/writer functions
 // ============================================================================
 
 extern "C"
 {
+
+STDAPI DllCanUnloadNow()
+{
+    return S_OK;
+}
+
+STDAPI DllGetClassObject(REFCLSID rclsid, REFIID riid, LPVOID* ppv)
+{
+    UNREFERENCED_PARAMETER(rclsid);
+    UNREFERENCED_PARAMETER(riid);
+    UNREFERENCED_PARAMETER(ppv);
+    return CLASS_E_CLASSNOTAVAILABLE;
+}
 
 WLMFRW_API HANDLE __stdcall MFReader_Open(LPCWSTR pszFilePath)
 {

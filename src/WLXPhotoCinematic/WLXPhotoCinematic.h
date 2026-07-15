@@ -99,29 +99,10 @@ namespace PhotoCinematic
 }
 
 // ============================================================================
-// Exported functions (4 exports)
+// Exported functions -- standard COM DLL entry points
+// (DllCanUnloadNow, DllGetClassObject, DllRegisterServer, DllUnregisterServer
+//  are defined in WLXPhotoCinematic.cpp but not declared here to avoid
+//  conflict with combaseapi.h declarations)
 // ============================================================================
-extern "C"
-{
-    // Creates a cinematic effects engine.
-    WLXPCIN_API HANDLE __stdcall PhotoCinematic_Create();
-
-    // Destroys the engine.
-    WLXPCIN_API void __stdcall PhotoCinematic_Destroy(HANDLE hEngine);
-
-    // Renders a single frame from a photo with Ken Burns effect.
-    // dProgress: 0.0 (start) to 1.0 (end)
-    // ppBitmap:  receives the rendered frame (caller must delete)
-    WLXPCIN_API HRESULT __stdcall PhotoCinematic_RenderFrame(HANDLE hEngine,
-        Gdiplus::Bitmap* pSourceImage, const PhotoCinematic::CinematicParams* pParams,
-        DOUBLE dProgress, Gdiplus::Bitmap** ppBitmap);
-
-    // Renders the entire Ken Burns animation as a sequence of frames.
-    // ppFrames:  receives an array of frame bitmaps (caller must delete each)
-    // pFrameCount: receives the number of frames
-    WLXPCIN_API HRESULT __stdcall PhotoCinematic_RenderAll(HANDLE hEngine,
-        Gdiplus::Bitmap* pSourceImage, const PhotoCinematic::CinematicParams* pParams,
-        UINT32 uFrameRate, Gdiplus::Bitmap*** ppFrames, UINT32* pFrameCount);
-}
 
 #endif // WLXPHOTOCINEMATIC_H

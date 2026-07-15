@@ -124,13 +124,11 @@ struct TransformParams
 };
 
 // ============================================================================
-// Exported function (1 export)
+// Exported function -- GetTFXCreateFunctions
 // ============================================================================
 extern "C"
 {
-    // Returns the global TransformRegistry singleton.
-    // The registry manages creation and lifecycle of all transform objects.
-    WLXPIPET_API void* __cdecl Pipetran_GetRegistry();
+    WLXPIPET_API HRESULT __stdcall GetTFXCreateFunctions(void** ppFunctions, UINT32* pCount);
 }
 
 #endif // WLXPIPETRAN_H

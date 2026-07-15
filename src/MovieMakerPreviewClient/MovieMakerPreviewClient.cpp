@@ -430,53 +430,33 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD dwReason, LPVOID lpReserved)
 }
 
 // ============================================================================
-// Exported functions (4 exports)
+// Exported functions -- standard COM DLL entry points
 // ============================================================================
 
 extern "C"
 {
 
-MPC_API HANDLE __stdcall PreviewClient_Create(const Preview::PreviewConfig* pConfig)
+STDAPI DllCanUnloadNow()
 {
-    Preview::PreviewClient* pClient = new(std::nothrow) Preview::PreviewClient();
-    if (!pClient)
-        return NULL;
-
-    HRESULT hr = pClient->Initialize(pConfig);
-    if (FAILED(hr))
-    {
-        delete pClient;
-        return NULL;
-    }
-
-    return static_cast<HANDLE>(pClient);
+    return S_OK;
 }
 
-MPC_API void __stdcall PreviewClient_Destroy(HANDLE hClient)
+STDAPI DllGetClassObject(REFCLSID rclsid, REFIID riid, LPVOID* ppv)
 {
-    if (!hClient)
-        return;
-
-    Preview::PreviewClient* pClient = static_cast<Preview::PreviewClient*>(hClient);
-    delete pClient;
+    UNREFERENCED_PARAMETER(rclsid);
+    UNREFERENCED_PARAMETER(riid);
+    UNREFERENCED_PARAMETER(ppv);
+    return CLASS_E_CLASSNOTAVAILABLE;
 }
 
-MPC_API HRESULT __stdcall PreviewClient_Command(HANDLE hClient, UINT uCommand, LPARAM lParam)
+STDAPI DllRegisterServer()
 {
-    if (!hClient)
-        return E_INVALIDARG;
-
-    Preview::PreviewClient* pClient = static_cast<Preview::PreviewClient*>(hClient);
-    return pClient->SendCommand(uCommand, lParam);
+    return S_OK;
 }
 
-MPC_API HRESULT __stdcall PreviewClient_GetState(HANDLE hClient, UINT* pState)
+STDAPI DllUnregisterServer()
 {
-    if (!hClient)
-        return E_INVALIDARG;
-
-    Preview::PreviewClient* pClient = static_cast<Preview::PreviewClient*>(hClient);
-    return pClient->GetState(pState);
+    return S_OK;
 }
 
 } // extern "C"

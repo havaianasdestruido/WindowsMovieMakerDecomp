@@ -34,6 +34,9 @@
 #include <objbase.h>
 #include <gdiplus.h>
 
+struct IGraphBuilder;
+struct IBaseFilter;
+
 #ifdef WLXMP4PARSER_EXPORTS
     #define WLXMP4P_API __declspec(dllexport)
 #else
@@ -113,36 +116,17 @@ namespace MP4Parser
 #define MP4_BOX_ILST    0x74736C69  // 'ilst'
 
 // ============================================================================
-// Exported functions (9 exports)
+// Exported functions -- DirectShow filter factory functions + COM exports
+// (DllCanUnloadNow, DllGetClassObject, DllRegisterServer, DllUnregisterServer
+//  are defined in WLXMP4Parser.cpp but not declared here to avoid
+//  conflict with combaseapi.h declarations)
 // ============================================================================
 extern "C"
 {
-    // Opens an MP4 file for parsing.
-    WLXMP4P_API HANDLE __stdcall MP4Parser_Open(LPCWSTR pszFilePath);
-
-    // Closes the parser and releases resources.
-    WLXMP4P_API void __stdcall MP4Parser_Close(HANDLE hParser);
-
-    // Retrieves the number of tracks in the file.
-    WLXMP4P_API HRESULT __stdcall MP4Parser_GetTrackCount(HANDLE hParser, UINT32* pCount);
-
-    // Retrieves info for a specific track (0-indexed).
-    WLXMP4P_API HRESULT __stdcall MP4Parser_GetTrackInfo(HANDLE hParser, UINT32 uTrackIndex, MP4Parser::MP4TrackInfo* pInfo);
-
-    // Retrieves the total duration (in 100ns units).
-    WLXMP4P_API HRESULT __stdcall MP4Parser_GetDuration(HANDLE hParser, LONGLONG* pDuration);
-
-    // Retrieves chapter information.
-    WLXMP4P_API HRESULT __stdcall MP4Parser_GetChapters(HANDLE hParser, MP4Parser::MP4ChapterInfo* pChapters, UINT32* pCount);
-
-    // Extracts an embedded thumbnail image.
-    WLXMP4P_API HRESULT __stdcall MP4Parser_GetThumbnail(HANDLE hParser, Gdiplus::Bitmap** ppBitmap);
-
-    // Checks if the file is fast-start (moov before mdat).
-    WLXMP4P_API HRESULT __stdcall MP4Parser_IsFastStart(HANDLE hParser, BOOL* pFastStart);
-
-    // Gets the file type brand from the ftyp box.
-    WLXMP4P_API HRESULT __stdcall MP4Parser_GetBrand(HANDLE hParser, UINT32* pBrand, UINT32* pMinorVersion);
+    WLXMP4P_API HRESULT __stdcall AddMP4SourceFilter(LPCWSTR pszFilePath, IGraphBuilder* pGraph, IBaseFilter** ppFilter);
+    WLXMP4P_API HRESULT __stdcall BuildMP4FilterGraph(LPCWSTR pszFilePath, IGraphBuilder** ppGraph);
+    WLXMP4P_API HRESULT __stdcall BuildMP4PlayBack(LPCWSTR pszFilePath, IGraphBuilder* pGraph);
+    WLXMP4P_API BOOL    __stdcall IsMP4FilePlayable(LPCWSTR pszFilePath);
 }
 
 #endif // WLXMP4PARSER_H

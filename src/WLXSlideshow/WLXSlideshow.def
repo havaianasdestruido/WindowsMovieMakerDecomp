@@ -1,0 +1,6 @@
+LIBRARY WLXSlideshow
+EXPORTS
+    DllCanUnloadNow
+    DllGetClassObject
+    DllRegisterServer
+    DllUnregisterServer

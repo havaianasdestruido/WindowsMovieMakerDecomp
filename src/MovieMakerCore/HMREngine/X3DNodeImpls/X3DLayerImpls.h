@@ -1,7 +1,7 @@
 #pragma once
 // X3DLayerImpls.h - Layer, viewport, bindable, text, vertex attribute, metadata, URL bridges
 
-#include "X3DNodeImplBase.h"
+#include "X3DGroupingImpls.h"
 #include "../X3DNodes.h"
 
 namespace HMREngine
@@ -13,10 +13,10 @@ namespace HMREngine
         X3DLayerNodeImpl();
         virtual ~X3DLayerNodeImpl();
 
-        HRESULT Initialize(X3DLayerNode* node);
+        HRESULT Initialize(LayerNode* node);
         void Shutdown() override;
 
-        X3DLayerNode* GetLayerNode() const { return m_layerNode; }
+        LayerNode* GetLayerNode() const { return m_layerNode; }
 
         bool IsPickable() const { return m_pickable; }
         void SetPickable(bool pickable) { m_pickable = pickable; }
@@ -25,7 +25,7 @@ namespace HMREngine
         void SetLayerVisible(bool visible) { m_visible = visible; }
 
     protected:
-        X3DLayerNode* m_layerNode = nullptr;
+        LayerNode* m_layerNode = nullptr;
         bool m_pickable = true;
         bool m_visible = true;
 

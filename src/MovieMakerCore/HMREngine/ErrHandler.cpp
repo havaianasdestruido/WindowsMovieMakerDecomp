@@ -1,3 +1,5 @@
+﻿#include "pch.h"
+
 // ErrHandler.cpp - HMREngine::ErrHandler implementation
 
 #include "ErrHandler.h"

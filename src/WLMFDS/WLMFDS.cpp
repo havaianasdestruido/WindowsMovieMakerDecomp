@@ -24,6 +24,7 @@
 #include <mfidl.h>
 #include <evr.h>
 #include <vector>
+#include <memory>
 
 // ============================================================================
 // Internal classes

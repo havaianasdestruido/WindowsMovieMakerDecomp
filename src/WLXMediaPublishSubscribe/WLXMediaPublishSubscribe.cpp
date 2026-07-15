@@ -28,6 +28,7 @@
 #include <map>
 #include <string>
 #include <memory>
+#include <set>
 
 // ============================================================================
 // Forward declarations for delay-loaded functions
@@ -116,7 +117,7 @@ public:
         m_target = target;
         m_strFilePath = pszFilePath;
         m_config = *pConfig;
-        m_status = Uploading;
+        m_status = PublishStatus_Uploading;
 
         // In the full implementation:
         // 1. Read the file into memory or stream it
@@ -137,7 +138,7 @@ public:
 
     HRESULT Cancel()
     {
-        m_status = Cancelled;
+        m_status = PublishStatus_Cancelled;
         return S_OK;
     }
 
@@ -472,7 +473,7 @@ WLXMPS_API HRESULT __stdcall PublishManager_SignOut(HANDLE hManager, PublishTarg
 }
 
 WLXMPS_API HANDLE __stdcall PublishManager_StartPublish(HANDLE hManager, PublishTarget target,
-    LPCWSTR pszFilePath, const PublishConfig* pConfig)
+    LPCWSTR pszFilePath, const MediaPublish::PublishConfig* pConfig)
 {
     if (!hManager) return NULL;
     return static_cast<MediaPublish::PublishManager*>(hManager)->StartPublish(target, pszFilePath, pConfig);
@@ -490,7 +491,7 @@ WLXMPS_API HRESULT __stdcall PublishManager_Cancel(HANDLE hPublish)
     return E_NOTIMPL;
 }
 
-WLXMPS_API HRESULT __stdcall PublishManager_GetResult(HANDLE hPublish, PublishResult* pResult)
+WLXMPS_API HRESULT __stdcall PublishManager_GetResult(HANDLE hPublish, MediaPublish::PublishResult* pResult)
 {
     return E_NOTIMPL;
 }

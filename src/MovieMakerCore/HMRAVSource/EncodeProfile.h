@@ -19,7 +19,7 @@
 #ifndef ENCODEPROFILE_H
 #define ENCODEPROFILE_H
 
-#include "HMRAVSource.h"
+#include "HMRAVSourceTypes.h"
 
 namespace HMRAVSource
 {

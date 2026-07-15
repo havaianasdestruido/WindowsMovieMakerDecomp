@@ -35,6 +35,7 @@
 #include <dxva2api.h>
 #include <gdiplus.h>
 #include <shlwapi.h>
+#include <shellapi.h>
 #include <strsafe.h>
 #include <vector>
 #include <string>
@@ -160,15 +161,7 @@ static HRESULT InitializeMediaFoundation()
     if (g_bMFInit)
         return S_OK;
 
-    MFAttributes attr;
-    HRESULT hr = MFCreateAttributes(&attr, 1);
-    if (SUCCEEDED(hr))
-    {
-        // Enable hardware acceleration
-        hr = attr.SetUINT32(MF_ENABLE_HARDWARE_TRANSFORMS, TRUE);
-    }
-
-    hr = MFStartup(MF_VERSION, MFSTARTUP_LITE);
+    HRESULT hr = MFStartup(MF_VERSION, MFSTARTUP_LITE);
     if (SUCCEEDED(hr))
     {
         g_bMFInit = true;

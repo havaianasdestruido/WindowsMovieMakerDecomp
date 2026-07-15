@@ -1,3 +1,4 @@
+﻿#include "pch.h"
 // X3DNodeImplBase.cpp - Base bridge implementation
 
 #include "X3DNodeImplBase.h"

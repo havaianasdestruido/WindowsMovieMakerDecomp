@@ -58,7 +58,25 @@ namespace Preview
     class PreviewWindow;
     class PreviewRenderer;
     struct PreviewState;
-    struct PreviewConfig;
+
+    struct PreviewConfig
+    {
+        HWND    hParentWnd;
+        RECT    rcPreview;
+        UINT    uFrameWidth;
+        UINT    uFrameHeight;
+        double  dAspectRatio;
+        BOOL    bHardwareAccel;
+        PreviewConfig()
+            : hParentWnd(NULL)
+            , uFrameWidth(640)
+            , uFrameHeight(480)
+            , dAspectRatio(4.0 / 3.0)
+            , bHardwareAccel(TRUE)
+        {
+            SetRectEmpty(&rcPreview);
+        }
+    };
 }
 
 // ============================================================================
@@ -73,35 +91,13 @@ enum PreviewTransportState
 };
 
 // ============================================================================
-// Preview configuration
-// ============================================================================
-struct PreviewConfig
-{
-    HWND    hParentWnd;
-    RECT    rcPreview;
-    UINT    uFrameWidth;
-    UINT    uFrameHeight;
-    double  dAspectRatio;
-    BOOL    bHardwareAccel;
-    PreviewConfig()
-        : hParentWnd(NULL)
-        , uFrameWidth(640)
-        , uFrameHeight(480)
-        , dAspectRatio(4.0 / 3.0)
-        , bHardwareAccel(TRUE)
-    {
-        SetRectEmpty(&rcPreview);
-    }
-};
-
-// ============================================================================
 // Exported functions (4 exports)
 // ============================================================================
 extern "C"
 {
     // Creates and initializes the preview client.
     // Returns an opaque handle to the client instance.
-    MPC_API HANDLE __stdcall PreviewClient_Create(const PreviewConfig* pConfig);
+    MPC_API HANDLE __stdcall PreviewClient_Create(const Preview::PreviewConfig* pConfig);
 
     // Destroys the preview client and releases all resources.
     MPC_API void __stdcall PreviewClient_Destroy(HANDLE hClient);

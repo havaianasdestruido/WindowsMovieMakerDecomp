@@ -4,7 +4,7 @@
 #include "HMREngine.h"
 #include "X3DMath.h"
 #include <d3d11.h>
-#include <d3dx11.h>
+#include "d3dx11compat.h"
 #include <string>
 
 namespace HMREngine

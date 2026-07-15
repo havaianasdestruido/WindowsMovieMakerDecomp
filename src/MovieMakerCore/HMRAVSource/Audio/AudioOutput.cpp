@@ -1,3 +1,5 @@
+﻿#include "pch.h"
+#include <functiondiscoverykeys_devpkey.h>
 /*
  * AudioOutput.cpp
  *
@@ -162,7 +164,7 @@ HRESULT AudioOutput::WriteSample(const BYTE* pData, DWORD cbData)
 
     UINT32 availableFrames = m_dwBufferFrameCount - padding;
     UINT32 requestedFrames = cbData / m_format.wfx.nBlockAlign;
-    UINT32 framesToWrite = min(availableFrames, requestedFrames);
+    UINT32 framesToWrite = std::min(availableFrames, requestedFrames);
 
     BYTE* pBuffer = nullptr;
     hr = m_spRenderClient->GetBuffer(framesToWrite, &pBuffer);

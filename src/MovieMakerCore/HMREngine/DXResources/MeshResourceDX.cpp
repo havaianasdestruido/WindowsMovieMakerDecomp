@@ -1,3 +1,4 @@
+﻿#include "pch.h"
 // MeshResourceDX.cpp - Vertex/index buffer management implementation
 
 #include "MeshResourceDX.h"
@@ -328,6 +329,13 @@ HRESULT GridResourceDX::CreateGridFullscreen()
     return CreateGrid(1, 1, 2.0f, 2.0f);
 }
 
+void GridResourceDX::Release()
+{
+    MeshResourceDX::Release();
+    m_divisionsX = 1;
+    m_divisionsY = 1;
+}
+
 // ============================================================================
 // ShatterGridResourceDX
 // ============================================================================
@@ -400,6 +408,14 @@ HRESULT ShatterGridResourceDX::CreateShatterGrid(UINT piecesX, UINT piecesY,
 
     return CreateFromData(vertices.data(), static_cast<UINT>(vertices.size()),
         sizeof(ShatterVertex), indices.data(), static_cast<UINT>(indices.size()));
+}
+
+void ShatterGridResourceDX::Release()
+{
+    MeshResourceDX::Release();
+    m_pieceTransforms.clear();
+    m_piecesX = 4;
+    m_piecesY = 4;
 }
 
 void ShatterGridResourceDX::SetPieceOffset(UINT pieceIndex, const Vec3& offset)
@@ -484,38 +500,15 @@ HRESULT PageCurlGridResourceDX::CreatePageCurlGrid(UINT segmentsX, UINT segments
 void PageCurlGridResourceDX::SetCurlProgress(float progress) { m_curlProgress = Saturate(progress); }
 void PageCurlGridResourceDX::SetCurlDirection(float direction) { m_curlDirection = direction; }
 
-// ============================================================================
-// ScrollingTextResourceDX
-// ============================================================================
-ScrollingTextResourceDX::ScrollingTextResourceDX() = default;
-ScrollingTextResourceDX::~ScrollingTextResourceDX() { Release(); }
-
-HRESULT ScrollingTextResourceDX::CreateScrollingTextMesh(UINT width, UINT height)
+void PageCurlGridResourceDX::Release()
 {
-    Release();
-
-    m_meshWidth = width;
-    m_meshHeight = height;
-
-    float w = 2.0f;
-    float h = 2.0f;
-
-    VertexPosTex vertices[] =
-    {
-        { Vec3(-w * 0.5f, -h * 0.5f, 0.0f), Vec2(0.0f, 1.0f) },
-        { Vec3(-w * 0.5f,  h * 0.5f, 0.0f), Vec2(0.0f, 0.0f) },
-        { Vec3( w * 0.5f,  h * 0.5f, 0.0f), Vec2(1.0f, 0.0f) },
-        { Vec3( w * 0.5f, -h * 0.5f, 0.0f), Vec2(1.0f, 1.0f) },
-    };
-
-    WORD indices[] = { 0, 1, 2, 0, 2, 3 };
-
-    return CreateFromData(vertices, 4, sizeof(VertexPosTex), indices, 6);
+    MeshResourceDX::Release();
+    m_curlProgress = 0.0f;
+    m_curlDirection = 1.0f;
 }
 
 // ============================================================================
 // WipeMeshResourceDX
-// ============================================================================
 WipeMeshResourceDX::WipeMeshResourceDX() = default;
 WipeMeshResourceDX::~WipeMeshResourceDX() { Release(); }
 
@@ -575,6 +568,13 @@ HRESULT WipeMeshResourceDX::CreateWipeMesh(UINT segmentsX, UINT segmentsY,
 
 void WipeMeshResourceDX::SetWipeProgress(float progress) { m_wipeProgress = Saturate(progress); }
 void WipeMeshResourceDX::SetWipeDirection(float direction) { m_wipeDirection = direction; }
+
+void WipeMeshResourceDX::Release()
+{
+    MeshResourceDX::Release();
+    m_wipeProgress = 0.0f;
+    m_wipeDirection = 0.0f;
+}
 
 // ============================================================================
 // PreprocessMesh

@@ -19,6 +19,19 @@
 #include "AVSource.h"
 #include <dshow.h>
 
+struct __declspec(uuid("6B652FFF-11BF-45cb-8C2A-5907FB83CC81"))
+ISampleGrabber : public IUnknown
+{
+    virtual HRESULT STDMETHODCALLTYPE SetOneShot(BOOL OneShot) = 0;
+    virtual HRESULT STDMETHODCALLTYPE SetMediaType(const AM_MEDIA_TYPE *pType) = 0;
+    virtual HRESULT STDMETHODCALLTYPE GetConnectedMediaType(AM_MEDIA_TYPE *pType) = 0;
+    virtual HRESULT STDMETHODCALLTYPE IsFormatSupported(const AM_MEDIA_TYPE *pType) = 0;
+    virtual HRESULT STDMETHODCALLTYPE GetCurrentBuffer(long *pBufferSize, BYTE *pBuffer) = 0;
+    virtual HRESULT STDMETHODCALLTYPE GetCurrentSample(IMediaSample **ppSample) = 0;
+    virtual HRESULT STDMETHODCALLTYPE SetCallback(IUnknown *pCallback, long WhichMethodToCallback) = 0;
+    virtual HRESULT STDMETHODCALLTYPE SetBufferSamples(BOOL bBufferSamples) = 0;
+};
+
 namespace HMRAVSource
 {
 

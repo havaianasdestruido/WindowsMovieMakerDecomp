@@ -6,6 +6,10 @@
 
 namespace HMREngine
 {
+    // Forward declarations
+    class TextureTransformContainerImpl;
+    class X3DShaderNodeImpl;
+
     // --- X3DTextureNodeImpl: Texture node bridge ---
     class X3DTextureNodeImpl : public X3DChildNodeImpl
     {

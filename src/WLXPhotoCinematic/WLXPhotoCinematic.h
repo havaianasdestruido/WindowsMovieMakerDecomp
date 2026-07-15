@@ -41,18 +41,6 @@
 #endif
 
 // ============================================================================
-// Forward declarations
-// ============================================================================
-namespace PhotoCinematic
-{
-    class CinematicEngine;
-    class KenBurnsEffect;
-    class EasingFunction;
-    struct CinematicParams;
-    struct FrameOutput;
-}
-
-// ============================================================================
 // Easing type
 // ============================================================================
 enum EasingType
@@ -83,24 +71,32 @@ struct NormalizedRect
 };
 
 // ============================================================================
-// Cinematic parameters
+// Forward declarations
 // ============================================================================
-struct CinematicParams
+namespace PhotoCinematic
 {
-    NormalizedRect  rcViewportStart;    // start viewport (region of image to show)
-    NormalizedRect  rcViewportEnd;      // end viewport
-    LONGLONG        llDuration;         // duration in 100ns units
-    EasingType      eEasing;
-    UINT32          uOutputWidth;       // output frame dimensions
-    UINT32          uOutputHeight;
+    class CinematicEngine;
+    class KenBurnsEffect;
+    class EasingFunction;
+    struct FrameOutput;
 
-    CinematicParams()
-        : llDuration(30000000LL)        // 3 seconds
-        , eEasing(EasingType_EaseInOut)
-        , uOutputWidth(1920)
-        , uOutputHeight(1080)
-    {}
-};
+    struct CinematicParams
+    {
+        NormalizedRect  rcViewportStart;    // start viewport (region of image to show)
+        NormalizedRect  rcViewportEnd;      // end viewport
+        LONGLONG        llDuration;         // duration in 100ns units
+        EasingType      eEasing;
+        UINT32          uOutputWidth;       // output frame dimensions
+        UINT32          uOutputHeight;
+
+        CinematicParams()
+            : llDuration(30000000LL)        // 3 seconds
+            , eEasing(EasingType_EaseInOut)
+            , uOutputWidth(1920)
+            , uOutputHeight(1080)
+        {}
+    };
+}
 
 // ============================================================================
 // Exported functions (4 exports)
@@ -117,14 +113,14 @@ extern "C"
     // dProgress: 0.0 (start) to 1.0 (end)
     // ppBitmap:  receives the rendered frame (caller must delete)
     WLXPCIN_API HRESULT __stdcall PhotoCinematic_RenderFrame(HANDLE hEngine,
-        Gdiplus::Bitmap* pSourceImage, const CinematicParams* pParams,
+        Gdiplus::Bitmap* pSourceImage, const PhotoCinematic::CinematicParams* pParams,
         DOUBLE dProgress, Gdiplus::Bitmap** ppBitmap);
 
     // Renders the entire Ken Burns animation as a sequence of frames.
     // ppFrames:  receives an array of frame bitmaps (caller must delete each)
     // pFrameCount: receives the number of frames
     WLXPCIN_API HRESULT __stdcall PhotoCinematic_RenderAll(HANDLE hEngine,
-        Gdiplus::Bitmap* pSourceImage, const CinematicParams* pParams,
+        Gdiplus::Bitmap* pSourceImage, const PhotoCinematic::CinematicParams* pParams,
         UINT32 uFrameRate, Gdiplus::Bitmap*** ppFrames, UINT32* pFrameCount);
 }
 

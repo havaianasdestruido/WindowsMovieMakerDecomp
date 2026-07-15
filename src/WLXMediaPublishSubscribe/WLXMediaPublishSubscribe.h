@@ -44,24 +44,6 @@
 #endif
 
 // ============================================================================
-// Forward declarations
-// ============================================================================
-namespace MediaPublish
-{
-    class PublishManager;
-    class PublishPlugin;
-    class FacebookPlugin;
-    class FlickrPlugin;
-    class YouTubePlugin;
-    class VimeoPlugin;
-    class SkyDrivePlugin;
-    class AuthManager;
-    class UploadSession;
-    struct PublishResult;
-    struct PublishConfig;
-}
-
-// ============================================================================
 // Publishing status
 // ============================================================================
 enum PublishStatus
@@ -88,56 +70,66 @@ enum PublishTarget
 };
 
 // ============================================================================
-// Publish configuration
+// Forward declarations
 // ============================================================================
-struct PublishConfig
+namespace MediaPublish
 {
-    PublishTarget   target;
-    WCHAR           wszTitle[512];
-    WCHAR           wszDescription[2048];
-    WCHAR           wszTags[1024];
-    WCHAR           wszCategory[256];
-    BOOL            bPrivate;
-    BOOL            bAllowEmbed;
-    UINT32          uPrivacyLevel;      // service-specific
+    class PublishManager;
+    class PublishPlugin;
+    class FacebookPlugin;
+    class FlickrPlugin;
+    class YouTubePlugin;
+    class VimeoPlugin;
+    class SkyDrivePlugin;
+    class AuthManager;
+    class UploadSession;
 
-    PublishConfig()
-        : target(PublishTarget_Facebook)
-        , bPrivate(FALSE)
-        , bAllowEmbed(TRUE)
-        , uPrivacyLevel(0)
+    struct PublishConfig
     {
-        ZeroMemory(wszTitle, sizeof(wszTitle));
-        ZeroMemory(wszDescription, sizeof(wszDescription));
-        ZeroMemory(wszTags, sizeof(wszTags));
-        ZeroMemory(wszCategory, sizeof(wszCategory));
-    }
-};
+        PublishTarget   target;
+        WCHAR           wszTitle[512];
+        WCHAR           wszDescription[2048];
+        WCHAR           wszTags[1024];
+        WCHAR           wszCategory[256];
+        BOOL            bPrivate;
+        BOOL            bAllowEmbed;
+        UINT32          uPrivacyLevel;      // service-specific
 
-// ============================================================================
-// Publish result
-// ============================================================================
-struct PublishResult
-{
-    HRESULT     hrResult;
-    WCHAR       wszPublishUrl[2048];
-    WCHAR       wszError[1024];
-    UINT64      ullItemId;
+        PublishConfig()
+            : target(PublishTarget_Facebook)
+            , bPrivate(FALSE)
+            , bAllowEmbed(TRUE)
+            , uPrivacyLevel(0)
+        {
+            ZeroMemory(wszTitle, sizeof(wszTitle));
+            ZeroMemory(wszDescription, sizeof(wszDescription));
+            ZeroMemory(wszTags, sizeof(wszTags));
+            ZeroMemory(wszCategory, sizeof(wszCategory));
+        }
+    };
 
-    PublishResult()
-        : hrResult(S_OK)
-        , ullItemId(0)
+    struct PublishResult
     {
-        ZeroMemory(wszPublishUrl, sizeof(wszPublishUrl));
-        ZeroMemory(wszError, sizeof(wszError));
-    }
-};
+        HRESULT     hrResult;
+        WCHAR       wszPublishUrl[2048];
+        WCHAR       wszError[1024];
+        UINT64      ullItemId;
+
+        PublishResult()
+            : hrResult(S_OK)
+            , ullItemId(0)
+        {
+            ZeroMemory(wszPublishUrl, sizeof(wszPublishUrl));
+            ZeroMemory(wszError, sizeof(wszError));
+        }
+    };
+}
 
 // ============================================================================
 // Progress callback
 // ============================================================================
 typedef void (CALLBACK* PFN_PUBLISH_PROGRESS)(void* pUserData, UINT uPercent, PublishStatus eStatus);
-typedef void (CALLBACK* PFN_PUBLISH_COMPLETE)(void* pUserData, const PublishResult* pResult);
+typedef void (CALLBACK* PFN_PUBLISH_COMPLETE)(void* pUserData, const MediaPublish::PublishResult* pResult);
 
 // ============================================================================
 // Exported functions (22 exports)
@@ -157,10 +149,10 @@ extern "C"
 
     // Publishing
     WLXMPS_API HANDLE __stdcall PublishManager_StartPublish(HANDLE hManager, PublishTarget target,
-        LPCWSTR pszFilePath, const PublishConfig* pConfig);
+        LPCWSTR pszFilePath, const MediaPublish::PublishConfig* pConfig);
     WLXMPS_API HRESULT __stdcall PublishManager_GetStatus(HANDLE hPublish, UINT* pStatus, UINT* pPercent);
     WLXMPS_API HRESULT __stdcall PublishManager_Cancel(HANDLE hPublish);
-    WLXMPS_API HRESULT __stdcall PublishManager_GetResult(HANDLE hPublish, PublishResult* pResult);
+    WLXMPS_API HRESULT __stdcall PublishManager_GetResult(HANDLE hPublish, MediaPublish::PublishResult* pResult);
 
     // Callback registration
     WLXMPS_API HRESULT __stdcall PublishManager_SetProgressCallback(HANDLE hPublish,

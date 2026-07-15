@@ -49,9 +49,8 @@ HRESULT AudioCapture::EnumDevices(ATL::CAtlArray<AudioCaptureDeviceInfo>& device
     if (cDevices == 0)
         return S_OK;
 
-    ATL::CAtlArray<IMFActivate*> arrActivates;
-    arrActivates.SetCount(cDevices);
-    hr = MFEnumDeviceSources(spAttributes, arrActivates.GetData(), &cDevices);
+    IMFActivate** ppActivates = nullptr;
+    hr = MFEnumDeviceSources(spAttributes, &ppActivates, &cDevices);
     if (FAILED(hr))
         return hr;
 
@@ -61,13 +60,13 @@ HRESULT AudioCapture::EnumDevices(ATL::CAtlArray<AudioCaptureDeviceInfo>& device
 
         WCHAR szFriendlyName[256] = {};
         UINT32 cchName = 256;
-        arrActivates[i]->GetString(
+        ppActivates[i]->GetString(
             MF_DEVSOURCE_ATTRIBUTE_FRIENDLY_NAME, szFriendlyName, cchName, &cchName);
         info.strDeviceName = szFriendlyName;
 
         WCHAR szDeviceId[512] = {};
         UINT32 cchId = 512;
-        arrActivates[i]->GetString(
+        ppActivates[i]->GetString(
             MF_DEVSOURCE_ATTRIBUTE_SOURCE_TYPE_AUDCAP_SYMBOLIC_LINK,
             szDeviceId, cchId, &cchId);
         info.strDeviceId = szDeviceId;
@@ -79,8 +78,9 @@ HRESULT AudioCapture::EnumDevices(ATL::CAtlArray<AudioCaptureDeviceInfo>& device
 
         devices.Add(info);
 
-        arrActivates[i]->Release();
+        ppActivates[i]->Release();
     }
+    CoTaskMemFree(ppActivates);
 
     return S_OK;
 }

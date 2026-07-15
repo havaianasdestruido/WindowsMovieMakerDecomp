@@ -1,3 +1,5 @@
+﻿#include "pch.h"
+
 // HMREngine.cpp - Engine lifecycle, render loop, D3D11 device management
 
 #include "HMREngine.h"

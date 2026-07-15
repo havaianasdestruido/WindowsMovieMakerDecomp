@@ -35,9 +35,6 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD dwReason, LPVOID lpReserved)
         if (SUCCEEDED(hr))
             g_bComInit = true;
 
-        // WinInet for HTTP communication with publishing services
-        INTERNET_OPTION_ENABLE_FEATURE option = { sizeof(option) };
-        InternetSetOption(NULL, INTERNET_OPTION_ENABLE_FEATURE, &option, sizeof(option));
         g_bWinInetInit = true;
 
         break;

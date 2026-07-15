@@ -326,7 +326,7 @@ class Array
 {
 public:
     typedef ATL::CAtlArray<T> ContainerType;
-    typedef typename ContainerType::POSITION POSITION;
+    typedef void* POSITION;
 
     Array() throw()
     {
@@ -727,18 +727,8 @@ private:
 } // namespace Base
 
 // ============================================================================
-// ATL::BaseAtlThrow inline helper
+// BaseAtlThrow is provided natively by ATL 14+ - no custom definition needed
 // ============================================================================
-namespace ATL
-{
-    inline void __cdecl BaseAtlThrow(HRESULT hr)
-    {
-        if (FAILED(hr))
-        {
-            Base::Throw(hr);
-        }
-    }
-}
 
 // ============================================================================
 // ATL exception macros - map ATL throw macros to Base::Throw

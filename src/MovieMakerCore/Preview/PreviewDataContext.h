@@ -43,7 +43,7 @@ class PreviewPresenterWrapper;
 //
 class ATL_NO_VTABLE PreviewDataContext :
     public CComObjectRootEx<CComSingleThreadModel>,
-    public CComCoClass<PreviewDataContext, &CLSID_Null>,
+    public CComCoClass<PreviewDataContext, &CLSID_NULL>,
     public IDispatchImpl<IDispatch, &IID_IDispatch>
 {
 public:
@@ -62,7 +62,7 @@ public:
                              LCID lcid, DISPID* rgDispId) override;
     STDMETHOD(GetTypeInfo)(UINT iTInfo, LCID lcid, ITypeInfo** ppTInfo) override;
     STDMETHOD(GetTypeInfoCount)(UINT* pctinfo) override;
-    STDMETHOD(INVOKE)(DISPID dispIdMember, REFIID riid, LCID lcid,
+    STDMETHOD(Invoke)(DISPID dispIdMember, REFIID riid, LCID lcid,
                       WORD wFlags, DISPPARAMS* pDispParams, VARIANT* pVarResult,
                       EXCEPINFO* pExcepInfo, UINT* puArgErr) override;
 

@@ -20,6 +20,7 @@
 #include <comdef.h>
 #include <vector>
 #include <string>
+#include <memory>
 
 // ============================================================================
 // Internal state structures
@@ -208,7 +209,7 @@ public:
         }
     }
 
-    bool RenderFrame(HWND hWnd, const Gdiplus::Bitmap* pSource)
+    bool RenderFrame(HWND hWnd, Gdiplus::Bitmap* pSource)
     {
         if (!hWnd || !pSource)
             return false;
@@ -435,7 +436,7 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD dwReason, LPVOID lpReserved)
 extern "C"
 {
 
-MPC_API HANDLE __stdcall PreviewClient_Create(const PreviewConfig* pConfig)
+MPC_API HANDLE __stdcall PreviewClient_Create(const Preview::PreviewConfig* pConfig)
 {
     Preview::PreviewClient* pClient = new(std::nothrow) Preview::PreviewClient();
     if (!pClient)

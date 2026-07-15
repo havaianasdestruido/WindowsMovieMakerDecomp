@@ -1,3 +1,4 @@
+﻿#include "pch.h"
 /*
  * AutofitProcess.cpp
  *
@@ -97,8 +98,8 @@ HRESULT AutofitProcess::Analyze()
         LONGLONG llPerPhoto = m_llTotalDurationHns / m_dwPhotoCount;
 
         // Clamp to min/max bounds
-        llPerPhoto = max(m_llMinPhotoDurationHns, llPerPhoto);
-        llPerPhoto = min(m_llMaxPhotoDurationHns, llPerPhoto);
+        llPerPhoto = std::max(m_llMinPhotoDurationHns, llPerPhoto);
+        llPerPhoto = std::min(m_llMaxPhotoDurationHns, llPerPhoto);
 
         for (DWORD i = 0; i < m_dwPhotoCount; i++)
         {
@@ -254,7 +255,7 @@ DWORD AreaOfInterestGenerator::GetMaxRegions() const throw()
 
 void AreaOfInterestGenerator::SetMinRegionWeight(float flWeight)
 {
-    m_flMinRegionWeight = max(0.0f, flWeight);
+    m_flMinRegionWeight = std::max(0.0f, flWeight);
 }
 
 float AreaOfInterestGenerator::GetMinRegionWeight() const throw()

@@ -16,6 +16,13 @@ add_library(${TARGET} SHARED
     SundanceApp/AutoSaveManager.cpp
     SundanceApp/ClipboardManager.cpp
     SundanceApp/MediaBrowser.cpp
+    SundanceApp/ThumbnailCache.cpp
+    SundanceApp/UndoManager.cpp
+    SundanceApp/TimelineController.cpp
+    SundanceApp/ProjectManager.cpp
+    SundanceApp/ExportController.cpp
+    SundanceApp/ImportController.cpp
+    SundanceApp/PlaybackController.cpp
     StoryboardManager/StoryboardManager.cpp
     StoryboardManager/MovieProject.cpp
     StoryboardManager/MovieExtent.cpp
@@ -80,6 +87,7 @@ add_library(${TARGET} SHARED
     StoryboardManager/Serialization/TextProperty.cpp
     StoryboardManager/Serialization/BoundPlaceholder.cpp
     StoryboardManager/Serialization/SnapShot.cpp
+    StoryboardManager/Serialization/ValueVariantRef.cpp
     StoryboardManager/MediaItems/MediaItem.cpp
     StoryboardManager/Background/BackgroundOrchestrator.cpp
     StoryboardManager/Background/BackgroundRequests.cpp
@@ -88,6 +96,7 @@ add_library(${TARGET} SHARED
     StoryboardManager/Transport/TransportBase.cpp
     StoryboardManager/Transport/CommandBin.cpp
     HMREngine/AsyncWorker.cpp
+    HMREngine/X3DNodes.cpp
     HMREngine/DXResources/EngineDX.cpp
     HMREngine/DXResources/TextureResourceDX.cpp
     HMREngine/DXResources/MeshResourceDX.cpp
@@ -103,6 +112,8 @@ add_library(${TARGET} SHARED
     HMREngine/PatternMesh/PatternMesh.cpp
     HMREngine/PatternMesh/PatternMeshFactory.cpp
     HMREngine/TextRender/TextRenderPipeline.cpp
+    HMREngine/d3dx11compat.cpp
+    HMRAVSource/dxva2stubs.cpp
 )
 
 set_target_properties(${TARGET} PROPERTIES
@@ -117,6 +128,7 @@ set_target_properties(${TARGET} PROPERTIES
 
 target_compile_definitions(${TARGET} PRIVATE
     MOVIECORE_EXPORTS
+    WMMR_DLL_EXPORTS
     _WINDLL
     _AFXDLL
     _CRT_SECURE_NO_WARNINGS
@@ -126,6 +138,7 @@ target_compile_definitions(${TARGET} PRIVATE
 
 target_include_directories(${TARGET} PRIVATE
     ${CMAKE_SOURCE_DIR}/src
+    ${CMAKE_SOURCE_DIR}/src/WTL
     ${CMAKE_CURRENT_SOURCE_DIR}
     ${CMAKE_SOURCE_DIR}/src/WLXPhotoBase
 )
@@ -143,7 +156,7 @@ target_link_libraries(${TARGET} PRIVATE
     gdiplus
     d3d11
     d3d9
-    d3dcompiler_46
+    d3dcompiler
     dxva2
     mfplat
     mf
@@ -162,8 +175,8 @@ target_link_libraries(${TARGET} PRIVATE
     esent
     d2d1
     dwrite
-    uxctl
     wininet
+    WLXPhotoBase
 )
 
 # Delay-loaded DLLs (resolved at runtime on first call)

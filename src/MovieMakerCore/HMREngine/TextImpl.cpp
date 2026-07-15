@@ -1,3 +1,5 @@
+﻿#include "pch.h"
+
 // TextImpl.cpp - Text/TextShader/ScrollingText/FontStyle implementations
 
 #include "TextImpl.h"

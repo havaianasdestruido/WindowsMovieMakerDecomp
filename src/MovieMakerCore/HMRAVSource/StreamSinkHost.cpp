@@ -533,7 +533,8 @@ void StreamSinkHost::UpdateStats(IMFSample* pSample, bool fVideo)
         return;
 
     DWORD cbTotal = 0;
-    DWORD cBuffers = pSample->GetBufferCount();
+    DWORD cBuffers = 0;
+    pSample->GetBufferCount(&cBuffers);
     for (DWORD i = 0; i < cBuffers; ++i)
     {
         CComPtr<IMFMediaBuffer> spBuffer;

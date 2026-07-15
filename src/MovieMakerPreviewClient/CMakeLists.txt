@@ -6,7 +6,6 @@
 set(TARGET MovieMakerPreviewClient)
 
 add_library(${TARGET} SHARED
-    dllmain.cpp
     MovieMakerPreviewClient.cpp
 )
 
@@ -46,6 +45,7 @@ target_link_libraries(${TARGET} PRIVATE
     rpcrt4
     shlwapi
     comctl32
+    gdiplus
     WLXPhotoBase
 )
 

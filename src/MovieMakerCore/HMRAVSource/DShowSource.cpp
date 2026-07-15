@@ -394,9 +394,9 @@ HRESULT DShowSource::CreateSampleGrabber()
     mt.majortype = MEDIATYPE_Video;
     mt.subtype = MEDIASUBTYPE_RGB32;
 
-    m_spSampleGrabber->SetMediaType(&mt);
-    m_spSampleGrabber->SetOneShot(FALSE);
-    m_spSampleGrabber->SetBufferSamples(TRUE);
+    m_spSampleGrabber.p->SetMediaType(&mt);
+    m_spSampleGrabber.p->SetOneShot(FALSE);
+    m_spSampleGrabber.p->SetBufferSamples(TRUE);
 
     return S_OK;
 }

@@ -1,3 +1,5 @@
+﻿#include "pch.h"
+
 // SequencerImpl.cpp - Sequencer implementations
 
 #include "SequencerImpl.h"

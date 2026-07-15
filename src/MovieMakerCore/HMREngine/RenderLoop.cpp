@@ -1,3 +1,5 @@
+﻿#include "pch.h"
+
 // RenderLoop.cpp - HMREngine::RenderLoop implementation
 
 #include "RenderLoop.h"

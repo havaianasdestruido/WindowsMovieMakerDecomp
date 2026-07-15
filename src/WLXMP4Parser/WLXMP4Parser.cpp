@@ -179,7 +179,7 @@ public:
         if (GetFileSizeEx(hFile, &liSize))
             cbFile = liSize.QuadPart;
 
-        UINT64 cbToRead = min(cbHeaderMax, cbFile);
+        UINT64 cbToRead = std::min(cbHeaderMax, cbFile);
         std::vector<BYTE> buffer(static_cast<size_t>(cbToRead));
 
         BOOL bOk = ReadFile(hFile, buffer.data(), static_cast<DWORD>(cbToRead), &cbRead, NULL);
@@ -316,7 +316,7 @@ WLXMP4P_API HRESULT __stdcall MP4Parser_GetTrackCount(HANDLE hParser, UINT32* pC
     return static_cast<MP4Parser::MP4File*>(hParser)->GetTrackCount(pCount);
 }
 
-WLXMP4P_API HRESULT __stdcall MP4Parser_GetTrackInfo(HANDLE hParser, UINT32 uTrackIndex, MP4TrackInfo* pInfo)
+WLXMP4P_API HRESULT __stdcall MP4Parser_GetTrackInfo(HANDLE hParser, UINT32 uTrackIndex, MP4Parser::MP4TrackInfo* pInfo)
 {
     if (!hParser) return E_INVALIDARG;
     return static_cast<MP4Parser::MP4File*>(hParser)->GetTrackInfo(uTrackIndex, pInfo);
@@ -328,7 +328,7 @@ WLXMP4P_API HRESULT __stdcall MP4Parser_GetDuration(HANDLE hParser, LONGLONG* pD
     return static_cast<MP4Parser::MP4File*>(hParser)->GetDuration(pDuration);
 }
 
-WLXMP4P_API HRESULT __stdcall MP4Parser_GetChapters(HANDLE hParser, MP4ChapterInfo* pChapters, UINT32* pCount)
+WLXMP4P_API HRESULT __stdcall MP4Parser_GetChapters(HANDLE hParser, MP4Parser::MP4ChapterInfo* pChapters, UINT32* pCount)
 {
     UNREFERENCED_PARAMETER(hParser);
     UNREFERENCED_PARAMETER(pChapters);

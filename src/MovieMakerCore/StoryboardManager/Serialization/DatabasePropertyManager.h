@@ -62,6 +62,26 @@ struct PropertyValue
     {
         fValue = false;
     }
+
+    PropertyValue(const PropertyValue& other)
+        : type(other.type)
+        , nValue(other.nValue)
+        , strValue(other.strValue)
+    {
+        blobValue.Copy(other.blobValue);
+    }
+
+    PropertyValue& operator=(const PropertyValue& other)
+    {
+        if (this != &other)
+        {
+            type = other.type;
+            nValue = other.nValue;
+            strValue = other.strValue;
+            blobValue.Copy(other.blobValue);
+        }
+        return *this;
+    }
 };
 
 // ============================================================================

@@ -1,3 +1,5 @@
+﻿#include "pch.h"
+
 // RenderingList.cpp - HMREngine::RenderingList implementation
 
 #include "RenderingList.h"

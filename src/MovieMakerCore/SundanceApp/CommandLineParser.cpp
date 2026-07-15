@@ -47,7 +47,7 @@ void CommandLineParser::Reset()
     m_strPlayFile.Empty();
     m_strPublishFile.Empty();
     m_strProjectFile.Empty();
-    m_arrImportFiles.RemoveAll();
+    m_arrImportFiles.clear();
     m_strSqmSessionId.Empty();
     m_strDoneShowKey.Empty();
 }
@@ -135,7 +135,7 @@ void CommandLineParser::Parse(int argc, wchar_t** argv)
             // Collect all non-switch arguments until next switch or end
             while (i + 1 < argc && !IsSwitch(argv[i + 1]))
             {
-                m_arrImportFiles.Add(ATL::CString(argv[++i]));
+                m_arrImportFiles.push_back(ATL::CString(argv[++i]));
             }
             continue;
         }
@@ -174,7 +174,7 @@ void CommandLineParser::Parse(int argc, wchar_t** argv)
         {
             if (!IsSwitch(pszArg))
             {
-                m_arrImportFiles.Add(ATL::CString(pszArg));
+                m_arrImportFiles.push_back(ATL::CString(pszArg));
                 m_bImport = true;
             }
         }
@@ -237,14 +237,14 @@ LPCWSTR CommandLineParser::GetProjectFile() const throw()
     return m_strProjectFile;
 }
 
-const ATL::CStringArray& CommandLineParser::GetImportFiles() const throw()
+const std::vector<ATL::CString>& CommandLineParser::GetImportFiles() const throw()
 {
     return m_arrImportFiles;
 }
 
 int CommandLineParser::GetImportFileCount() const throw()
 {
-    return static_cast<int>(m_arrImportFiles.GetCount());
+    return static_cast<int>(m_arrImportFiles.size());
 }
 
 LPCWSTR CommandLineParser::GetSqmSessionId() const throw()

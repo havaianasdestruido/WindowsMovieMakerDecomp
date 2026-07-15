@@ -1,3 +1,5 @@
+﻿#include "pch.h"
+
 // EventImpl.cpp - Event/TimeDependent/Route implementations
 
 #include "EventImpl.h"

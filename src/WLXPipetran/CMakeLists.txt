@@ -46,8 +46,7 @@ target_link_libraries(${TARGET} PRIVATE
     psapi
     gdiplus
     d3d9
-    d3dx9
-    d3dcompiler_46
+    d3dcompiler
     strmiids
     shlwapi
     WLXPhotoBase

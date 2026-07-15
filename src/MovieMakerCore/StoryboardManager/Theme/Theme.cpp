@@ -1,3 +1,4 @@
+﻿#include "pch.h"
 /*
  * Theme.cpp
  *
@@ -13,6 +14,7 @@
 
 #include "Theme.h"
 #include "ThemeStructure.h"
+#include "TextComposition.h"
 
 namespace StoryboardManager
 {
@@ -328,20 +330,19 @@ HRESULT Theme::LoadFromStream(IStream* pStream)
     {
         if (nodeType == XmlNodeType_Element)
         {
-            CComBSTR bstrName;
-            spReader->GetLocalName(&bstrName, nullptr);
-            if (bstrName && wcscmp(bstrName, kThemeRootElement) == 0)
+            LPCWSTR pwszLocalName = nullptr;
+            spReader->GetLocalName(&pwszLocalName, nullptr);
+            if (pwszLocalName && wcscmp(pwszLocalName, kThemeRootElement) == 0)
             {
-                // Read theme attributes
-                CComBSTR bstrNameAttr;
-                if (SUCCEEDED(spReader->GetAttribute(L"name", &bstrNameAttr)) && bstrNameAttr)
+                LPCWSTR pwszValue = nullptr;
+                if (SUCCEEDED(XmlReaderGetAttribute(spReader, L"name", &pwszValue)) && pwszValue)
                 {
-                    SetName(bstrNameAttr);
+                    SetName(pwszValue);
                 }
-                CComBSTR bstrDisplayName;
-                if (SUCCEEDED(spReader->GetAttribute(L"displayName", &bstrDisplayName)) && bstrDisplayName)
+                pwszValue = nullptr;
+                if (SUCCEEDED(XmlReaderGetAttribute(spReader, L"displayName", &pwszValue)) && pwszValue)
                 {
-                    SetDisplayName(bstrDisplayName);
+                    SetDisplayName(pwszValue);
                 }
                 break;
             }

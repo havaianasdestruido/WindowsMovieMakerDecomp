@@ -1,3 +1,5 @@
+﻿#include "pch.h"
+
 // Scene.cpp - HMREngine::Scene implementation
 
 #include "Scene.h"

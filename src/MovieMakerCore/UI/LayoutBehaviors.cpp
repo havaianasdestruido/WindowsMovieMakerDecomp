@@ -1,4 +1,4 @@
-/*
+﻿/*
  * LayoutBehaviors.cpp
  *
  * Implementation of layout-related DirectUI behaviors.
@@ -209,7 +209,7 @@ HRESULT ResizeablePaneBehavior::OnMessage(UINT uMsg, WPARAM wParam, LPARAM lPara
 }
 
 void ResizeablePaneBehavior::SetSplitDirection(SplitDirection direction) throw() { m_direction = direction; }
-void ResizeablePaneBehavior::SetSplitRatio(float fRatio) { m_fSplitRatio = max(0.1f, min(0.9f, fRatio)); }
+void ResizeablePaneBehavior::SetSplitRatio(float fRatio) { m_fSplitRatio = std::max(0.1f, std::min(0.9f, fRatio)); }
 void ResizeablePaneBehavior::SetMinPaneSize(int nMinSize) { m_nMinPaneSize = nMinSize; }
 void ResizeablePaneBehavior::SetSplitterWidth(int nWidth) { m_nSplitterWidth = nWidth; }
 

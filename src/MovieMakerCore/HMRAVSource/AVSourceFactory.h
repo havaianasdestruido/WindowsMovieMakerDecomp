@@ -26,6 +26,14 @@
 namespace HMRAVSource
 {
 
+// {D45D4E50-6C4F-4F65-8B4F-B5E2C4E0A027}
+DEFINE_GUID(CLSID_AVSourceFactory,
+    0xD45D4E50, 0x6C4F, 0x4F65, 0x8B, 0x4F, 0xB5, 0xE2, 0xC4, 0xE0, 0xA0, 0x27);
+
+#ifndef IDR_AVSOURCEFACTORY
+#define IDR_AVSOURCEFACTORY 10300
+#endif
+
 // ============================================================================
 // AVSourceFactory
 // ============================================================================

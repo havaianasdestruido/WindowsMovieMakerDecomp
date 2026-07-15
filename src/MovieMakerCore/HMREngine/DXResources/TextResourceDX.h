@@ -2,6 +2,7 @@
 // TextResourceDX.h - D3D11 text rendering resources
 
 #include "DXResources.h"
+#include "DeviceClientDX.h"
 
 namespace HMREngine
 {

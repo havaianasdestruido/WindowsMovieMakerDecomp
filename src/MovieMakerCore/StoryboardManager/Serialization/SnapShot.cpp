@@ -1,3 +1,4 @@
+﻿#include "pch.h"
 /*
  * SnapShot.cpp
  *
@@ -28,15 +29,15 @@ SnapShotExtentMapContainer::~SnapShotExtentMapContainer()
 }
 
 SnapShotExtentMapContainer::SnapShotExtentMapContainer(const SnapShotExtentMapContainer& other)
-    : m_arrEntries(other.m_arrEntries)
 {
+    m_arrEntries.Copy(other.m_arrEntries);
 }
 
 SnapShotExtentMapContainer& SnapShotExtentMapContainer::operator=(const SnapShotExtentMapContainer& other)
 {
     if (this != &other)
     {
-        m_arrEntries = other.m_arrEntries;
+        m_arrEntries.Copy(other.m_arrEntries);
     }
     return *this;
 }
@@ -529,7 +530,7 @@ int SnapShotCollection::FindIndexBySequenceNumber(DWORD dwSeq) const
 
 void SnapShotCollection::PruneOldest(size_t nCount)
 {
-    size_t nToRemove = min(nCount, m_arrSnapshots.GetCount());
+    size_t nToRemove = std::min(nCount, m_arrSnapshots.GetCount());
     for (size_t i = 0; i < nToRemove; ++i)
     {
         delete m_arrSnapshots.GetAt(0);

@@ -46,7 +46,6 @@ target_link_libraries(${TARGET} PRIVATE
     mf
     mfuuid
     mfreadwrite
-    mferror
     evr
     gdiplus
     shlwapi

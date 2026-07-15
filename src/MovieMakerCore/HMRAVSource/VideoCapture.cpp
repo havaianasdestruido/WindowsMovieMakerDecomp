@@ -50,9 +50,8 @@ HRESULT VideoCapture::EnumDevices(ATL::CAtlArray<VideoCaptureDeviceInfo>& device
     if (cDevices == 0)
         return S_OK;
 
-    ATL::CAtlArray<IMFActivate*> arrActivates;
-    arrActivates.SetCount(cDevices);
-    hr = MFEnumDeviceSources(spAttributes, arrActivates.GetData(), &cDevices);
+    IMFActivate** ppActivates = nullptr;
+    hr = MFEnumDeviceSources(spAttributes, &ppActivates, &cDevices);
     if (FAILED(hr))
         return hr;
 
@@ -62,13 +61,13 @@ HRESULT VideoCapture::EnumDevices(ATL::CAtlArray<VideoCaptureDeviceInfo>& device
 
         WCHAR szFriendlyName[256] = {};
         UINT32 cchName = 256;
-        arrActivates[i]->GetString(
+        ppActivates[i]->GetString(
             MF_DEVSOURCE_ATTRIBUTE_FRIENDLY_NAME, szFriendlyName, cchName, &cchName);
         info.strDeviceName = szFriendlyName;
 
         WCHAR szDevicePath[512] = {};
         UINT32 cchPath = 512;
-        arrActivates[i]->GetString(
+        ppActivates[i]->GetString(
             MF_DEVSOURCE_ATTRIBUTE_SOURCE_TYPE_VIDCAP_SYMBOLIC_LINK,
             szDevicePath, cchPath, &cchPath);
         info.strDevicePath = szDevicePath;
@@ -81,8 +80,9 @@ HRESULT VideoCapture::EnumDevices(ATL::CAtlArray<VideoCaptureDeviceInfo>& device
 
         devices.Add(info);
 
-        arrActivates[i]->Release();
+        ppActivates[i]->Release();
     }
+    CoTaskMemFree(ppActivates);
 
     return S_OK;
 }
@@ -134,7 +134,8 @@ HRESULT VideoCapture::Shutdown()
 
     if (m_spCaptureEngine)
     {
-        m_spCaptureEngine->StopCapture();
+        m_spCaptureEngine.p->StopPreview();
+        m_spCaptureEngine.p->StopRecord(TRUE, TRUE);
         m_spCaptureEngine = nullptr;
     }
 

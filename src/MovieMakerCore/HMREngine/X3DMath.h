@@ -71,13 +71,15 @@ namespace HMREngine
         Vec3 ToVec3() const { return Vec3(x, y, z); }
     };
 
+    struct Matrix4f;
+
     struct Rotation4f
     {
         float x, y, z, w;
 
         Rotation4f() : x(0.0f), y(0.0f), z(0.0f), w(1.0f) {}
         Rotation4f(float ix, float iy, float iz, float iw) : x(ix), y(iy), z(iz), w(iw) {}
-        Rotation4f(const XMQUATERNION& q) : x(q.x), y(q.y), z(q.z), w(q.w) {}
+        Rotation4f(const XMFLOAT4& q) : x(q.x), y(q.y), z(q.z), w(q.w) {}
 
         static Rotation4f FromAxisAngle(const Vec3& axis, float radians)
         {

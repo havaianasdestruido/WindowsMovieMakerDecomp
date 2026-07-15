@@ -1,7 +1,7 @@
 #include <winver.h>
 #include "resource.h"
 
-IDI_MOVIEMAKER         ICON                    "resources\\MovieMaker.ico"
+// IDI_MOVIEMAKER         ICON                    "resources\\MovieMaker.ico"
 
 // Manifest resource ID 2 as required by the binary (RT_MANIFEST)
 2                      RT_MANIFEST             "resources\\MovieMaker.exe.manifest"

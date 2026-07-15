@@ -34,8 +34,7 @@ namespace HMRAVSource
 // source readers and other components that read from byte-level sources.
 //
 class AVSOURCE_API MFByteStreamOnStream :
-    public IMFByteStream,
-    public IUnknown
+    public IMFByteStream
 {
 public:
     MFByteStreamOnStream();
@@ -44,9 +43,9 @@ public:
     static HRESULT CreateInstance(IStream* pStream, IMFByteStream** ppByteStream);
 
     // IUnknown
-    STDMETHOD(QueryInterface)(REFIID riid, void** ppvObject);
-    STDMETHOD_(ULONG, AddRef)();
-    STDMETHOD_(ULONG, Release)();
+    STDMETHOD(QueryInterface)(REFIID riid, void** ppvObject) override;
+    STDMETHOD_(ULONG, AddRef)() override;
+    STDMETHOD_(ULONG, Release)() override;
 
     // IMFByteStream
     STDMETHOD(GetCapabilities)(DWORD* pdwCapabilities) override;
@@ -63,6 +62,7 @@ public:
     STDMETHOD(EndWrite)(IMFAsyncResult* pResult, ULONG* pcbWritten) override;
     STDMETHOD(Seek)(MFBYTESTREAM_SEEK_ORIGIN SeekOrigin, LONGLONG llSeekOffset, DWORD dwSeekFlags, QWORD* pqwCurrentPosition) override;
     STDMETHOD(Flush)() override;
+    STDMETHOD(Close)() override;
 
     // IStream access
     HRESULT GetStream(IStream** ppStream);
@@ -84,8 +84,7 @@ private:
 // that are initiated asynchronously.
 //
 class AVSOURCE_API MFAsyncResult :
-    public IMFAsyncResult,
-    public IUnknown
+    public IMFAsyncResult
 {
 public:
     MFAsyncResult();
@@ -94,15 +93,16 @@ public:
     static HRESULT CreateInstance(IUnknown* pUnkObject, IUnknown* pUnkState, IMFAsyncCallback* pCallback, MFAsyncResult** ppResult);
 
     // IUnknown
-    STDMETHOD(QueryInterface)(REFIID riid, void** ppvObject);
-    STDMETHOD_(ULONG, AddRef)();
-    STDMETHOD_(ULONG, Release)();
+    STDMETHOD(QueryInterface)(REFIID riid, void** ppvObject) override;
+    STDMETHOD_(ULONG, AddRef)() override;
+    STDMETHOD_(ULONG, Release)() override;
 
     // IMFAsyncResult
     STDMETHOD(GetState)(IUnknown** ppunkState) override;
     STDMETHOD(GetStatus)() override;
     STDMETHOD(SetStatus)(HRESULT hrStatus) override;
     STDMETHOD(GetObject)(IUnknown** ppunkObject) override;
+    STDMETHOD_(IUnknown*, GetStateNoAddRef)() override;
 
     // Completion
     HRESULT SetAsyncResult(HRESULT hr);

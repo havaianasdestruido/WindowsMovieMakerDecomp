@@ -1,3 +1,4 @@
+﻿#include "pch.h"
 // PatternMeshFactory.cpp - PatternMesh factory implementation
 
 #include "PatternMeshFactory.h"

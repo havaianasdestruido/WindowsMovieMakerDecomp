@@ -1,3 +1,5 @@
+﻿#include "pch.h"
+
 // MaterialImpl.cpp - Material/Appearance/Shape/LineProperties/FillProperties
 
 #include "MaterialImpl.h"

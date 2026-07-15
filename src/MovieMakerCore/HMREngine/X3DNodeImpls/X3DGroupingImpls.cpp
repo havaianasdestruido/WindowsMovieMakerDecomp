@@ -1,3 +1,4 @@
+﻿#include "pch.h"
 // X3DGroupingImpls.cpp - Grouping/shape/geometry bridge implementation
 
 #include "X3DGroupingImpls.h"

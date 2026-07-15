@@ -272,8 +272,8 @@ public:
 #define DEFINE_STUB_TRANSITION(ClassName, stringId, displayName) \
     class ClassName : public TransitionBase { \
     public: \
-        const WCHAR* GetId() const override { return L##stringId; } \
-        const WCHAR* GetName() const override { return L##displayName; } \
+        const WCHAR* GetId() const override { return stringId; } \
+        const WCHAR* GetName() const override { return displayName; } \
         HRESULT Apply(Gdiplus::Bitmap* pFrom, Gdiplus::Bitmap* pTo, \
             Gdiplus::Bitmap** ppResult, const TransformParams* pParams) override \
         { \
@@ -320,8 +320,8 @@ DEFINE_STUB_TRANSITION(ExpandTransition,          L"Expand",          L"Expand")
 #define DEFINE_EFFECT_CLASS(ClassName, stringId, displayName) \
     class ClassName : public EffectBase { \
     public: \
-        const WCHAR* GetId() const override { return L##stringId; } \
-        const WCHAR* GetName() const override { return L##displayName; } \
+        const WCHAR* GetId() const override { return stringId; } \
+        const WCHAR* GetName() const override { return displayName; } \
         HRESULT Apply(Gdiplus::Bitmap* pSource, Gdiplus::Bitmap** ppResult, \
             const TransformParams* pParams) override \
         { \

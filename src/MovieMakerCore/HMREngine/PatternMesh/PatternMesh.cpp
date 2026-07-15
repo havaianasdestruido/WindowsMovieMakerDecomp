@@ -1,3 +1,4 @@
+﻿#include "pch.h"
 // PatternMesh.cpp - Wipe transition pattern mesh implementation
 
 #include "PatternMesh.h"

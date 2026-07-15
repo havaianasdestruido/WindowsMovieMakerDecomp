@@ -1,4 +1,4 @@
-/*
+﻿/*
  * SpecialBehaviors.cpp
  *
  * Implementation of special-purpose DirectUI behaviors.
@@ -410,7 +410,7 @@ HRESULT AmpSlideAnimationBehavior::OnMessage(UINT uMsg, WPARAM wParam, LPARAM lP
 HRESULT AmpSlideAnimationBehavior::StartSlide(SlideDirection direction, DWORD dwDurationMs)
 {
     m_direction = direction;
-    m_dwDuration = max(1, dwDurationMs);
+    m_dwDuration = std::max(1, dwDurationMs);
     m_dwStartTime = GetTickCount();
     m_bAnimating = true;
 
@@ -479,7 +479,7 @@ HRESULT AmpFadeAnimationBehavior::OnMessage(UINT uMsg, WPARAM wParam, LPARAM lPa
     if (uMsg == WM_TIMER && wParam == m_nTimerId && m_bAnimating)
     {
         DWORD dwElapsed = GetTickCount() - m_dwStartTime;
-        float t = min(1.0f, static_cast<float>(dwElapsed) / static_cast<float>(m_dwDuration));
+        float t = std::min(1.0f, static_cast<float>(dwElapsed) / static_cast<float>(m_dwDuration));
         m_fCurrentAlpha = m_fStartAlpha + (m_fEndAlpha - m_fStartAlpha) * t;
 
         if (t >= 1.0f)
@@ -503,7 +503,7 @@ HRESULT AmpFadeAnimationBehavior::FadeIn(DWORD dwDurationMs)
     m_fStartAlpha = 0.0f;
     m_fEndAlpha = 1.0f;
     m_fCurrentAlpha = 0.0f;
-    m_dwDuration = max(1, dwDurationMs);
+    m_dwDuration = std::max(1, dwDurationMs);
     m_dwStartTime = GetTickCount();
     m_bAnimating = true;
     if (m_nTimerId == 0) m_nTimerId = reinterpret_cast<UINT>(this) + 1;
@@ -517,7 +517,7 @@ HRESULT AmpFadeAnimationBehavior::FadeOut(DWORD dwDurationMs)
     m_fStartAlpha = 1.0f;
     m_fEndAlpha = 0.0f;
     m_fCurrentAlpha = 1.0f;
-    m_dwDuration = max(1, dwDurationMs);
+    m_dwDuration = std::max(1, dwDurationMs);
     m_dwStartTime = GetTickCount();
     m_bAnimating = true;
     if (m_nTimerId == 0) m_nTimerId = reinterpret_cast<UINT>(this) + 1;
@@ -525,7 +525,7 @@ HRESULT AmpFadeAnimationBehavior::FadeOut(DWORD dwDurationMs)
     return S_OK;
 }
 
-void AmpFadeAnimationBehavior::SetAlpha(float fAlpha) { m_fCurrentAlpha = max(0.0f, min(1.0f, fAlpha)); }
+void AmpFadeAnimationBehavior::SetAlpha(float fAlpha) { m_fCurrentAlpha = std::max(0.0f, std::min(1.0f, fAlpha)); }
 float AmpFadeAnimationBehavior::GetAlpha() const throw() { return m_fCurrentAlpha; }
 bool AmpFadeAnimationBehavior::IsAnimating() const throw() { return m_bAnimating; }
 

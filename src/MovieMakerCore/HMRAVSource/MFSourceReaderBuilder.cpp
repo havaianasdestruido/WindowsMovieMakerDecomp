@@ -80,7 +80,8 @@ HRESULT MFSourceReaderBuilder::EnumerateVideoCodecs(ATL::CAtlArray<CodecInfo>& c
 {
     codecs.RemoveAll();
 
-    struct { GUID guid; LPCWSTR pszName; bool fHw; } videoCodecs[] =
+    struct VideoCodecEntry { GUID guid; LPCWSTR pszName; bool fHw; };
+    VideoCodecEntry videoCodecs[] =
     {
         { MFVideoFormat_H264,   L"H.264/AVC",    true  },
         { MFVideoFormat_HEVC,   L"H.265/HEVC",   true  },
@@ -90,7 +91,7 @@ HRESULT MFSourceReaderBuilder::EnumerateVideoCodecs(ATL::CAtlArray<CodecInfo>& c
         { MFVideoFormat_NV12,   L"Uncompressed NV12", false },
     };
 
-    for (size_t i = 0; i < ARRAYSIZE(videoCodecs); ++i)
+    for (size_t i = 0; i < _countof(videoCodecs); ++i)
     {
         CodecInfo info = {};
         info.guidSubtype = videoCodecs[i].guid;
@@ -106,7 +107,8 @@ HRESULT MFSourceReaderBuilder::EnumerateAudioCodecs(ATL::CAtlArray<CodecInfo>& c
 {
     codecs.RemoveAll();
 
-    struct { GUID guid; LPCWSTR pszName; } audioCodecs[] =
+    struct AudioCodecEntry { GUID guid; LPCWSTR pszName; };
+    AudioCodecEntry audioCodecs[] =
     {
         { MFAudioFormat_AAC,        L"AAC"      },
         { MFAudioFormat_WMAudioV9,  L"WMA 9"    },
@@ -137,8 +139,8 @@ bool MFSourceReaderBuilder::IsCodecAvailable(REFGUID guidSubtype)
                          ? MFMediaType_Video : MFMediaType_Audio;
     info.guidSubtype = guidSubtype;
 
-    IMFActivate** ppActivates = nullptr;
-    UINT32 cActivates = 0;
+    CLSID* pClsids = nullptr;
+    UINT32 cClsids = 0;
 
     HRESULT hr = MFTEnum(
         MFT_CATEGORY_VIDEO_DECODER,
@@ -146,20 +148,15 @@ bool MFSourceReaderBuilder::IsCodecAvailable(REFGUID guidSubtype)
         &info,
         nullptr,
         nullptr,
-        &ppActivates,
-        &cActivates);
+        &pClsids,
+        &cClsids);
 
     if (SUCCEEDED(hr))
     {
-        for (UINT32 i = 0; i < cActivates; ++i)
-        {
-            if (ppActivates[i])
-                ppActivates[i]->Release();
-        }
-        CoTaskMemFree(ppActivates);
+        CoTaskMemFree(pClsids);
     }
 
-    return cActivates > 0;
+    return cClsids > 0;
 }
 
 HRESULT MFSourceReaderBuilder::GetCodecFriendlyName(REFGUID guidSubtype, ATL::CString* pstrName)

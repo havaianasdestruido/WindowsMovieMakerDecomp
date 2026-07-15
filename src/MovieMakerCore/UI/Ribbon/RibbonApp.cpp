@@ -1,3 +1,10 @@
+﻿#include "pch.h"
+
+// IID_IUICommandHandler GUID definition (not in Win10 SDK uiribbon.lib)
+// {75AE0A2D-DC03-4C9F-8883-069660D0BEB6}
+const IID IID_IUICommandHandler = 
+    {0x75ae0a2d, 0xdc03, 0x4c9f, {0x88, 0x83, 0x06, 0x96, 0x60, 0xd0, 0xbe, 0xb6}};
+
 /*
  * RibbonApp.cpp
  *
@@ -57,7 +64,6 @@ HRESULT RibbonApp::Shutdown()
 
     if (m_spRibbon)
     {
-        m_spRibbon->Destroy();
         m_spRibbon.Release();
     }
 
@@ -147,16 +153,6 @@ HRESULT RibbonApp::UpdateCommandState(UINT nCmdId, bool fEnabled, bool fHidden)
     if (!m_spFramework)
         return E_FAIL;
 
-    // Create a property set with the new state
-    CComPtr<IUISimplePropertySet> spProps;
-    HRESULT hr = HRESULT_FROM_WIN32(ERROR_NOT_FOUND);
-    if (SUCCEEDED(hr))
-    {
-        // Set enabled/hidden state on the command
-        UI_COMMANDTYPE cmdType = UI_COMMANDTYPE_UNKNOWN;
-        m_spFramework->GetUICommandType(nCmdId, &cmdType);
-    }
-
     UNREFERENCED_PARAMETER(fEnabled);
     UNREFERENCED_PARAMETER(fHidden);
     return S_OK;
@@ -190,7 +186,7 @@ HRESULT RibbonApp::HideContextualTab(UINT nTabId)
 
 HRESULT RibbonApp::CreateUIFramework()
 {
-    HRESULT hr = CoCreateInstance(CLSID_UIFramework, nullptr, CLSCTX_INPROC_SERVER,
+    HRESULT hr = CoCreateInstance(CLSID_UIRibbonFramework, nullptr, CLSCTX_INPROC_SERVER,
                                  IID_PPV_ARGS(&m_spFramework));
     return hr;
 }
@@ -201,7 +197,11 @@ HRESULT RibbonApp::LoadRibbonFromResource(HINSTANCE hInstance, LPCWSTR pszResour
         return E_FAIL;
 
     // Load ribbon XML from resource
+#ifndef RT_XML
+    HRSRC hRsrc = FindResource(hInstance, pszResource, RT_RCDATA);
+#else
     HRSRC hRsrc = FindResource(hInstance, pszResource, RT_XML);
+#endif
     if (!hRsrc)
         return HRESULT_FROM_WIN32(GetLastError());
 
@@ -217,7 +217,7 @@ HRESULT RibbonApp::LoadRibbonFromResource(HINSTANCE hInstance, LPCWSTR pszResour
 
     // Create a stream from the resource data
     CComPtr<IStream> spStream;
-    hr = CreateStreamOnHGlobal(nullptr, TRUE, &spStream);
+    HRESULT hr = CreateStreamOnHGlobal(nullptr, TRUE, &spStream);
     if (FAILED(hr))
         return hr;
 
@@ -231,13 +231,12 @@ HRESULT RibbonApp::LoadRibbonFromResource(HINSTANCE hInstance, LPCWSTR pszResour
     if (FAILED(hr))
         return hr;
 
-    // Initialize the framework with the ribbon XML
-    hr = m_spFramework->Initialize(m_hwndOwner, spStream);
+    // Initialize the framework
+    hr = m_spFramework->Initialize(m_hwndOwner, nullptr);
     if (FAILED(hr))
         return hr;
 
-    // Get the ribbon interface
-    hr = m_spFramework->QueryInterface(IID_PPV_ARGS(&m_spRibbon));
+    hr = m_spFramework->LoadUI(hInstance, pszResource);
 
     return hr;
 }

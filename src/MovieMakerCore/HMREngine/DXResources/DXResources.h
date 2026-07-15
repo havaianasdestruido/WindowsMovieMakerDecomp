@@ -7,7 +7,7 @@
 #include "../ResourceCache.h"
 #include "../X3DNodes.h"
 #include <d3d11.h>
-#include <d3dx11.h>
+#include "../d3dx11compat.h"
 #include <dxgi.h>
 #include <atlbase.h>
 #include <atlcom.h>
@@ -95,7 +95,7 @@ namespace HMREngine
             bool bc1Compression = false;
             bool bc3Compression = false;
             bool bc5Compression = false;
-            bool extended Formats = false;
+            bool extendedFormats = false;
             float maxAnisotropy = 1.0f;
             D3D_FEATURE_LEVEL featureLevel = D3D_FEATURE_LEVEL_10_0;
             UINT maxTextureSize = 8192;

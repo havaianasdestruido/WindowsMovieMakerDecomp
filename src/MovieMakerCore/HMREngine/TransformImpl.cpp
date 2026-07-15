@@ -1,3 +1,5 @@
+﻿#include "pch.h"
+
 // TransformImpl.cpp - Transform/BoundedObject implementations
 
 #include "TransformImpl.h"

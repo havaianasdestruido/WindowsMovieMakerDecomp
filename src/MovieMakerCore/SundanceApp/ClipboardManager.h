@@ -18,6 +18,7 @@
 
 #include "../pch.h"
 #include "../MovieMakerCore.h"
+#include "../StoryboardManager/StoryboardManager.h"
 
 class SundanceAppMain;
 
@@ -73,7 +74,7 @@ private:
     struct ClipboardEntry
     {
         DWORD                   dwItemId;
-        TimelineTrack           track;
+        StoryboardManager::TimelineTrackType track;
         DWORD                   dwPosition;
         ATL::CString            strSourceFile;
         DWORD                   dwDuration;
@@ -81,7 +82,7 @@ private:
 
         ClipboardEntry()
             : dwItemId(0)
-            , track(TimelineTrack_Unknown)
+            , track(StoryboardManager::TimelineTrack_Unknown)
             , dwPosition(0)
             , dwDuration(0)
         {

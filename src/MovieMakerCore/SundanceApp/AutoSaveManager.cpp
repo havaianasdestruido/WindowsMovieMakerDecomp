@@ -13,6 +13,7 @@
 #include "pch.h"
 #include "AutoSaveManager.h"
 #include "SundanceAppMain.h"
+#include "../StoryboardManager/MovieProject.h"
 
 // ============================================================================
 // Construction / destruction

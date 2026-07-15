@@ -173,6 +173,8 @@ class STORYBOARD_API TemplateSocket
 {
 public:
     TemplateSocket();
+    TemplateSocket(const TemplateSocket& other);
+    TemplateSocket& operator=(const TemplateSocket& other);
     ~TemplateSocket();
 
     // Identity

@@ -20,7 +20,7 @@ namespace HMREngine
         MFMatrix3f, MFMatrix4f, MFNode,
     };
 
-    class X3DFieldNode : public CComObjectRootEx<CComSingleThreadModel>
+    class X3DFieldNode
     {
     public:
         virtual ~X3DFieldNode() = default;
@@ -29,9 +29,6 @@ namespace HMREngine
         virtual bool IsArray() const = 0;
         virtual void CopyFrom(const X3DFieldNode& other) = 0;
         virtual HRESULT Clone(X3DFieldNode** ppOut) const = 0;
-
-        BEGIN_COM_MAP(X3DFieldNode)
-        END_COM_MAP()
     };
 
     template<typename T>
@@ -76,7 +73,9 @@ namespace HMREngine
         void CopyFrom(const X3DFieldNode& other) override { m_value = static_cast<const SFBool&>(other).m_value; }
         HRESULT Clone(X3DFieldNode** pp) const override
         {
-            CComObject<SFBool>* p; CComObject<SFBool>::CreateInstance(&p); p->m_value = m_value;
+            SFBool* p = new (std::nothrow) SFBool();
+            if (!p) return E_OUTOFMEMORY;
+            p->m_value = m_value;
             *pp = p; return S_OK;
         }
     };
@@ -88,7 +87,9 @@ namespace HMREngine
         void CopyFrom(const X3DFieldNode& other) override { m_value = static_cast<const SFInt32&>(other).m_value; }
         HRESULT Clone(X3DFieldNode** pp) const override
         {
-            CComObject<SFInt32>* p; CComObject<SFInt32>::CreateInstance(&p); p->m_value = m_value;
+            SFInt32* p = new (std::nothrow) SFInt32();
+            if (!p) return E_OUTOFMEMORY;
+            p->m_value = m_value;
             *pp = p; return S_OK;
         }
     };
@@ -100,7 +101,9 @@ namespace HMREngine
         void CopyFrom(const X3DFieldNode& other) override { m_value = static_cast<const SFFloat&>(other).m_value; }
         HRESULT Clone(X3DFieldNode** pp) const override
         {
-            CComObject<SFFloat>* p; CComObject<SFFloat>::CreateInstance(&p); p->m_value = m_value;
+            SFFloat* p = new (std::nothrow) SFFloat();
+            if (!p) return E_OUTOFMEMORY;
+            p->m_value = m_value;
             *pp = p; return S_OK;
         }
     };
@@ -112,7 +115,9 @@ namespace HMREngine
         void CopyFrom(const X3DFieldNode& other) override { m_value = static_cast<const SFDouble&>(other).m_value; }
         HRESULT Clone(X3DFieldNode** pp) const override
         {
-            CComObject<SFDouble>* p; CComObject<SFDouble>::CreateInstance(&p); p->m_value = m_value;
+            SFDouble* p = new (std::nothrow) SFDouble();
+            if (!p) return E_OUTOFMEMORY;
+            p->m_value = m_value;
             *pp = p; return S_OK;
         }
     };
@@ -124,7 +129,9 @@ namespace HMREngine
         void CopyFrom(const X3DFieldNode& other) override { m_value = static_cast<const SFString&>(other).m_value; }
         HRESULT Clone(X3DFieldNode** pp) const override
         {
-            CComObject<SFString>* p; CComObject<SFString>::CreateInstance(&p); p->m_value = m_value;
+            SFString* p = new (std::nothrow) SFString();
+            if (!p) return E_OUTOFMEMORY;
+            p->m_value = m_value;
             *pp = p; return S_OK;
         }
     };
@@ -136,7 +143,9 @@ namespace HMREngine
         void CopyFrom(const X3DFieldNode& other) override { m_value = static_cast<const SFTime&>(other).m_value; }
         HRESULT Clone(X3DFieldNode** pp) const override
         {
-            CComObject<SFTime>* p; CComObject<SFTime>::CreateInstance(&p); p->m_value = m_value;
+            SFTime* p = new (std::nothrow) SFTime();
+            if (!p) return E_OUTOFMEMORY;
+            p->m_value = m_value;
             *pp = p; return S_OK;
         }
     };
@@ -148,7 +157,9 @@ namespace HMREngine
         void CopyFrom(const X3DFieldNode& other) override { m_value = static_cast<const SFVec2f&>(other).m_value; }
         HRESULT Clone(X3DFieldNode** pp) const override
         {
-            CComObject<SFVec2f>* p; CComObject<SFVec2f>::CreateInstance(&p); p->m_value = m_value;
+            SFVec2f* p = new (std::nothrow) SFVec2f();
+            if (!p) return E_OUTOFMEMORY;
+            p->m_value = m_value;
             *pp = p; return S_OK;
         }
     };
@@ -160,7 +171,9 @@ namespace HMREngine
         void CopyFrom(const X3DFieldNode& other) override { m_value = static_cast<const SFVec3f&>(other).m_value; }
         HRESULT Clone(X3DFieldNode** pp) const override
         {
-            CComObject<SFVec3f>* p; CComObject<SFVec3f>::CreateInstance(&p); p->m_value = m_value;
+            SFVec3f* p = new (std::nothrow) SFVec3f();
+            if (!p) return E_OUTOFMEMORY;
+            p->m_value = m_value;
             *pp = p; return S_OK;
         }
     };
@@ -172,7 +185,9 @@ namespace HMREngine
         void CopyFrom(const X3DFieldNode& other) override { m_value = static_cast<const SFVec4f&>(other).m_value; }
         HRESULT Clone(X3DFieldNode** pp) const override
         {
-            CComObject<SFVec4f>* p; CComObject<SFVec4f>::CreateInstance(&p); p->m_value = m_value;
+            SFVec4f* p = new (std::nothrow) SFVec4f();
+            if (!p) return E_OUTOFMEMORY;
+            p->m_value = m_value;
             *pp = p; return S_OK;
         }
     };
@@ -184,7 +199,9 @@ namespace HMREngine
         void CopyFrom(const X3DFieldNode& other) override { m_value = static_cast<const SFRotation&>(other).m_value; }
         HRESULT Clone(X3DFieldNode** pp) const override
         {
-            CComObject<SFRotation>* p; CComObject<SFRotation>::CreateInstance(&p); p->m_value = m_value;
+            SFRotation* p = new (std::nothrow) SFRotation();
+            if (!p) return E_OUTOFMEMORY;
+            p->m_value = m_value;
             *pp = p; return S_OK;
         }
     };
@@ -196,7 +213,9 @@ namespace HMREngine
         void CopyFrom(const X3DFieldNode& other) override { m_value = static_cast<const SFColor&>(other).m_value; }
         HRESULT Clone(X3DFieldNode** pp) const override
         {
-            CComObject<SFColor>* p; CComObject<SFColor>::CreateInstance(&p); p->m_value = m_value;
+            SFColor* p = new (std::nothrow) SFColor();
+            if (!p) return E_OUTOFMEMORY;
+            p->m_value = m_value;
             *pp = p; return S_OK;
         }
     };
@@ -208,7 +227,9 @@ namespace HMREngine
         void CopyFrom(const X3DFieldNode& other) override { m_value = static_cast<const SFColorRGBA&>(other).m_value; }
         HRESULT Clone(X3DFieldNode** pp) const override
         {
-            CComObject<SFColorRGBA>* p; CComObject<SFColorRGBA>::CreateInstance(&p); p->m_value = m_value;
+            SFColorRGBA* p = new (std::nothrow) SFColorRGBA();
+            if (!p) return E_OUTOFMEMORY;
+            p->m_value = m_value;
             *pp = p; return S_OK;
         }
     };
@@ -220,7 +241,9 @@ namespace HMREngine
         void CopyFrom(const X3DFieldNode& other) override { m_value = static_cast<const SFMatrix3f&>(other).m_value; }
         HRESULT Clone(X3DFieldNode** pp) const override
         {
-            CComObject<SFMatrix3f>* p; CComObject<SFMatrix3f>::CreateInstance(&p); p->m_value = m_value;
+            SFMatrix3f* p = new (std::nothrow) SFMatrix3f();
+            if (!p) return E_OUTOFMEMORY;
+            p->m_value = m_value;
             *pp = p; return S_OK;
         }
     };
@@ -232,7 +255,9 @@ namespace HMREngine
         void CopyFrom(const X3DFieldNode& other) override { m_value = static_cast<const SFMatrix4f&>(other).m_value; }
         HRESULT Clone(X3DFieldNode** pp) const override
         {
-            CComObject<SFMatrix4f>* p; CComObject<SFMatrix4f>::CreateInstance(&p); p->m_value = m_value;
+            SFMatrix4f* p = new (std::nothrow) SFMatrix4f();
+            if (!p) return E_OUTOFMEMORY;
+            p->m_value = m_value;
             *pp = p; return S_OK;
         }
     };
@@ -244,7 +269,9 @@ namespace HMREngine
         void CopyFrom(const X3DFieldNode& other) override { m_value = static_cast<const SFNode&>(other).m_value; }
         HRESULT Clone(X3DFieldNode** pp) const override
         {
-            CComObject<SFNode>* p; CComObject<SFNode>::CreateInstance(&p); p->m_value = m_value;
+            SFNode* p = new (std::nothrow) SFNode();
+            if (!p) return E_OUTOFMEMORY;
+            p->m_value = m_value;
             *pp = p; return S_OK;
         }
     };
@@ -258,7 +285,9 @@ namespace HMREngine
         void CopyFrom(const X3DFieldNode& other) override { m_values = static_cast<const MFBool&>(other).m_values; }
         HRESULT Clone(X3DFieldNode** pp) const override
         {
-            CComObject<MFBool>* p; CComObject<MFBool>::CreateInstance(&p); p->m_values = m_values;
+            MFBool* p = new (std::nothrow) MFBool();
+            if (!p) return E_OUTOFMEMORY;
+            p->m_values = m_values;
             *pp = p; return S_OK;
         }
     };
@@ -270,7 +299,9 @@ namespace HMREngine
         void CopyFrom(const X3DFieldNode& other) override { m_values = static_cast<const MFInt32&>(other).m_values; }
         HRESULT Clone(X3DFieldNode** pp) const override
         {
-            CComObject<MFInt32>* p; CComObject<MFInt32>::CreateInstance(&p); p->m_values = m_values;
+            MFInt32* p = new (std::nothrow) MFInt32();
+            if (!p) return E_OUTOFMEMORY;
+            p->m_values = m_values;
             *pp = p; return S_OK;
         }
     };
@@ -282,7 +313,9 @@ namespace HMREngine
         void CopyFrom(const X3DFieldNode& other) override { m_values = static_cast<const MFFloat&>(other).m_values; }
         HRESULT Clone(X3DFieldNode** pp) const override
         {
-            CComObject<MFFloat>* p; CComObject<MFFloat>::CreateInstance(&p); p->m_values = m_values;
+            MFFloat* p = new (std::nothrow) MFFloat();
+            if (!p) return E_OUTOFMEMORY;
+            p->m_values = m_values;
             *pp = p; return S_OK;
         }
     };
@@ -294,7 +327,9 @@ namespace HMREngine
         void CopyFrom(const X3DFieldNode& other) override { m_values = static_cast<const MFDouble&>(other).m_values; }
         HRESULT Clone(X3DFieldNode** pp) const override
         {
-            CComObject<MFDouble>* p; CComObject<MFDouble>::CreateInstance(&p); p->m_values = m_values;
+            MFDouble* p = new (std::nothrow) MFDouble();
+            if (!p) return E_OUTOFMEMORY;
+            p->m_values = m_values;
             *pp = p; return S_OK;
         }
     };
@@ -306,7 +341,9 @@ namespace HMREngine
         void CopyFrom(const X3DFieldNode& other) override { m_values = static_cast<const MFString&>(other).m_values; }
         HRESULT Clone(X3DFieldNode** pp) const override
         {
-            CComObject<MFString>* p; CComObject<MFString>::CreateInstance(&p); p->m_values = m_values;
+            MFString* p = new (std::nothrow) MFString();
+            if (!p) return E_OUTOFMEMORY;
+            p->m_values = m_values;
             *pp = p; return S_OK;
         }
     };
@@ -318,7 +355,9 @@ namespace HMREngine
         void CopyFrom(const X3DFieldNode& other) override { m_values = static_cast<const MFTime&>(other).m_values; }
         HRESULT Clone(X3DFieldNode** pp) const override
         {
-            CComObject<MFTime>* p; CComObject<MFTime>::CreateInstance(&p); p->m_values = m_values;
+            MFTime* p = new (std::nothrow) MFTime();
+            if (!p) return E_OUTOFMEMORY;
+            p->m_values = m_values;
             *pp = p; return S_OK;
         }
     };
@@ -330,7 +369,9 @@ namespace HMREngine
         void CopyFrom(const X3DFieldNode& other) override { m_values = static_cast<const MFVec2f&>(other).m_values; }
         HRESULT Clone(X3DFieldNode** pp) const override
         {
-            CComObject<MFVec2f>* p; CComObject<MFVec2f>::CreateInstance(&p); p->m_values = m_values;
+            MFVec2f* p = new (std::nothrow) MFVec2f();
+            if (!p) return E_OUTOFMEMORY;
+            p->m_values = m_values;
             *pp = p; return S_OK;
         }
     };
@@ -342,7 +383,9 @@ namespace HMREngine
         void CopyFrom(const X3DFieldNode& other) override { m_values = static_cast<const MFVec3f&>(other).m_values; }
         HRESULT Clone(X3DFieldNode** pp) const override
         {
-            CComObject<MFVec3f>* p; CComObject<MFVec3f>::CreateInstance(&p); p->m_values = m_values;
+            MFVec3f* p = new (std::nothrow) MFVec3f();
+            if (!p) return E_OUTOFMEMORY;
+            p->m_values = m_values;
             *pp = p; return S_OK;
         }
     };
@@ -354,7 +397,9 @@ namespace HMREngine
         void CopyFrom(const X3DFieldNode& other) override { m_values = static_cast<const MFVec4f&>(other).m_values; }
         HRESULT Clone(X3DFieldNode** pp) const override
         {
-            CComObject<MFVec4f>* p; CComObject<MFVec4f>::CreateInstance(&p); p->m_values = m_values;
+            MFVec4f* p = new (std::nothrow) MFVec4f();
+            if (!p) return E_OUTOFMEMORY;
+            p->m_values = m_values;
             *pp = p; return S_OK;
         }
     };
@@ -366,7 +411,9 @@ namespace HMREngine
         void CopyFrom(const X3DFieldNode& other) override { m_values = static_cast<const MFRotation&>(other).m_values; }
         HRESULT Clone(X3DFieldNode** pp) const override
         {
-            CComObject<MFRotation>* p; CComObject<MFRotation>::CreateInstance(&p); p->m_values = m_values;
+            MFRotation* p = new (std::nothrow) MFRotation();
+            if (!p) return E_OUTOFMEMORY;
+            p->m_values = m_values;
             *pp = p; return S_OK;
         }
     };
@@ -378,7 +425,9 @@ namespace HMREngine
         void CopyFrom(const X3DFieldNode& other) override { m_values = static_cast<const MFColor&>(other).m_values; }
         HRESULT Clone(X3DFieldNode** pp) const override
         {
-            CComObject<MFColor>* p; CComObject<MFColor>::CreateInstance(&p); p->m_values = m_values;
+            MFColor* p = new (std::nothrow) MFColor();
+            if (!p) return E_OUTOFMEMORY;
+            p->m_values = m_values;
             *pp = p; return S_OK;
         }
     };
@@ -390,7 +439,9 @@ namespace HMREngine
         void CopyFrom(const X3DFieldNode& other) override { m_values = static_cast<const MFColorRGBA&>(other).m_values; }
         HRESULT Clone(X3DFieldNode** pp) const override
         {
-            CComObject<MFColorRGBA>* p; CComObject<MFColorRGBA>::CreateInstance(&p); p->m_values = m_values;
+            MFColorRGBA* p = new (std::nothrow) MFColorRGBA();
+            if (!p) return E_OUTOFMEMORY;
+            p->m_values = m_values;
             *pp = p; return S_OK;
         }
     };
@@ -402,7 +453,9 @@ namespace HMREngine
         void CopyFrom(const X3DFieldNode& other) override { m_values = static_cast<const MFMatrix3f&>(other).m_values; }
         HRESULT Clone(X3DFieldNode** pp) const override
         {
-            CComObject<MFMatrix3f>* p; CComObject<MFMatrix3f>::CreateInstance(&p); p->m_values = m_values;
+            MFMatrix3f* p = new (std::nothrow) MFMatrix3f();
+            if (!p) return E_OUTOFMEMORY;
+            p->m_values = m_values;
             *pp = p; return S_OK;
         }
     };
@@ -414,7 +467,9 @@ namespace HMREngine
         void CopyFrom(const X3DFieldNode& other) override { m_values = static_cast<const MFMatrix4f&>(other).m_values; }
         HRESULT Clone(X3DFieldNode** pp) const override
         {
-            CComObject<MFMatrix4f>* p; CComObject<MFMatrix4f>::CreateInstance(&p); p->m_values = m_values;
+            MFMatrix4f* p = new (std::nothrow) MFMatrix4f();
+            if (!p) return E_OUTOFMEMORY;
+            p->m_values = m_values;
             *pp = p; return S_OK;
         }
     };
@@ -426,7 +481,9 @@ namespace HMREngine
         void CopyFrom(const X3DFieldNode& other) override { m_values = static_cast<const MFNode&>(other).m_values; }
         HRESULT Clone(X3DFieldNode** pp) const override
         {
-            CComObject<MFNode>* p; CComObject<MFNode>::CreateInstance(&p); p->m_values = m_values;
+            MFNode* p = new (std::nothrow) MFNode();
+            if (!p) return E_OUTOFMEMORY;
+            p->m_values = m_values;
             *pp = p; return S_OK;
         }
     };

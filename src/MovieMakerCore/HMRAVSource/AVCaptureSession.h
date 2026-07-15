@@ -21,6 +21,7 @@
 #include "HMRAVSource.h"
 #include "VideoCapture.h"
 #include "AudioCapture.h"
+#include <functional>
 
 namespace HMRAVSource
 {

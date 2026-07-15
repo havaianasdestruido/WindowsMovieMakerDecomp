@@ -86,7 +86,7 @@ public:
     void AddCommand(CommandType cmdType, DWORD dwTargetId, LPCWSTR pszArgument);
 
     // -- Batch operations --
-    HRESULT Flush();
+    virtual HRESULT Flush();
     void    Clear();
     size_t  GetCommandCount() const throw();
     bool    IsDirty() const throw();

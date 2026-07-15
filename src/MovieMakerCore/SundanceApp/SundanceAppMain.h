@@ -37,12 +37,12 @@ class MediaBrowser;
 class SqmLogger;
 class TelemetrySession;
 
-namespace StoryboardManagerNamespace {
+namespace StoryboardManager {
     class MovieProject;
     class MovieExtent;
-    class ExtentSelector;
     class MediaItem;
 }
+namespace StoryboardManagerNamespace = StoryboardManager;
 
 namespace SundanceErrorReporting {
     class ExceptionWithString;

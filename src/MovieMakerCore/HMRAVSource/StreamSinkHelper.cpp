@@ -214,7 +214,8 @@ HRESULT StreamSinkHelper::FindBestOutputType(
     if (FAILED(hr))
         return hr;
 
-    UINT32 cAttrs = pInputType->GetCount();
+    UINT32 cAttrs = 0;
+    pInputType->GetCount(&cAttrs);
     for (UINT32 i = 0; i < cAttrs; ++i)
     {
         GUID guidKey;

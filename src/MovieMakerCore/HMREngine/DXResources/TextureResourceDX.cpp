@@ -1,3 +1,4 @@
+﻿#include "pch.h"
 // TextureResourceDX.cpp - D3D11 texture resource implementation
 
 #include "TextureResourceDX.h"
@@ -176,7 +177,7 @@ HRESULT TextureResourceDX::CreateTextureFromWIC(const void* data, UINT size)
     if (FAILED(hr)) { wicFactory->Release(); return hr; }
 
     stream->Write(data, size, nullptr);
-    ULARGE_INTEGER li = {};
+    LARGE_INTEGER li = {};
     li.QuadPart = 0;
     stream->Seek(li, STREAM_SEEK_SET, nullptr);
 

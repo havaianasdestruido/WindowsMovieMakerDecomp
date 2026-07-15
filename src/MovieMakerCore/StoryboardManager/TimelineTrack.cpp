@@ -1,3 +1,4 @@
+﻿#include "pch.h"
 /*
  * TimelineTrack.cpp
  *
@@ -48,9 +49,10 @@ TimelineTrack::TimelineTrack()
     , m_dblVolume(1.0)
     , m_uTrackHeight(kDefaultVideoTrackHeight)
     , m_dwTrackColor(kDefaultVideoTrackColor)
+    , m_timeline(new ProjectTimeline())
 {
     m_strDisplayName = GetDefaultName(m_type);
-    m_timeline.SetTrackType(m_type);
+    m_timeline->SetTrackType(m_type);
 }
 
 TimelineTrack::TimelineTrack(TimelineTrackType type)
@@ -61,6 +63,7 @@ TimelineTrack::TimelineTrack(TimelineTrackType type)
     , m_dblVolume(1.0)
     , m_uTrackHeight(kDefaultVideoTrackHeight)
     , m_dwTrackColor(kDefaultVideoTrackColor)
+    , m_timeline(new ProjectTimeline())
 {
     switch (type)
     {
@@ -91,11 +94,13 @@ TimelineTrack::TimelineTrack(TimelineTrackType type)
     }
 
     m_strDisplayName = GetDefaultName(type);
-    m_timeline.SetTrackType(type);
+    m_timeline->SetTrackType(type);
 }
 
 TimelineTrack::~TimelineTrack()
 {
+    delete m_timeline;
+    m_timeline = nullptr;
 }
 
 TimelineTrackType TimelineTrack::GetTrackType() const throw()
@@ -106,7 +111,7 @@ TimelineTrackType TimelineTrack::GetTrackType() const throw()
 void TimelineTrack::SetTrackType(TimelineTrackType type) throw()
 {
     m_type = type;
-    m_timeline.SetTrackType(type);
+    m_timeline->SetTrackType(type);
 }
 
 ATL::CString TimelineTrack::GetDisplayName() const
@@ -163,42 +168,42 @@ void TimelineTrack::SetVolume(double dblVolume) throw()
 
 size_t TimelineTrack::GetExtentCount() const throw()
 {
-    return m_timeline.GetExtentCount();
+    return m_timeline->GetExtentCount();
 }
 
 DWORD TimelineTrack::GetExtentIdAt(size_t nIndex) const
 {
-    return m_timeline.GetExtentIdAt(nIndex);
+    return m_timeline->GetExtentIdAt(nIndex);
 }
 
 size_t TimelineTrack::AddExtent(DWORD dwExtentId)
 {
-    return m_timeline.AddExtent(dwExtentId);
+    return m_timeline->AddExtent(dwExtentId);
 }
 
 void TimelineTrack::RemoveExtent(DWORD dwExtentId)
 {
-    m_timeline.RemoveExtent(dwExtentId);
+    m_timeline->RemoveExtent(dwExtentId);
 }
 
 void TimelineTrack::RemoveAllExtents()
 {
-    m_timeline.RemoveAllExtents();
+    m_timeline->RemoveAllExtents();
 }
 
 void TimelineTrack::MoveExtent(size_t nIndexFrom, size_t nIndexTo)
 {
-    m_timeline.MoveExtent(nIndexFrom, nIndexTo);
+    m_timeline->MoveExtent(nIndexFrom, nIndexTo);
 }
 
 int TimelineTrack::FindExtent(DWORD dwExtentId) const
 {
-    return m_timeline.FindExtent(dwExtentId);
+    return m_timeline->FindExtent(dwExtentId);
 }
 
 LONGLONG TimelineTrack::GetTotalDurationHns() const throw()
 {
-    return m_timeline.GetTotalDurationHns();
+    return m_timeline->GetTotalDurationHns();
 }
 
 UINT TimelineTrack::GetTrackHeight() const throw()
@@ -223,12 +228,12 @@ void TimelineTrack::SetTrackColor(DWORD dwColor) throw()
 
 ProjectTimeline* TimelineTrack::GetTimeline()
 {
-    return &m_timeline;
+    return m_timeline;
 }
 
 const ProjectTimeline* TimelineTrack::GetTimeline() const
 {
-    return &m_timeline;
+    return m_timeline;
 }
 
 // ============================================================================

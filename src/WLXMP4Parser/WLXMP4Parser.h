@@ -50,8 +50,50 @@ namespace MP4Parser
     class MoovBox;
     class TrakBox;
     class StblBox;
-    struct MP4TrackInfo;
-    struct MP4ChapterInfo;
+
+    struct MP4TrackInfo
+    {
+        UINT32      uTrackId;
+        UINT32      uCodecFourCC;
+        UINT32      uWidth;
+        UINT32      uHeight;
+        UINT32      uSampleCount;
+        UINT32      uDuration;          // in timescale units
+        UINT32      uTimeScale;
+        UINT32      uBitrate;
+        WCHAR       wszCodecName[64];
+        BOOL        bIsVideo;
+        BOOL        bIsAudio;
+
+        MP4TrackInfo()
+            : uTrackId(0)
+            , uCodecFourCC(0)
+            , uWidth(0)
+            , uHeight(0)
+            , uSampleCount(0)
+            , uDuration(0)
+            , uTimeScale(1)
+            , uBitrate(0)
+            , bIsVideo(FALSE)
+            , bIsAudio(FALSE)
+        {
+            ZeroMemory(wszCodecName, sizeof(wszCodecName));
+        }
+    };
+
+    struct MP4ChapterInfo
+    {
+        LONGLONG    llStartTime;        // in 100ns units
+        LONGLONG    llEndTime;
+        WCHAR       wszTitle[256];
+
+        MP4ChapterInfo()
+            : llStartTime(0)
+            , llEndTime(0)
+        {
+            ZeroMemory(wszTitle, sizeof(wszTitle));
+        }
+    };
 }
 
 // ============================================================================
@@ -71,56 +113,6 @@ namespace MP4Parser
 #define MP4_BOX_ILST    0x74736C69  // 'ilst'
 
 // ============================================================================
-// Track info structure
-// ============================================================================
-struct MP4TrackInfo
-{
-    UINT32      uTrackId;
-    UINT32      uCodecFourCC;
-    UINT32      uWidth;
-    UINT32      uHeight;
-    UINT32      uSampleCount;
-    UINT32      uDuration;          // in timescale units
-    UINT32      uTimeScale;
-    UINT32      uBitrate;
-    WCHAR       wszCodecName[64];
-    BOOL        bIsVideo;
-    BOOL        bIsAudio;
-
-    MP4TrackInfo()
-        : uTrackId(0)
-        , uCodecFourCC(0)
-        , uWidth(0)
-        , uHeight(0)
-        , uSampleCount(0)
-        , uDuration(0)
-        , uTimeScale(1)
-        , uBitrate(0)
-        , bIsVideo(FALSE)
-        , bIsAudio(FALSE)
-    {
-        ZeroMemory(wszCodecName, sizeof(wszCodecName));
-    }
-};
-
-// ============================================================================
-// Chapter info structure
-// ============================================================================
-struct MP4ChapterInfo
-{
-    LONGLONG    llStartTime;        // in 100ns units
-    LONGLONG    llEndTime;
-    WCHAR       wszTitle[256];
-
-    MP4ChapterInfo()
-        : llStartTime(0)
-        , llEndTime(0)
-    {
-        ZeroMemory(wszTitle, sizeof(wszTitle));
-    }
-};
-
-// ============================================================================
 // Exported functions (9 exports)
 // ============================================================================
 extern "C"
@@ -135,13 +127,13 @@ extern "C"
     WLXMP4P_API HRESULT __stdcall MP4Parser_GetTrackCount(HANDLE hParser, UINT32* pCount);
 
     // Retrieves info for a specific track (0-indexed).
-    WLXMP4P_API HRESULT __stdcall MP4Parser_GetTrackInfo(HANDLE hParser, UINT32 uTrackIndex, MP4TrackInfo* pInfo);
+    WLXMP4P_API HRESULT __stdcall MP4Parser_GetTrackInfo(HANDLE hParser, UINT32 uTrackIndex, MP4Parser::MP4TrackInfo* pInfo);
 
     // Retrieves the total duration (in 100ns units).
     WLXMP4P_API HRESULT __stdcall MP4Parser_GetDuration(HANDLE hParser, LONGLONG* pDuration);
 
     // Retrieves chapter information.
-    WLXMP4P_API HRESULT __stdcall MP4Parser_GetChapters(HANDLE hParser, MP4ChapterInfo* pChapters, UINT32* pCount);
+    WLXMP4P_API HRESULT __stdcall MP4Parser_GetChapters(HANDLE hParser, MP4Parser::MP4ChapterInfo* pChapters, UINT32* pCount);
 
     // Extracts an embedded thumbnail image.
     WLXMP4P_API HRESULT __stdcall MP4Parser_GetThumbnail(HANDLE hParser, Gdiplus::Bitmap** ppBitmap);

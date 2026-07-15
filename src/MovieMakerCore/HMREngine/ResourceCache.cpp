@@ -1,3 +1,5 @@
+﻿#include "pch.h"
+
 // ResourceCache.cpp - HMREngine::ResourceCache implementation
 
 #include "ResourceCache.h"

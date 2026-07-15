@@ -1,3 +1,5 @@
+﻿#include "pch.h"
+
 // MetadataImpl.cpp - Metadata implementations
 
 #include "MetadataImpl.h"

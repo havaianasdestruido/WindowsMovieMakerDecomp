@@ -1,3 +1,5 @@
+﻿#include "pch.h"
+
 /*
  * dllmain.cpp
  *
@@ -62,7 +64,7 @@ static Gdiplus::GdiplusStartupInput g_gdipStartupInput;
 static ULONG_PTR                    g_gdipToken = 0;
 
 // ATL module (global CComModule used by Sundance framework)
-ATL::CComModule _Module;
+CAppModule _Module;
 
 // D3D11 device (shared across render contexts)
 static ID3D11Device*           g_pD3D11Device        = NULL;
@@ -504,12 +506,12 @@ ATL::CComModule& MovieCore_GetModule(void)
 // ============================================================================
 // Expose InitializeSubsystems for MovieMakerMain
 // ============================================================================
-BOOL MovieCore_Initialize(HINSTANCE hInstance)
+extern "C" BOOL MovieCore_Initialize(HINSTANCE hInstance)
 {
     return InitializeSubsystems(hInstance);
 }
 
-void MovieCore_Shutdown(void)
+extern "C" void MovieCore_Shutdown(void)
 {
     ShutdownSubsystems();
 }

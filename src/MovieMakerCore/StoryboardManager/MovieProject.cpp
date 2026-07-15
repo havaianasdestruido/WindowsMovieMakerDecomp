@@ -1,3 +1,4 @@
+﻿#include "pch.h"
 /*
  * MovieProject.cpp
  *
@@ -666,7 +667,7 @@ HRESULT MovieProject::Save(LPCWSTR pszPath)
     hr = pWriter->SetOutput(pStream);
     if (SUCCEEDED(hr))
     {
-        hr = pWriter->WriteStartDocument(nullptr);
+        hr = pWriter->WriteStartDocument(XmlStandalone_Omit);
     }
 
     if (SUCCEEDED(hr))
@@ -676,12 +677,12 @@ HRESULT MovieProject::Save(LPCWSTR pszPath)
 
     if (SUCCEEDED(hr))
     {
-        hr = pWriter->WriteEndElement(nullptr); // project
+        hr = pWriter->WriteEndElement(); // project
     }
 
     if (SUCCEEDED(hr))
     {
-        hr = pWriter->WriteEndDocument(nullptr);
+        hr = pWriter->WriteEndDocument();
     }
 
     if (SUCCEEDED(hr))
@@ -786,13 +787,13 @@ HRESULT MovieProject::SaveToStream(IStream* pStream)
 
     hr = pWriter->SetOutput(pStream);
     if (SUCCEEDED(hr))
-        hr = pWriter->WriteStartDocument(nullptr);
+        hr = pWriter->WriteStartDocument(XmlStandalone_Omit);
     if (SUCCEEDED(hr))
         hr = WriteProjectElement(pWriter);
     if (SUCCEEDED(hr))
-        hr = pWriter->WriteEndElement(nullptr); // project
+        hr = pWriter->WriteEndElement(); // project
     if (SUCCEEDED(hr))
-        hr = pWriter->WriteEndDocument(nullptr);
+        hr = pWriter->WriteEndDocument();
     if (SUCCEEDED(hr))
         hr = pWriter->Flush();
 
@@ -1128,12 +1129,12 @@ HRESULT MovieProject::WriteProjectElement(IXmlWriter* pWriter)
     if (FAILED(hr)) return hr;
 
     WCHAR szBuf[64];
-    hr = pWriter->WriteAttributeString(nullptr, L"versionMajor", nullptr,
-        _itow_s(m_dwVersionMajor, szBuf, 10));
+    _itow_s(m_dwVersionMajor, szBuf, 10);
+    hr = pWriter->WriteAttributeString(nullptr, L"versionMajor", nullptr, szBuf);
     if (FAILED(hr)) return hr;
 
-    hr = pWriter->WriteAttributeString(nullptr, L"versionMinor", nullptr,
-        _itow_s(m_dwVersionMinor, szBuf, 10));
+    _itow_s(m_dwVersionMinor, szBuf, 10);
+    hr = pWriter->WriteAttributeString(nullptr, L"versionMinor", nullptr, szBuf);
     if (FAILED(hr)) return hr;
 
     if (!m_settings.GetProjectName().IsEmpty())
@@ -1171,47 +1172,47 @@ HRESULT MovieProject::WriteMediaElement(IXmlWriter* pWriter)
         hr = pWriter->WriteStartElement(nullptr, L"mediaItem", nullptr);
         if (FAILED(hr)) break;
 
-        hr = pWriter->WriteAttributeString(nullptr, L"id", nullptr,
-            _itow_s(item.GetMediaId(), szBuf, 10));
+        _itow_s(item.GetMediaId(), szBuf, 10);
+        hr = pWriter->WriteAttributeString(nullptr, L"id", nullptr, szBuf);
         if (FAILED(hr)) break;
 
         hr = pWriter->WriteAttributeString(nullptr, L"path", nullptr,
             item.GetSourcePath());
         if (FAILED(hr)) break;
 
-        hr = pWriter->WriteAttributeString(nullptr, L"type", nullptr,
-            _itow_s(item.GetMediaType(), szBuf, 10));
+        _itow_s(item.GetMediaType(), szBuf, 10);
+        hr = pWriter->WriteAttributeString(nullptr, L"type", nullptr, szBuf);
         if (FAILED(hr)) break;
 
-        hr = pWriter->WriteAttributeString(nullptr, L"duration", nullptr,
-            _i64tow_s(item.GetDurationHns(), szBuf, 10));
+        _i64tow_s(item.GetDurationHns(), szBuf, _countof(szBuf), 10);
+        hr = pWriter->WriteAttributeString(nullptr, L"duration", nullptr, szBuf);
         if (FAILED(hr)) break;
 
         if (item.GetWidth() > 0 && item.GetHeight() > 0)
         {
-            hr = pWriter->WriteAttributeString(nullptr, L"width", nullptr,
-                _itow_s(item.GetWidth(), szBuf, 10));
+            _itow_s(item.GetWidth(), szBuf, 10);
+            hr = pWriter->WriteAttributeString(nullptr, L"width", nullptr, szBuf);
             if (FAILED(hr)) break;
 
-            hr = pWriter->WriteAttributeString(nullptr, L"height", nullptr,
-                _itow_s(item.GetHeight(), szBuf, 10));
+            _itow_s(item.GetHeight(), szBuf, 10);
+            hr = pWriter->WriteAttributeString(nullptr, L"height", nullptr, szBuf);
             if (FAILED(hr)) break;
         }
 
         if (item.GetFrameRate() > 0)
         {
-            hr = pWriter->WriteAttributeString(nullptr, L"frameRate", nullptr,
-                _itow_s(item.GetFrameRate(), szBuf, 10));
+            _itow_s(item.GetFrameRate(), szBuf, 10);
+            hr = pWriter->WriteAttributeString(nullptr, L"frameRate", nullptr, szBuf);
             if (FAILED(hr)) break;
         }
 
-        hr = pWriter->WriteEndElement(nullptr); // mediaItem
+        hr = pWriter->WriteEndElement(); // mediaItem
         if (FAILED(hr)) break;
     }
 
     if (SUCCEEDED(hr))
     {
-        hr = pWriter->WriteEndElement(nullptr); // media
+        hr = pWriter->WriteEndElement(); // media
     }
 
     return hr;
@@ -1244,17 +1245,17 @@ HRESULT MovieProject::WriteTimelineElement(IXmlWriter* pWriter)
             if (FAILED(hr)) break;
 
             WCHAR szBuf[64];
-            hr = pWriter->WriteAttributeString(nullptr, L"id", nullptr,
-                _itow_s(timeline.GetExtentIdAt(e), szBuf, 10));
+            _itow_s(timeline.GetExtentIdAt(e), szBuf, _countof(szBuf), 10);
+            hr = pWriter->WriteAttributeString(nullptr, L"id", nullptr, szBuf);
             if (FAILED(hr)) break;
 
-            hr = pWriter->WriteEndElement(nullptr); // extent
+            hr = pWriter->WriteEndElement(); // extent
             if (FAILED(hr)) break;
         }
 
         if (SUCCEEDED(hr))
         {
-            hr = pWriter->WriteEndElement(nullptr); // timeline
+            hr = pWriter->WriteEndElement(); // timeline
         }
         if (FAILED(hr)) break;
     }
@@ -1269,7 +1270,7 @@ HRESULT MovieProject::WriteTransitionsElement(IXmlWriter* pWriter)
 
     // TODO: serialize transition data
 
-    hr = pWriter->WriteEndElement(nullptr); // transitions
+    hr = pWriter->WriteEndElement(); // transitions
     return hr;
 }
 
@@ -1280,7 +1281,7 @@ HRESULT MovieProject::WriteEffectsElement(IXmlWriter* pWriter)
 
     // TODO: serialize effect data
 
-    hr = pWriter->WriteEndElement(nullptr); // effects
+    hr = pWriter->WriteEndElement(); // effects
     return hr;
 }
 
@@ -1291,7 +1292,7 @@ HRESULT MovieProject::WriteTitlesElement(IXmlWriter* pWriter)
 
     // TODO: serialize title overlay data
 
-    hr = pWriter->WriteEndElement(nullptr); // titles
+    hr = pWriter->WriteEndElement(); // titles
     return hr;
 }
 
@@ -1308,19 +1309,19 @@ HRESULT MovieProject::ReadProjectElement(IXmlReader* pReader)
 
     // Read version attributes
     LPCWSTR pszValue = nullptr;
-    hr = pReader->GetAttributeValueByName(L"versionMinor", &pszValue);
+    hr = XmlReaderGetAttribute(pReader, L"versionMinor", &pszValue);
     if (SUCCEEDED(hr) && pszValue)
     {
         m_dwVersionMinor = _wtol(pszValue);
     }
 
-    hr = pReader->GetAttributeValueByName(L"versionMajor", &pszValue);
+    hr = XmlReaderGetAttribute(pReader, L"versionMajor", &pszValue);
     if (SUCCEEDED(hr) && pszValue)
     {
         m_dwVersionMajor = _wtol(pszValue);
     }
 
-    hr = pReader->GetAttributeValueByName(L"name", &pszValue);
+    hr = XmlReaderGetAttribute(pReader, L"name", &pszValue);
     if (SUCCEEDED(hr) && pszValue)
     {
         m_settings.SetProjectName(pszValue);
@@ -1387,32 +1388,32 @@ HRESULT MovieProject::ReadMediaElement(IXmlReader* pReader)
 
                 LPCWSTR pszValue = nullptr;
 
-                hr = pReader->GetAttributeValueByName(L"id", &pszValue);
+                hr = XmlReaderGetAttribute(pReader, L"id", &pszValue);
                 if (SUCCEEDED(hr) && pszValue)
                     item.SetMediaId(_wtol(pszValue));
 
-                hr = pReader->GetAttributeValueByName(L"path", &pszValue);
+                hr = XmlReaderGetAttribute(pReader, L"path", &pszValue);
                 if (SUCCEEDED(hr) && pszValue)
                     item.SetSourcePath(pszValue);
 
-                hr = pReader->GetAttributeValueByName(L"type", &pszValue);
+                hr = XmlReaderGetAttribute(pReader, L"type", &pszValue);
                 if (SUCCEEDED(hr) && pszValue)
                     item.SetMediaType(_wtol(pszValue));
 
-                hr = pReader->GetAttributeValueByName(L"duration", &pszValue);
+                hr = XmlReaderGetAttribute(pReader, L"duration", &pszValue);
                 if (SUCCEEDED(hr) && pszValue)
                     item.SetDurationHns(_wtoi64(pszValue));
 
-                hr = pReader->GetAttributeValueByName(L"width", &pszValue);
+                hr = XmlReaderGetAttribute(pReader, L"width", &pszValue);
                 if (SUCCEEDED(hr) && pszValue)
                 {
                     UINT cx = _wtol(pszValue);
-                    hr = pReader->GetAttributeValueByName(L"height", &pszValue);
+                    hr = XmlReaderGetAttribute(pReader, L"height", &pszValue);
                     if (SUCCEEDED(hr) && pszValue)
                         item.SetDimensions(cx, _wtol(pszValue));
                 }
 
-                hr = pReader->GetAttributeValueByName(L"frameRate", &pszValue);
+                hr = XmlReaderGetAttribute(pReader, L"frameRate", &pszValue);
                 if (SUCCEEDED(hr) && pszValue)
                     item.SetFrameRate(_wtol(pszValue));
 
@@ -1435,7 +1436,7 @@ HRESULT MovieProject::ReadTimelineElement(IXmlReader* pReader)
 
     // Read track attribute to determine which timeline
     LPCWSTR pszTrack = nullptr;
-    HRESULT hr = pReader->GetAttributeValueByName(L"track", &pszTrack);
+    HRESULT hr = XmlReaderGetAttribute(pReader, L"track", &pszTrack);
     if (FAILED(hr) || !pszTrack)
         return E_FAIL;
 
@@ -1472,7 +1473,7 @@ HRESULT MovieProject::ReadTimelineElement(IXmlReader* pReader)
             if (wcscmp(pszLocalName, L"extent") == 0)
             {
                 LPCWSTR pszValue = nullptr;
-                hr = pReader->GetAttributeValueByName(L"id", &pszValue);
+                hr = XmlReaderGetAttribute(pReader, L"id", &pszValue);
                 if (SUCCEEDED(hr) && pszValue)
                 {
                     DWORD dwExtentId = _wtol(pszValue);
@@ -1554,6 +1555,89 @@ DWORD MovieProject::GenerateNextMediaId()
 DWORD MovieProject::GenerateNextExtentId()
 {
     return m_dwNextExtentId++;
+}
+
+ATL::CString MovieProject::GetFilePath() const
+{
+    return GetProjectPath();
+}
+
+ATL::CString MovieProject::GetDisplayName() const
+{
+    return GetProjectName();
+}
+
+HRESULT MovieProject::SaveAs(LPCWSTR pszPath)
+{
+    return Save(pszPath);
+}
+
+HRESULT MovieProject::ImportMedia(LPCWSTR pszPath, TimelineTrackType trackType)
+{
+    UNREFERENCED_PARAMETER(trackType);
+    if (!pszPath || !pszPath[0])
+        return E_INVALIDARG;
+    AddMediaItemFromFile(pszPath);
+    return S_OK;
+}
+
+HRESULT MovieProject::RemoveItem(DWORD dwItemId, TimelineTrackType trackType)
+{
+    UNREFERENCED_PARAMETER(trackType);
+    int nIndex = FindMediaItemById(dwItemId);
+    if (nIndex >= 0)
+        RemoveMediaItem(static_cast<size_t>(nIndex));
+    return S_OK;
+}
+
+HRESULT MovieProject::MoveItem(DWORD dwItemId, TimelineTrackType trackType, DWORD dwNewPosition)
+{
+    UNREFERENCED_PARAMETER(trackType);
+    UNREFERENCED_PARAMETER(dwItemId);
+    UNREFERENCED_PARAMETER(dwNewPosition);
+    return S_OK;
+}
+
+size_t MovieProject::GetItemCount(TimelineTrackType trackType) const throw()
+{
+    UNREFERENCED_PARAMETER(trackType);
+    return GetMediaItemCount();
+}
+
+bool MovieProject::IsItemValid(DWORD dwItemId, TimelineTrackType trackType) const throw()
+{
+    UNREFERENCED_PARAMETER(trackType);
+    int nIndex = FindMediaItemById(dwItemId);
+    return nIndex >= 0 && static_cast<size_t>(nIndex) < GetMediaItemCount();
+}
+
+void MovieProject::GetExtentIdsForMediaItem(DWORD dwItemId, TimelineTrackType trackType, Base::Array<DWORD>& ids) const
+{
+    UNREFERENCED_PARAMETER(dwItemId);
+    UNREFERENCED_PARAMETER(trackType);
+    UNREFERENCED_PARAMETER(ids);
+}
+
+HRESULT MovieProject::GetExtentForMediaItem(DWORD dwItemId, Base::PtrRef<MovieExtent>& extentOut)
+{
+    UNREFERENCED_PARAMETER(dwItemId);
+    UNREFERENCED_PARAMETER(extentOut);
+    return E_NOTIMPL;
+}
+
+bool MovieProject::HasItemsNeedingProxyTranscode() const
+{
+    return false;
+}
+
+HRESULT MovieProject::StartProxyTranscode()
+{
+    return S_OK;
+}
+
+void MovieProject::MarkAllExtentsForRetranscode(TimelineTrackType trackType)
+{
+    UNREFERENCED_PARAMETER(trackType);
 }
 
 } // namespace StoryboardManager

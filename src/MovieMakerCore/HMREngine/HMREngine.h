@@ -6,10 +6,9 @@
 #include <atlcom.h>
 #include <atlstr.h>
 #include <d3d11.h>
-#include <d3dx11.h>
 #include <dxgi.h>
 #include <DirectXMath.h>
-#include <xstring>
+#include <string>
 #include <vector>
 #include <map>
 #include <unordered_map>
@@ -23,7 +22,6 @@
 #include <cmath>
 
 #pragma comment(lib, "d3d11.lib")
-#pragma comment(lib, "d3dx11.lib")
 #pragma comment(lib, "dxgi.lib")
 
 namespace HMREngine
@@ -110,6 +108,21 @@ namespace HMREngine
     struct MotionTextureResource;
 
     // Return codes
+    // Temporarily undef Windows SDK macros that conflict with our enum values
+#undef S_OK
+#undef E_FAIL
+#undef E_OUTOFMEMORY
+#undef E_INVALIDARG
+#undef E_NOTIMPL
+#undef E_POINTER
+#undef E_UNEXPECTED
+#undef E_ACCESSDENIED
+#undef E_ABORT
+#undef DXGI_ERROR_DEVICE_REMOVED
+#undef DXGI_ERROR_DEVICE_RESET
+#undef D3DERR_DEVICELOST
+#undef D3DERR_DEVICENOTRESET
+
     enum class HMRError : int
     {
         S_OK = 0,
@@ -126,5 +139,46 @@ namespace HMREngine
         D3DERR_DEVICELOST = 11,
         D3DERR_DEVICENOTRESET = 12,
     };
+
+    // Restore the original Windows SDK macros
+#ifndef S_OK
+#define S_OK ((HRESULT)0L)
+#endif
+#ifndef E_FAIL
+#define E_FAIL ((HRESULT)0x80004005L)
+#endif
+#ifndef E_OUTOFMEMORY
+#define E_OUTOFMEMORY ((HRESULT)0x8007000EL)
+#endif
+#ifndef E_INVALIDARG
+#define E_INVALIDARG ((HRESULT)0x80070057L)
+#endif
+#ifndef E_NOTIMPL
+#define E_NOTIMPL ((HRESULT)0x80004001L)
+#endif
+#ifndef E_POINTER
+#define E_POINTER ((HRESULT)0x80004003L)
+#endif
+#ifndef E_UNEXPECTED
+#define E_UNEXPECTED ((HRESULT)0x8000FFFFL)
+#endif
+#ifndef E_ACCESSDENIED
+#define E_ACCESSDENIED ((HRESULT)0x80070005L)
+#endif
+#ifndef E_ABORT
+#define E_ABORT ((HRESULT)0x40001L)
+#endif
+#ifndef DXGI_ERROR_DEVICE_REMOVED
+#define DXGI_ERROR_DEVICE_REMOVED ((HRESULT)0x887A0005L)
+#endif
+#ifndef DXGI_ERROR_DEVICE_RESET
+#define DXGI_ERROR_DEVICE_RESET ((HRESULT)0x887A0006L)
+#endif
+#ifndef D3DERR_DEVICELOST
+#define D3DERR_DEVICELOST ((HRESULT)0x887608C8L)
+#endif
+#ifndef D3DERR_DEVICENOTRESET
+#define D3DERR_DEVICENOTRESET ((HRESULT)0x887608C9L)
+#endif
 
 } // namespace HMREngine

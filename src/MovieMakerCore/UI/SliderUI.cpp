@@ -1,4 +1,4 @@
-/*
+﻿/*
  * SliderUI.cpp
  *
  * Implementation of popup slider and track bar controls.
@@ -98,7 +98,7 @@ bool PopUpSlider::IsPopupVisible() const throw()
 
 void PopUpSlider::SetValue(int nValue)
 {
-    m_nValue = max(m_nMin, min(m_nMax, nValue));
+    m_nValue = std::max(m_nMin, std::min(m_nMax, nValue));
 
     if (m_hWndTrackBar && ::IsWindow(m_hWndTrackBar))
         ::SendMessage(m_hWndTrackBar, TBM_SETPOS, TRUE, m_nValue);
@@ -233,7 +233,7 @@ PopUpSliderTrackBar::~PopUpSliderTrackBar() {}
 
 void PopUpSliderTrackBar::SetValue(int nValue)
 {
-    m_nValue = max(m_nMin, min(m_nMax, nValue));
+    m_nValue = std::max(m_nMin, std::min(m_nMax, nValue));
     if (IsWindow())
         Invalidate(FALSE);
 }
@@ -244,7 +244,7 @@ void PopUpSliderTrackBar::SetRange(int nMin, int nMax)
 {
     m_nMin = nMin;
     m_nMax = nMax;
-    m_nValue = max(m_nMin, min(m_nMax, m_nValue));
+    m_nValue = std::max(m_nMin, std::min(m_nMax, m_nValue));
 }
 
 void PopUpSliderTrackBar::SetTrackHeight(int nHeight) { m_nTrackHeight = nHeight; }
@@ -265,7 +265,7 @@ int PopUpSliderTrackBar::ValueFromPoint(int x) const
     if (nClientWidth <= 0) return m_nMin;
 
     int nValue = m_nMin + (x * nRange / nClientWidth);
-    return max(m_nMin, min(m_nMax, nValue));
+    return std::max(m_nMin, std::min(m_nMax, nValue));
 }
 
 int PopUpSliderTrackBar::PointFromValue(int nValue) const

@@ -1,3 +1,4 @@
+﻿#include "pch.h"
 /*
  * Mixer.cpp
  *
@@ -65,7 +66,7 @@ HRESULT MixerBuffer::AddSamples(const float* pSamples, DWORD dwFrameCount, float
 {
     if (!pSamples) return E_INVALIDARG;
 
-    DWORD framesToMix = min(dwFrameCount, m_dwMaxFrames - m_dwFrameCount);
+    DWORD framesToMix = std::min(dwFrameCount, m_dwMaxFrames - m_dwFrameCount);
     float* pDest = m_arrAccumulator.GetData() + (static_cast<size_t>(m_dwFrameCount) * m_dwChannels);
 
     for (DWORD f = 0; f < framesToMix; ++f)
@@ -85,7 +86,7 @@ HRESULT MixerBuffer::AddSamplesWithPan(const float* pSamples, DWORD dwFrameCount
 {
     if (!pSamples) return E_INVALIDARG;
 
-    DWORD framesToMix = min(dwFrameCount, m_dwMaxFrames - m_dwFrameCount);
+    DWORD framesToMix = std::min(dwFrameCount, m_dwMaxFrames - m_dwFrameCount);
     float* pDest = m_arrAccumulator.GetData() + (static_cast<size_t>(m_dwFrameCount) * m_dwChannels);
 
     // Pan law: equal power panning
@@ -114,7 +115,7 @@ HRESULT MixerBuffer::GetResultAsFloat(float* pOutput, DWORD dwFrameCount) const
 {
     if (!pOutput) return E_INVALIDARG;
 
-    DWORD framesToCopy = min(dwFrameCount, m_dwFrameCount);
+    DWORD framesToCopy = std::min(dwFrameCount, m_dwFrameCount);
     size_t cbCopy = static_cast<size_t>(framesToCopy) * m_dwChannels * sizeof(float);
     memcpy(pOutput, m_arrAccumulator.GetData(), cbCopy);
 
@@ -129,7 +130,7 @@ HRESULT MixerBuffer::GetResultAsInt16(short* pOutput, DWORD dwFrameCount) const
 {
     if (!pOutput) return E_INVALIDARG;
 
-    DWORD framesToCopy = min(dwFrameCount, m_dwFrameCount);
+    DWORD framesToCopy = std::min(dwFrameCount, m_dwFrameCount);
     const float* pSrc = m_arrAccumulator.GetData();
 
     for (DWORD i = 0; i < framesToCopy * m_dwChannels; ++i)
@@ -147,7 +148,7 @@ HRESULT MixerBuffer::GetResultAsInt32(int* pOutput, DWORD dwFrameCount) const
 {
     if (!pOutput) return E_INVALIDARG;
 
-    DWORD framesToCopy = min(dwFrameCount, m_dwFrameCount);
+    DWORD framesToCopy = std::min(dwFrameCount, m_dwFrameCount);
     const float* pSrc = m_arrAccumulator.GetData();
 
     for (DWORD i = 0; i < framesToCopy * m_dwChannels; ++i)

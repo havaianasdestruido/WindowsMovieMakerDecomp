@@ -189,7 +189,7 @@ void AuthCredentials::Clear()
     m_strDomain.Empty();
     m_strUrl.Empty();
     m_llExpiryTimeHns = 0;
-    m_attributes.RemoveAll();
+    m_attributes.clear();
 }
 
 // ============================================================================
@@ -220,7 +220,7 @@ HRESULT AuthProvider::Shutdown()
     m_fInitialized = false;
     m_fAuthenticated = false;
     m_fPending = false;
-    m_credentialCache.RemoveAll();
+    m_credentialCache.clear();
     return S_OK;
 }
 
@@ -346,7 +346,7 @@ HRESULT AuthProvider::RemoveCredentials(LPCWSTR pszUrl)
 
 HRESULT AuthProvider::ClearAllCredentials()
 {
-    m_credentialCache.RemoveAll();
+    m_credentialCache.clear();
     return S_OK;
 }
 

@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.15)
 project(WLXPhotoBase LANGUAGES CXX)
 
-set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # WLXPhotoBase.dll - Shared foundation library for Windows Live Photo Gallery / Movie Maker
@@ -10,7 +10,6 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 add_library(WLXPhotoBase SHARED
     WLXPhotoBase.cpp
-    WLXPhotoBase.def
     $<TARGET_OBJECTS:BaseTypes>
 )
 
@@ -26,8 +25,8 @@ set_target_properties(WLXPhotoBase PROPERTIES
 
 target_include_directories(WLXPhotoBase PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}
-    ${CMAKE_CURRENT_SOURCE_DIR}/../../include
-    ${CMAKE_CURRENT_SOURCE_DIR}/../../include/atl
+    ${CMAKE_SOURCE_DIR}/src
+    ${CMAKE_SOURCE_DIR}/src/WTL
 )
 
 target_compile_definitions(WLXPhotoBase PRIVATE
@@ -71,8 +70,8 @@ set_target_properties(BaseTypes PROPERTIES
 
 target_include_directories(BaseTypes PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}
-    ${CMAKE_CURRENT_SOURCE_DIR}/../../include
-    ${CMAKE_CURRENT_SOURCE_DIR}/../../include/atl
+    ${CMAKE_SOURCE_DIR}/src
+    ${CMAKE_SOURCE_DIR}/src/WTL
 )
 
 target_compile_definitions(BaseTypes PRIVATE

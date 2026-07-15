@@ -1,6 +1,8 @@
 // AsyncSourceResolver.cpp - Asynchronous source resolver implementation
 
 #include "pch.h"
+#include <mferror.h>
+#include <wininet.h>
 #include "AsyncSourceResolver.h"
 
 namespace HMRAVSource
@@ -188,8 +190,12 @@ HRESULT AsyncSourceResolver::GetAsyncResult() const throw()
 IMFMediaSource* AsyncSourceResolver::GetResolvedSource()
 {
     if (m_spResolvedSource)
-        m_spResolvedSource->AddRef();
-    return m_spResolvedSource;
+    {
+        IMFMediaSource* pSource = m_spResolvedSource;
+        pSource->AddRef();
+        return pSource;
+    }
+    return nullptr;
 }
 
 // ============================================================================
@@ -282,7 +288,6 @@ HRESULT AsyncSourceResolver::ResolveOnBackgroundThread()
 
         hr = m_spResolver->CreateObjectFromURL(
             m_strOriginalUrl.GetString(),
-            nullptr,
             MF_RESOLUTION_MEDIASOURCE,
             nullptr,
             &objectType,

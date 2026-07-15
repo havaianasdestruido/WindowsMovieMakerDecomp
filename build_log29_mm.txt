@@ -1,0 +1,5 @@
+﻿Vers├úo do MSBuild 17.14.40+3e7442088 para .NET Framework
+
+  WLXPhotoBase.vcxproj -> C:\Users\mcmco\Desktop\WMMR\build\bin\Debug\WLXPhotoBase.dll
+C:\Users\mcmco\Desktop\WMMR\src\MovieMaker\moviemaker.rc(4): error RC2176: old DIB in resources\MovieMaker.ico; pass it through SDKPAINT [C:\Users\mcmco\Desktop\WMMR\build\src\MovieMaker\MovieMaker.vcxproj]
+  

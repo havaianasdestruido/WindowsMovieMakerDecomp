@@ -29,18 +29,14 @@ HRESULT MFByteStreamOnStream::CreateInstance(IStream* pStream, IMFByteStream** p
 
     *ppByteStream = nullptr;
 
-    CComPtr<MFByteStreamOnStream> spInstance;
-    HRESULT hr = spInstance.CoCreateInstance(CLSID_AsyncReader);
-    if (FAILED(hr))
-    {
-        spInstance = new (std::nothrow) MFByteStreamOnStream();
-        if (!spInstance)
-            return E_OUTOFMEMORY;
-    }
+    MFByteStreamOnStream* pInstance = new (std::nothrow) MFByteStreamOnStream();
+    if (!pInstance)
+        return E_OUTOFMEMORY;
 
-    spInstance->m_spStream = pStream;
+    pInstance->m_spStream = pStream;
 
-    *ppByteStream = spInstance.Detach();
+    *ppByteStream = pInstance;
+    (*ppByteStream)->AddRef();
     return S_OK;
 }
 
@@ -280,6 +276,18 @@ STDMETHODIMP MFByteStreamOnStream::Flush()
     return S_OK;
 }
 
+STDMETHODIMP MFByteStreamOnStream::Close()
+{
+    EnterCriticalSection(&m_csLock);
+    if (m_spStream)
+    {
+        m_spStream.Release();
+    }
+    m_qwPosition = 0;
+    LeaveCriticalSection(&m_csLock);
+    return S_OK;
+}
+
 HRESULT MFByteStreamOnStream::GetStream(IStream** ppStream)
 {
     if (!ppStream)
@@ -400,6 +408,11 @@ STDMETHODIMP MFAsyncResult::GetObject(IUnknown** ppunkObject)
     if (*ppunkObject)
         (*ppunkObject)->AddRef();
     return S_OK;
+}
+
+IUnknown* MFAsyncResult::GetStateNoAddRef()
+{
+    return m_spState;
 }
 
 HRESULT MFAsyncResult::SetAsyncResult(HRESULT hr)

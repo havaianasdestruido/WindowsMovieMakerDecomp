@@ -1,3 +1,4 @@
+﻿#include "pch.h"
 /*
  * ThemeTemplates.cpp
  *
@@ -248,6 +249,34 @@ TemplateSocket::~TemplateSocket()
 {
 }
 
+TemplateSocket::TemplateSocket(const TemplateSocket& other)
+    : m_strId(other.m_strId)
+    , m_strName(other.m_strName)
+    , m_type(other.m_type)
+    , m_strPlaceholderId(other.m_strPlaceholderId)
+    , m_dwAllowedTypes(other.m_dwAllowedTypes)
+    , m_dwIndex(other.m_dwIndex)
+    , m_fConnected(other.m_fConnected)
+{
+    m_arrProperties.Copy(other.m_arrProperties);
+}
+
+TemplateSocket& TemplateSocket::operator=(const TemplateSocket& other)
+{
+    if (this != &other)
+    {
+        m_strId = other.m_strId;
+        m_strName = other.m_strName;
+        m_type = other.m_type;
+        m_strPlaceholderId = other.m_strPlaceholderId;
+        m_dwAllowedTypes = other.m_dwAllowedTypes;
+        m_dwIndex = other.m_dwIndex;
+        m_fConnected = other.m_fConnected;
+        m_arrProperties.Copy(other.m_arrProperties);
+    }
+    return *this;
+}
+
 ATL::CString TemplateSocket::GetId() const
 {
     return m_strId;
@@ -414,17 +443,17 @@ HRESULT TemplateSocketsParser::Parse(IXmlReader* pReader,
     {
         if (nodeType == XmlNodeType_Element)
         {
-            CComBSTR bstrName;
-            pReader->GetLocalName(&bstrName, nullptr);
+            LPCWSTR pwszName = nullptr;
+            pReader->GetLocalName(&pwszName, nullptr);
 
-            if (bstrName && wcscmp(bstrName, L"socket") == 0)
+            if (pwszName && wcscmp(pwszName, L"socket") == 0)
             {
                 TemplateSocket socket;
                 m_hrLastError = ParseSocket(pReader, socket);
                 if (SUCCEEDED(m_hrLastError))
                     sockets.Add(socket);
             }
-            else if (bstrName && wcscmp(bstrName, L"placeholder") == 0)
+            else if (pwszName && wcscmp(pwszName, L"placeholder") == 0)
             {
                 TemplatePlaceholder placeholder;
                 m_hrLastError = ParsePlaceholder(pReader, placeholder);
@@ -453,9 +482,9 @@ HRESULT TemplateSocketsParser::ParseSocket(IXmlReader* pReader, TemplateSocket& 
     {
         if (nodeType == XmlNodeType_Element)
         {
-            CComBSTR bstrName;
-            pReader->GetLocalName(&bstrName, nullptr);
-            if (bstrName && wcscmp(bstrName, L"properties") == 0)
+            LPCWSTR pwszName = nullptr;
+            pReader->GetLocalName(&pwszName, nullptr);
+            if (pwszName && wcscmp(pwszName, L"properties") == 0)
             {
                 hr = ParseSocketProperties(pReader, socket);
                 if (FAILED(hr))
@@ -488,51 +517,54 @@ ATL::CString TemplateSocketsParser::GetLastErrorMessage() const
 
 HRESULT TemplateSocketsParser::ParseSocketAttributes(IXmlReader* pReader, TemplateSocket& socket)
 {
-    CComBSTR bstrVal;
+    LPCWSTR pwszVal = nullptr;
 
-    if (SUCCEEDED(pReader->GetAttribute(L"id", &bstrVal)) && bstrVal)
-        socket.SetId(bstrVal);
+    if (SUCCEEDED(XmlReaderGetAttribute(pReader, L"id", &pwszVal)) && pwszVal)
+        socket.SetId(pwszVal);
 
-    if (SUCCEEDED(pReader->GetAttribute(L"name", &bstrVal)) && bstrVal)
-        socket.SetName(bstrVal);
+    if (SUCCEEDED(XmlReaderGetAttribute(pReader, L"name", &pwszVal)) && pwszVal)
+        socket.SetName(pwszVal);
 
-    if (SUCCEEDED(pReader->GetAttribute(L"type", &bstrVal)) && bstrVal)
+    pwszVal = nullptr;
+    if (SUCCEEDED(XmlReaderGetAttribute(pReader, L"type", &pwszVal)) && pwszVal)
     {
-        if (wcscmp(bstrVal, L"video") == 0)
+        if (wcscmp(pwszVal, L"video") == 0)
             socket.SetType(TemplateSocketTypeVideo);
-        else if (wcscmp(bstrVal, L"audio") == 0)
+        else if (wcscmp(pwszVal, L"audio") == 0)
             socket.SetType(TemplateSocketTypeAudio);
-        else if (wcscmp(bstrVal, L"image") == 0)
+        else if (wcscmp(pwszVal, L"image") == 0)
             socket.SetType(TemplateSocketTypeImage);
-        else if (wcscmp(bstrVal, L"text") == 0)
+        else if (wcscmp(pwszVal, L"text") == 0)
             socket.SetType(TemplateSocketTypeText);
     }
 
-    if (SUCCEEDED(pReader->GetAttribute(L"placeholder", &bstrVal)) && bstrVal)
-        socket.SetPlaceholderId(bstrVal);
+    pwszVal = nullptr;
+    if (SUCCEEDED(XmlReaderGetAttribute(pReader, L"placeholder", &pwszVal)) && pwszVal)
+        socket.SetPlaceholderId(pwszVal);
 
     return S_OK;
 }
 
 HRESULT TemplateSocketsParser::ParsePlaceholderAttributes(IXmlReader* pReader, TemplatePlaceholder& placeholder)
 {
-    CComBSTR bstrVal;
+    LPCWSTR pwszVal = nullptr;
 
-    if (SUCCEEDED(pReader->GetAttribute(L"id", &bstrVal)) && bstrVal)
-        placeholder.SetId(bstrVal);
+    if (SUCCEEDED(XmlReaderGetAttribute(pReader, L"id", &pwszVal)) && pwszVal)
+        placeholder.SetId(pwszVal);
 
-    if (SUCCEEDED(pReader->GetAttribute(L"name", &bstrVal)) && bstrVal)
-        placeholder.SetName(bstrVal);
+    if (SUCCEEDED(XmlReaderGetAttribute(pReader, L"name", &pwszVal)) && pwszVal)
+        placeholder.SetName(pwszVal);
 
-    if (SUCCEEDED(pReader->GetAttribute(L"type", &bstrVal)) && bstrVal)
+    pwszVal = nullptr;
+    if (SUCCEEDED(XmlReaderGetAttribute(pReader, L"type", &pwszVal)) && pwszVal)
     {
-        if (wcscmp(bstrVal, L"video") == 0)
+        if (wcscmp(pwszVal, L"video") == 0)
             placeholder.SetType(TemplateSocketTypeVideo);
-        else if (wcscmp(bstrVal, L"audio") == 0)
+        else if (wcscmp(pwszVal, L"audio") == 0)
             placeholder.SetType(TemplateSocketTypeAudio);
-        else if (wcscmp(bstrVal, L"image") == 0)
+        else if (wcscmp(pwszVal, L"image") == 0)
             placeholder.SetType(TemplateSocketTypeImage);
-        else if (wcscmp(bstrVal, L"text") == 0)
+        else if (wcscmp(pwszVal, L"text") == 0)
             placeholder.SetType(TemplateSocketTypeText);
     }
 
@@ -546,16 +578,17 @@ HRESULT TemplateSocketsParser::ParseSocketProperties(IXmlReader* pReader, Templa
     {
         if (nodeType == XmlNodeType_Element)
         {
-            CComBSTR bstrName;
-            pReader->GetLocalName(&bstrName, nullptr);
-            if (bstrName && wcscmp(bstrName, L"property") == 0)
+            LPCWSTR pwszName = nullptr;
+            pReader->GetLocalName(&pwszName, nullptr);
+            if (pwszName && wcscmp(pwszName, L"property") == 0)
             {
                 TemplateProperty prop;
-                CComBSTR bstrKey, bstrVal;
-                if (SUCCEEDED(pReader->GetAttribute(L"key", &bstrKey)) && bstrKey)
-                    prop.SetKey(bstrKey);
-                if (SUCCEEDED(pReader->GetAttribute(L"value", &bstrVal)) && bstrVal)
-                    prop.SetValue(bstrVal);
+                LPCWSTR pwszKey = nullptr;
+                LPCWSTR pwszVal = nullptr;
+                if (SUCCEEDED(XmlReaderGetAttribute(pReader, L"key", &pwszKey)) && pwszKey)
+                    prop.SetKey(pwszKey);
+                if (SUCCEEDED(XmlReaderGetAttribute(pReader, L"value", &pwszVal)) && pwszVal)
+                    prop.SetValue(pwszVal);
                 socket.AddProperty(prop);
             }
         }

@@ -2,6 +2,7 @@
 // EffectResourceDX.h - HLSL effect wrapper and all effect resource types
 
 #include "DXResources.h"
+#include "DeviceClientDX.h"
 
 namespace HMREngine
 {
@@ -90,7 +91,7 @@ namespace HMREngine
             BlurEffectResource();
             virtual ~BlurEffectResource();
 
-            HRESULT Initialize(ID3D11Device* dev) override;
+            HRESULT Initialize(ID3D11Device* dev);
             void SetDirection(const Vec2& dir);
             void SetTexelSize(const Vec2& size);
             void SetBlurRadius(float radius);
@@ -110,7 +111,7 @@ namespace HMREngine
             BrightnessEffectResource();
             virtual ~BrightnessEffectResource();
 
-            HRESULT Initialize(ID3D11Device* dev) override;
+            HRESULT Initialize(ID3D11Device* dev);
             void SetBrightness(float brightness);
             void SetContrast(float contrast);
             void SetGamma(float gamma);
@@ -132,7 +133,7 @@ namespace HMREngine
             ChannelMixerEffectResource();
             virtual ~ChannelMixerEffectResource();
 
-            HRESULT Initialize(ID3D11Device* dev) override;
+            HRESULT Initialize(ID3D11Device* dev);
             void SetRedVector(const Vec3& v);
             void SetGreenVector(const Vec3& v);
             void SetBlueVector(const Vec3& v);
@@ -152,7 +153,7 @@ namespace HMREngine
             DissolveEffectResource();
             virtual ~DissolveEffectResource();
 
-            HRESULT Initialize(ID3D11Device* dev) override;
+            HRESULT Initialize(ID3D11Device* dev);
             void SetThreshold(float threshold);
             void SetEdgeWidth(float width);
             void SetEdgeColor(const Rgb& color);
@@ -189,7 +190,7 @@ namespace HMREngine
             EdgeDetectionEffectResource();
             virtual ~EdgeDetectionEffectResource();
 
-            HRESULT Initialize(ID3D11Device* dev) override;
+            HRESULT Initialize(ID3D11Device* dev);
             void SetTexelSize(const Vec2& size);
             void SetThreshold(float threshold);
             void SetEdgeColor(const Rgb& color);
@@ -209,7 +210,7 @@ namespace HMREngine
             FadeEffectResource();
             virtual ~FadeEffectResource();
 
-            HRESULT Initialize(ID3D11Device* dev) override;
+            HRESULT Initialize(ID3D11Device* dev);
             void SetAlpha(float alpha);
             void SetFadeDirection(float dir);
             void SetInputTexture(ID3D11ShaderResourceView* srv);
@@ -227,7 +228,7 @@ namespace HMREngine
             GridEffectResource();
             virtual ~GridEffectResource();
 
-            HRESULT Initialize(ID3D11Device* dev) override;
+            HRESULT Initialize(ID3D11Device* dev);
             void SetGridMin(const Vec2& min);
             void SetGridMax(const Vec2& max);
             void SetDivisions(const Vec2& div);
@@ -253,7 +254,7 @@ namespace HMREngine
             HueEffectResource();
             virtual ~HueEffectResource();
 
-            HRESULT Initialize(ID3D11Device* dev) override;
+            HRESULT Initialize(ID3D11Device* dev);
             void SetHueShift(float shift);
             void SetInputTexture(ID3D11ShaderResourceView* srv);
 
@@ -269,7 +270,7 @@ namespace HMREngine
             PosterizeEffectResource();
             virtual ~PosterizeEffectResource();
 
-            HRESULT Initialize(ID3D11Device* dev) override;
+            HRESULT Initialize(ID3D11Device* dev);
             void SetNumLevels(float levels);
             void SetInputTexture(ID3D11ShaderResourceView* srv);
 
@@ -285,7 +286,7 @@ namespace HMREngine
             PixelateEffectResource();
             virtual ~PixelateEffectResource();
 
-            HRESULT Initialize(ID3D11Device* dev) override;
+            HRESULT Initialize(ID3D11Device* dev);
             void SetPixelSize(const Vec2& size);
             void SetInputTexture(ID3D11ShaderResourceView* srv);
 
@@ -301,7 +302,7 @@ namespace HMREngine
             RippleEffectResource();
             virtual ~RippleEffectResource();
 
-            HRESULT Initialize(ID3D11Device* dev) override;
+            HRESULT Initialize(ID3D11Device* dev);
             void SetAmplitude(float amp);
             void SetFrequency(float freq);
             void SetSpeed(float speed);
@@ -321,7 +322,7 @@ namespace HMREngine
             ScrollingTextEffectResourceDX();
             virtual ~ScrollingTextEffectResourceDX();
 
-            HRESULT Initialize(ID3D11Device* dev) override;
+            HRESULT Initialize(ID3D11Device* dev);
             void SetPosition(const Vec2& pos);
             void SetTextSize(const Vec2& size);
             void SetTextColor(const Rgba& color);
@@ -345,7 +346,7 @@ namespace HMREngine
             TextEffectResourceDX();
             virtual ~TextEffectResourceDX();
 
-            HRESULT Initialize(ID3D11Device* dev) override;
+            HRESULT Initialize(ID3D11Device* dev);
             void SetPosition(const Vec2& pos);
             void SetTextSize(const Vec2& size);
             void SetTextColor(const Rgba& color);
@@ -367,7 +368,7 @@ namespace HMREngine
             WipeEffectResource();
             virtual ~WipeEffectResource();
 
-            HRESULT Initialize(ID3D11Device* dev) override;
+            HRESULT Initialize(ID3D11Device* dev);
             void SetProgress(float progress);
             void SetDirection(float direction);
             void SetSoftness(float softness);
@@ -389,7 +390,7 @@ namespace HMREngine
             DefaultEffectResourceDX();
             virtual ~DefaultEffectResourceDX();
 
-            HRESULT Initialize(ID3D11Device* dev) override;
+            HRESULT Initialize(ID3D11Device* dev);
             void SetTexture(ID3D11ShaderResourceView* srv);
             void SetTransform(const Matrix4f& transform);
 

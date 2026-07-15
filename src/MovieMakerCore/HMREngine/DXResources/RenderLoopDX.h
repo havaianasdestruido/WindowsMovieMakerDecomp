@@ -2,6 +2,7 @@
 // RenderLoopDX.h - D3D11 render loop, frame buffer, swap chain, back buffer
 
 #include "DXResources.h"
+#include "DeviceClientDX.h"
 
 namespace HMREngine
 {

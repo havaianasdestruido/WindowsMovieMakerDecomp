@@ -18,7 +18,7 @@
 #ifndef AVSOURCE_H
 #define AVSOURCE_H
 
-#include "HMRAVSource.h"
+#include "HMRAVSourceTypes.h"
 
 namespace HMRAVSource
 {
@@ -108,7 +108,7 @@ public:
 
     // Event handling
     virtual HRESULT GetEvent(IMFMediaEvent** ppEvent);
-    virtual HRESULT BeginGetEvent(IMFMediaEventCallback* pCallback, IUnknown* punkState);
+    virtual HRESULT BeginGetEvent(IMFAsyncCallback* pCallback, IUnknown* punkState);
     virtual HRESULT EndGetEvent(IMFMediaEvent* pEvent, IMFMediaEvent** ppNextEvent);
 
     // Error info

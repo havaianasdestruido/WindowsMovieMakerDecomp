@@ -1,3 +1,4 @@
+﻿#include "pch.h"
 /*
  * TextComposition.cpp
  *
@@ -327,7 +328,7 @@ HRESULT TextComposer::BreakLines(LPCWSTR pszText,
         size_t nPos = 0;
         while (nPos < cchText)
         {
-            size_t nLen = min(cchMaxChars, cchText - nPos);
+            size_t nLen = std::min(cchMaxChars, cchText - nPos);
             arrLines.Add(ATL::CString(pszText + nPos, static_cast<int>(nLen)));
             nPos += nLen;
         }

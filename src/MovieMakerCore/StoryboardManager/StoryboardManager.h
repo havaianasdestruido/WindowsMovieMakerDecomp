@@ -134,8 +134,6 @@ class XmlProjectReader;
 // ============================================================================
 // Forward declarations - internal
 // ============================================================================
-class ExtentId;
-class TranscodeState;
 class ProjectMediaItem;
 class ProjectTimeline;
 
@@ -146,6 +144,7 @@ class ProjectTimeline;
 // Timeline track types matching the UI and project model
 enum TimelineTrackType
 {
+    TimelineTrackTypeUnknown   = -1,
     TimelineTrackTypeVideo     = 0,
     TimelineTrackTypeAudio     = 1,
     TimelineTrackTypeMusic     = 2,
@@ -153,6 +152,9 @@ enum TimelineTrackType
     TimelineTrackTypeCredits   = 4,
     TimelineTrackTypeTransition = 5
 };
+
+// Legacy alias for ClipboardManager compatibility
+const auto TimelineTrack_Unknown = TimelineTrackTypeUnknown;
 
 // Extent transcode states
 enum ExtentTranscodeState
@@ -179,6 +181,60 @@ enum ProjectDirtyFlags
 };
 
 // ============================================================================
+// ExtentId
+// ============================================================================
+// Value type wrapping a DWORD extent ID with comparison and generation.
+// ExtentIds are used throughout the timeline to uniquely identify extents.
+//
+class STORYBOARD_API ExtentId
+{
+public:
+    ExtentId();
+    ExtentId(DWORD dwId);
+    ExtentId(const ExtentId& other);
+    ExtentId& operator=(const ExtentId& other);
+
+    DWORD GetValue() const throw();
+    bool IsValid() const throw();
+
+    static ExtentId Generate();
+
+    bool operator==(const ExtentId& other) const;
+    bool operator!=(const ExtentId& other) const;
+    bool operator<(const ExtentId& other) const;
+
+private:
+    DWORD m_dwId;
+};
+
+// ============================================================================
+// TranscodeState
+// ============================================================================
+// Tracks the transcode state and HRESULT for an extent being exported.
+//
+class STORYBOARD_API TranscodeState
+{
+public:
+    TranscodeState();
+    TranscodeState(ExtentTranscodeState initialState);
+    ~TranscodeState();
+
+    ExtentTranscodeState GetState() const throw();
+    void SetState(ExtentTranscodeState state) throw();
+
+    HRESULT GetHResult() const throw();
+    void SetHResult(HRESULT hr) throw();
+
+    bool IsComplete() const throw();
+    bool IsFailed() const throw();
+    bool IsInProgress() const throw();
+
+private:
+    ExtentTranscodeState m_state;
+    HRESULT m_hresult;
+};
+
+// ============================================================================
 // StoryboardManager initialization
 // ============================================================================
 
@@ -198,11 +254,11 @@ STORYBOARD_API bool StoryboardManagerIsInitialized();
 // Include sub-headers
 // ============================================================================
 #include "StoryboardManagerExceptions.h"
+#include "MovieProject.h"
 #include "TimelineTrack.h"
 #include "Extents.h"
 #include "MovieExtent.h"
 #include "Templates.h"
-#include "MovieProject.h"
 
 #pragma warning(pop)
 

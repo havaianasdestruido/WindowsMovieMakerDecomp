@@ -1,3 +1,4 @@
+﻿#include "pch.h"
 /*
  * Extents.cpp
  *
@@ -193,8 +194,8 @@ ExtentIdSet::~ExtentIdSet()
 }
 
 ExtentIdSet::ExtentIdSet(const ExtentIdSet& other)
-    : m_arrIds(other.m_arrIds)
 {
+    m_arrIds.Copy(other.m_arrIds);
 }
 
 ExtentIdSet& ExtentIdSet::operator=(const ExtentIdSet& other)

@@ -1,3 +1,4 @@
+﻿#include "pch.h"
 // TextRenderPipeline.cpp - Text rendering task pipeline implementation
 
 #include "TextRenderPipeline.h"
@@ -49,7 +50,7 @@ static IDWriteFactory* GetDWriteFactory()
 {
     static CComPtr<IDWriteFactory> s_factory;
     if (!s_factory)
-        DWriteCreateFactory(__uuidof(IDWriteFactory), reinterpret_cast<IUnknown**>(&s_factory));
+        DWriteCreateFactory(DWRITE_FACTORY_TYPE_SHARED, __uuidof(IDWriteFactory), reinterpret_cast<IUnknown**>(&s_factory));
     return s_factory;
 }
 
@@ -60,7 +61,7 @@ static ID2D1Factory* GetD2DFactory()
 {
     static CComPtr<ID2D1Factory> s_factory;
     if (!s_factory)
-        D2D1CreateFactory(__uuidof(ID2D1Factory), &s_factory);
+        D2D1CreateFactory(D2D1_FACTORY_TYPE_SINGLE_THREADED, __uuidof(ID2D1Factory), reinterpret_cast<void**>(&s_factory));
     return s_factory;
 }
 
@@ -110,7 +111,7 @@ HRESULT PartialTextRenderTask::Execute()
     if (FAILED(hr)) { m_state = TaskState::Failed; return hr; }
 
     D2D1_RENDER_TARGET_PROPERTIES rtProps = D2D1::RenderTargetProperties(
-        D2D1_RENDER_TYPE_DEFAULT,
+        D2D1_RENDER_TARGET_TYPE_DEFAULT,
         D2D1::PixelFormat(DXGI_FORMAT_B8G8R8A8_UNORM, D2D1_ALPHA_MODE_PREMULTIPLIED));
 
     CComPtr<ID2D1RenderTarget> rt;
@@ -246,7 +247,7 @@ HRESULT TextBitmapRenderTask::Execute()
     if (FAILED(hr)) { m_state = TaskState::Failed; return hr; }
 
     D2D1_RENDER_TARGET_PROPERTIES rtProps = D2D1::RenderTargetProperties(
-        D2D1_RENDER_TYPE_DEFAULT,
+        D2D1_RENDER_TARGET_TYPE_DEFAULT,
         D2D1::PixelFormat(DXGI_FORMAT_B8G8R8A8_UNORM, D2D1_ALPHA_MODE_PREMULTIPLIED));
 
     CComPtr<ID2D1RenderTarget> rt;
@@ -335,7 +336,7 @@ HRESULT FullTextRenderTask::Execute()
     if (FAILED(hr)) { m_state = TaskState::Failed; return hr; }
 
     D2D1_RENDER_TARGET_PROPERTIES rtProps = D2D1::RenderTargetProperties(
-        D2D1_RENDER_TYPE_DEFAULT,
+        D2D1_RENDER_TARGET_TYPE_DEFAULT,
         D2D1::PixelFormat(DXGI_FORMAT_B8G8R8A8_UNORM, D2D1_ALPHA_MODE_PREMULTIPLIED));
 
     CComPtr<ID2D1RenderTarget> rt;
@@ -350,7 +351,7 @@ HRESULT FullTextRenderTask::Execute()
     rt->CreateSolidColorBrush(fgColor, &brush);
 
     D2D1_RECT_F layoutRect = D2D1::RectF(0, 0, (float)m_width, (float)m_height);
-    rt->DrawTextLayout(D2D1::Point2F(0, 0), textLayout, brush, layoutRect);
+    rt->DrawTextLayout(D2D1::Point2F(0, 0), textLayout, brush);
 
     hr = rt->EndDraw();
     if (hr == D2DERR_RECREATE_TARGET) { m_state = TaskState::Failed; return hr; }

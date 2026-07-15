@@ -3,6 +3,9 @@
 #include "pch.h"
 #include "ImageThumbnail.h"
 
+MIDL_INTERFACE("7B7A4BA0-6D49-4A64-9AD8-2FB8C1C4C2F3")
+IBitmap : public IUnknown {};
+
 namespace HMRAVSource
 {
 
@@ -110,9 +113,11 @@ HRESULT ImageThumbnail::GenerateThumbnailFromStream(IStream* pStream, const Imag
     if (FAILED(hr))
         return hr;
 
-    hr = m_spDecoder->GetFrame(0, &m_spBitmapSource);
+    CComPtr<IWICBitmapFrameDecode> spFrame;
+    hr = m_spDecoder->GetFrame(0, &spFrame);
     if (FAILED(hr))
         return hr;
+    m_spBitmapSource = spFrame;
 
     UINT uFrameCount = 0;
     m_spDecoder->GetFrameCount(&uFrameCount);
@@ -422,9 +427,11 @@ HRESULT ImageThumbnail::OpenImageFile(LPCWSTR pszImagePath)
     if (FAILED(hr))
         return hr;
 
-    hr = m_spDecoder->GetFrame(0, &m_spBitmapSource);
+    CComPtr<IWICBitmapFrameDecode> spFrame2;
+    hr = m_spDecoder->GetFrame(0, &spFrame2);
     if (FAILED(hr))
         return hr;
+    m_spBitmapSource = spFrame2;
 
     UINT uFrameCount = 0;
     m_spDecoder->GetFrameCount(&uFrameCount);
@@ -508,7 +515,7 @@ HRESULT ImageThumbnail::ScaleImage(UINT uMaxWidth, UINT uMaxHeight, bool fPreser
         return hr;
 
     m_spThumbnailBitmap.Release();
-    hr = m_spWicFactory->CreateBitmapFromBitmapSource(spScaler, &m_spThumbnailBitmap);
+    hr = m_spWicFactory.p->CreateBitmapFromSource(spScaler, WICBitmapCacheOnLoad, &m_spThumbnailBitmap);
     if (FAILED(hr))
         return hr;
 

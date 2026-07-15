@@ -260,18 +260,6 @@ WLXPHOTOBASE_API HRESULT GdiplusStatusToHresult(Gdiplus::Status status)
     case Gdiplus::PropertyNotSupported:
         return E_NOTIMPL;
 
-    case Gdiplus::UnsupportedImageFormat:
-        return HRESULT_FROM_WIN32(ERROR_NOT_SUPPORTED);
-
-    case Gdiplus::UnsupportedPixelFormat:
-        return HRESULT_FROM_WIN32(ERROR_NOT_SUPPORTED);
-
-    case Gdiplus::UnsupportedCodec:
-        return HRESULT_FROM_WIN32(ERROR_NOT_SUPPORTED);
-
-    case Gdiplus::InvalidImage:
-        return E_UNEXPECTED;
-
     case Gdiplus::FontFamilyNotFound:
         return HRESULT_FROM_WIN32(ERROR_NOT_FOUND);
 
@@ -297,19 +285,13 @@ WLXPHOTOBASE_API HRESULT GdiplusStatusToHresult(Gdiplus::Status status)
         return HRESULT_FROM_WIN32(ERROR_FILE_NOT_FOUND);
 
     case Gdiplus::ValueOverflow:
-        return E_OVERFLOW;
+        return HRESULT_FROM_WIN32(ERROR_ARITHMETIC_OVERFLOW);
 
     case Gdiplus::AccessDenied:
         return E_ACCESSDENIED;
 
     case Gdiplus::UnknownImageFormat:
         return E_UNEXPECTED;
-
-    case Gdiplus::PropertyInvalidType:
-        return E_INVALIDARG;
-
-    case Gdiplus::PropertyInvalidValue:
-        return E_INVALIDARG;
 
     default:
         return E_FAIL;
@@ -319,16 +301,12 @@ WLXPHOTOBASE_API HRESULT GdiplusStatusToHresult(Gdiplus::Status status)
 // ============================================================================
 // Base::String::GetBaseStringManager
 // ============================================================================
-WLXPHOTOBASE_API IAtlStringMgr* String::GetBaseStringManager()
+WLXPHOTOBASE_API ATL::IAtlStringMgr* String::GetBaseStringManager()
 {
-    // Return the global CString memory manager that all Base strings use.
-    // This is ATL's default string manager backed by the CRT heap.
-    static CComPtr<IAtlStringMgr> spMgr;
+    static ATL::IAtlStringMgr* spMgr = nullptr;
     if (!spMgr)
     {
-        // Use the default COM-based string manager
-        CComPtr<IAtlStringMgr> spTemp(::_AtlGetStringMgr());
-        spMgr = spTemp;
+        spMgr = new ATL::CAtlStringMgr;
     }
     return spMgr;
 }
@@ -404,20 +382,7 @@ WLXPHOTOBASE_API int CPU::GetProcessorCount()
 
 } // namespace Base
 
-// ============================================================================
-// ATL::BaseAtlThrow
-// ============================================================================
-namespace ATL
-{
-    WLXPHOTOBASE_API void __cdecl BaseAtlThrow(HRESULT hr)
-    {
-        if (SUCCEEDED(hr))
-            return;
-
-        // Route through Base::Throw for consistent exception handling
-        Base::Throw(hr);
-    }
-}
+// BaseAtlThrow is provided natively by ATL 14+ - no custom definition needed
 
 // ============================================================================
 // Base::File implementation
@@ -922,8 +887,8 @@ IntSet::~IntSet() throw()
 }
 
 IntSet::IntSet(const IntSet& other)
-    : m_values(other.m_values)
 {
+    m_values.Copy(other.m_values);
 }
 
 IntSet& IntSet::operator=(const IntSet& other)
@@ -991,3 +956,10 @@ int IntSet::GetAt(size_t index) const
 }
 
 } // namespace Base
+
+// ============================================================================
+// WLXPhotoBase_Init -- DLL initialization entry point called by MovieMaker.exe
+// ============================================================================
+extern "C" WLXPHOTOBASE_API void __stdcall WLXPhotoBase_Init(void)
+{
+}

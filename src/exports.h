@@ -7,9 +7,15 @@ extern "C" {
 #endif
 
 #ifdef WMMR_DLL_EXPORTS
-    #define MOVIE MAKER __declspec(dllexport)
+    #define MOVIECORE_API __declspec(dllexport)
 #else
-    #define MOVIE MAKER __declspec(dllimport)
+    #define MOVIECORE_API __declspec(dllimport)
+#endif
+
+#ifdef WMMR_DLL_EXPORTS
+    #define RIBBON_API __declspec(dllexport)
+#else
+    #define RIBBON_API __declspec(dllimport)
 #endif
 
 #ifdef WLXPHOTOBASE_EXPORTS
@@ -106,7 +112,7 @@ extern "C" {
 // MovieMakerCore.dll exports
 #ifdef WMMR_DLL_EXPORTS
 extern "C" {
-    MOVIE MAKER int __cdecl MovieMakerMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow);
+    MOVIECORE_API int __cdecl MovieMakerMain(int argc, wchar_t** argv);
 }
 #endif
 

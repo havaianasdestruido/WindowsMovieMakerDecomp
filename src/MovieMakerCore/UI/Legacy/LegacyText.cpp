@@ -1,3 +1,5 @@
+﻿#include "pch.h"
+
 /*
  * LegacyText.cpp
  *
@@ -107,10 +109,10 @@ RECT LegacyTransform::TransformRect(const RECT& rcSrc) const
     m_matrix.Transform(pts, 4);
 
     RECT rcDst;
-    rcDst.left = static_cast<LONG>(min(min(pts[0].X, pts[1].X), min(pts[2].X, pts[3].X)));
-    rcDst.top = static_cast<LONG>(min(min(pts[0].Y, pts[1].Y), min(pts[2].Y, pts[3].Y)));
-    rcDst.right = static_cast<LONG>(max(max(pts[0].X, pts[1].X), max(pts[2].X, pts[3].X)));
-    rcDst.bottom = static_cast<LONG>(max(max(pts[0].Y, pts[1].Y), max(pts[2].Y, pts[3].Y)));
+    rcDst.left = static_cast<LONG>(std::min(std::min(pts[0].X, pts[1].X), std::min(pts[2].X, pts[3].X)));
+    rcDst.top = static_cast<LONG>(std::min(std::min(pts[0].Y, pts[1].Y), std::min(pts[2].Y, pts[3].Y)));
+    rcDst.right = static_cast<LONG>(std::max(std::max(pts[0].X, pts[1].X), std::max(pts[2].X, pts[3].X)));
+    rcDst.bottom = static_cast<LONG>(std::max(std::max(pts[0].Y, pts[1].Y), std::max(pts[2].Y, pts[3].Y)));
     return rcDst;
 }
 
@@ -326,7 +328,7 @@ ATL::CString LegacyParagraph::GetFontFamily() const
 
 void LegacyParagraph::SetFontSize(float flSize)
 {
-    m_flFontSize = max(1.0f, flSize);
+    m_flFontSize = std::max(1.0f, flSize);
 }
 
 float LegacyParagraph::GetFontSize() const throw()
@@ -561,7 +563,7 @@ ATL::CString LegacyTextExtent::GetFontName() const
 
 void LegacyTextExtent::SetFontSize(float flSize)
 {
-    m_flFontSize = max(1.0f, flSize);
+    m_flFontSize = std::max(1.0f, flSize);
 }
 
 float LegacyTextExtent::GetFontSize() const throw()

@@ -59,7 +59,7 @@ public:
     LPCWSTR GetPlayFile() const throw();
     LPCWSTR GetPublishFile() const throw();
     LPCWSTR GetProjectFile() const throw();
-    const ATL::CStringArray& GetImportFiles() const throw();
+    const std::vector<ATL::CString>& GetImportFiles() const throw();
     LPCWSTR GetSqmSessionId() const throw();
     LPCWSTR GetDoneShowKey() const throw();
 
@@ -80,7 +80,7 @@ private:
     ATL::CString   m_strPlayFile;
     ATL::CString   m_strPublishFile;
     ATL::CString   m_strProjectFile;
-    ATL::CStringArray m_arrImportFiles;
+    std::vector<ATL::CString> m_arrImportFiles;
 
     // Telemetry / prompt keys
     ATL::CString   m_strSqmSessionId;

@@ -1,3 +1,4 @@
+﻿#include "pch.h"
 /*
  * BoundPropertyDictionary.cpp
  *
@@ -28,8 +29,8 @@ BoundPropertyDictionary::~BoundPropertyDictionary()
 }
 
 BoundPropertyDictionary::BoundPropertyDictionary(const BoundPropertyDictionary& other)
-    : m_arrProperties(other.m_arrProperties)
 {
+    m_arrProperties.Copy(other.m_arrProperties);
 }
 
 BoundPropertyDictionary& BoundPropertyDictionary::operator=(const BoundPropertyDictionary& other)
@@ -243,7 +244,7 @@ HRESULT BoundPropertyDictionary::WriteToElement(IXmlWriter* pWriter, LPCWSTR psz
 
     if (SUCCEEDED(hr))
     {
-        hr = pWriter->WriteEndElement(nullptr);
+        hr = pWriter->WriteEndElement();
     }
 
     return hr;

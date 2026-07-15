@@ -1,3 +1,4 @@
+﻿#include "pch.h"
 /*
  * SerializationReader.cpp
  *
@@ -30,7 +31,7 @@ SerializationElementHandler::~SerializationElementHandler()
 {
 }
 
-LPCWSTR SerializationElementHandler::GetElementName() const
+ATL::CString SerializationElementHandler::GetElementName() const
 {
     return m_strElementName;
 }
@@ -273,7 +274,7 @@ HRESULT SerializationReader::ReadIntAttribute(IXmlReader* pReader, LPCWSTR pszNa
         return E_INVALIDARG;
 
     LPCWSTR pszValue = nullptr;
-    HRESULT hr = pReader->GetAttributeValueByName(pszName, &pszValue);
+    HRESULT hr = XmlReaderGetAttribute(pReader, pszName, &pszValue);
     if (SUCCEEDED(hr) && pszValue)
     {
         *pValue = _wtoi(pszValue);
@@ -288,7 +289,7 @@ HRESULT SerializationReader::ReadDwordAttribute(IXmlReader* pReader, LPCWSTR psz
         return E_INVALIDARG;
 
     LPCWSTR pszValue = nullptr;
-    HRESULT hr = pReader->GetAttributeValueByName(pszName, &pszValue);
+    HRESULT hr = XmlReaderGetAttribute(pReader, pszName, &pszValue);
     if (SUCCEEDED(hr) && pszValue)
     {
         *pValue = _wtol(pszValue);
@@ -303,7 +304,7 @@ HRESULT SerializationReader::ReadLONGLONGAttribute(IXmlReader* pReader, LPCWSTR 
         return E_INVALIDARG;
 
     LPCWSTR pszValue = nullptr;
-    HRESULT hr = pReader->GetAttributeValueByName(pszName, &pszValue);
+    HRESULT hr = XmlReaderGetAttribute(pReader, pszName, &pszValue);
     if (SUCCEEDED(hr) && pszValue)
     {
         *pValue = _wtoi64(pszValue);
@@ -318,7 +319,7 @@ HRESULT SerializationReader::ReadDoubleAttribute(IXmlReader* pReader, LPCWSTR ps
         return E_INVALIDARG;
 
     LPCWSTR pszValue = nullptr;
-    HRESULT hr = pReader->GetAttributeValueByName(pszName, &pszValue);
+    HRESULT hr = XmlReaderGetAttribute(pReader, pszName, &pszValue);
     if (SUCCEEDED(hr) && pszValue)
     {
         *pValue = _wtof(pszValue);
@@ -333,7 +334,7 @@ HRESULT SerializationReader::ReadStringAttribute(IXmlReader* pReader, LPCWSTR ps
         return E_INVALIDARG;
 
     LPCWSTR pszValue = nullptr;
-    HRESULT hr = pReader->GetAttributeValueByName(pszName, &pszValue);
+    HRESULT hr = XmlReaderGetAttribute(pReader, pszName, &pszValue);
     if (SUCCEEDED(hr) && pszValue)
     {
         strValue = pszValue;
@@ -352,7 +353,7 @@ HRESULT SerializationReader::ReadBoolAttribute(IXmlReader* pReader, LPCWSTR pszN
         return E_INVALIDARG;
 
     LPCWSTR pszValue = nullptr;
-    HRESULT hr = pReader->GetAttributeValueByName(pszName, &pszValue);
+    HRESULT hr = XmlReaderGetAttribute(pReader, pszName, &pszValue);
     if (SUCCEEDED(hr) && pszValue)
     {
         *pValue = (_wtoi(pszValue) != 0);
@@ -530,13 +531,13 @@ HRESULT SerializationReader::DetectVersion(IXmlReader* pReader, SerializationCon
 {
     LPCWSTR pszValue = nullptr;
 
-    HRESULT hr = pReader->GetAttributeValueByName(L"versionMajor", &pszValue);
+    HRESULT hr = XmlReaderGetAttribute(pReader, L"versionMajor", &pszValue);
     if (SUCCEEDED(hr) && pszValue)
     {
         m_dwMajorVersion = _wtol(pszValue);
     }
 
-    hr = pReader->GetAttributeValueByName(L"versionMinor", &pszValue);
+    hr = XmlReaderGetAttribute(pReader, L"versionMinor", &pszValue);
     if (SUCCEEDED(hr) && pszValue)
     {
         m_dwMinorVersion = _wtol(pszValue);

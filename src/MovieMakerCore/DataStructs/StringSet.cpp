@@ -26,16 +26,17 @@ StringSet::~StringSet()
 // ============================================================================
 
 StringSet::StringSet(const StringSet& other)
-    : m_arrValues(other.m_arrValues)
+    : m_arrValues()
     , m_fCaseInsensitive(other.m_fCaseInsensitive)
 {
+    m_arrValues.Copy(other.m_arrValues);
 }
 
 StringSet& StringSet::operator=(const StringSet& other)
 {
     if (this != &other)
     {
-        m_arrValues = other.m_arrValues;
+        m_arrValues.Copy(other.m_arrValues);
         m_fCaseInsensitive = other.m_fCaseInsensitive;
     }
     return *this;
@@ -220,7 +221,7 @@ void StringSet::UnionWith(const StringSet& other)
 void StringSet::IntersectWith(const StringSet& other)
 {
     StringSet result = this->Intersect(other);
-    m_arrValues = result.m_arrValues;
+    m_arrValues.Copy(result.m_arrValues);
 }
 
 void StringSet::Subtract(const StringSet& other)

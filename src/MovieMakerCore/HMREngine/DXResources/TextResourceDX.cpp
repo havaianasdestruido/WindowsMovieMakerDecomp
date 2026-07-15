@@ -1,3 +1,4 @@
+#include "pch.h"
 // TextResourceDX.cpp - D3D11 text rendering implementation
 
 #include "TextResourceDX.h"
@@ -51,12 +52,12 @@ void TextResourceBaseDX::Release()
 
 HRESULT TextResourceBaseDX::CreateD2DFactory()
 {
-    return D2D1CreateFactory(__uuidof(ID2D1Factory), &m_d2dFactory);
+    return D2D1CreateFactory(D2D1_FACTORY_TYPE_SINGLE_THREADED, __uuidof(ID2D1Factory), (void**)&m_d2dFactory);
 }
 
 HRESULT TextResourceBaseDX::CreateDWriteFactory()
 {
-    return DWriteCreateFactory(__uuidof(IDWriteFactory),
+    return DWriteCreateFactory(DWRITE_FACTORY_TYPE_SHARED, __uuidof(IDWriteFactory),
         reinterpret_cast<IUnknown**>(&m_dwriteFactory));
 }
 
@@ -73,10 +74,10 @@ HRESULT TextResourceBaseDX::CreateWICBitmap(UINT width, UINT height)
     if (FAILED(hr)) return hr;
 
     CComPtr<ID2D1Factory> factory;
-    D2D1CreateFactory(__uuidof(ID2D1Factory), &factory);
+    D2D1CreateFactory(D2D1_FACTORY_TYPE_SINGLE_THREADED, __uuidof(ID2D1Factory), (void**)&factory);
 
     D2D1_RENDER_TARGET_PROPERTIES rtProps = D2D1::RenderTargetProperties(
-        D2D1_RENDER_TYPE_DEFAULT,
+        D2D1_RENDER_TARGET_TYPE_DEFAULT,
         D2D1::PixelFormat(DXGI_FORMAT_B8G8R8A8_UNORM, D2D1_ALPHA_MODE_PREMULTIPLIED));
 
     m_renderTarget.Release();
@@ -125,7 +126,6 @@ HRESULT TextResourceDX::RenderText(const std::wstring& text,
 
     CComPtr<IDWriteRenderingParams> renderParams;
     dwFactory->CreateRenderingParams(&renderParams);
-    textFormat->SetRenderingParams(renderParams);
 
     CComPtr<IDWriteTextLayout> textLayout;
     hr = dwFactory->CreateTextLayout(text.c_str(), static_cast<UINT32>(text.length()),
@@ -156,7 +156,7 @@ HRESULT TextResourceDX::RenderText(const std::wstring& text,
     D2D1_RECT_F layoutRect = D2D1::RectF(0.0f, 0.0f,
         static_cast<float>(texWidth), static_cast<float>(texHeight));
 
-    rt->DrawTextLayout(D2D1::Point2F(0.0f, 0.0f), textLayout, brush, layoutRect);
+    rt->DrawTextLayout(D2D1::Point2F(0.0f, 0.0f), textLayout, brush);
 
     hr = rt->EndDraw();
     if (FAILED(hr)) return hr;
@@ -349,7 +349,7 @@ HRESULT ScrollingTextResourceDX::RenderScrollingText(
         if (y + metrics.height > 0 && y < static_cast<float>(texHeight))
         {
             D2D1_RECT_F rect = D2D1::RectF(0.0f, y, static_cast<float>(texWidth), y + 2048.0f);
-            rt->DrawTextLayout(D2D1::Point2F(0.0f, y), layouts[i], brush, rect);
+            rt->DrawTextLayout(D2D1::Point2F(0.0f, y), layouts[i], brush);
         }
 
         y += metrics.height + fontSize * 0.5f;

@@ -1,3 +1,4 @@
+﻿#include "pch.h"
 /*
  * TransportBase.cpp
  *
@@ -30,7 +31,7 @@ TransportBase::~TransportBase()
 
 HRESULT TransportBase::SetRate(double dblRate)
 {
-    m_dblRate = max(0.0, dblRate);
+    m_dblRate = std::max(0.0, dblRate);
     return S_OK;
 }
 
@@ -77,7 +78,7 @@ bool TransportBase::IsStopped() const throw()
 
 HRESULT TransportBase::SetVolume(float flVolume)
 {
-    m_flVolume = max(0.0f, min(1.0f, flVolume));
+    m_flVolume = std::max(0.0f, std::min(1.0f, flVolume));
     return S_OK;
 }
 
@@ -179,7 +180,7 @@ HRESULT MovieTransport::Seek(LONGLONG llPositionHns, DWORD dwFlags)
     else
         m_llCurrentPositionHns = llPositionHns;
 
-    m_llCurrentPositionHns = max(0, min(m_llCurrentPositionHns, m_llDurationHns));
+    m_llCurrentPositionHns = std::max<LONGLONG>(0, std::min(m_llCurrentPositionHns, m_llDurationHns));
     FirePositionChange(m_llCurrentPositionHns);
 
     return S_OK;
@@ -228,12 +229,12 @@ HRESULT MovieTransport::StepForward()
 HRESULT MovieTransport::StepBackward()
 {
     LONGLONG llNewPos = m_llCurrentPositionHns - m_llFrameStepHns;
-    return Seek(max(0LL, llNewPos), TransportSeekFlagAbsolute);
+    return Seek(std::max(0LL, llNewPos), TransportSeekFlagAbsolute);
 }
 
 void MovieTransport::SetFrameStepSize(LONGLONG llStepHns)
 {
-    m_llFrameStepHns = max(1000000LL, llStepHns); // minimum 100ms
+    m_llFrameStepHns = std::max(1000000LL, llStepHns); // minimum 100ms
 }
 
 LONGLONG MovieTransport::GetFrameStepSize() const throw()

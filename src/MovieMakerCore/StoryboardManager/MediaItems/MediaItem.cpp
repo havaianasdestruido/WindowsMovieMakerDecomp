@@ -1,3 +1,4 @@
+﻿#include "pch.h"
 /*
  * MediaItem.cpp
  *
@@ -668,7 +669,26 @@ void VideoClip::RemoveAllEffects()
 MediaItemBase* VideoClip::Clone() const
 {
     VideoClip* pClone = new VideoClip();
-    *pClone = *this;
+    pClone->SetItemId(GetItemId());
+    pClone->SetSourcePath(GetSourcePath());
+    pClone->SetDisplayName(GetDisplayName());
+    pClone->SetDurationHns(GetDurationHns());
+    pClone->SetMetadata(GetMetadata());
+    pClone->SetProxyInfo(GetProxyInfo());
+    pClone->SetTrimStartHns(GetTrimStartHns());
+    pClone->SetTrimEndHns(GetTrimEndHns());
+    pClone->SetSpeedFactor(GetSpeedFactor());
+    pClone->SetVolume(GetVolume());
+    pClone->SetPan(GetPan());
+    pClone->SetMuted(IsMuted());
+    pClone->SetReversed(IsReversed());
+    pClone->SetFadeInDurationHns(GetFadeInDurationHns());
+    pClone->SetFadeOutDurationHns(GetFadeOutDurationHns());
+    pClone->SetVideoStreamIndex(GetVideoStreamIndex());
+    pClone->SetAudioStreamIndex(GetAudioStreamIndex());
+    pClone->SetHasAudioStream(HasAudioStream());
+    for (size_t i = 0; i < GetEffectCount(); ++i)
+        pClone->AddEffect(GetEffectAt(i));
     return pClone;
 }
 

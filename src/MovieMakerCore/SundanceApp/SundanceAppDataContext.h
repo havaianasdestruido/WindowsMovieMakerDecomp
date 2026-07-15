@@ -20,6 +20,10 @@
 #include "../pch.h"
 #include "../MovieMakerCore.h"
 
+#ifndef IDR_SUNDANCE_APP_DATA_CONTEXT
+#define IDR_SUNDANCE_APP_DATA_CONTEXT 2001
+#endif
+
 // ============================================================================
 // SundanceAppDataContext
 // ============================================================================

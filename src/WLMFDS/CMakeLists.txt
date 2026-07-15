@@ -45,7 +45,6 @@ target_link_libraries(${TARGET} PRIVATE
     mfplat
     mf
     mfuuid
-    mferror
     evr
     avrt
     strmiids

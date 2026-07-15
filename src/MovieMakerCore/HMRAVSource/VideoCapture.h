@@ -15,10 +15,11 @@
 #ifndef VIDEOCAPTURE_H
 #define VIDEOCAPTURE_H
 
-#include "HMRAVSource.h"
+#include "HMRAVSourceTypes.h"
 #include "AVSource.h"
 #include <mfapi.h>
 #include <mfidl.h>
+#include <mfcaptureengine.h>
 
 namespace HMRAVSource
 {

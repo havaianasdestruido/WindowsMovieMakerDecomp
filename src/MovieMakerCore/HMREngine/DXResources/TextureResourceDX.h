@@ -2,6 +2,7 @@
 // TextureResourceDX.h - D3D11 texture resource wrappers
 
 #include "DXResources.h"
+#include "DeviceClientDX.h"
 
 namespace HMREngine
 {

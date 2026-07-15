@@ -23,6 +23,7 @@
 #include <mferror.h>
 #include <mfobjects.h>
 #include <vector>
+#include <algorithm>
 
 // ============================================================================
 // Internal classes
@@ -172,7 +173,7 @@ public:
 
             if (SUCCEEDED(hr))
             {
-                UINT32 cbCopy = min(cbBuffer, cbData);
+                UINT32 cbCopy = (std::min)(static_cast<DWORD>(cbBuffer), cbData);
                 CopyMemory(pBuffer, pData, cbCopy);
                 if (pcbRead) *pcbRead = cbCopy;
 

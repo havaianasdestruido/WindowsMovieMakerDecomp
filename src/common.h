@@ -2,10 +2,18 @@
 #ifndef WMMR_COMMON_H
 #define WMMR_COMMON_H
 
+#ifndef WIN32_LEAN_AND_MEAN
 #define WIN32_LEAN_AND_MEAN
+#endif
+#ifndef NOMINMAX
 #define NOMINMAX
-#define _WIN32_WINNT 0x0601
-#define WINVER 0x0601
+#endif
+#ifndef _WIN32_WINNT
+#define _WIN32_WINNT 0x0602
+#endif
+#ifndef WINVER
+#define WINVER 0x0602
+#endif
 
 #include <windows.h>
 #include <objbase.h>
@@ -42,7 +50,6 @@
 #include <vsstyle.h>
 #include <wincodec.h>
 #include <wincodecsdk.h>
-#include <imagingfactory.h>
 #include <xmllite.h>
 #include <oleacc.h>
 #include <propkey.h>
@@ -53,8 +60,9 @@
 #include <appmodel.h>
 #include <versionhelpers.h>
 
+#include <winerror.h>
 #include <esent.h>
-#include <winmm.h>
+#include <mmsystem.h>
 
 #include <new>
 #include <memory>
@@ -81,6 +89,11 @@
 #include <cstdlib>
 #include <limits>
 #include <initializer_list>
+#include <comdef.h>
+#include <atlbase.h>
+
+// Forward declare IUnknown for ComPtr usage
+struct IUnknown;
 
 #define WMMR_VERSION_MAJOR 16
 #define WMMR_VERSION_MINOR 4
@@ -160,7 +173,7 @@ inline VersionInfo GetVersion() {
     return { WMMR_VERSION_MAJOR, WMMR_VERSION_MINOR, WMMR_VERSION_BUILD, WMMR_VERSION_REVISION };
 }
 
-structMovieMakerException : public std::runtime_error {
+struct MovieMakerException : public std::runtime_error {
     explicit MovieMakerException(const std::string& msg) : std::runtime_error(msg) {}
     explicit MovieMakerException(HRESULT hr) : std::runtime_error("HRESULT error"), m_hr(hr) {}
     HRESULT GetHResult() const { return m_hr; }
@@ -174,10 +187,10 @@ struct CoInitializer {
 };
 
 struct GdiplusInit {
-    GdiplusToken m_token;
-    GdiplusStartupInput m_input;
-    GdiplusInit() { GdiplusStartup(&m_token, &m_input, NULL); }
-    ~GdiplusInit() { GdiplusShutdown(m_token); }
+    Gdiplus::GdiplusStartupInput m_input;
+    Gdiplus::GdiplusToken m_token;
+    GdiplusInit() { Gdiplus::GdiplusStartup(&m_token, &m_input, NULL); }
+    ~GdiplusInit() { Gdiplus::GdiplusShutdown(m_token); }
 };
 
 } // namespace WMMR

@@ -1,0 +1,622 @@
+﻿Vers├úo do MSBuild 17.14.40+3e7442088 para .NET Framework
+
+  WLXPhotoBase.vcxproj -> C:\Users\mcmco\Desktop\WMMR\build\bin\Debug\WLXPhotoBase.dll
+  MovieMaker.vcxproj -> C:\Users\mcmco\Desktop\WMMR\build\bin\Debug\MovieMaker.exe
+  MovieMakerCore.vcxproj -> C:\Users\mcmco\Desktop\WMMR\build\bin\Debug\MovieMakerCore.dll
+  MovieMakerLang.vcxproj -> C:\Users\mcmco\Desktop\WMMR\build\bin\Debug\MovieMakerLang.dll
+  dllmain.cpp
+  MovieMakerPreviewClient.cpp
+C:\Users\mcmco\Desktop\WMMR\src\MovieMakerPreviewClient\MovieMakerPreviewClient.h(37,9): warning C4005: 'WINVER': macro redefinition [C:\Users\mcmco\Desktop\WMMR\build\src\MovieMakerPreviewClient\MovieMakerPreviewClient.vcxproj]
+  (compiling source file '../../../src/MovieMakerPreviewClient/dllmain.cpp')
+      C:\Users\mcmco\Desktop\WMMR\src\MovieMakerPreviewClient\MovieMakerPreviewClient.h(37,9):
+      'WINVER' previously declared on the command line
+  
+C:\Users\mcmco\Desktop\WMMR\src\MovieMakerPreviewClient\MovieMakerPreviewClient.h(37,9): warning C4005: 'WINVER': macro redefinition [C:\Users\mcmco\Desktop\WMMR\build\src\MovieMakerPreviewClient\MovieMakerPreviewClient.vcxproj]
+  (compiling source file '../../../src/MovieMakerPreviewClient/MovieMakerPreviewClient.cpp')
+      C:\Users\mcmco\Desktop\WMMR\src\MovieMakerPreviewClient\MovieMakerPreviewClient.h(37,9):
+      'WINVER' previously declared on the command line
+  
+C:\Users\mcmco\Desktop\WMMR\src\MovieMakerPreviewClient\MovieMakerPreviewClient.h(38,9): warning C4005: '_WIN32_WINNT': macro redefinition [C:\Users\mcmco\Desktop\WMMR\build\src\MovieMakerPreviewClient\MovieMakerPreviewClient.vcxproj]
+  (compiling source file '../../../src/MovieMakerPreviewClient/dllmain.cpp')
+      C:\Users\mcmco\Desktop\WMMR\src\MovieMakerPreviewClient\MovieMakerPreviewClient.h(38,9):
+      '_WIN32_WINNT' previously declared on the command line
+  
+C:\Users\mcmco\Desktop\WMMR\src\MovieMakerPreviewClient\MovieMakerPreviewClient.h(38,9): warning C4005: '_WIN32_WINNT': macro redefinition [C:\Users\mcmco\Desktop\WMMR\build\src\MovieMakerPreviewClient\MovieMakerPreviewClient.vcxproj]
+  (compiling source file '../../../src/MovieMakerPreviewClient/MovieMakerPreviewClient.cpp')
+      C:\Users\mcmco\Desktop\WMMR\src\MovieMakerPreviewClient\MovieMakerPreviewClient.h(38,9):
+      '_WIN32_WINNT' previously declared on the command line
+  
+C:\Users\mcmco\Desktop\WMMR\src\MovieMakerPreviewClient\dllmain.cpp(3,73): warning C4100: 'lpReserved': unreferenced parameter [C:\Users\mcmco\Desktop\WMMR\build\src\MovieMakerPreviewClient\MovieMakerPreviewClient.vcxproj]
+C:\Users\mcmco\Desktop\WMMR\src\WLXPhotoBase\BaseTypes.h(536,18): warning C4251: 'Base::File::m_strPath': 'ATL::CStringT<wchar_t,ATL::StrTraitATL<wchar_t,ATL::ChTraitsCRT<wchar_t>>>' needs to have dll-interface to be used by clients of 'Base::File' [C:\Users\mcmco\Desktop\WMMR\build\src\MovieMakerPreviewClient\MovieMakerPreviewClient.vcxproj]
+  (compiling source file '../../../src/MovieMakerPreviewClient/MovieMakerPreviewClient.cpp')
+      C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\VC\Tools\MSVC\14.44.35207\atlmfc\include\cstringt.h(999,7):
+      see declaration of 'ATL::CStringT<wchar_t,ATL::StrTraitATL<wchar_t,ATL::ChTraitsCRT<wchar_t>>>'
+  
+C:\Users\mcmco\Desktop\WMMR\src\WLXPhotoBase\BaseTypes.h(568,18): warning C4251: 'Base::TempFile::m_strPath': 'ATL::CStringT<wchar_t,ATL::StrTraitATL<wchar_t,ATL::ChTraitsCRT<wchar_t>>>' needs to have dll-interface to be used by clients of 'Base::TempFile' [C:\Users\mcmco\Desktop\WMMR\build\src\MovieMakerPreviewClient\MovieMakerPreviewClient.vcxproj]
+  (compiling source file '../../../src/MovieMakerPreviewClient/MovieMakerPreviewClient.cpp')
+      C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\VC\Tools\MSVC\14.44.35207\atlmfc\include\cstringt.h(999,7):
+      see declaration of 'ATL::CStringT<wchar_t,ATL::StrTraitATL<wchar_t,ATL::ChTraitsCRT<wchar_t>>>'
+  
+C:\Users\mcmco\Desktop\WMMR\src\WLXPhotoBase\BaseTypes.h(661,21): warning C4251: 'Base::FindFile::m_strDirectory': 'ATL::CStringT<wchar_t,ATL::StrTraitATL<wchar_t,ATL::ChTraitsCRT<wchar_t>>>' needs to have dll-interface to be used by clients of 'Base::FindFile' [C:\Users\mcmco\Desktop\WMMR\build\src\MovieMakerPreviewClient\MovieMakerPreviewClient.vcxproj]
+  (compiling source file '../../../src/MovieMakerPreviewClient/MovieMakerPreviewClient.cpp')
+      C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\VC\Tools\MSVC\14.44.35207\atlmfc\include\cstringt.h(999,7):
+      see declaration of 'ATL::CStringT<wchar_t,ATL::StrTraitATL<wchar_t,ATL::ChTraitsCRT<wchar_t>>>'
+  
+C:\Users\mcmco\Desktop\WMMR\src\WLXPhotoBase\BaseTypes.h(724,25): warning C4251: 'Base::IntSet::m_values': 'ATL::CAtlArray<int,ATL::CElementTraits<int>>' needs to have dll-interface to be used by clients of 'Base::IntSet' [C:\Users\mcmco\Desktop\WMMR\build\src\MovieMakerPreviewClient\MovieMakerPreviewClient.vcxproj]
+  (compiling source file '../../../src/MovieMakerPreviewClient/MovieMakerPreviewClient.cpp')
+      C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\VC\Tools\MSVC\14.44.35207\atlmfc\include\atlcoll.h(530,7):
+      see declaration of 'ATL::CAtlArray<int,ATL::CElementTraits<int>>'
+  
+C:\Users\mcmco\Desktop\WMMR\src\MovieMakerPreviewClient\MovieMakerPreviewClient.cpp(228,43): error C2665: 'Gdiplus::Graphics::DrawImage': no overloaded function could convert all the argument types [C:\Users\mcmco\Desktop\WMMR\build\src\MovieMakerPreviewClient\MovieMakerPreviewClient.vcxproj]
+      C:\Program Files (x86)\Windows Kits\10\Include\10.0.26100.0\um\GdiplusGraphics.h(1576,12):
+      could be 'Gdiplus::Status Gdiplus::Graphics::DrawImage(Gdiplus::Image *,INT,INT,INT,INT)'
+          C:\Users\mcmco\Desktop\WMMR\src\MovieMakerPreviewClient\MovieMakerPreviewClient.cpp(228,43):
+          'Gdiplus::Status Gdiplus::Graphics::DrawImage(Gdiplus::Image *,INT,INT,INT,INT)': cannot convert argument 1 from 'const Gdiplus::Bitmap *' to 'Gdiplus::Image *'
+              C:\Users\mcmco\Desktop\WMMR\src\MovieMakerPreviewClient\MovieMakerPreviewClient.cpp(229,13):
+              Conversion loses qualifiers
+      C:\Program Files (x86)\Windows Kits\10\Include\10.0.26100.0\um\GdiplusGraphics.h(1534,12):
+      or       'Gdiplus::Status Gdiplus::Graphics::DrawImage(Gdiplus::Image *,Gdiplus::REAL,Gdiplus::REAL,Gdiplus::REAL,Gdiplus::REAL)'
+          C:\Users\mcmco\Desktop\WMMR\src\MovieMakerPreviewClient\MovieMakerPreviewClient.cpp(228,43):
+          'Gdiplus::Status Gdiplus::Graphics::DrawImage(Gdiplus::Image *,Gdiplus::REAL,Gdiplus::REAL,Gdiplus::REAL,Gdiplus::REAL)': cannot convert argument 1 from 'const Gdiplus::Bitmap *' to 'Gdiplus::Image *'
+              C:\Users\mcmco\Desktop\WMMR\src\MovieMakerPreviewClient\MovieMakerPreviewClient.cpp(229,13):
+              Conversion loses qualifiers
+      C:\Users\mcmco\Desktop\WMMR\src\MovieMakerPreviewClient\MovieMakerPreviewClient.cpp(228,43):
+      while trying to match the argument list '(const Gdiplus::Bitmap *, int, int, LONG, LONG)'
+  
+  WLMFDS.cpp
+C:\Users\mcmco\Desktop\WMMR\src\WLMFDS\WLMFDS.h(31,9): warning C4005: 'WINVER': macro redefinition [C:\Users\mcmco\Desktop\WMMR\build\src\WLMFDS\WLMFDS.vcxproj]
+  (compiling source file '../../../src/WLMFDS/WLMFDS.cpp')
+      C:\Users\mcmco\Desktop\WMMR\src\WLMFDS\WLMFDS.h(31,9):
+      'WINVER' previously declared on the command line
+  
+C:\Users\mcmco\Desktop\WMMR\src\WLMFDS\WLMFDS.h(32,9): warning C4005: '_WIN32_WINNT': macro redefinition [C:\Users\mcmco\Desktop\WMMR\build\src\WLMFDS\WLMFDS.vcxproj]
+  (compiling source file '../../../src/WLMFDS/WLMFDS.cpp')
+      C:\Users\mcmco\Desktop\WMMR\src\WLMFDS\WLMFDS.h(32,9):
+      '_WIN32_WINNT' previously declared on the command line
+  
+C:\Users\mcmco\Desktop\WMMR\src\WLXPhotoBase\WLXPhotoBase.h(34,9): warning C4005: '_WIN32_IE': macro redefinition [C:\Users\mcmco\Desktop\WMMR\build\src\WLMFDS\WLMFDS.vcxproj]
+  (compiling source file '../../../src/WLMFDS/WLMFDS.cpp')
+      C:\Program Files (x86)\Windows Kits\10\Include\10.0.26100.0\shared\sdkddkver.h(271,9):
+      see previous definition of '_WIN32_IE'
+  
+C:\Users\mcmco\Desktop\WMMR\src\WLXPhotoBase\BaseTypes.h(536,18): warning C4251: 'Base::File::m_strPath': 'ATL::CStringT<wchar_t,ATL::StrTraitATL<wchar_t,ATL::ChTraitsCRT<wchar_t>>>' needs to have dll-interface to be used by clients of 'Base::File' [C:\Users\mcmco\Desktop\WMMR\build\src\WLMFDS\WLMFDS.vcxproj]
+  (compiling source file '../../../src/WLMFDS/WLMFDS.cpp')
+      C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\VC\Tools\MSVC\14.44.35207\atlmfc\include\cstringt.h(999,7):
+      see declaration of 'ATL::CStringT<wchar_t,ATL::StrTraitATL<wchar_t,ATL::ChTraitsCRT<wchar_t>>>'
+  
+C:\Users\mcmco\Desktop\WMMR\src\WLXPhotoBase\BaseTypes.h(568,18): warning C4251: 'Base::TempFile::m_strPath': 'ATL::CStringT<wchar_t,ATL::StrTraitATL<wchar_t,ATL::ChTraitsCRT<wchar_t>>>' needs to have dll-interface to be used by clients of 'Base::TempFile' [C:\Users\mcmco\Desktop\WMMR\build\src\WLMFDS\WLMFDS.vcxproj]
+  (compiling source file '../../../src/WLMFDS/WLMFDS.cpp')
+      C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\VC\Tools\MSVC\14.44.35207\atlmfc\include\cstringt.h(999,7):
+      see declaration of 'ATL::CStringT<wchar_t,ATL::StrTraitATL<wchar_t,ATL::ChTraitsCRT<wchar_t>>>'
+  
+C:\Users\mcmco\Desktop\WMMR\src\WLXPhotoBase\BaseTypes.h(661,21): warning C4251: 'Base::FindFile::m_strDirectory': 'ATL::CStringT<wchar_t,ATL::StrTraitATL<wchar_t,ATL::ChTraitsCRT<wchar_t>>>' needs to have dll-interface to be used by clients of 'Base::FindFile' [C:\Users\mcmco\Desktop\WMMR\build\src\WLMFDS\WLMFDS.vcxproj]
+  (compiling source file '../../../src/WLMFDS/WLMFDS.cpp')
+      C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\VC\Tools\MSVC\14.44.35207\atlmfc\include\cstringt.h(999,7):
+      see declaration of 'ATL::CStringT<wchar_t,ATL::StrTraitATL<wchar_t,ATL::ChTraitsCRT<wchar_t>>>'
+  
+C:\Users\mcmco\Desktop\WMMR\src\WLXPhotoBase\BaseTypes.h(724,25): warning C4251: 'Base::IntSet::m_values': 'ATL::CAtlArray<int,ATL::CElementTraits<int>>' needs to have dll-interface to be used by clients of 'Base::IntSet' [C:\Users\mcmco\Desktop\WMMR\build\src\WLMFDS\WLMFDS.vcxproj]
+  (compiling source file '../../../src/WLMFDS/WLMFDS.cpp')
+      C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\VC\Tools\MSVC\14.44.35207\atlmfc\include\atlcoll.h(530,7):
+      see declaration of 'ATL::CAtlArray<int,ATL::CElementTraits<int>>'
+  
+C:\Users\mcmco\Desktop\WMMR\src\WLMFDS\WLMFDS.cpp(215,91): warning C4100: 'hMFReader': unreferenced parameter [C:\Users\mcmco\Desktop\WMMR\build\src\WLMFDS\WLMFDS.vcxproj]
+C:\Users\mcmco\Desktop\WMMR\src\WLMFDS\WLMFDS.cpp(215,68): warning C4100: 'pszDShowFilter': unreferenced parameter [C:\Users\mcmco\Desktop\WMMR\build\src\WLMFDS\WLMFDS.vcxproj]
+LINK : warning LNK4075: ignoring '/INCREMENTAL' due to '/LTCG' specification [C:\Users\mcmco\Desktop\WMMR\build\src\WLMFDS\WLMFDS.vcxproj]
+LINK : fatal error LNK1181: cannot open input file 'mferror.lib' [C:\Users\mcmco\Desktop\WMMR\build\src\WLMFDS\WLMFDS.vcxproj]
+  WLMFReadWrite.cpp
+C:\Users\mcmco\Desktop\WMMR\src\WLMFReadWrite\WLMFReadWrite.h(29,9): warning C4005: 'WINVER': macro redefinition [C:\Users\mcmco\Desktop\WMMR\build\src\WLMFReadWrite\WLMFReadWrite.vcxproj]
+  (compiling source file '../../../src/WLMFReadWrite/WLMFReadWrite.cpp')
+      C:\Users\mcmco\Desktop\WMMR\src\WLMFReadWrite\WLMFReadWrite.h(29,9):
+      'WINVER' previously declared on the command line
+  
+C:\Users\mcmco\Desktop\WMMR\src\WLMFReadWrite\WLMFReadWrite.h(30,9): warning C4005: '_WIN32_WINNT': macro redefinition [C:\Users\mcmco\Desktop\WMMR\build\src\WLMFReadWrite\WLMFReadWrite.vcxproj]
+  (compiling source file '../../../src/WLMFReadWrite/WLMFReadWrite.cpp')
+      C:\Users\mcmco\Desktop\WMMR\src\WLMFReadWrite\WLMFReadWrite.h(30,9):
+      '_WIN32_WINNT' previously declared on the command line
+  
+C:\Users\mcmco\Desktop\WMMR\src\WLXPhotoBase\WLXPhotoBase.h(34,9): warning C4005: '_WIN32_IE': macro redefinition [C:\Users\mcmco\Desktop\WMMR\build\src\WLMFReadWrite\WLMFReadWrite.vcxproj]
+  (compiling source file '../../../src/WLMFReadWrite/WLMFReadWrite.cpp')
+      C:\Program Files (x86)\Windows Kits\10\Include\10.0.26100.0\shared\sdkddkver.h(271,9):
+      see previous definition of '_WIN32_IE'
+  
+C:\Users\mcmco\Desktop\WMMR\src\WLXPhotoBase\BaseTypes.h(536,18): warning C4251: 'Base::File::m_strPath': 'ATL::CStringT<wchar_t,ATL::StrTraitATL<wchar_t,ATL::ChTraitsCRT<wchar_t>>>' needs to have dll-interface to be used by clients of 'Base::File' [C:\Users\mcmco\Desktop\WMMR\build\src\WLMFReadWrite\WLMFReadWrite.vcxproj]
+  (compiling source file '../../../src/WLMFReadWrite/WLMFReadWrite.cpp')
+      C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\VC\Tools\MSVC\14.44.35207\atlmfc\include\cstringt.h(999,7):
+      see declaration of 'ATL::CStringT<wchar_t,ATL::StrTraitATL<wchar_t,ATL::ChTraitsCRT<wchar_t>>>'
+  
+C:\Users\mcmco\Desktop\WMMR\src\WLXPhotoBase\BaseTypes.h(568,18): warning C4251: 'Base::TempFile::m_strPath': 'ATL::CStringT<wchar_t,ATL::StrTraitATL<wchar_t,ATL::ChTraitsCRT<wchar_t>>>' needs to have dll-interface to be used by clients of 'Base::TempFile' [C:\Users\mcmco\Desktop\WMMR\build\src\WLMFReadWrite\WLMFReadWrite.vcxproj]
+  (compiling source file '../../../src/WLMFReadWrite/WLMFReadWrite.cpp')
+      C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\VC\Tools\MSVC\14.44.35207\atlmfc\include\cstringt.h(999,7):
+      see declaration of 'ATL::CStringT<wchar_t,ATL::StrTraitATL<wchar_t,ATL::ChTraitsCRT<wchar_t>>>'
+  
+C:\Users\mcmco\Desktop\WMMR\src\WLXPhotoBase\BaseTypes.h(661,21): warning C4251: 'Base::FindFile::m_strDirectory': 'ATL::CStringT<wchar_t,ATL::StrTraitATL<wchar_t,ATL::ChTraitsCRT<wchar_t>>>' needs to have dll-interface to be used by clients of 'Base::FindFile' [C:\Users\mcmco\Desktop\WMMR\build\src\WLMFReadWrite\WLMFReadWrite.vcxproj]
+  (compiling source file '../../../src/WLMFReadWrite/WLMFReadWrite.cpp')
+      C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\VC\Tools\MSVC\14.44.35207\atlmfc\include\cstringt.h(999,7):
+      see declaration of 'ATL::CStringT<wchar_t,ATL::StrTraitATL<wchar_t,ATL::ChTraitsCRT<wchar_t>>>'
+  
+C:\Users\mcmco\Desktop\WMMR\src\WLXPhotoBase\BaseTypes.h(724,25): warning C4251: 'Base::IntSet::m_values': 'ATL::CAtlArray<int,ATL::CElementTraits<int>>' needs to have dll-interface to be used by clients of 'Base::IntSet' [C:\Users\mcmco\Desktop\WMMR\build\src\WLMFReadWrite\WLMFReadWrite.vcxproj]
+  (compiling source file '../../../src/WLMFReadWrite/WLMFReadWrite.cpp')
+      C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\VC\Tools\MSVC\14.44.35207\atlmfc\include\atlcoll.h(530,7):
+      see declaration of 'ATL::CAtlArray<int,ATL::CElementTraits<int>>'
+  
+C:\Users\mcmco\Desktop\WMMR\src\WLMFReadWrite\WLMFReadWrite.cpp(80,28): warning C4189: 'uH': local variable is initialized but not referenced [C:\Users\mcmco\Desktop\WMMR\build\src\WLMFReadWrite\WLMFReadWrite.vcxproj]
+C:\Users\mcmco\Desktop\WMMR\src\WLMFReadWrite\WLMFReadWrite.cpp(176,38): error C2672: 'std::min': no matching overloaded function found [C:\Users\mcmco\Desktop\WMMR\build\src\WLMFReadWrite\WLMFReadWrite.vcxproj]
+      C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\VC\Tools\MSVC\14.44.35207\include\utility(109,26):
+      could be '_Ty std::min(std::initializer_list<_Elem>)'
+          C:\Users\mcmco\Desktop\WMMR\src\WLMFReadWrite\WLMFReadWrite.cpp(176,38):
+          '_Ty std::min(std::initializer_list<_Elem>)': expects 1 arguments - 2 provided
+      C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\VC\Tools\MSVC\14.44.35207\include\utility(106,26):
+      or       '_Ty std::min(std::initializer_list<_Elem>,_Pr)'
+          C:\Users\mcmco\Desktop\WMMR\src\WLMFReadWrite\WLMFReadWrite.cpp(176,38):
+          '_Ty std::min(std::initializer_list<_Elem>,_Pr)': could not deduce template argument for 'std::initializer_list<_Elem>' from 'UINT32'
+      C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\VC\Tools\MSVC\14.44.35207\include\utility(98,6):
+      or       'const _Ty &std::min(const _Ty &,const _Ty &) noexcept(<expr>)'
+          C:\Users\mcmco\Desktop\WMMR\src\WLMFReadWrite\WLMFReadWrite.cpp(176,38):
+          'const _Ty &std::min(const _Ty &,const _Ty &) noexcept(<expr>)': template parameter '_Ty' is ambiguous
+              C:\Users\mcmco\Desktop\WMMR\src\WLMFReadWrite\WLMFReadWrite.cpp(176,38):
+              could be 'DWORD'
+              C:\Users\mcmco\Desktop\WMMR\src\WLMFReadWrite\WLMFReadWrite.cpp(176,38):
+              or       'UINT32'
+          C:\Users\mcmco\Desktop\WMMR\src\WLMFReadWrite\WLMFReadWrite.cpp(176,38):
+          'const _Ty &std::min(const _Ty &,const _Ty &) noexcept(<expr>)': could not deduce template argument for 'const _Ty &' from 'DWORD'
+      C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\VC\Tools\MSVC\14.44.35207\include\utility(88,33):
+      or       'const _Ty &std::min(const _Ty &,const _Ty &,_Pr) noexcept(<expr>)'
+          C:\Users\mcmco\Desktop\WMMR\src\WLMFReadWrite\WLMFReadWrite.cpp(176,38):
+          'const _Ty &std::min(const _Ty &,const _Ty &,_Pr) noexcept(<expr>)': expects 3 arguments - 2 provided
+  
+  WLXCodecHost.cpp
+C:\Users\mcmco\Desktop\WMMR\src\WLXCodecHost\WLXCodecHost.cpp(189,13): warning C4505: 'LogMessage': unreferenced function with internal linkage has been removed [C:\Users\mcmco\Desktop\WMMR\build\src\WLXCodecHost\WLXCodecHost.vcxproj]
+LINK : warning LNK4075: ignoring '/INCREMENTAL' due to '/LTCG' specification [C:\Users\mcmco\Desktop\WMMR\build\src\WLXCodecHost\WLXCodecHost.vcxproj]
+  LINK : /LTCG specified but no code generation required; remove /LTCG from the link command line to improve linker performance
+  WLXCodecHost.vcxproj -> C:\Users\mcmco\Desktop\WMMR\build\bin\Debug\WLXCodecHost.exe
+  WLXFaceRecognition.cpp
+C:\Users\mcmco\Desktop\WMMR\src\WLXFaceRecognition\WLXFaceRecognition.h(35,9): warning C4005: 'WINVER': macro redefinition [C:\Users\mcmco\Desktop\WMMR\build\src\WLXFaceRecognition\WLXFaceRecognition.vcxproj]
+  (compiling source file '../../../src/WLXFaceRecognition/WLXFaceRecognition.cpp')
+      C:\Users\mcmco\Desktop\WMMR\src\WLXFaceRecognition\WLXFaceRecognition.h(35,9):
+      'WINVER' previously declared on the command line
+  
+C:\Users\mcmco\Desktop\WMMR\src\WLXFaceRecognition\WLXFaceRecognition.h(36,9): warning C4005: '_WIN32_WINNT': macro redefinition [C:\Users\mcmco\Desktop\WMMR\build\src\WLXFaceRecognition\WLXFaceRecognition.vcxproj]
+  (compiling source file '../../../src/WLXFaceRecognition/WLXFaceRecognition.cpp')
+      C:\Users\mcmco\Desktop\WMMR\src\WLXFaceRecognition\WLXFaceRecognition.h(36,9):
+      '_WIN32_WINNT' previously declared on the command line
+  
+C:\Users\mcmco\Desktop\WMMR\src\WLXPhotoBase\WLXPhotoBase.h(34,9): warning C4005: '_WIN32_IE': macro redefinition [C:\Users\mcmco\Desktop\WMMR\build\src\WLXFaceRecognition\WLXFaceRecognition.vcxproj]
+  (compiling source file '../../../src/WLXFaceRecognition/WLXFaceRecognition.cpp')
+      C:\Program Files (x86)\Windows Kits\10\Include\10.0.26100.0\shared\sdkddkver.h(271,9):
+      see previous definition of '_WIN32_IE'
+  
+C:\Users\mcmco\Desktop\WMMR\src\WLXPhotoBase\BaseTypes.h(536,18): warning C4251: 'Base::File::m_strPath': 'ATL::CStringT<wchar_t,ATL::StrTraitATL<wchar_t,ATL::ChTraitsCRT<wchar_t>>>' needs to have dll-interface to be used by clients of 'Base::File' [C:\Users\mcmco\Desktop\WMMR\build\src\WLXFaceRecognition\WLXFaceRecognition.vcxproj]
+  (compiling source file '../../../src/WLXFaceRecognition/WLXFaceRecognition.cpp')
+      C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\VC\Tools\MSVC\14.44.35207\atlmfc\include\cstringt.h(999,7):
+      see declaration of 'ATL::CStringT<wchar_t,ATL::StrTraitATL<wchar_t,ATL::ChTraitsCRT<wchar_t>>>'
+  
+C:\Users\mcmco\Desktop\WMMR\src\WLXPhotoBase\BaseTypes.h(568,18): warning C4251: 'Base::TempFile::m_strPath': 'ATL::CStringT<wchar_t,ATL::StrTraitATL<wchar_t,ATL::ChTraitsCRT<wchar_t>>>' needs to have dll-interface to be used by clients of 'Base::TempFile' [C:\Users\mcmco\Desktop\WMMR\build\src\WLXFaceRecognition\WLXFaceRecognition.vcxproj]
+  (compiling source file '../../../src/WLXFaceRecognition/WLXFaceRecognition.cpp')
+      C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\VC\Tools\MSVC\14.44.35207\atlmfc\include\cstringt.h(999,7):
+      see declaration of 'ATL::CStringT<wchar_t,ATL::StrTraitATL<wchar_t,ATL::ChTraitsCRT<wchar_t>>>'
+  
+C:\Users\mcmco\Desktop\WMMR\src\WLXPhotoBase\BaseTypes.h(661,21): warning C4251: 'Base::FindFile::m_strDirectory': 'ATL::CStringT<wchar_t,ATL::StrTraitATL<wchar_t,ATL::ChTraitsCRT<wchar_t>>>' needs to have dll-interface to be used by clients of 'Base::FindFile' [C:\Users\mcmco\Desktop\WMMR\build\src\WLXFaceRecognition\WLXFaceRecognition.vcxproj]
+  (compiling source file '../../../src/WLXFaceRecognition/WLXFaceRecognition.cpp')
+      C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\VC\Tools\MSVC\14.44.35207\atlmfc\include\cstringt.h(999,7):
+      see declaration of 'ATL::CStringT<wchar_t,ATL::StrTraitATL<wchar_t,ATL::ChTraitsCRT<wchar_t>>>'
+  
+C:\Users\mcmco\Desktop\WMMR\src\WLXPhotoBase\BaseTypes.h(724,25): warning C4251: 'Base::IntSet::m_values': 'ATL::CAtlArray<int,ATL::CElementTraits<int>>' needs to have dll-interface to be used by clients of 'Base::IntSet' [C:\Users\mcmco\Desktop\WMMR\build\src\WLXFaceRecognition\WLXFaceRecognition.vcxproj]
+  (compiling source file '../../../src/WLXFaceRecognition/WLXFaceRecognition.cpp')
+      C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\VC\Tools\MSVC\14.44.35207\atlmfc\include\atlcoll.h(530,7):
+      see declaration of 'ATL::CAtlArray<int,ATL::CElementTraits<int>>'
+  
+C:\Users\mcmco\Desktop\WMMR\src\WLXFaceRecognition\WLXFaceRecognition.cpp(346,16): warning C4189: 'uMaxFaces': local variable is initialized but not referenced [C:\Users\mcmco\Desktop\WMMR\build\src\WLXFaceRecognition\WLXFaceRecognition.vcxproj]
+LINK : warning LNK4075: ignoring '/INCREMENTAL' due to '/LTCG' specification [C:\Users\mcmco\Desktop\WMMR\build\src\WLXFaceRecognition\WLXFaceRecognition.vcxproj]
+     Creating library C:/Users/mcmco/Desktop/WMMR/build/lib/Debug/WLXFaceRecognition.lib and object C:/Users/mcmco/Desktop/WMMR/build/lib/Debug/WLXFaceRecognition.exp
+  LINK : /LTCG specified but no code generation required; remove /LTCG from the link command line to improve linker performance
+LINK : warning LNK4199: /DELAYLOAD:WLXPhotoSqm.dll ignored; no imports found from WLXPhotoSqm.dll [C:\Users\mcmco\Desktop\WMMR\build\src\WLXFaceRecognition\WLXFaceRecognition.vcxproj]
+  WLXFaceRecognition.vcxproj -> C:\Users\mcmco\Desktop\WMMR\build\bin\Debug\WLXFaceRecognition.dll
+  dllmain.cpp
+  WLXMP4Parser.cpp
+C:\Users\mcmco\Desktop\WMMR\src\WLXMP4Parser\WLXMP4Parser.h(30,9): warning C4005: 'WINVER': macro redefinition [C:\Users\mcmco\Desktop\WMMR\build\src\WLXMP4Parser\WLXMP4Parser.vcxproj]
+  (compiling source file '../../../src/WLXMP4Parser/dllmain.cpp')
+      C:\Users\mcmco\Desktop\WMMR\src\WLXMP4Parser\WLXMP4Parser.h(30,9):
+      'WINVER' previously declared on the command line
+  
+C:\Users\mcmco\Desktop\WMMR\src\WLXMP4Parser\WLXMP4Parser.h(31,9): warning C4005: '_WIN32_WINNT': macro redefinition [C:\Users\mcmco\Desktop\WMMR\build\src\WLXMP4Parser\WLXMP4Parser.vcxproj]
+  (compiling source file '../../../src/WLXMP4Parser/dllmain.cpp')
+      C:\Users\mcmco\Desktop\WMMR\src\WLXMP4Parser\WLXMP4Parser.h(31,9):
+      '_WIN32_WINNT' previously declared on the command line
+  
+C:\Users\mcmco\Desktop\WMMR\src\WLXMP4Parser\WLXMP4Parser.h(30,9): warning C4005: 'WINVER': macro redefinition [C:\Users\mcmco\Desktop\WMMR\build\src\WLXMP4Parser\WLXMP4Parser.vcxproj]
+  (compiling source file '../../../src/WLXMP4Parser/WLXMP4Parser.cpp')
+      C:\Users\mcmco\Desktop\WMMR\src\WLXMP4Parser\WLXMP4Parser.h(30,9):
+      'WINVER' previously declared on the command line
+  
+C:\Users\mcmco\Desktop\WMMR\src\WLXMP4Parser\WLXMP4Parser.h(31,9): warning C4005: '_WIN32_WINNT': macro redefinition [C:\Users\mcmco\Desktop\WMMR\build\src\WLXMP4Parser\WLXMP4Parser.vcxproj]
+  (compiling source file '../../../src/WLXMP4Parser/WLXMP4Parser.cpp')
+      C:\Users\mcmco\Desktop\WMMR\src\WLXMP4Parser\WLXMP4Parser.h(31,9):
+      '_WIN32_WINNT' previously declared on the command line
+  
+C:\Users\mcmco\Desktop\WMMR\src\WLXPhotoBase\WLXPhotoBase.h(34,9): warning C4005: '_WIN32_IE': macro redefinition [C:\Users\mcmco\Desktop\WMMR\build\src\WLXMP4Parser\WLXMP4Parser.vcxproj]
+  (compiling source file '../../../src/WLXMP4Parser/WLXMP4Parser.cpp')
+      C:\Program Files (x86)\Windows Kits\10\Include\10.0.26100.0\shared\sdkddkver.h(271,9):
+      see previous definition of '_WIN32_IE'
+  
+C:\Users\mcmco\Desktop\WMMR\src\WLXPhotoBase\WLXPhotoBase.h(34,9): warning C4005: '_WIN32_IE': macro redefinition [C:\Users\mcmco\Desktop\WMMR\build\src\WLXMP4Parser\WLXMP4Parser.vcxproj]
+  (compiling source file '../../../src/WLXMP4Parser/dllmain.cpp')
+      C:\Program Files (x86)\Windows Kits\10\Include\10.0.26100.0\shared\sdkddkver.h(271,9):
+      see previous definition of '_WIN32_IE'
+  
+C:\Users\mcmco\Desktop\WMMR\src\WLXPhotoBase\BaseTypes.h(536,18): warning C4251: 'Base::File::m_strPath': 'ATL::CStringT<wchar_t,ATL::StrTraitATL<wchar_t,ATL::ChTraitsCRT<wchar_t>>>' needs to have dll-interface to be used by clients of 'Base::File' [C:\Users\mcmco\Desktop\WMMR\build\src\WLXMP4Parser\WLXMP4Parser.vcxproj]
+  (compiling source file '../../../src/WLXMP4Parser/dllmain.cpp')
+      C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\VC\Tools\MSVC\14.44.35207\atlmfc\include\cstringt.h(999,7):
+      see declaration of 'ATL::CStringT<wchar_t,ATL::StrTraitATL<wchar_t,ATL::ChTraitsCRT<wchar_t>>>'
+  
+C:\Users\mcmco\Desktop\WMMR\src\WLXPhotoBase\BaseTypes.h(568,18): warning C4251: 'Base::TempFile::m_strPath': 'ATL::CStringT<wchar_t,ATL::StrTraitATL<wchar_t,ATL::ChTraitsCRT<wchar_t>>>' needs to have dll-interface to be used by clients of 'Base::TempFile' [C:\Users\mcmco\Desktop\WMMR\build\src\WLXMP4Parser\WLXMP4Parser.vcxproj]
+  (compiling source file '../../../src/WLXMP4Parser/dllmain.cpp')
+      C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\VC\Tools\MSVC\14.44.35207\atlmfc\include\cstringt.h(999,7):
+      see declaration of 'ATL::CStringT<wchar_t,ATL::StrTraitATL<wchar_t,ATL::ChTraitsCRT<wchar_t>>>'
+  
+C:\Users\mcmco\Desktop\WMMR\src\WLXPhotoBase\BaseTypes.h(661,21): warning C4251: 'Base::FindFile::m_strDirectory': 'ATL::CStringT<wchar_t,ATL::StrTraitATL<wchar_t,ATL::ChTraitsCRT<wchar_t>>>' needs to have dll-interface to be used by clients of 'Base::FindFile' [C:\Users\mcmco\Desktop\WMMR\build\src\WLXMP4Parser\WLXMP4Parser.vcxproj]
+  (compiling source file '../../../src/WLXMP4Parser/dllmain.cpp')
+      C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\VC\Tools\MSVC\14.44.35207\atlmfc\include\cstringt.h(999,7):
+      see declaration of 'ATL::CStringT<wchar_t,ATL::StrTraitATL<wchar_t,ATL::ChTraitsCRT<wchar_t>>>'
+  
+C:\Users\mcmco\Desktop\WMMR\src\WLXPhotoBase\BaseTypes.h(724,25): warning C4251: 'Base::IntSet::m_values': 'ATL::CAtlArray<int,ATL::CElementTraits<int>>' needs to have dll-interface to be used by clients of 'Base::IntSet' [C:\Users\mcmco\Desktop\WMMR\build\src\WLXMP4Parser\WLXMP4Parser.vcxproj]
+  (compiling source file '../../../src/WLXMP4Parser/dllmain.cpp')
+      C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\VC\Tools\MSVC\14.44.35207\atlmfc\include\atlcoll.h(530,7):
+      see declaration of 'ATL::CAtlArray<int,ATL::CElementTraits<int>>'
+  
+C:\Users\mcmco\Desktop\WMMR\src\WLXPhotoBase\BaseTypes.h(536,18): warning C4251: 'Base::File::m_strPath': 'ATL::CStringT<wchar_t,ATL::StrTraitATL<wchar_t,ATL::ChTraitsCRT<wchar_t>>>' needs to have dll-interface to be used by clients of 'Base::File' [C:\Users\mcmco\Desktop\WMMR\build\src\WLXMP4Parser\WLXMP4Parser.vcxproj]
+  (compiling source file '../../../src/WLXMP4Parser/WLXMP4Parser.cpp')
+      C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\VC\Tools\MSVC\14.44.35207\atlmfc\include\cstringt.h(999,7):
+      see declaration of 'ATL::CStringT<wchar_t,ATL::StrTraitATL<wchar_t,ATL::ChTraitsCRT<wchar_t>>>'
+  
+C:\Users\mcmco\Desktop\WMMR\src\WLXPhotoBase\BaseTypes.h(568,18): warning C4251: 'Base::TempFile::m_strPath': 'ATL::CStringT<wchar_t,ATL::StrTraitATL<wchar_t,ATL::ChTraitsCRT<wchar_t>>>' needs to have dll-interface to be used by clients of 'Base::TempFile' [C:\Users\mcmco\Desktop\WMMR\build\src\WLXMP4Parser\WLXMP4Parser.vcxproj]
+  (compiling source file '../../../src/WLXMP4Parser/WLXMP4Parser.cpp')
+      C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\VC\Tools\MSVC\14.44.35207\atlmfc\include\cstringt.h(999,7):
+      see declaration of 'ATL::CStringT<wchar_t,ATL::StrTraitATL<wchar_t,ATL::ChTraitsCRT<wchar_t>>>'
+  
+C:\Users\mcmco\Desktop\WMMR\src\WLXPhotoBase\BaseTypes.h(661,21): warning C4251: 'Base::FindFile::m_strDirectory': 'ATL::CStringT<wchar_t,ATL::StrTraitATL<wchar_t,ATL::ChTraitsCRT<wchar_t>>>' needs to have dll-interface to be used by clients of 'Base::FindFile' [C:\Users\mcmco\Desktop\WMMR\build\src\WLXMP4Parser\WLXMP4Parser.vcxproj]
+  (compiling source file '../../../src/WLXMP4Parser/WLXMP4Parser.cpp')
+      C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\VC\Tools\MSVC\14.44.35207\atlmfc\include\cstringt.h(999,7):
+      see declaration of 'ATL::CStringT<wchar_t,ATL::StrTraitATL<wchar_t,ATL::ChTraitsCRT<wchar_t>>>'
+  
+C:\Users\mcmco\Desktop\WMMR\src\WLXPhotoBase\BaseTypes.h(724,25): warning C4251: 'Base::IntSet::m_values': 'ATL::CAtlArray<int,ATL::CElementTraits<int>>' needs to have dll-interface to be used by clients of 'Base::IntSet' [C:\Users\mcmco\Desktop\WMMR\build\src\WLXMP4Parser\WLXMP4Parser.vcxproj]
+  (compiling source file '../../../src/WLXMP4Parser/WLXMP4Parser.cpp')
+      C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\VC\Tools\MSVC\14.44.35207\atlmfc\include\atlcoll.h(530,7):
+      see declaration of 'ATL::CAtlArray<int,ATL::CElementTraits<int>>'
+  
+LINK : warning LNK4075: ignoring '/INCREMENTAL' due to '/LTCG' specification [C:\Users\mcmco\Desktop\WMMR\build\src\WLXMP4Parser\WLXMP4Parser.vcxproj]
+     Creating library C:/Users/mcmco/Desktop/WMMR/build/lib/Debug/WLXMP4Parser.lib and object C:/Users/mcmco/Desktop/WMMR/build/lib/Debug/WLXMP4Parser.exp
+  LINK : /LTCG specified but no code generation required; remove /LTCG from the link command line to improve linker performance
+  WLXMP4Parser.vcxproj -> C:\Users\mcmco\Desktop\WMMR\build\bin\Debug\WLXMP4Parser.dll
+  dllmain.cpp
+  WLXMediaPublishSubscribe.cpp
+C:\Users\mcmco\Desktop\WMMR\src\WLXMediaPublishSubscribe\WLXMediaPublishSubscribe.h(33,9): warning C4005: 'WINVER': macro redefinition [C:\Users\mcmco\Desktop\WMMR\build\src\WLXMediaPublishSubscribe\WLXMediaPublishSubscribe.vcxproj]
+  (compiling source file '../../../src/WLXMediaPublishSubscribe/WLXMediaPublishSubscribe.cpp')
+      C:\Users\mcmco\Desktop\WMMR\src\WLXMediaPublishSubscribe\WLXMediaPublishSubscribe.h(33,9):
+      'WINVER' previously declared on the command line
+  
+C:\Users\mcmco\Desktop\WMMR\src\WLXMediaPublishSubscribe\WLXMediaPublishSubscribe.h(34,9): warning C4005: '_WIN32_WINNT': macro redefinition [C:\Users\mcmco\Desktop\WMMR\build\src\WLXMediaPublishSubscribe\WLXMediaPublishSubscribe.vcxproj]
+  (compiling source file '../../../src/WLXMediaPublishSubscribe/WLXMediaPublishSubscribe.cpp')
+      C:\Users\mcmco\Desktop\WMMR\src\WLXMediaPublishSubscribe\WLXMediaPublishSubscribe.h(34,9):
+      '_WIN32_WINNT' previously declared on the command line
+  
+C:\Users\mcmco\Desktop\WMMR\src\WLXMediaPublishSubscribe\WLXMediaPublishSubscribe.h(33,9): warning C4005: 'WINVER': macro redefinition [C:\Users\mcmco\Desktop\WMMR\build\src\WLXMediaPublishSubscribe\WLXMediaPublishSubscribe.vcxproj]
+  (compiling source file '../../../src/WLXMediaPublishSubscribe/dllmain.cpp')
+      C:\Users\mcmco\Desktop\WMMR\src\WLXMediaPublishSubscribe\WLXMediaPublishSubscribe.h(33,9):
+      'WINVER' previously declared on the command line
+  
+C:\Users\mcmco\Desktop\WMMR\src\WLXMediaPublishSubscribe\WLXMediaPublishSubscribe.h(34,9): warning C4005: '_WIN32_WINNT': macro redefinition [C:\Users\mcmco\Desktop\WMMR\build\src\WLXMediaPublishSubscribe\WLXMediaPublishSubscribe.vcxproj]
+  (compiling source file '../../../src/WLXMediaPublishSubscribe/dllmain.cpp')
+      C:\Users\mcmco\Desktop\WMMR\src\WLXMediaPublishSubscribe\WLXMediaPublishSubscribe.h(34,9):
+      '_WIN32_WINNT' previously declared on the command line
+  
+C:\Users\mcmco\Desktop\WMMR\src\WLXPhotoBase\WLXPhotoBase.h(34,9): warning C4005: '_WIN32_IE': macro redefinition [C:\Users\mcmco\Desktop\WMMR\build\src\WLXMediaPublishSubscribe\WLXMediaPublishSubscribe.vcxproj]
+  (compiling source file '../../../src/WLXMediaPublishSubscribe/dllmain.cpp')
+      C:\Program Files (x86)\Windows Kits\10\Include\10.0.26100.0\shared\sdkddkver.h(271,9):
+      see previous definition of '_WIN32_IE'
+  
+C:\Users\mcmco\Desktop\WMMR\src\WLXPhotoBase\WLXPhotoBase.h(34,9): warning C4005: '_WIN32_IE': macro redefinition [C:\Users\mcmco\Desktop\WMMR\build\src\WLXMediaPublishSubscribe\WLXMediaPublishSubscribe.vcxproj]
+  (compiling source file '../../../src/WLXMediaPublishSubscribe/WLXMediaPublishSubscribe.cpp')
+      C:\Program Files (x86)\Windows Kits\10\Include\10.0.26100.0\shared\sdkddkver.h(271,9):
+      see previous definition of '_WIN32_IE'
+  
+C:\Users\mcmco\Desktop\WMMR\src\WLXPhotoBase\BaseTypes.h(536,18): warning C4251: 'Base::File::m_strPath': 'ATL::CStringT<wchar_t,ATL::StrTraitATL<wchar_t,ATL::ChTraitsCRT<wchar_t>>>' needs to have dll-interface to be used by clients of 'Base::File' [C:\Users\mcmco\Desktop\WMMR\build\src\WLXMediaPublishSubscribe\WLXMediaPublishSubscribe.vcxproj]
+  (compiling source file '../../../src/WLXMediaPublishSubscribe/dllmain.cpp')
+      C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\VC\Tools\MSVC\14.44.35207\atlmfc\include\cstringt.h(999,7):
+      see declaration of 'ATL::CStringT<wchar_t,ATL::StrTraitATL<wchar_t,ATL::ChTraitsCRT<wchar_t>>>'
+  
+C:\Users\mcmco\Desktop\WMMR\src\WLXPhotoBase\BaseTypes.h(568,18): warning C4251: 'Base::TempFile::m_strPath': 'ATL::CStringT<wchar_t,ATL::StrTraitATL<wchar_t,ATL::ChTraitsCRT<wchar_t>>>' needs to have dll-interface to be used by clients of 'Base::TempFile' [C:\Users\mcmco\Desktop\WMMR\build\src\WLXMediaPublishSubscribe\WLXMediaPublishSubscribe.vcxproj]
+  (compiling source file '../../../src/WLXMediaPublishSubscribe/dllmain.cpp')
+      C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\VC\Tools\MSVC\14.44.35207\atlmfc\include\cstringt.h(999,7):
+      see declaration of 'ATL::CStringT<wchar_t,ATL::StrTraitATL<wchar_t,ATL::ChTraitsCRT<wchar_t>>>'
+  
+C:\Users\mcmco\Desktop\WMMR\src\WLXPhotoBase\BaseTypes.h(661,21): warning C4251: 'Base::FindFile::m_strDirectory': 'ATL::CStringT<wchar_t,ATL::StrTraitATL<wchar_t,ATL::ChTraitsCRT<wchar_t>>>' needs to have dll-interface to be used by clients of 'Base::FindFile' [C:\Users\mcmco\Desktop\WMMR\build\src\WLXMediaPublishSubscribe\WLXMediaPublishSubscribe.vcxproj]
+  (compiling source file '../../../src/WLXMediaPublishSubscribe/dllmain.cpp')
+      C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\VC\Tools\MSVC\14.44.35207\atlmfc\include\cstringt.h(999,7):
+      see declaration of 'ATL::CStringT<wchar_t,ATL::StrTraitATL<wchar_t,ATL::ChTraitsCRT<wchar_t>>>'
+  
+C:\Users\mcmco\Desktop\WMMR\src\WLXPhotoBase\BaseTypes.h(724,25): warning C4251: 'Base::IntSet::m_values': 'ATL::CAtlArray<int,ATL::CElementTraits<int>>' needs to have dll-interface to be used by clients of 'Base::IntSet' [C:\Users\mcmco\Desktop\WMMR\build\src\WLXMediaPublishSubscribe\WLXMediaPublishSubscribe.vcxproj]
+  (compiling source file '../../../src/WLXMediaPublishSubscribe/dllmain.cpp')
+      C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\VC\Tools\MSVC\14.44.35207\atlmfc\include\atlcoll.h(530,7):
+      see declaration of 'ATL::CAtlArray<int,ATL::CElementTraits<int>>'
+  
+C:\Users\mcmco\Desktop\WMMR\src\WLXPhotoBase\BaseTypes.h(536,18): warning C4251: 'Base::File::m_strPath': 'ATL::CStringT<wchar_t,ATL::StrTraitATL<wchar_t,ATL::ChTraitsCRT<wchar_t>>>' needs to have dll-interface to be used by clients of 'Base::File' [C:\Users\mcmco\Desktop\WMMR\build\src\WLXMediaPublishSubscribe\WLXMediaPublishSubscribe.vcxproj]
+  (compiling source file '../../../src/WLXMediaPublishSubscribe/WLXMediaPublishSubscribe.cpp')
+      C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\VC\Tools\MSVC\14.44.35207\atlmfc\include\cstringt.h(999,7):
+      see declaration of 'ATL::CStringT<wchar_t,ATL::StrTraitATL<wchar_t,ATL::ChTraitsCRT<wchar_t>>>'
+  
+C:\Users\mcmco\Desktop\WMMR\src\WLXPhotoBase\BaseTypes.h(568,18): warning C4251: 'Base::TempFile::m_strPath': 'ATL::CStringT<wchar_t,ATL::StrTraitATL<wchar_t,ATL::ChTraitsCRT<wchar_t>>>' needs to have dll-interface to be used by clients of 'Base::TempFile' [C:\Users\mcmco\Desktop\WMMR\build\src\WLXMediaPublishSubscribe\WLXMediaPublishSubscribe.vcxproj]
+  (compiling source file '../../../src/WLXMediaPublishSubscribe/WLXMediaPublishSubscribe.cpp')
+      C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\VC\Tools\MSVC\14.44.35207\atlmfc\include\cstringt.h(999,7):
+      see declaration of 'ATL::CStringT<wchar_t,ATL::StrTraitATL<wchar_t,ATL::ChTraitsCRT<wchar_t>>>'
+  
+C:\Users\mcmco\Desktop\WMMR\src\WLXPhotoBase\BaseTypes.h(661,21): warning C4251: 'Base::FindFile::m_strDirectory': 'ATL::CStringT<wchar_t,ATL::StrTraitATL<wchar_t,ATL::ChTraitsCRT<wchar_t>>>' needs to have dll-interface to be used by clients of 'Base::FindFile' [C:\Users\mcmco\Desktop\WMMR\build\src\WLXMediaPublishSubscribe\WLXMediaPublishSubscribe.vcxproj]
+  (compiling source file '../../../src/WLXMediaPublishSubscribe/WLXMediaPublishSubscribe.cpp')
+      C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\VC\Tools\MSVC\14.44.35207\atlmfc\include\cstringt.h(999,7):
+      see declaration of 'ATL::CStringT<wchar_t,ATL::StrTraitATL<wchar_t,ATL::ChTraitsCRT<wchar_t>>>'
+  
+C:\Users\mcmco\Desktop\WMMR\src\WLXPhotoBase\BaseTypes.h(724,25): warning C4251: 'Base::IntSet::m_values': 'ATL::CAtlArray<int,ATL::CElementTraits<int>>' needs to have dll-interface to be used by clients of 'Base::IntSet' [C:\Users\mcmco\Desktop\WMMR\build\src\WLXMediaPublishSubscribe\WLXMediaPublishSubscribe.vcxproj]
+  (compiling source file '../../../src/WLXMediaPublishSubscribe/WLXMediaPublishSubscribe.cpp')
+      C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\VC\Tools\MSVC\14.44.35207\atlmfc\include\atlcoll.h(530,7):
+      see declaration of 'ATL::CAtlArray<int,ATL::CElementTraits<int>>'
+  
+C:\Users\mcmco\Desktop\WMMR\src\WLXMediaPublishSubscribe\dllmain.cpp(40,33): error C2065: 'INTERNET_OPTION_ENABLE_FEATURE': undeclared identifier [C:\Users\mcmco\Desktop\WMMR\build\src\WLXMediaPublishSubscribe\WLXMediaPublishSubscribe.vcxproj]
+C:\Users\mcmco\Desktop\WMMR\src\WLXMediaPublishSubscribe\WLXMediaPublishSubscribe.cpp(54,53): warning C4100: 'hParentWnd': unreferenced parameter [C:\Users\mcmco\Desktop\WMMR\build\src\WLXMediaPublishSubscribe\WLXMediaPublishSubscribe.vcxproj]
+C:\Users\mcmco\Desktop\WMMR\src\WLXMediaPublishSubscribe\WLXMediaPublishSubscribe.cpp(74,40): warning C4100: 'target': unreferenced parameter [C:\Users\mcmco\Desktop\WMMR\build\src\WLXMediaPublishSubscribe\WLXMediaPublishSubscribe.vcxproj]
+C:\Users\mcmco\Desktop\WMMR\src\WLXMediaPublishSubscribe\WLXMediaPublishSubscribe.cpp(80,42): warning C4100: 'target': unreferenced parameter [C:\Users\mcmco\Desktop\WMMR\build\src\WLXMediaPublishSubscribe\WLXMediaPublishSubscribe.vcxproj]
+C:\Users\mcmco\Desktop\WMMR\src\WLXMediaPublishSubscribe\WLXMediaPublishSubscribe.cpp(482,93): warning C4100: 'pPercent': unreferenced parameter [C:\Users\mcmco\Desktop\WMMR\build\src\WLXMediaPublishSubscribe\WLXMediaPublishSubscribe.vcxproj]
+C:\Users\mcmco\Desktop\WMMR\src\WLXMediaPublishSubscribe\WLXMediaPublishSubscribe.cpp(482,78): warning C4100: 'pStatus': unreferenced parameter [C:\Users\mcmco\Desktop\WMMR\build\src\WLXMediaPublishSubscribe\WLXMediaPublishSubscribe.vcxproj]
+C:\Users\mcmco\Desktop\WMMR\src\WLXMediaPublishSubscribe\WLXMediaPublishSubscribe.cpp(482,62): warning C4100: 'hPublish': unreferenced parameter [C:\Users\mcmco\Desktop\WMMR\build\src\WLXMediaPublishSubscribe\WLXMediaPublishSubscribe.vcxproj]
+C:\Users\mcmco\Desktop\WMMR\src\WLXMediaPublishSubscribe\WLXMediaPublishSubscribe.cpp(489,59): warning C4100: 'hPublish': unreferenced parameter [C:\Users\mcmco\Desktop\WMMR\build\src\WLXMediaPublishSubscribe\WLXMediaPublishSubscribe.vcxproj]
+C:\Users\mcmco\Desktop\WMMR\src\WLXMediaPublishSubscribe\WLXMediaPublishSubscribe.cpp(494,101): warning C4100: 'pResult': unreferenced parameter [C:\Users\mcmco\Desktop\WMMR\build\src\WLXMediaPublishSubscribe\WLXMediaPublishSubscribe.vcxproj]
+C:\Users\mcmco\Desktop\WMMR\src\WLXMediaPublishSubscribe\WLXMediaPublishSubscribe.cpp(494,62): warning C4100: 'hPublish': unreferenced parameter [C:\Users\mcmco\Desktop\WMMR\build\src\WLXMediaPublishSubscribe\WLXMediaPublishSubscribe.vcxproj]
+C:\Users\mcmco\Desktop\WMMR\src\WLXMediaPublishSubscribe\WLXMediaPublishSubscribe.cpp(500,45): warning C4100: 'pUserData': unreferenced parameter [C:\Users\mcmco\Desktop\WMMR\build\src\WLXMediaPublishSubscribe\WLXMediaPublishSubscribe.vcxproj]
+C:\Users\mcmco\Desktop\WMMR\src\WLXMediaPublishSubscribe\WLXMediaPublishSubscribe.cpp(500,26): warning C4100: 'pfnProgress': unreferenced parameter [C:\Users\mcmco\Desktop\WMMR\build\src\WLXMediaPublishSubscribe\WLXMediaPublishSubscribe.vcxproj]
+C:\Users\mcmco\Desktop\WMMR\src\WLXMediaPublishSubscribe\WLXMediaPublishSubscribe.cpp(499,72): warning C4100: 'hPublish': unreferenced parameter [C:\Users\mcmco\Desktop\WMMR\build\src\WLXMediaPublishSubscribe\WLXMediaPublishSubscribe.vcxproj]
+C:\Users\mcmco\Desktop\WMMR\src\WLXMediaPublishSubscribe\WLXMediaPublishSubscribe.cpp(506,45): warning C4100: 'pUserData': unreferenced parameter [C:\Users\mcmco\Desktop\WMMR\build\src\WLXMediaPublishSubscribe\WLXMediaPublishSubscribe.vcxproj]
+C:\Users\mcmco\Desktop\WMMR\src\WLXMediaPublishSubscribe\WLXMediaPublishSubscribe.cpp(506,26): warning C4100: 'pfnComplete': unreferenced parameter [C:\Users\mcmco\Desktop\WMMR\build\src\WLXMediaPublishSubscribe\WLXMediaPublishSubscribe.vcxproj]
+C:\Users\mcmco\Desktop\WMMR\src\WLXMediaPublishSubscribe\WLXMediaPublishSubscribe.cpp(505,72): warning C4100: 'hPublish': unreferenced parameter [C:\Users\mcmco\Desktop\WMMR\build\src\WLXMediaPublishSubscribe\WLXMediaPublishSubscribe.vcxproj]
+  WLXMovieLibrary.cpp
+C:\Users\mcmco\Desktop\WMMR\src\WLXMovieLibrary\WLXMovieLibrary.h(33,9): warning C4005: 'WINVER': macro redefinition [C:\Users\mcmco\Desktop\WMMR\build\src\WLXMovieLibrary\WLXMovieLibrary.vcxproj]
+  (compiling source file '../../../src/WLXMovieLibrary/WLXMovieLibrary.cpp')
+      C:\Users\mcmco\Desktop\WMMR\src\WLXMovieLibrary\WLXMovieLibrary.h(33,9):
+      'WINVER' previously declared on the command line
+  
+C:\Users\mcmco\Desktop\WMMR\src\WLXMovieLibrary\WLXMovieLibrary.h(34,9): warning C4005: '_WIN32_WINNT': macro redefinition [C:\Users\mcmco\Desktop\WMMR\build\src\WLXMovieLibrary\WLXMovieLibrary.vcxproj]
+  (compiling source file '../../../src/WLXMovieLibrary/WLXMovieLibrary.cpp')
+      C:\Users\mcmco\Desktop\WMMR\src\WLXMovieLibrary\WLXMovieLibrary.h(34,9):
+      '_WIN32_WINNT' previously declared on the command line
+  
+C:\Users\mcmco\Desktop\WMMR\src\WLXPhotoBase\WLXPhotoBase.h(34,9): warning C4005: '_WIN32_IE': macro redefinition [C:\Users\mcmco\Desktop\WMMR\build\src\WLXMovieLibrary\WLXMovieLibrary.vcxproj]
+  (compiling source file '../../../src/WLXMovieLibrary/WLXMovieLibrary.cpp')
+      C:\Program Files (x86)\Windows Kits\10\Include\10.0.26100.0\shared\sdkddkver.h(271,9):
+      see previous definition of '_WIN32_IE'
+  
+C:\Users\mcmco\Desktop\WMMR\src\WLXPhotoBase\BaseTypes.h(536,18): warning C4251: 'Base::File::m_strPath': 'ATL::CStringT<wchar_t,ATL::StrTraitATL<wchar_t,ATL::ChTraitsCRT<wchar_t>>>' needs to have dll-interface to be used by clients of 'Base::File' [C:\Users\mcmco\Desktop\WMMR\build\src\WLXMovieLibrary\WLXMovieLibrary.vcxproj]
+  (compiling source file '../../../src/WLXMovieLibrary/WLXMovieLibrary.cpp')
+      C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\VC\Tools\MSVC\14.44.35207\atlmfc\include\cstringt.h(999,7):
+      see declaration of 'ATL::CStringT<wchar_t,ATL::StrTraitATL<wchar_t,ATL::ChTraitsCRT<wchar_t>>>'
+  
+C:\Users\mcmco\Desktop\WMMR\src\WLXPhotoBase\BaseTypes.h(568,18): warning C4251: 'Base::TempFile::m_strPath': 'ATL::CStringT<wchar_t,ATL::StrTraitATL<wchar_t,ATL::ChTraitsCRT<wchar_t>>>' needs to have dll-interface to be used by clients of 'Base::TempFile' [C:\Users\mcmco\Desktop\WMMR\build\src\WLXMovieLibrary\WLXMovieLibrary.vcxproj]
+  (compiling source file '../../../src/WLXMovieLibrary/WLXMovieLibrary.cpp')
+      C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\VC\Tools\MSVC\14.44.35207\atlmfc\include\cstringt.h(999,7):
+      see declaration of 'ATL::CStringT<wchar_t,ATL::StrTraitATL<wchar_t,ATL::ChTraitsCRT<wchar_t>>>'
+  
+C:\Users\mcmco\Desktop\WMMR\src\WLXPhotoBase\BaseTypes.h(661,21): warning C4251: 'Base::FindFile::m_strDirectory': 'ATL::CStringT<wchar_t,ATL::StrTraitATL<wchar_t,ATL::ChTraitsCRT<wchar_t>>>' needs to have dll-interface to be used by clients of 'Base::FindFile' [C:\Users\mcmco\Desktop\WMMR\build\src\WLXMovieLibrary\WLXMovieLibrary.vcxproj]
+  (compiling source file '../../../src/WLXMovieLibrary/WLXMovieLibrary.cpp')
+      C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\VC\Tools\MSVC\14.44.35207\atlmfc\include\cstringt.h(999,7):
+      see declaration of 'ATL::CStringT<wchar_t,ATL::StrTraitATL<wchar_t,ATL::ChTraitsCRT<wchar_t>>>'
+  
+C:\Users\mcmco\Desktop\WMMR\src\WLXPhotoBase\BaseTypes.h(724,25): warning C4251: 'Base::IntSet::m_values': 'ATL::CAtlArray<int,ATL::CElementTraits<int>>' needs to have dll-interface to be used by clients of 'Base::IntSet' [C:\Users\mcmco\Desktop\WMMR\build\src\WLXMovieLibrary\WLXMovieLibrary.vcxproj]
+  (compiling source file '../../../src/WLXMovieLibrary/WLXMovieLibrary.cpp')
+      C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\VC\Tools\MSVC\14.44.35207\atlmfc\include\atlcoll.h(530,7):
+      see declaration of 'ATL::CAtlArray<int,ATL::CElementTraits<int>>'
+  
+LINK : warning LNK4075: ignoring '/INCREMENTAL' due to '/LTCG' specification [C:\Users\mcmco\Desktop\WMMR\build\src\WLXMovieLibrary\WLXMovieLibrary.vcxproj]
+     Creating library C:/Users/mcmco/Desktop/WMMR/build/lib/Debug/WLXMovieLibrary.lib and object C:/Users/mcmco/Desktop/WMMR/build/lib/Debug/WLXMovieLibrary.exp
+  LINK : /LTCG specified but no code generation required; remove /LTCG from the link command line to improve linker performance
+  WLXMovieLibrary.vcxproj -> C:\Users\mcmco\Desktop\WMMR\build\bin\Debug\WLXMovieLibrary.dll
+  dllmain.cpp
+  WLXPhotoCinematic.cpp
+C:\Users\mcmco\Desktop\WMMR\src\WLXPhotoCinematic\WLXPhotoCinematic.h(30,9): warning C4005: 'WINVER': macro redefinition [C:\Users\mcmco\Desktop\WMMR\build\src\WLXPhotoCinematic\WLXPhotoCinematic.vcxproj]
+  (compiling source file '../../../src/WLXPhotoCinematic/WLXPhotoCinematic.cpp')
+      C:\Users\mcmco\Desktop\WMMR\src\WLXPhotoCinematic\WLXPhotoCinematic.h(30,9):
+      'WINVER' previously declared on the command line
+  
+C:\Users\mcmco\Desktop\WMMR\src\WLXPhotoCinematic\WLXPhotoCinematic.h(31,9): warning C4005: '_WIN32_WINNT': macro redefinition [C:\Users\mcmco\Desktop\WMMR\build\src\WLXPhotoCinematic\WLXPhotoCinematic.vcxproj]
+  (compiling source file '../../../src/WLXPhotoCinematic/WLXPhotoCinematic.cpp')
+      C:\Users\mcmco\Desktop\WMMR\src\WLXPhotoCinematic\WLXPhotoCinematic.h(31,9):
+      '_WIN32_WINNT' previously declared on the command line
+  
+C:\Users\mcmco\Desktop\WMMR\src\WLXPhotoCinematic\WLXPhotoCinematic.h(30,9): warning C4005: 'WINVER': macro redefinition [C:\Users\mcmco\Desktop\WMMR\build\src\WLXPhotoCinematic\WLXPhotoCinematic.vcxproj]
+  (compiling source file '../../../src/WLXPhotoCinematic/dllmain.cpp')
+      C:\Users\mcmco\Desktop\WMMR\src\WLXPhotoCinematic\WLXPhotoCinematic.h(30,9):
+      'WINVER' previously declared on the command line
+  
+C:\Users\mcmco\Desktop\WMMR\src\WLXPhotoCinematic\WLXPhotoCinematic.h(31,9): warning C4005: '_WIN32_WINNT': macro redefinition [C:\Users\mcmco\Desktop\WMMR\build\src\WLXPhotoCinematic\WLXPhotoCinematic.vcxproj]
+  (compiling source file '../../../src/WLXPhotoCinematic/dllmain.cpp')
+      C:\Users\mcmco\Desktop\WMMR\src\WLXPhotoCinematic\WLXPhotoCinematic.h(31,9):
+      '_WIN32_WINNT' previously declared on the command line
+  
+C:\Users\mcmco\Desktop\WMMR\src\WLXPhotoBase\WLXPhotoBase.h(34,9): warning C4005: '_WIN32_IE': macro redefinition [C:\Users\mcmco\Desktop\WMMR\build\src\WLXPhotoCinematic\WLXPhotoCinematic.vcxproj]
+  (compiling source file '../../../src/WLXPhotoCinematic/WLXPhotoCinematic.cpp')
+      C:\Program Files (x86)\Windows Kits\10\Include\10.0.26100.0\shared\sdkddkver.h(271,9):
+      see previous definition of '_WIN32_IE'
+  
+C:\Users\mcmco\Desktop\WMMR\src\WLXPhotoBase\WLXPhotoBase.h(34,9): warning C4005: '_WIN32_IE': macro redefinition [C:\Users\mcmco\Desktop\WMMR\build\src\WLXPhotoCinematic\WLXPhotoCinematic.vcxproj]
+  (compiling source file '../../../src/WLXPhotoCinematic/dllmain.cpp')
+      C:\Program Files (x86)\Windows Kits\10\Include\10.0.26100.0\shared\sdkddkver.h(271,9):
+      see previous definition of '_WIN32_IE'
+  
+C:\Users\mcmco\Desktop\WMMR\src\WLXPhotoBase\BaseTypes.h(536,18): warning C4251: 'Base::File::m_strPath': 'ATL::CStringT<wchar_t,ATL::StrTraitATL<wchar_t,ATL::ChTraitsCRT<wchar_t>>>' needs to have dll-interface to be used by clients of 'Base::File' [C:\Users\mcmco\Desktop\WMMR\build\src\WLXPhotoCinematic\WLXPhotoCinematic.vcxproj]
+  (compiling source file '../../../src/WLXPhotoCinematic/WLXPhotoCinematic.cpp')
+      C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\VC\Tools\MSVC\14.44.35207\atlmfc\include\cstringt.h(999,7):
+      see declaration of 'ATL::CStringT<wchar_t,ATL::StrTraitATL<wchar_t,ATL::ChTraitsCRT<wchar_t>>>'
+  
+C:\Users\mcmco\Desktop\WMMR\src\WLXPhotoBase\BaseTypes.h(568,18): warning C4251: 'Base::TempFile::m_strPath': 'ATL::CStringT<wchar_t,ATL::StrTraitATL<wchar_t,ATL::ChTraitsCRT<wchar_t>>>' needs to have dll-interface to be used by clients of 'Base::TempFile' [C:\Users\mcmco\Desktop\WMMR\build\src\WLXPhotoCinematic\WLXPhotoCinematic.vcxproj]
+  (compiling source file '../../../src/WLXPhotoCinematic/WLXPhotoCinematic.cpp')
+      C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\VC\Tools\MSVC\14.44.35207\atlmfc\include\cstringt.h(999,7):
+      see declaration of 'ATL::CStringT<wchar_t,ATL::StrTraitATL<wchar_t,ATL::ChTraitsCRT<wchar_t>>>'
+  
+C:\Users\mcmco\Desktop\WMMR\src\WLXPhotoBase\BaseTypes.h(661,21): warning C4251: 'Base::FindFile::m_strDirectory': 'ATL::CStringT<wchar_t,ATL::StrTraitATL<wchar_t,ATL::ChTraitsCRT<wchar_t>>>' needs to have dll-interface to be used by clients of 'Base::FindFile' [C:\Users\mcmco\Desktop\WMMR\build\src\WLXPhotoCinematic\WLXPhotoCinematic.vcxproj]
+  (compiling source file '../../../src/WLXPhotoCinematic/WLXPhotoCinematic.cpp')
+      C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\VC\Tools\MSVC\14.44.35207\atlmfc\include\cstringt.h(999,7):
+      see declaration of 'ATL::CStringT<wchar_t,ATL::StrTraitATL<wchar_t,ATL::ChTraitsCRT<wchar_t>>>'
+  
+C:\Users\mcmco\Desktop\WMMR\src\WLXPhotoBase\BaseTypes.h(724,25): warning C4251: 'Base::IntSet::m_values': 'ATL::CAtlArray<int,ATL::CElementTraits<int>>' needs to have dll-interface to be used by clients of 'Base::IntSet' [C:\Users\mcmco\Desktop\WMMR\build\src\WLXPhotoCinematic\WLXPhotoCinematic.vcxproj]
+  (compiling source file '../../../src/WLXPhotoCinematic/WLXPhotoCinematic.cpp')
+      C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\VC\Tools\MSVC\14.44.35207\atlmfc\include\atlcoll.h(530,7):
+      see declaration of 'ATL::CAtlArray<int,ATL::CElementTraits<int>>'
+  
+C:\Users\mcmco\Desktop\WMMR\src\WLXPhotoBase\BaseTypes.h(536,18): warning C4251: 'Base::File::m_strPath': 'ATL::CStringT<wchar_t,ATL::StrTraitATL<wchar_t,ATL::ChTraitsCRT<wchar_t>>>' needs to have dll-interface to be used by clients of 'Base::File' [C:\Users\mcmco\Desktop\WMMR\build\src\WLXPhotoCinematic\WLXPhotoCinematic.vcxproj]
+  (compiling source file '../../../src/WLXPhotoCinematic/dllmain.cpp')
+      C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\VC\Tools\MSVC\14.44.35207\atlmfc\include\cstringt.h(999,7):
+      see declaration of 'ATL::CStringT<wchar_t,ATL::StrTraitATL<wchar_t,ATL::ChTraitsCRT<wchar_t>>>'
+  
+C:\Users\mcmco\Desktop\WMMR\src\WLXPhotoBase\BaseTypes.h(568,18): warning C4251: 'Base::TempFile::m_strPath': 'ATL::CStringT<wchar_t,ATL::StrTraitATL<wchar_t,ATL::ChTraitsCRT<wchar_t>>>' needs to have dll-interface to be used by clients of 'Base::TempFile' [C:\Users\mcmco\Desktop\WMMR\build\src\WLXPhotoCinematic\WLXPhotoCinematic.vcxproj]
+  (compiling source file '../../../src/WLXPhotoCinematic/dllmain.cpp')
+      C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\VC\Tools\MSVC\14.44.35207\atlmfc\include\cstringt.h(999,7):
+      see declaration of 'ATL::CStringT<wchar_t,ATL::StrTraitATL<wchar_t,ATL::ChTraitsCRT<wchar_t>>>'
+  
+C:\Users\mcmco\Desktop\WMMR\src\WLXPhotoBase\BaseTypes.h(661,21): warning C4251: 'Base::FindFile::m_strDirectory': 'ATL::CStringT<wchar_t,ATL::StrTraitATL<wchar_t,ATL::ChTraitsCRT<wchar_t>>>' needs to have dll-interface to be used by clients of 'Base::FindFile' [C:\Users\mcmco\Desktop\WMMR\build\src\WLXPhotoCinematic\WLXPhotoCinematic.vcxproj]
+  (compiling source file '../../../src/WLXPhotoCinematic/dllmain.cpp')
+      C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\VC\Tools\MSVC\14.44.35207\atlmfc\include\cstringt.h(999,7):
+      see declaration of 'ATL::CStringT<wchar_t,ATL::StrTraitATL<wchar_t,ATL::ChTraitsCRT<wchar_t>>>'
+  
+C:\Users\mcmco\Desktop\WMMR\src\WLXPhotoBase\BaseTypes.h(724,25): warning C4251: 'Base::IntSet::m_values': 'ATL::CAtlArray<int,ATL::CElementTraits<int>>' needs to have dll-interface to be used by clients of 'Base::IntSet' [C:\Users\mcmco\Desktop\WMMR\build\src\WLXPhotoCinematic\WLXPhotoCinematic.vcxproj]
+  (compiling source file '../../../src/WLXPhotoCinematic/dllmain.cpp')
+      C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\VC\Tools\MSVC\14.44.35207\atlmfc\include\atlcoll.h(530,7):
+      see declaration of 'ATL::CAtlArray<int,ATL::CElementTraits<int>>'
+  
+LINK : warning LNK4075: ignoring '/INCREMENTAL' due to '/LTCG' specification [C:\Users\mcmco\Desktop\WMMR\build\src\WLXPhotoCinematic\WLXPhotoCinematic.vcxproj]
+     Creating library C:/Users/mcmco/Desktop/WMMR/build/lib/Debug/WLXPhotoCinematic.lib and object C:/Users/mcmco/Desktop/WMMR/build/lib/Debug/WLXPhotoCinematic.exp
+  LINK : /LTCG specified but no code generation required; remove /LTCG from the link command line to improve linker performance
+  WLXPhotoCinematic.vcxproj -> C:\Users\mcmco\Desktop\WMMR\build\bin\Debug\WLXPhotoCinematic.dll
+  WLXPipeline.vcxproj -> C:\Users\mcmco\Desktop\WMMR\build\bin\Debug\WLXPipeline.dll
+  WLXPipetran.cpp
+C:\Users\mcmco\Desktop\WMMR\src\WLXPipetran\WLXPipetran.h(27,9): warning C4005: 'WINVER': macro redefinition [C:\Users\mcmco\Desktop\WMMR\build\src\WLXPipetran\WLXPipetran.vcxproj]
+  (compiling source file '../../../src/WLXPipetran/WLXPipetran.cpp')
+      C:\Users\mcmco\Desktop\WMMR\src\WLXPipetran\WLXPipetran.h(27,9):
+      'WINVER' previously declared on the command line
+  
+C:\Users\mcmco\Desktop\WMMR\src\WLXPipetran\WLXPipetran.h(28,9): warning C4005: '_WIN32_WINNT': macro redefinition [C:\Users\mcmco\Desktop\WMMR\build\src\WLXPipetran\WLXPipetran.vcxproj]
+  (compiling source file '../../../src/WLXPipetran/WLXPipetran.cpp')
+      C:\Users\mcmco\Desktop\WMMR\src\WLXPipetran\WLXPipetran.h(28,9):
+      '_WIN32_WINNT' previously declared on the command line
+  
+C:\Users\mcmco\Desktop\WMMR\src\WLXPhotoBase\WLXPhotoBase.h(34,9): warning C4005: '_WIN32_IE': macro redefinition [C:\Users\mcmco\Desktop\WMMR\build\src\WLXPipetran\WLXPipetran.vcxproj]
+  (compiling source file '../../../src/WLXPipetran/WLXPipetran.cpp')
+      C:\Program Files (x86)\Windows Kits\10\Include\10.0.26100.0\shared\sdkddkver.h(271,9):
+      see previous definition of '_WIN32_IE'
+  
+C:\Users\mcmco\Desktop\WMMR\src\WLXPhotoBase\BaseTypes.h(536,18): warning C4251: 'Base::File::m_strPath': 'ATL::CStringT<wchar_t,ATL::StrTraitATL<wchar_t,ATL::ChTraitsCRT<wchar_t>>>' needs to have dll-interface to be used by clients of 'Base::File' [C:\Users\mcmco\Desktop\WMMR\build\src\WLXPipetran\WLXPipetran.vcxproj]
+  (compiling source file '../../../src/WLXPipetran/WLXPipetran.cpp')
+      C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\VC\Tools\MSVC\14.44.35207\atlmfc\include\cstringt.h(999,7):
+      see declaration of 'ATL::CStringT<wchar_t,ATL::StrTraitATL<wchar_t,ATL::ChTraitsCRT<wchar_t>>>'
+  
+C:\Users\mcmco\Desktop\WMMR\src\WLXPhotoBase\BaseTypes.h(568,18): warning C4251: 'Base::TempFile::m_strPath': 'ATL::CStringT<wchar_t,ATL::StrTraitATL<wchar_t,ATL::ChTraitsCRT<wchar_t>>>' needs to have dll-interface to be used by clients of 'Base::TempFile' [C:\Users\mcmco\Desktop\WMMR\build\src\WLXPipetran\WLXPipetran.vcxproj]
+  (compiling source file '../../../src/WLXPipetran/WLXPipetran.cpp')
+      C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\VC\Tools\MSVC\14.44.35207\atlmfc\include\cstringt.h(999,7):
+      see declaration of 'ATL::CStringT<wchar_t,ATL::StrTraitATL<wchar_t,ATL::ChTraitsCRT<wchar_t>>>'
+  
+C:\Users\mcmco\Desktop\WMMR\src\WLXPhotoBase\BaseTypes.h(661,21): warning C4251: 'Base::FindFile::m_strDirectory': 'ATL::CStringT<wchar_t,ATL::StrTraitATL<wchar_t,ATL::ChTraitsCRT<wchar_t>>>' needs to have dll-interface to be used by clients of 'Base::FindFile' [C:\Users\mcmco\Desktop\WMMR\build\src\WLXPipetran\WLXPipetran.vcxproj]
+  (compiling source file '../../../src/WLXPipetran/WLXPipetran.cpp')
+      C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\VC\Tools\MSVC\14.44.35207\atlmfc\include\cstringt.h(999,7):
+      see declaration of 'ATL::CStringT<wchar_t,ATL::StrTraitATL<wchar_t,ATL::ChTraitsCRT<wchar_t>>>'
+  
+C:\Users\mcmco\Desktop\WMMR\src\WLXPhotoBase\BaseTypes.h(724,25): warning C4251: 'Base::IntSet::m_values': 'ATL::CAtlArray<int,ATL::CElementTraits<int>>' needs to have dll-interface to be used by clients of 'Base::IntSet' [C:\Users\mcmco\Desktop\WMMR\build\src\WLXPipetran\WLXPipetran.vcxproj]
+  (compiling source file '../../../src/WLXPipetran/WLXPipetran.cpp')
+      C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\VC\Tools\MSVC\14.44.35207\atlmfc\include\atlcoll.h(530,7):
+      see declaration of 'ATL::CAtlArray<int,ATL::CElementTraits<int>>'
+  
+C:\Users\mcmco\Desktop\WMMR\src\WLXPipetran\WLXPipetran.cpp(107,26): warning C4838: conversion from 'double' to 'Gdiplus::REAL' requires a narrowing conversion [C:\Users\mcmco\Desktop\WMMR\build\src\WLXPipetran\WLXPipetran.vcxproj]
+C:\Users\mcmco\Desktop\WMMR\src\WLXPipetran\WLXPipetran.cpp(107,26): warning C4244: 'initializing': conversion from 'double' to 'Gdiplus::REAL', possible loss of data [C:\Users\mcmco\Desktop\WMMR\build\src\WLXPipetran\WLXPipetran.vcxproj]
+C:\Users\mcmco\Desktop\WMMR\src\WLXPipetran\WLXPipetran.cpp(120,29): warning C4838: conversion from 'const DOUBLE' to 'Gdiplus::REAL' requires a narrowing conversion [C:\Users\mcmco\Desktop\WMMR\build\src\WLXPipetran\WLXPipetran.vcxproj]
+C:\Users\mcmco\Desktop\WMMR\src\WLXPipetran\WLXPipetran.cpp(120,29): warning C4244: 'initializing': conversion from 'const DOUBLE' to 'Gdiplus::REAL', possible loss of data [C:\Users\mcmco\Desktop\WMMR\build\src\WLXPipetran\WLXPipetran.vcxproj]
+C:\Users\mcmco\Desktop\WMMR\src\WLXPipetran\WLXPipetran.cpp(99,14): warning C4189: 'alpha': local variable is initialized but not referenced [C:\Users\mcmco\Desktop\WMMR\build\src\WLXPipetran\WLXPipetran.vcxproj]
+C:\Users\mcmco\Desktop\WMMR\src\WLXPipetran\WLXPipetran.cpp(163,30): warning C4838: conversion from 'double' to 'Gdiplus::REAL' requires a narrowing conversion [C:\Users\mcmco\Desktop\WMMR\build\src\WLXPipetran\WLXPipetran.vcxproj]
+C:\Users\mcmco\Desktop\WMMR\src\WLXPipetran\WLXPipetran.cpp(163,30): warning C4244: 'initializing': conversion from 'double' to 'Gdiplus::REAL', possible loss of data [C:\Users\mcmco\Desktop\WMMR\build\src\WLXPipetran\WLXPipetran.vcxproj]
+C:\Users\mcmco\Desktop\WMMR\src\WLXPipetran\WLXPipetran.cpp(179,26): warning C4838: conversion from 'double' to 'Gdiplus::REAL' requires a narrowing conversion [C:\Users\mcmco\Desktop\WMMR\build\src\WLXPipetran\WLXPipetran.vcxproj]
+C:\Users\mcmco\Desktop\WMMR\src\WLXPipetran\WLXPipetran.cpp(179,26): warning C4244: 'initializing': conversion from 'double' to 'Gdiplus::REAL', possible loss of data [C:\Users\mcmco\Desktop\WMMR\build\src\WLXPipetran\WLXPipetran.vcxproj]
+LINK : warning LNK4075: ignoring '/INCREMENTAL' due to '/LTCG' specification [C:\Users\mcmco\Desktop\WMMR\build\src\WLXPipetran\WLXPipetran.vcxproj]
+     Creating library C:/Users/mcmco/Desktop/WMMR/build/lib/Debug/WLXPipetran.lib and object C:/Users/mcmco/Desktop/WMMR/build/lib/Debug/WLXPipetran.exp
+  LINK : /LTCG specified but no code generation required; remove /LTCG from the link command line to improve linker performance
+  WLXPipetran.vcxproj -> C:\Users\mcmco\Desktop\WMMR\build\bin\Debug\WLXPipetran.dll
+  dllmain.cpp
+  WLXSlideshow.cpp
+C:\Users\mcmco\Desktop\WMMR\src\WLXSlideshow\WLXSlideshow.h(32,9): warning C4005: 'WINVER': macro redefinition [C:\Users\mcmco\Desktop\WMMR\build\src\WLXSlideshow\WLXSlideshow.vcxproj]
+  (compiling source file '../../../src/WLXSlideshow/dllmain.cpp')
+      C:\Users\mcmco\Desktop\WMMR\src\WLXSlideshow\WLXSlideshow.h(32,9):
+      'WINVER' previously declared on the command line
+  
+C:\Users\mcmco\Desktop\WMMR\src\WLXSlideshow\WLXSlideshow.h(32,9): warning C4005: 'WINVER': macro redefinition [C:\Users\mcmco\Desktop\WMMR\build\src\WLXSlideshow\WLXSlideshow.vcxproj]
+  (compiling source file '../../../src/WLXSlideshow/WLXSlideshow.cpp')
+      C:\Users\mcmco\Desktop\WMMR\src\WLXSlideshow\WLXSlideshow.h(32,9):
+      'WINVER' previously declared on the command line
+  
+C:\Users\mcmco\Desktop\WMMR\src\WLXSlideshow\WLXSlideshow.h(33,9): warning C4005: '_WIN32_WINNT': macro redefinition [C:\Users\mcmco\Desktop\WMMR\build\src\WLXSlideshow\WLXSlideshow.vcxproj]
+  (compiling source file '../../../src/WLXSlideshow/dllmain.cpp')
+      C:\Users\mcmco\Desktop\WMMR\src\WLXSlideshow\WLXSlideshow.h(33,9):
+      '_WIN32_WINNT' previously declared on the command line
+  
+C:\Users\mcmco\Desktop\WMMR\src\WLXSlideshow\WLXSlideshow.h(33,9): warning C4005: '_WIN32_WINNT': macro redefinition [C:\Users\mcmco\Desktop\WMMR\build\src\WLXSlideshow\WLXSlideshow.vcxproj]
+  (compiling source file '../../../src/WLXSlideshow/WLXSlideshow.cpp')
+      C:\Users\mcmco\Desktop\WMMR\src\WLXSlideshow\WLXSlideshow.h(33,9):
+      '_WIN32_WINNT' previously declared on the command line
+  
+C:\Users\mcmco\Desktop\WMMR\src\WLXPhotoBase\WLXPhotoBase.h(34,9): warning C4005: '_WIN32_IE': macro redefinition [C:\Users\mcmco\Desktop\WMMR\build\src\WLXSlideshow\WLXSlideshow.vcxproj]
+  (compiling source file '../../../src/WLXSlideshow/WLXSlideshow.cpp')
+      C:\Program Files (x86)\Windows Kits\10\Include\10.0.26100.0\shared\sdkddkver.h(271,9):
+      see previous definition of '_WIN32_IE'
+  
+C:\Users\mcmco\Desktop\WMMR\src\WLXPhotoBase\WLXPhotoBase.h(34,9): warning C4005: '_WIN32_IE': macro redefinition [C:\Users\mcmco\Desktop\WMMR\build\src\WLXSlideshow\WLXSlideshow.vcxproj]
+  (compiling source file '../../../src/WLXSlideshow/dllmain.cpp')
+      C:\Program Files (x86)\Windows Kits\10\Include\10.0.26100.0\shared\sdkddkver.h(271,9):
+      see previous definition of '_WIN32_IE'
+  
+C:\Users\mcmco\Desktop\WMMR\src\WLXPhotoBase\BaseTypes.h(536,18): warning C4251: 'Base::File::m_strPath': 'ATL::CStringT<wchar_t,ATL::StrTraitATL<wchar_t,ATL::ChTraitsCRT<wchar_t>>>' needs to have dll-interface to be used by clients of 'Base::File' [C:\Users\mcmco\Desktop\WMMR\build\src\WLXSlideshow\WLXSlideshow.vcxproj]
+  (compiling source file '../../../src/WLXSlideshow/WLXSlideshow.cpp')
+      C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\VC\Tools\MSVC\14.44.35207\atlmfc\include\cstringt.h(999,7):
+      see declaration of 'ATL::CStringT<wchar_t,ATL::StrTraitATL<wchar_t,ATL::ChTraitsCRT<wchar_t>>>'
+  
+C:\Users\mcmco\Desktop\WMMR\src\WLXPhotoBase\BaseTypes.h(536,18): warning C4251: 'Base::File::m_strPath': 'ATL::CStringT<wchar_t,ATL::StrTraitATL<wchar_t,ATL::ChTraitsCRT<wchar_t>>>' needs to have dll-interface to be used by clients of 'Base::File' [C:\Users\mcmco\Desktop\WMMR\build\src\WLXSlideshow\WLXSlideshow.vcxproj]
+  (compiling source file '../../../src/WLXSlideshow/dllmain.cpp')
+      C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\VC\Tools\MSVC\14.44.35207\atlmfc\include\cstringt.h(999,7):
+      see declaration of 'ATL::CStringT<wchar_t,ATL::StrTraitATL<wchar_t,ATL::ChTraitsCRT<wchar_t>>>'
+  
+C:\Users\mcmco\Desktop\WMMR\src\WLXPhotoBase\BaseTypes.h(568,18): warning C4251: 'Base::TempFile::m_strPath': 'ATL::CStringT<wchar_t,ATL::StrTraitATL<wchar_t,ATL::ChTraitsCRT<wchar_t>>>' needs to have dll-interface to be used by clients of 'Base::TempFile' [C:\Users\mcmco\Desktop\WMMR\build\src\WLXSlideshow\WLXSlideshow.vcxproj]
+  (compiling source file '../../../src/WLXSlideshow/WLXSlideshow.cpp')
+      C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\VC\Tools\MSVC\14.44.35207\atlmfc\include\cstringt.h(999,7):
+      see declaration of 'ATL::CStringT<wchar_t,ATL::StrTraitATL<wchar_t,ATL::ChTraitsCRT<wchar_t>>>'
+  
+C:\Users\mcmco\Desktop\WMMR\src\WLXPhotoBase\BaseTypes.h(568,18): warning C4251: 'Base::TempFile::m_strPath': 'ATL::CStringT<wchar_t,ATL::StrTraitATL<wchar_t,ATL::ChTraitsCRT<wchar_t>>>' needs to have dll-interface to be used by clients of 'Base::TempFile' [C:\Users\mcmco\Desktop\WMMR\build\src\WLXSlideshow\WLXSlideshow.vcxproj]
+  (compiling source file '../../../src/WLXSlideshow/dllmain.cpp')
+      C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\VC\Tools\MSVC\14.44.35207\atlmfc\include\cstringt.h(999,7):
+      see declaration of 'ATL::CStringT<wchar_t,ATL::StrTraitATL<wchar_t,ATL::ChTraitsCRT<wchar_t>>>'
+  
+C:\Users\mcmco\Desktop\WMMR\src\WLXPhotoBase\BaseTypes.h(661,21): warning C4251: 'Base::FindFile::m_strDirectory': 'ATL::CStringT<wchar_t,ATL::StrTraitATL<wchar_t,ATL::ChTraitsCRT<wchar_t>>>' needs to have dll-interface to be used by clients of 'Base::FindFile' [C:\Users\mcmco\Desktop\WMMR\build\src\WLXSlideshow\WLXSlideshow.vcxproj]
+  (compiling source file '../../../src/WLXSlideshow/WLXSlideshow.cpp')
+      C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\VC\Tools\MSVC\14.44.35207\atlmfc\include\cstringt.h(999,7):
+      see declaration of 'ATL::CStringT<wchar_t,ATL::StrTraitATL<wchar_t,ATL::ChTraitsCRT<wchar_t>>>'
+  
+C:\Users\mcmco\Desktop\WMMR\src\WLXPhotoBase\BaseTypes.h(661,21): warning C4251: 'Base::FindFile::m_strDirectory': 'ATL::CStringT<wchar_t,ATL::StrTraitATL<wchar_t,ATL::ChTraitsCRT<wchar_t>>>' needs to have dll-interface to be used by clients of 'Base::FindFile' [C:\Users\mcmco\Desktop\WMMR\build\src\WLXSlideshow\WLXSlideshow.vcxproj]
+  (compiling source file '../../../src/WLXSlideshow/dllmain.cpp')
+      C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\VC\Tools\MSVC\14.44.35207\atlmfc\include\cstringt.h(999,7):
+      see declaration of 'ATL::CStringT<wchar_t,ATL::StrTraitATL<wchar_t,ATL::ChTraitsCRT<wchar_t>>>'
+  
+C:\Users\mcmco\Desktop\WMMR\src\WLXPhotoBase\BaseTypes.h(724,25): warning C4251: 'Base::IntSet::m_values': 'ATL::CAtlArray<int,ATL::CElementTraits<int>>' needs to have dll-interface to be used by clients of 'Base::IntSet' [C:\Users\mcmco\Desktop\WMMR\build\src\WLXSlideshow\WLXSlideshow.vcxproj]
+  (compiling source file '../../../src/WLXSlideshow/WLXSlideshow.cpp')
+      C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\VC\Tools\MSVC\14.44.35207\atlmfc\include\atlcoll.h(530,7):
+      see declaration of 'ATL::CAtlArray<int,ATL::CElementTraits<int>>'
+  
+C:\Users\mcmco\Desktop\WMMR\src\WLXPhotoBase\BaseTypes.h(724,25): warning C4251: 'Base::IntSet::m_values': 'ATL::CAtlArray<int,ATL::CElementTraits<int>>' needs to have dll-interface to be used by clients of 'Base::IntSet' [C:\Users\mcmco\Desktop\WMMR\build\src\WLXSlideshow\WLXSlideshow.vcxproj]
+  (compiling source file '../../../src/WLXSlideshow/dllmain.cpp')
+      C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\VC\Tools\MSVC\14.44.35207\atlmfc\include\atlcoll.h(530,7):
+      see declaration of 'ATL::CAtlArray<int,ATL::CElementTraits<int>>'
+  
+LINK : warning LNK4075: ignoring '/INCREMENTAL' due to '/LTCG' specification [C:\Users\mcmco\Desktop\WMMR\build\src\WLXSlideshow\WLXSlideshow.vcxproj]
+     Creating library C:/Users/mcmco/Desktop/WMMR/build/lib/Debug/WLXSlideshow.lib and object C:/Users/mcmco/Desktop/WMMR/build/lib/Debug/WLXSlideshow.exp
+  LINK : /LTCG specified but no code generation required; remove /LTCG from the link command line to improve linker performance
+  WLXSlideshow.vcxproj -> C:\Users\mcmco\Desktop\WMMR\build\bin\Debug\WLXSlideshow.dll
+  WLXTranscode.cpp
+C:\Users\mcmco\Desktop\WMMR\src\WLXTranscode\WLXTranscode.cpp(168,30): error C2065: 'MF_ENABLE_HARDWARE_TRANSFORMS': undeclared identifier [C:\Users\mcmco\Desktop\WMMR\build\src\WLXTranscode\WLXTranscode.vcxproj]
+  WLXVideoTrim.vcxproj -> C:\Users\mcmco\Desktop\WMMR\build\bin\Debug\WLXVideoTrim.dll

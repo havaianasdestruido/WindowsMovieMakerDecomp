@@ -1,0 +1,149 @@
+﻿CMake is re-running because C:/Users/mcmco/Desktop/WMMR/build/src/WLMFDS/CMakeFiles/generate.stamp is out-of-date.
+  the file 'C:/Users/mcmco/Desktop/WMMR/src/WLMFDS/CMakeLists.txt'
+  is newer than 'C:/Users/mcmco/Desktop/WMMR/build/src/WLMFDS/CMakeFiles/generate.stamp.depend'
+  result='-1'
+-- Selecting Windows SDK version 10.0.26100.0 to target Windows 10.0.19045.
+-- Configuring done (0.0s)
+-- Generating done (1.2s)
+-- Build files have been written to: C:/Users/mcmco/Desktop/WMMR/build
+Vers├úo do MSBuild 17.14.40+3e7442088 para .NET Framework
+
+  WLXPhotoBase.vcxproj -> C:\Users\mcmco\Desktop\WMMR\build\bin\Debug\WLXPhotoBase.dll
+  MovieMaker.vcxproj -> C:\Users\mcmco\Desktop\WMMR\build\bin\Debug\MovieMaker.exe
+  MovieMakerCore.vcxproj -> C:\Users\mcmco\Desktop\WMMR\build\bin\Debug\MovieMakerCore.dll
+  MovieMakerLang.vcxproj -> C:\Users\mcmco\Desktop\WMMR\build\bin\Debug\MovieMakerLang.dll
+  MovieMakerPreviewClient.cpp
+C:\Users\mcmco\Desktop\WMMR\src\MovieMakerPreviewClient\MovieMakerPreviewClient.h(37,9): warning C4005: 'WINVER': macro redefinition [C:\Users\mcmco\Desktop\WMMR\build\src\MovieMakerPreviewClient\MovieMakerPreviewClient.vcxproj]
+  (compiling source file '../../../src/MovieMakerPreviewClient/MovieMakerPreviewClient.cpp')
+      C:\Users\mcmco\Desktop\WMMR\src\MovieMakerPreviewClient\MovieMakerPreviewClient.h(37,9):
+      'WINVER' previously declared on the command line
+  
+C:\Users\mcmco\Desktop\WMMR\src\MovieMakerPreviewClient\MovieMakerPreviewClient.h(38,9): warning C4005: '_WIN32_WINNT': macro redefinition [C:\Users\mcmco\Desktop\WMMR\build\src\MovieMakerPreviewClient\MovieMakerPreviewClient.vcxproj]
+  (compiling source file '../../../src/MovieMakerPreviewClient/MovieMakerPreviewClient.cpp')
+      C:\Users\mcmco\Desktop\WMMR\src\MovieMakerPreviewClient\MovieMakerPreviewClient.h(38,9):
+      '_WIN32_WINNT' previously declared on the command line
+  
+C:\Users\mcmco\Desktop\WMMR\src\WLXPhotoBase\BaseTypes.h(536,18): warning C4251: 'Base::File::m_strPath': 'ATL::CStringT<wchar_t,ATL::StrTraitATL<wchar_t,ATL::ChTraitsCRT<wchar_t>>>' needs to have dll-interface to be used by clients of 'Base::File' [C:\Users\mcmco\Desktop\WMMR\build\src\MovieMakerPreviewClient\MovieMakerPreviewClient.vcxproj]
+  (compiling source file '../../../src/MovieMakerPreviewClient/MovieMakerPreviewClient.cpp')
+      C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\VC\Tools\MSVC\14.44.35207\atlmfc\include\cstringt.h(999,7):
+      see declaration of 'ATL::CStringT<wchar_t,ATL::StrTraitATL<wchar_t,ATL::ChTraitsCRT<wchar_t>>>'
+  
+C:\Users\mcmco\Desktop\WMMR\src\WLXPhotoBase\BaseTypes.h(568,18): warning C4251: 'Base::TempFile::m_strPath': 'ATL::CStringT<wchar_t,ATL::StrTraitATL<wchar_t,ATL::ChTraitsCRT<wchar_t>>>' needs to have dll-interface to be used by clients of 'Base::TempFile' [C:\Users\mcmco\Desktop\WMMR\build\src\MovieMakerPreviewClient\MovieMakerPreviewClient.vcxproj]
+  (compiling source file '../../../src/MovieMakerPreviewClient/MovieMakerPreviewClient.cpp')
+      C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\VC\Tools\MSVC\14.44.35207\atlmfc\include\cstringt.h(999,7):
+      see declaration of 'ATL::CStringT<wchar_t,ATL::StrTraitATL<wchar_t,ATL::ChTraitsCRT<wchar_t>>>'
+  
+C:\Users\mcmco\Desktop\WMMR\src\WLXPhotoBase\BaseTypes.h(661,21): warning C4251: 'Base::FindFile::m_strDirectory': 'ATL::CStringT<wchar_t,ATL::StrTraitATL<wchar_t,ATL::ChTraitsCRT<wchar_t>>>' needs to have dll-interface to be used by clients of 'Base::FindFile' [C:\Users\mcmco\Desktop\WMMR\build\src\MovieMakerPreviewClient\MovieMakerPreviewClient.vcxproj]
+  (compiling source file '../../../src/MovieMakerPreviewClient/MovieMakerPreviewClient.cpp')
+      C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\VC\Tools\MSVC\14.44.35207\atlmfc\include\cstringt.h(999,7):
+      see declaration of 'ATL::CStringT<wchar_t,ATL::StrTraitATL<wchar_t,ATL::ChTraitsCRT<wchar_t>>>'
+  
+C:\Users\mcmco\Desktop\WMMR\src\WLXPhotoBase\BaseTypes.h(724,25): warning C4251: 'Base::IntSet::m_values': 'ATL::CAtlArray<int,ATL::CElementTraits<int>>' needs to have dll-interface to be used by clients of 'Base::IntSet' [C:\Users\mcmco\Desktop\WMMR\build\src\MovieMakerPreviewClient\MovieMakerPreviewClient.vcxproj]
+  (compiling source file '../../../src/MovieMakerPreviewClient/MovieMakerPreviewClient.cpp')
+      C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\VC\Tools\MSVC\14.44.35207\atlmfc\include\atlcoll.h(530,7):
+      see declaration of 'ATL::CAtlArray<int,ATL::CElementTraits<int>>'
+  
+LINK : warning LNK4075: ignoring '/INCREMENTAL' due to '/LTCG' specification [C:\Users\mcmco\Desktop\WMMR\build\src\MovieMakerPreviewClient\MovieMakerPreviewClient.vcxproj]
+     Creating library C:/Users/mcmco/Desktop/WMMR/build/lib/Debug/MovieMakerPreviewClient.lib and object C:/Users/mcmco/Desktop/WMMR/build/lib/Debug/MovieMakerPreviewClient.exp
+MovieMakerPreviewClient.obj : error LNK2001: unresolved external symbol _GdiplusStartup@12 [C:\Users\mcmco\Desktop\WMMR\build\src\MovieMakerPreviewClient\MovieMakerPreviewClient.vcxproj]
+MovieMakerPreviewClient.obj : error LNK2001: unresolved external symbol _GdiplusShutdown@4 [C:\Users\mcmco\Desktop\WMMR\build\src\MovieMakerPreviewClient\MovieMakerPreviewClient.vcxproj]
+C:\Users\mcmco\Desktop\WMMR\build\bin\Debug\MovieMakerPreviewClient.dll : fatal error LNK1120: 2 unresolved externals [C:\Users\mcmco\Desktop\WMMR\build\src\MovieMakerPreviewClient\MovieMakerPreviewClient.vcxproj]
+LINK : warning LNK4075: ignoring '/INCREMENTAL' due to '/LTCG' specification [C:\Users\mcmco\Desktop\WMMR\build\src\WLMFDS\WLMFDS.vcxproj]
+     Creating library C:/Users/mcmco/Desktop/WMMR/build/lib/Debug/WLMFDS.lib and object C:/Users/mcmco/Desktop/WMMR/build/lib/Debug/WLMFDS.exp
+  LINK : /LTCG specified but no code generation required; remove /LTCG from the link command line to improve linker performance
+  WLMFDS.vcxproj -> C:\Users\mcmco\Desktop\WMMR\build\bin\Debug\WLMFDS.dll
+  WLMFReadWrite.cpp
+C:\Users\mcmco\Desktop\WMMR\src\WLMFReadWrite\WLMFReadWrite.h(29,9): warning C4005: 'WINVER': macro redefinition [C:\Users\mcmco\Desktop\WMMR\build\src\WLMFReadWrite\WLMFReadWrite.vcxproj]
+  (compiling source file '../../../src/WLMFReadWrite/WLMFReadWrite.cpp')
+      C:\Users\mcmco\Desktop\WMMR\src\WLMFReadWrite\WLMFReadWrite.h(29,9):
+      'WINVER' previously declared on the command line
+  
+C:\Users\mcmco\Desktop\WMMR\src\WLMFReadWrite\WLMFReadWrite.h(30,9): warning C4005: '_WIN32_WINNT': macro redefinition [C:\Users\mcmco\Desktop\WMMR\build\src\WLMFReadWrite\WLMFReadWrite.vcxproj]
+  (compiling source file '../../../src/WLMFReadWrite/WLMFReadWrite.cpp')
+      C:\Users\mcmco\Desktop\WMMR\src\WLMFReadWrite\WLMFReadWrite.h(30,9):
+      '_WIN32_WINNT' previously declared on the command line
+  
+C:\Users\mcmco\Desktop\WMMR\src\WLXPhotoBase\WLXPhotoBase.h(34,9): warning C4005: '_WIN32_IE': macro redefinition [C:\Users\mcmco\Desktop\WMMR\build\src\WLMFReadWrite\WLMFReadWrite.vcxproj]
+  (compiling source file '../../../src/WLMFReadWrite/WLMFReadWrite.cpp')
+      C:\Program Files (x86)\Windows Kits\10\Include\10.0.26100.0\shared\sdkddkver.h(271,9):
+      see previous definition of '_WIN32_IE'
+  
+C:\Users\mcmco\Desktop\WMMR\src\WLXPhotoBase\BaseTypes.h(536,18): warning C4251: 'Base::File::m_strPath': 'ATL::CStringT<wchar_t,ATL::StrTraitATL<wchar_t,ATL::ChTraitsCRT<wchar_t>>>' needs to have dll-interface to be used by clients of 'Base::File' [C:\Users\mcmco\Desktop\WMMR\build\src\WLMFReadWrite\WLMFReadWrite.vcxproj]
+  (compiling source file '../../../src/WLMFReadWrite/WLMFReadWrite.cpp')
+      C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\VC\Tools\MSVC\14.44.35207\atlmfc\include\cstringt.h(999,7):
+      see declaration of 'ATL::CStringT<wchar_t,ATL::StrTraitATL<wchar_t,ATL::ChTraitsCRT<wchar_t>>>'
+  
+C:\Users\mcmco\Desktop\WMMR\src\WLXPhotoBase\BaseTypes.h(568,18): warning C4251: 'Base::TempFile::m_strPath': 'ATL::CStringT<wchar_t,ATL::StrTraitATL<wchar_t,ATL::ChTraitsCRT<wchar_t>>>' needs to have dll-interface to be used by clients of 'Base::TempFile' [C:\Users\mcmco\Desktop\WMMR\build\src\WLMFReadWrite\WLMFReadWrite.vcxproj]
+  (compiling source file '../../../src/WLMFReadWrite/WLMFReadWrite.cpp')
+      C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\VC\Tools\MSVC\14.44.35207\atlmfc\include\cstringt.h(999,7):
+      see declaration of 'ATL::CStringT<wchar_t,ATL::StrTraitATL<wchar_t,ATL::ChTraitsCRT<wchar_t>>>'
+  
+C:\Users\mcmco\Desktop\WMMR\src\WLXPhotoBase\BaseTypes.h(661,21): warning C4251: 'Base::FindFile::m_strDirectory': 'ATL::CStringT<wchar_t,ATL::StrTraitATL<wchar_t,ATL::ChTraitsCRT<wchar_t>>>' needs to have dll-interface to be used by clients of 'Base::FindFile' [C:\Users\mcmco\Desktop\WMMR\build\src\WLMFReadWrite\WLMFReadWrite.vcxproj]
+  (compiling source file '../../../src/WLMFReadWrite/WLMFReadWrite.cpp')
+      C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\VC\Tools\MSVC\14.44.35207\atlmfc\include\cstringt.h(999,7):
+      see declaration of 'ATL::CStringT<wchar_t,ATL::StrTraitATL<wchar_t,ATL::ChTraitsCRT<wchar_t>>>'
+  
+C:\Users\mcmco\Desktop\WMMR\src\WLXPhotoBase\BaseTypes.h(724,25): warning C4251: 'Base::IntSet::m_values': 'ATL::CAtlArray<int,ATL::CElementTraits<int>>' needs to have dll-interface to be used by clients of 'Base::IntSet' [C:\Users\mcmco\Desktop\WMMR\build\src\WLMFReadWrite\WLMFReadWrite.vcxproj]
+  (compiling source file '../../../src/WLMFReadWrite/WLMFReadWrite.cpp')
+      C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\VC\Tools\MSVC\14.44.35207\atlmfc\include\atlcoll.h(530,7):
+      see declaration of 'ATL::CAtlArray<int,ATL::CElementTraits<int>>'
+  
+C:\Users\mcmco\Desktop\WMMR\src\WLMFReadWrite\WLMFReadWrite.cpp(80,28): warning C4189: 'uH': local variable is initialized but not referenced [C:\Users\mcmco\Desktop\WMMR\build\src\WLMFReadWrite\WLMFReadWrite.vcxproj]
+C:\Users\mcmco\Desktop\WMMR\src\WLMFReadWrite\WLMFReadWrite.cpp(218,67): warning C4100: 'llTimeMs': unreferenced parameter [C:\Users\mcmco\Desktop\WMMR\build\src\WLMFReadWrite\WLMFReadWrite.vcxproj]
+LINK : warning LNK4075: ignoring '/INCREMENTAL' due to '/LTCG' specification [C:\Users\mcmco\Desktop\WMMR\build\src\WLMFReadWrite\WLMFReadWrite.vcxproj]
+LINK : fatal error LNK1181: cannot open input file 'mferror.lib' [C:\Users\mcmco\Desktop\WMMR\build\src\WLMFReadWrite\WLMFReadWrite.vcxproj]
+  WLXCodecHost.vcxproj -> C:\Users\mcmco\Desktop\WMMR\build\bin\Debug\WLXCodecHost.exe
+  WLXFaceRecognition.vcxproj -> C:\Users\mcmco\Desktop\WMMR\build\bin\Debug\WLXFaceRecognition.dll
+  WLXMP4Parser.vcxproj -> C:\Users\mcmco\Desktop\WMMR\build\bin\Debug\WLXMP4Parser.dll
+  dllmain.cpp
+C:\Users\mcmco\Desktop\WMMR\src\WLXMediaPublishSubscribe\WLXMediaPublishSubscribe.h(33,9): warning C4005: 'WINVER': macro redefinition [C:\Users\mcmco\Desktop\WMMR\build\src\WLXMediaPublishSubscribe\WLXMediaPublishSubscribe.vcxproj]
+  (compiling source file '../../../src/WLXMediaPublishSubscribe/dllmain.cpp')
+      C:\Users\mcmco\Desktop\WMMR\src\WLXMediaPublishSubscribe\WLXMediaPublishSubscribe.h(33,9):
+      'WINVER' previously declared on the command line
+  
+C:\Users\mcmco\Desktop\WMMR\src\WLXMediaPublishSubscribe\WLXMediaPublishSubscribe.h(34,9): warning C4005: '_WIN32_WINNT': macro redefinition [C:\Users\mcmco\Desktop\WMMR\build\src\WLXMediaPublishSubscribe\WLXMediaPublishSubscribe.vcxproj]
+  (compiling source file '../../../src/WLXMediaPublishSubscribe/dllmain.cpp')
+      C:\Users\mcmco\Desktop\WMMR\src\WLXMediaPublishSubscribe\WLXMediaPublishSubscribe.h(34,9):
+      '_WIN32_WINNT' previously declared on the command line
+  
+C:\Users\mcmco\Desktop\WMMR\src\WLXPhotoBase\WLXPhotoBase.h(34,9): warning C4005: '_WIN32_IE': macro redefinition [C:\Users\mcmco\Desktop\WMMR\build\src\WLXMediaPublishSubscribe\WLXMediaPublishSubscribe.vcxproj]
+  (compiling source file '../../../src/WLXMediaPublishSubscribe/dllmain.cpp')
+      C:\Program Files (x86)\Windows Kits\10\Include\10.0.26100.0\shared\sdkddkver.h(271,9):
+      see previous definition of '_WIN32_IE'
+  
+C:\Users\mcmco\Desktop\WMMR\src\WLXPhotoBase\BaseTypes.h(536,18): warning C4251: 'Base::File::m_strPath': 'ATL::CStringT<wchar_t,ATL::StrTraitATL<wchar_t,ATL::ChTraitsCRT<wchar_t>>>' needs to have dll-interface to be used by clients of 'Base::File' [C:\Users\mcmco\Desktop\WMMR\build\src\WLXMediaPublishSubscribe\WLXMediaPublishSubscribe.vcxproj]
+  (compiling source file '../../../src/WLXMediaPublishSubscribe/dllmain.cpp')
+      C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\VC\Tools\MSVC\14.44.35207\atlmfc\include\cstringt.h(999,7):
+      see declaration of 'ATL::CStringT<wchar_t,ATL::StrTraitATL<wchar_t,ATL::ChTraitsCRT<wchar_t>>>'
+  
+C:\Users\mcmco\Desktop\WMMR\src\WLXPhotoBase\BaseTypes.h(568,18): warning C4251: 'Base::TempFile::m_strPath': 'ATL::CStringT<wchar_t,ATL::StrTraitATL<wchar_t,ATL::ChTraitsCRT<wchar_t>>>' needs to have dll-interface to be used by clients of 'Base::TempFile' [C:\Users\mcmco\Desktop\WMMR\build\src\WLXMediaPublishSubscribe\WLXMediaPublishSubscribe.vcxproj]
+  (compiling source file '../../../src/WLXMediaPublishSubscribe/dllmain.cpp')
+      C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\VC\Tools\MSVC\14.44.35207\atlmfc\include\cstringt.h(999,7):
+      see declaration of 'ATL::CStringT<wchar_t,ATL::StrTraitATL<wchar_t,ATL::ChTraitsCRT<wchar_t>>>'
+  
+C:\Users\mcmco\Desktop\WMMR\src\WLXPhotoBase\BaseTypes.h(661,21): warning C4251: 'Base::FindFile::m_strDirectory': 'ATL::CStringT<wchar_t,ATL::StrTraitATL<wchar_t,ATL::ChTraitsCRT<wchar_t>>>' needs to have dll-interface to be used by clients of 'Base::FindFile' [C:\Users\mcmco\Desktop\WMMR\build\src\WLXMediaPublishSubscribe\WLXMediaPublishSubscribe.vcxproj]
+  (compiling source file '../../../src/WLXMediaPublishSubscribe/dllmain.cpp')
+      C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\VC\Tools\MSVC\14.44.35207\atlmfc\include\cstringt.h(999,7):
+      see declaration of 'ATL::CStringT<wchar_t,ATL::StrTraitATL<wchar_t,ATL::ChTraitsCRT<wchar_t>>>'
+  
+C:\Users\mcmco\Desktop\WMMR\src\WLXPhotoBase\BaseTypes.h(724,25): warning C4251: 'Base::IntSet::m_values': 'ATL::CAtlArray<int,ATL::CElementTraits<int>>' needs to have dll-interface to be used by clients of 'Base::IntSet' [C:\Users\mcmco\Desktop\WMMR\build\src\WLXMediaPublishSubscribe\WLXMediaPublishSubscribe.vcxproj]
+  (compiling source file '../../../src/WLXMediaPublishSubscribe/dllmain.cpp')
+      C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\VC\Tools\MSVC\14.44.35207\atlmfc\include\atlcoll.h(530,7):
+      see declaration of 'ATL::CAtlArray<int,ATL::CElementTraits<int>>'
+  
+LINK : warning LNK4075: ignoring '/INCREMENTAL' due to '/LTCG' specification [C:\Users\mcmco\Desktop\WMMR\build\src\WLXMediaPublishSubscribe\WLXMediaPublishSubscribe.vcxproj]
+     Creating library C:/Users/mcmco/Desktop/WMMR/build/lib/Debug/WLXMediaPublishSubscribe.lib and object C:/Users/mcmco/Desktop/WMMR/build/lib/Debug/WLXMediaPublishSubscribe.exp
+  LINK : /LTCG specified but no code generation required; remove /LTCG from the link command line to improve linker performance
+LINK : warning LNK4199: /DELAYLOAD:WLXPhotoSqm.dll ignored; no imports found from WLXPhotoSqm.dll [C:\Users\mcmco\Desktop\WMMR\build\src\WLXMediaPublishSubscribe\WLXMediaPublishSubscribe.vcxproj]
+LINK : warning LNK4199: /DELAYLOAD:DmxBici.dll ignored; no imports found from DmxBici.dll [C:\Users\mcmco\Desktop\WMMR\build\src\WLXMediaPublishSubscribe\WLXMediaPublishSubscribe.vcxproj]
+LINK : warning LNK4199: /DELAYLOAD:wlidcli.dll ignored; no imports found from wlidcli.dll [C:\Users\mcmco\Desktop\WMMR\build\src\WLXMediaPublishSubscribe\WLXMediaPublishSubscribe.vcxproj]
+LINK : warning LNK4199: /DELAYLOAD:uxcore.dll ignored; no imports found from uxcore.dll [C:\Users\mcmco\Desktop\WMMR\build\src\WLXMediaPublishSubscribe\WLXMediaPublishSubscribe.vcxproj]
+  WLXMediaPublishSubscribe.vcxproj -> C:\Users\mcmco\Desktop\WMMR\build\bin\Debug\WLXMediaPublishSubscribe.dll
+  WLXMovieLibrary.vcxproj -> C:\Users\mcmco\Desktop\WMMR\build\bin\Debug\WLXMovieLibrary.dll
+  WLXPhotoCinematic.vcxproj -> C:\Users\mcmco\Desktop\WMMR\build\bin\Debug\WLXPhotoCinematic.dll
+  WLXPipeline.vcxproj -> C:\Users\mcmco\Desktop\WMMR\build\bin\Debug\WLXPipeline.dll
+  WLXPipetran.vcxproj -> C:\Users\mcmco\Desktop\WMMR\build\bin\Debug\WLXPipetran.dll
+  WLXSlideshow.vcxproj -> C:\Users\mcmco\Desktop\WMMR\build\bin\Debug\WLXSlideshow.dll
+  WLXTranscode.cpp
+C:\Users\mcmco\Desktop\WMMR\src\WLXTranscode\WLXTranscode.cpp(168,30): error C2065: 'MF_LOW_LATENCY': undeclared identifier [C:\Users\mcmco\Desktop\WMMR\build\src\WLXTranscode\WLXTranscode.vcxproj]
+  WLXVideoTrim.vcxproj -> C:\Users\mcmco\Desktop\WMMR\build\bin\Debug\WLXVideoTrim.dll

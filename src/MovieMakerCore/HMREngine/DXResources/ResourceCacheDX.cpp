@@ -1,3 +1,4 @@
+﻿#include "pch.h"
 // ResourceCacheDX.cpp - D3D11 resource cache implementation
 
 #include "ResourceCacheDX.h"
@@ -64,7 +65,7 @@ HRESULT MovieThumbnailDX::GenerateThumbnailFromTexture(ID3D11Texture2D* source,
     HRESULT hr = m_device->CreateTexture2D(&td, nullptr, &outThumb->texture);
     if (FAILED(hr)) return hr;
 
-    m_immediateContext->CopySubresourceRegion(outThumb->texture, 0, 0, 0, 0,
+    m_context->CopySubresourceRegion(outThumb->texture, 0, 0, 0, 0,
         source, 0, nullptr);
 
     hr = m_device->CreateShaderResourceView(outThumb->texture, nullptr, &outThumb->srv);

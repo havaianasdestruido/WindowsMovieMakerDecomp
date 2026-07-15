@@ -44,7 +44,7 @@ target_link_libraries(${TARGET} PRIVATE
     oleaut32
     gdiplus
     d3d9
-    d3dx9
+
     shlwapi
     WLXPhotoBase
 )

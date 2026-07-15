@@ -1,4 +1,4 @@
-/*
+﻿/*
  * ProgressUI.cpp
  *
  * Implementation of progress indicator UI classes.
@@ -33,13 +33,13 @@ ProgressBase::~ProgressBase() {}
 
 void ProgressBase::SetRange(int nLower, int nUpper) { m_nLower = nLower; m_nUpper = nUpper; m_nPos = nLower; }
 void ProgressBase::GetRange(int* pnLower, int* pnUpper) const { if (pnLower) *pnLower = m_nLower; if (pnUpper) *pnUpper = m_nUpper; }
-void ProgressBase::SetPos(int nPos) { m_nPos = max(m_nLower, min(m_nUpper, nPos)); OnProgressChanged(); }
+void ProgressBase::SetPos(int nPos) { m_nPos = std::max(m_nLower, std::min(m_nUpper, nPos)); OnProgressChanged(); }
 int ProgressBase::GetPos() const throw() { return m_nPos; }
 void ProgressBase::SetStep(int nStep) { m_nStep = nStep; }
 
 void ProgressBase::StepIt()
 {
-    m_nPos = min(m_nUpper, m_nPos + m_nStep);
+    m_nPos = std::min(m_nUpper, m_nPos + m_nStep);
     OnProgressChanged();
 }
 

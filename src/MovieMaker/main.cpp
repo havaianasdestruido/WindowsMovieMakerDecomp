@@ -15,7 +15,7 @@ extern "C" int __cdecl MovieMakerMain(int argc, wchar_t** argv);
 // The original binary registers a __except handler around the
 // LoadLibrary/GetProcAddress region that catches C++ exceptions
 // with subcodes 0x19930520-22 and 0x01994000.
-static DWORD WINAPI VexHandler(PEXCEPTION_POINTERS ep)
+static LONG WINAPI VexHandler(PEXCEPTION_POINTERS ep)
 {
     if (ep->ExceptionRecord->ExceptionCode == 0xe06d7363)
     {

@@ -39,7 +39,6 @@ target_link_libraries(${TARGET} PRIVATE
     mf
     mfuuid
     mfreadwrite
-    mferror
     evr
     d3d9
     d3d11

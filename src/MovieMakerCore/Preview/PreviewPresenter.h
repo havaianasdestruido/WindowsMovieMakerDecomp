@@ -21,6 +21,14 @@
 #include "../pch.h"
 #include "../MovieMakerCore.h"
 
+#ifndef STORYBOARD_API
+#ifdef STORYBOARD_EXPORTS
+#define STORYBOARD_API __declspec(dllexport)
+#else
+#define STORYBOARD_API __declspec(dllimport)
+#endif
+#endif
+
 namespace StoryboardManager
 {
     class MovieProject;
@@ -47,7 +55,7 @@ class DefaultPreviewDX;
 //
 class ATL_NO_VTABLE PreviewPresenterWrapper :
     public CComObjectRootEx<CComSingleThreadModel>,
-    public CComCoClass<PreviewPresenterWrapper, &CLSID_Null>,
+    public CComCoClass<PreviewPresenterWrapper, &CLSID_NULL>,
     public IUnknown
 {
 public:

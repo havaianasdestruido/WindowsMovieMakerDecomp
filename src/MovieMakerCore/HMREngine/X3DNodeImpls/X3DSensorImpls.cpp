@@ -1,3 +1,4 @@
+﻿#include "pch.h"
 // X3DSensorImpls.cpp - Sensor/time-dependent/sound bridge implementation
 
 #include "X3DSensorImpls.h"

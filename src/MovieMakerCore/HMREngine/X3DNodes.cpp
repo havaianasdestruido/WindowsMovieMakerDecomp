@@ -1,6 +1,9 @@
+﻿#include "pch.h"
+
 // X3DNodes.cpp - X3D node implementations
 
 #include "X3DNodes.h"
+#include "d3dx11compat.h"
 #include <algorithm>
 #include <cmath>
 
@@ -228,59 +231,120 @@ namespace HMREngine
     // PositionInterpolatorNode
     Vec3 PositionInterpolatorNode::Interpolate(float fraction) const
     {
-        return LerpVec3(m_key.m_value, m_value.m_value, fraction);
+        if (m_key.m_values.empty() || m_value.m_values.empty()) return Vec3();
+        if (fraction <= m_key.m_values.front()) return m_value.m_values.front();
+        if (fraction >= m_key.m_values.back()) return m_value.m_values.back();
+        for (size_t i = 0; i + 1 < m_key.m_values.size(); ++i)
+        {
+            if (fraction >= m_key.m_values[i] && fraction <= m_key.m_values[i + 1])
+            {
+                float t = (fraction - m_key.m_values[i]) / (m_key.m_values[i + 1] - m_key.m_values[i]);
+                return m_value.m_values[i] + (m_value.m_values[i + 1] - m_value.m_values[i]) * t;
+            }
+        }
+        return m_value.m_values.back();
     }
 
     // OrientationInterpolatorNode
     Rotation4f OrientationInterpolatorNode::Interpolate(float fraction) const
     {
-        return SlerpRotation(m_key.m_value, m_value.m_value, fraction);
+        if (m_key.m_values.empty() || m_value.m_values.empty()) return Rotation4f();
+        if (fraction <= m_key.m_values.front()) return m_value.m_values.front();
+        if (fraction >= m_key.m_values.back()) return m_value.m_values.back();
+        for (size_t i = 0; i + 1 < m_key.m_values.size(); ++i)
+        {
+            if (fraction >= m_key.m_values[i] && fraction <= m_key.m_values[i + 1])
+            {
+                float t = (fraction - m_key.m_values[i]) / (m_key.m_values[i + 1] - m_key.m_values[i]);
+                const Rotation4f& a = m_value.m_values[i];
+                const Rotation4f& b = m_value.m_values[i + 1];
+                float dot = a.x * b.x + a.y * b.y + a.z * b.z + a.w * b.w;
+                Rotation4f b2 = b;
+                if (dot < 0.0f) { dot = -dot; b2 = Rotation4f(-b.x, -b.y, -b.z, -b.w); }
+                if (dot > 0.9995f)
+                {
+                    return Rotation4f(
+                        a.x + t * (b2.x - a.x), a.y + t * (b2.y - a.y),
+                        a.z + t * (b2.z - a.z), a.w + t * (b2.w - a.w)).Normalized();
+                }
+                float theta0 = acosf(dot);
+                float theta = theta0 * t;
+                float s0 = cosf(theta) - dot * sinf(theta) / sinf(theta0);
+                float s1 = sinf(theta) / sinf(theta0);
+                return Rotation4f(
+                    s0 * a.x + s1 * b2.x, s0 * a.y + s1 * b2.y,
+                    s0 * a.z + s1 * b2.z, s0 * a.w + s1 * b2.w).Normalized();
+            }
+        }
+        return m_value.m_values.back();
     }
 
     // ScalarInterpolatorNode
     float ScalarInterpolatorNode::Interpolate(float fraction) const
     {
-        return LerpFloat(m_key.m_value, m_value.m_value, fraction);
+        if (m_key.m_values.empty() || m_value.m_values.empty()) return 0.0f;
+        if (fraction <= m_key.m_values.front()) return m_value.m_values.front();
+        if (fraction >= m_key.m_values.back()) return m_value.m_values.back();
+        for (size_t i = 0; i + 1 < m_key.m_values.size(); ++i)
+        {
+            if (fraction >= m_key.m_values[i] && fraction <= m_key.m_values[i + 1])
+            {
+                float t = (fraction - m_key.m_values[i]) / (m_key.m_values[i + 1] - m_key.m_values[i]);
+                return m_value.m_values[i] + (m_value.m_values[i + 1] - m_value.m_values[i]) * t;
+            }
+        }
+        return m_value.m_values.back();
     }
 
     // ColorInterpolatorNode
     Rgb ColorInterpolatorNode::Interpolate(float fraction) const
     {
-        return LerpColor(m_key.m_value, m_value.m_value, fraction);
+        if (m_key.m_values.empty() || m_value.m_values.empty()) return Rgb();
+        if (fraction <= m_key.m_values.front()) return m_value.m_values.front();
+        if (fraction >= m_key.m_values.back()) return m_value.m_values.back();
+        for (size_t i = 0; i + 1 < m_key.m_values.size(); ++i)
+        {
+            if (fraction >= m_key.m_values[i] && fraction <= m_key.m_values[i + 1])
+            {
+                float t = (fraction - m_key.m_values[i]) / (m_key.m_values[i + 1] - m_key.m_values[i]);
+                return m_value.m_values[i].Lerp(m_value.m_values[i + 1], t);
+            }
+        }
+        return m_value.m_values.back();
     }
 
     // IntegerSequencerNode
     int IntegerSequencerNode::Evaluate(float fraction) const
     {
-        if (m_key.m_value.empty() || m_value.m_value.empty()) return 0;
+        if (m_key.m_values.empty() || m_value.m_values.empty()) return 0;
 
-        if (fraction <= m_key.m_value.front()) return m_value.m_value.front();
+        if (fraction <= m_key.m_values.front()) return m_value.m_values.front();
 
-        for (size_t i = 0; i < m_key.m_value.size(); i++)
+        for (size_t i = 0; i < m_key.m_values.size(); i++)
         {
-            if (fraction < m_key.m_value[i] && i > 0)
+            if (fraction < m_key.m_values[i] && i > 0)
             {
-                return m_value.m_value[i - 1];
+                return m_value.m_values[i - 1];
             }
         }
-        return m_value.m_value.back();
+        return m_value.m_values.back();
     }
 
     // BooleanSequencerNode
     bool BooleanSequencerNode::Evaluate(float fraction) const
     {
-        if (m_key.m_value.empty() || m_value.m_value.empty()) return false;
+        if (m_key.m_values.empty() || m_value.m_values.empty()) return false;
 
-        if (fraction <= m_key.m_value.front()) return m_value.m_value.front();
+        if (fraction <= m_key.m_values.front()) return m_value.m_values.front();
 
-        for (size_t i = 0; i < m_key.m_value.size(); i++)
+        for (size_t i = 0; i < m_key.m_values.size(); i++)
         {
-            if (fraction < m_key.m_value[i] && i > 0)
+            if (fraction < m_key.m_values[i] && i > 0)
             {
-                return m_value.m_value[i - 1];
+                return m_value.m_values[i - 1];
             }
         }
-        return m_value.m_value.back();
+        return m_value.m_values.back();
     }
 
     // MovieTextureNode

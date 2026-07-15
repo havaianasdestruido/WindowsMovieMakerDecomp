@@ -76,7 +76,7 @@ STDMETHODIMP MFSourceReaderCallback::OnReadSample(
     m_llLastTimestamp = llTimestamp;
 
     if (pSample)
-        pSample->AddInterfaceToBag(IID_PPV_ARGS(&m_spLastSample));
+        m_spLastSample = pSample;
 
     if (m_hEvent)
         SetEvent(m_hEvent);
@@ -338,7 +338,7 @@ HRESULT MFSource::GetEvent(IMFMediaEvent** ppEvent)
     return E_NOTIMPL;
 }
 
-HRESULT MFSource::BeginGetEvent(IMFMediaEventCallback* pCallback, IUnknown* punkState)
+HRESULT MFSource::BeginGetEvent(IMFAsyncCallback* pCallback, IUnknown* punkState)
 {
     return E_NOTIMPL;
 }
@@ -458,7 +458,6 @@ HRESULT MFSource::CreateSourceReader(const AVSourceDesc& desc)
 
     hr = MFCreateSourceReaderFromURL(
         desc.strFilePath.GetString(),
-        nullptr,
         nullptr,
         &m_spReader);
 

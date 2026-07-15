@@ -1,3 +1,4 @@
+﻿#include "pch.h"
 // X3DLayerImpls.cpp - Layer/viewport/bindable/text/vertex/metadata bridge implementation
 
 #include "X3DLayerImpls.h"
@@ -11,7 +12,7 @@ namespace HMREngine
 X3DLayerNodeImpl::X3DLayerNodeImpl() = default;
 X3DLayerNodeImpl::~X3DLayerNodeImpl() { Shutdown(); }
 
-HRESULT X3DLayerNodeImpl::Initialize(X3DLayerNode* node)
+HRESULT X3DLayerNodeImpl::Initialize(LayerNode* node)
 {
     m_layerNode = node;
     if (node)

@@ -1,3 +1,4 @@
+﻿#include "pch.h"
 /*
  * AudioQueue.cpp
  *
@@ -122,7 +123,7 @@ HRESULT AudioQueue::EnqueueSample(IMFSample* pSample)
     LONGLONG llTimestamp = 0;
     pSample->GetSampleTime(&llTimestamp);
 
-    DWORD dwFlags = 0;
+    UINT32 dwFlags = 0;
     if (SUCCEEDED(pSample->GetUINT32(MFSampleExtension_Discontinuity, &dwFlags)) && dwFlags)
         dwFlags = 1;
 

@@ -44,7 +44,7 @@ public:
                                 SerializationContext& ctx) = 0;
     virtual HRESULT OnText(LPCWSTR pszText, SerializationContext& ctx) = 0;
 
-    LPCWSTR GetElementName() const;
+    ATL::CString GetElementName() const;
     void SetElementName(LPCWSTR pszName);
 
 private:

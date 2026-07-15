@@ -22,6 +22,7 @@
 #include <objbase.h>
 #include <gdiplus.h>
 #include <shlwapi.h>
+#include <shellapi.h>
 #include <strsafe.h>
 #include <vector>
 #include <string>

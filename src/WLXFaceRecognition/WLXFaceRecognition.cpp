@@ -167,7 +167,7 @@ public:
         fMean /= static_cast<float>(uVecSize);
 
         // Project onto components (stub: just return mean-centered values)
-        UINT32 uComponents = min(m_uNumComponents, uVecSize);
+        UINT32 uComponents = std::min(m_uNumComponents, uVecSize);
         for (UINT32 i = 0; i < uComponents; ++i)
         {
             // In full implementation: dot product with eigenface[i]
@@ -371,7 +371,7 @@ public:
         for (DOUBLE dCurrentScale = 1.0; ; dCurrentScale *= dScale)
         {
             INT iWinSize = static_cast<INT>(iMinSize * dCurrentScale);
-            if (iWinSize > static_cast<INT>(min(imgW, imgH)))
+            if (iWinSize > static_cast<INT>(std::min(imgW, imgH)))
                 break;
 
             INT iStep = static_cast<INT>(iWinSize * 0.1);

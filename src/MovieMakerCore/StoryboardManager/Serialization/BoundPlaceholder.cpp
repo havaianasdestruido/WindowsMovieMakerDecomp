@@ -1,3 +1,4 @@
+﻿#include "pch.h"
 /*
  * BoundPlaceholder.cpp
  *
@@ -50,10 +51,10 @@ BoundPlaceholder::BoundPlaceholder(const BoundPlaceholder& other)
     , m_dwBoundExtentId(other.m_dwBoundExtentId)
     , m_dwBoundItemId(other.m_dwBoundItemId)
     , m_properties(other.m_properties)
-    , m_arrAttributes(other.m_arrAttributes)
     , m_fResolved(other.m_fResolved)
     , m_resolutionSource(other.m_resolutionSource)
 {
+    m_arrAttributes.Copy(other.m_arrAttributes);
 }
 
 BoundPlaceholder& BoundPlaceholder::operator=(const BoundPlaceholder& other)
@@ -67,7 +68,7 @@ BoundPlaceholder& BoundPlaceholder::operator=(const BoundPlaceholder& other)
         m_dwBoundExtentId      = other.m_dwBoundExtentId;
         m_dwBoundItemId        = other.m_dwBoundItemId;
         m_properties           = other.m_properties;
-        m_arrAttributes        = other.m_arrAttributes;
+        m_arrAttributes.Copy(other.m_arrAttributes);
         m_fResolved            = other.m_fResolved;
         m_resolutionSource     = other.m_resolutionSource;
     }

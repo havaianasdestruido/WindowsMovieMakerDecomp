@@ -39,6 +39,12 @@
 namespace StoryboardManager
 {
 
+// Forward declarations for self-referencing types
+class ThemeTitle;
+class ThemeTrack;
+class ThemeEffectTemplate;
+class ThemeTransition;
+
 // ============================================================================
 // Theme element type enumeration
 // ============================================================================

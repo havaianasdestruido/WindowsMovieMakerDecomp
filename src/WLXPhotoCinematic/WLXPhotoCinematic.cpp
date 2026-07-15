@@ -229,7 +229,7 @@ WLXPCIN_API void __stdcall PhotoCinematic_Destroy(HANDLE hEngine)
 }
 
 WLXPCIN_API HRESULT __stdcall PhotoCinematic_RenderFrame(HANDLE hEngine,
-    Gdiplus::Bitmap* pSourceImage, const CinematicParams* pParams,
+    Gdiplus::Bitmap* pSourceImage, const PhotoCinematic::CinematicParams* pParams,
     DOUBLE dProgress, Gdiplus::Bitmap** ppBitmap)
 {
     if (!hEngine) return E_INVALIDARG;
@@ -238,7 +238,7 @@ WLXPCIN_API HRESULT __stdcall PhotoCinematic_RenderFrame(HANDLE hEngine,
 }
 
 WLXPCIN_API HRESULT __stdcall PhotoCinematic_RenderAll(HANDLE hEngine,
-    Gdiplus::Bitmap* pSourceImage, const CinematicParams* pParams,
+    Gdiplus::Bitmap* pSourceImage, const PhotoCinematic::CinematicParams* pParams,
     UINT32 uFrameRate, Gdiplus::Bitmap*** ppFrames, UINT32* pFrameCount)
 {
     if (!hEngine) return E_INVALIDARG;

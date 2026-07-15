@@ -1,3 +1,4 @@
+﻿#include "pch.h"
 /*
  * BackgroundOrchestrator.cpp
  *
@@ -50,7 +51,7 @@ HRESULT BackgroundOrchestrator::Initialize(DWORD dwMaxThreads)
     if (m_bInitialized)
         return S_FALSE;
 
-    m_dwMaxThreads = max(1, min(dwMaxThreads, 16));
+    m_dwMaxThreads = std::max((DWORD)1, std::min(dwMaxThreads, (DWORD)16));
     m_bShutdownRequested = false;
 
     // Create worker threads
@@ -335,7 +336,7 @@ HRESULT BackgroundOrchestrator::SetMaxThreads(DWORD dwMaxThreads)
     if (!m_bInitialized)
         return E_UNEXPECTED;
 
-    m_dwMaxThreads = max(1, min(dwMaxThreads, 16));
+    m_dwMaxThreads = std::max((DWORD)1, std::min(dwMaxThreads, (DWORD)16));
 
     // If we have fewer threads than desired, spawn more
     while (static_cast<DWORD>(m_threads.size()) < m_dwMaxThreads)

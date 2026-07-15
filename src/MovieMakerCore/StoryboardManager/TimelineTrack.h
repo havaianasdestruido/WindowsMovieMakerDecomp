@@ -24,6 +24,7 @@
 #define TIMELINETRACK_H
 
 #include "StoryboardManager.h"
+#include "MovieProject.h"
 
 namespace StoryboardManager
 {
@@ -46,6 +47,7 @@ public:
     // Track type
     TimelineTrackType GetTrackType() const throw();
     void SetTrackType(TimelineTrackType type) throw();
+    operator TimelineTrackType() const throw() { return m_type; }
 
     // Display name
     ATL::CString GetDisplayName() const;
@@ -103,7 +105,7 @@ private:
     double              m_dblVolume;
     UINT                m_uTrackHeight;
     DWORD               m_dwTrackColor;
-    ProjectTimeline     m_timeline;
+    ProjectTimeline*    m_timeline;
 };
 
 // ============================================================================

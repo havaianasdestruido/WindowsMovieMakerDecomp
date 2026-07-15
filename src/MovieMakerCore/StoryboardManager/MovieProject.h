@@ -25,6 +25,7 @@
 #define MOVIEPROJECT_H
 
 #include "StoryboardManager.h"
+#include <vector>
 
 namespace StoryboardManager
 {
@@ -353,6 +354,21 @@ public:
     // Project version
     DWORD GetVersionMajor() const throw();
     DWORD GetVersionMinor() const throw();
+
+    // Aliases used by UI layer
+    ATL::CString GetFilePath() const;
+    ATL::CString GetDisplayName() const;
+    HRESULT SaveAs(LPCWSTR pszPath);
+    HRESULT ImportMedia(LPCWSTR pszPath, TimelineTrackType trackType);
+    HRESULT RemoveItem(DWORD dwItemId, TimelineTrackType trackType);
+    HRESULT MoveItem(DWORD dwItemId, TimelineTrackType trackType, DWORD dwNewPosition);
+    size_t GetItemCount(TimelineTrackType trackType) const throw();
+    bool IsItemValid(DWORD dwItemId, TimelineTrackType trackType) const throw();
+    void GetExtentIdsForMediaItem(DWORD dwItemId, TimelineTrackType trackType, Base::Array<DWORD>& ids) const;
+    HRESULT GetExtentForMediaItem(DWORD dwItemId, Base::PtrRef<MovieExtent>& extentOut);
+    bool HasItemsNeedingProxyTranscode() const;
+    HRESULT StartProxyTranscode();
+    void MarkAllExtentsForRetranscode(TimelineTrackType trackType);
 
     // Undo/redo
     HRESULT Undo();

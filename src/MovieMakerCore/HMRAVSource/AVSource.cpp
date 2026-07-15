@@ -253,7 +253,7 @@ HRESULT AVSource::GetEvent(IMFMediaEvent** ppEvent)
     return E_NOTIMPL;
 }
 
-HRESULT AVSource::BeginGetEvent(IMFMediaEventCallback* pCallback, IUnknown* punkState)
+HRESULT AVSource::BeginGetEvent(IMFAsyncCallback* pCallback, IUnknown* punkState)
 {
     return E_NOTIMPL;
 }

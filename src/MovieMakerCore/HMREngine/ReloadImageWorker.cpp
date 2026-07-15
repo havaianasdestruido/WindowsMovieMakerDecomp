@@ -1,3 +1,5 @@
+﻿#include "pch.h"
+
 // ReloadImageWorker.cpp - Image reload thread pool worker implementation
 
 #include "ReloadImageWorker.h"

@@ -223,6 +223,10 @@ HRESULT XVideoProc::ProcessThroughChain(IMFSample* pInput, IMFSample** ppOutput)
 
 DXVA2VideoProc::DXVA2VideoProc()
     : m_pDevice(nullptr)
+    , m_pVideoProcessor(nullptr)
+    , m_spEnumerator(NULL)
+    , m_spRenderTarget(NULL)
+    , m_spTempSurface(NULL)
     , m_fH264Deinterlace(false)
 {
     ZeroMemory(&m_vpcaps, sizeof(m_vpcaps));
@@ -258,7 +262,11 @@ HRESULT DXVA2VideoProc::Initialize(const VideoProcDesc& desc, IDirect3DDevice9* 
 
 HRESULT DXVA2VideoProc::Shutdown()
 {
-    m_spVideoProcessor = nullptr;
+    if (m_pVideoProcessor)
+    {
+        m_pVideoProcessor->Release();
+        m_pVideoProcessor = nullptr;
+    }
     m_spEnumerator = nullptr;
     m_spRenderTarget = nullptr;
     m_spTempSurface = nullptr;
@@ -274,7 +282,7 @@ HRESULT DXVA2VideoProc::ProcessFrame(IMFSample* pInputSample, IMFSample** ppOutp
 
     *ppOutputSample = nullptr;
 
-    if (!m_fInitialized || !m_spVideoProcessor)
+    if (!m_fInitialized || !m_pVideoProcessor)
         return E_UNEXPECTED;
 
     return ProcessSampleDXVA2(pInputSample, ppOutputSample);
@@ -285,7 +293,7 @@ HRESULT DXVA2VideoProc::ProcessFrameToSurface(IMFSample* pInputSample, IDirect3D
     if (!pInputSample || !pOutputSurface)
         return E_POINTER;
 
-    if (!m_spVideoProcessor)
+    if (!m_pVideoProcessor)
         return E_UNEXPECTED;
 
     // Convert input to DXVA2 surface and process
@@ -358,7 +366,7 @@ HRESULT DXVA2VideoProc::CreateDXVA2Processor()
     if (FAILED(hr))
         return hr;
 
-    hr = m_spEnumerator->GetVideoProcessorCaps(&m_vpcaps);
+    hr = m_spEnumerator.p->GetVideoProcessorCaps(&m_vpcaps);
     if (FAILED(hr))
         return hr;
 
@@ -366,7 +374,7 @@ HRESULT DXVA2VideoProc::CreateDXVA2Processor()
         m_pDevice,
         m_spEnumerator,
         &m_vpcaps,
-        &m_spVideoProcessor);
+        &m_pVideoProcessor);
 
     return hr;
 }

@@ -1,3 +1,5 @@
+﻿#include "pch.h"
+
 // X3DMath.cpp - Math implementations
 
 #include "X3DMath.h"

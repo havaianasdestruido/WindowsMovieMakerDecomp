@@ -1,3 +1,5 @@
+﻿#include "pch.h"
+
 // TextureImpl.cpp - Texture implementations
 
 #include "TextureImpl.h"

@@ -26,6 +26,14 @@
 #include <UIRibbon.h>
 #include <UIRibbonPropertyHelpers.h>
 
+#ifndef REFUIKEY
+typedef const PROPVARIANT& REFUIKEY;
+#endif
+
+// UI_VIEWTYPE and UI_VIEWVERB are defined by <UIRibbon.h> as enums
+
+interface IUIView;
+
 namespace SundanceUI
 {
 

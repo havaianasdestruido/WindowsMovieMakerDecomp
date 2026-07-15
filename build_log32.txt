@@ -1,0 +1,43 @@
+﻿Vers├úo do MSBuild 17.14.40+3e7442088 para .NET Framework
+
+  WLXPhotoBase.cpp
+C:\Users\mcmco\Desktop\WMMR\src\WLXPhotoBase\WLXPhotoBase.h(32,9): warning C4005: 'WINVER': macro redefinition [C:\Users\mcmco\Desktop\WMMR\build\src\WLXPhotoBase\WLXPhotoBase.vcxproj]
+  (compiling source file '../../../src/WLXPhotoBase/WLXPhotoBase.cpp')
+      C:\Users\mcmco\Desktop\WMMR\src\WLXPhotoBase\WLXPhotoBase.h(32,9):
+      'WINVER' previously declared on the command line
+  
+C:\Users\mcmco\Desktop\WMMR\src\WLXPhotoBase\WLXPhotoBase.h(33,9): warning C4005: '_WIN32_WINNT': macro redefinition [C:\Users\mcmco\Desktop\WMMR\build\src\WLXPhotoBase\WLXPhotoBase.vcxproj]
+  (compiling source file '../../../src/WLXPhotoBase/WLXPhotoBase.cpp')
+      C:\Users\mcmco\Desktop\WMMR\src\WLXPhotoBase\WLXPhotoBase.h(33,9):
+      '_WIN32_WINNT' previously declared on the command line
+  
+C:\Users\mcmco\Desktop\WMMR\src\WLXPhotoBase\BaseTypes.h(536,18): warning C4251: 'Base::File::m_strPath': 'ATL::CStringT<wchar_t,ATL::StrTraitATL<wchar_t,ATL::ChTraitsCRT<wchar_t>>>' needs to have dll-interface to be used by clients of 'Base::File' [C:\Users\mcmco\Desktop\WMMR\build\src\WLXPhotoBase\WLXPhotoBase.vcxproj]
+  (compiling source file '../../../src/WLXPhotoBase/WLXPhotoBase.cpp')
+      C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\VC\Tools\MSVC\14.44.35207\atlmfc\include\cstringt.h(999,7):
+      see declaration of 'ATL::CStringT<wchar_t,ATL::StrTraitATL<wchar_t,ATL::ChTraitsCRT<wchar_t>>>'
+  
+C:\Users\mcmco\Desktop\WMMR\src\WLXPhotoBase\BaseTypes.h(568,18): warning C4251: 'Base::TempFile::m_strPath': 'ATL::CStringT<wchar_t,ATL::StrTraitATL<wchar_t,ATL::ChTraitsCRT<wchar_t>>>' needs to have dll-interface to be used by clients of 'Base::TempFile' [C:\Users\mcmco\Desktop\WMMR\build\src\WLXPhotoBase\WLXPhotoBase.vcxproj]
+  (compiling source file '../../../src/WLXPhotoBase/WLXPhotoBase.cpp')
+      C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\VC\Tools\MSVC\14.44.35207\atlmfc\include\cstringt.h(999,7):
+      see declaration of 'ATL::CStringT<wchar_t,ATL::StrTraitATL<wchar_t,ATL::ChTraitsCRT<wchar_t>>>'
+  
+C:\Users\mcmco\Desktop\WMMR\src\WLXPhotoBase\BaseTypes.h(661,21): warning C4251: 'Base::FindFile::m_strDirectory': 'ATL::CStringT<wchar_t,ATL::StrTraitATL<wchar_t,ATL::ChTraitsCRT<wchar_t>>>' needs to have dll-interface to be used by clients of 'Base::FindFile' [C:\Users\mcmco\Desktop\WMMR\build\src\WLXPhotoBase\WLXPhotoBase.vcxproj]
+  (compiling source file '../../../src/WLXPhotoBase/WLXPhotoBase.cpp')
+      C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\VC\Tools\MSVC\14.44.35207\atlmfc\include\cstringt.h(999,7):
+      see declaration of 'ATL::CStringT<wchar_t,ATL::StrTraitATL<wchar_t,ATL::ChTraitsCRT<wchar_t>>>'
+  
+C:\Users\mcmco\Desktop\WMMR\src\WLXPhotoBase\BaseTypes.h(724,25): warning C4251: 'Base::IntSet::m_values': 'ATL::CAtlArray<int,ATL::CElementTraits<int>>' needs to have dll-interface to be used by clients of 'Base::IntSet' [C:\Users\mcmco\Desktop\WMMR\build\src\WLXPhotoBase\WLXPhotoBase.vcxproj]
+  (compiling source file '../../../src/WLXPhotoBase/WLXPhotoBase.cpp')
+      C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\VC\Tools\MSVC\14.44.35207\atlmfc\include\atlcoll.h(530,7):
+      see declaration of 'ATL::CAtlArray<int,ATL::CElementTraits<int>>'
+  
+LINK : warning LNK4075: ignoring '/INCREMENTAL' due to '/LTCG' specification [C:\Users\mcmco\Desktop\WMMR\build\src\WLXPhotoBase\WLXPhotoBase.vcxproj]
+     Creating library C:/Users/mcmco/Desktop/WMMR/build/lib/Debug/WLXPhotoBase.lib and object C:/Users/mcmco/Desktop/WMMR/build/lib/Debug/WLXPhotoBase.exp
+  LINK : /LTCG specified but no code generation required; remove /LTCG from the link command line to improve linker performance
+  WLXPhotoBase.vcxproj -> C:\Users\mcmco\Desktop\WMMR\build\bin\Debug\WLXPhotoBase.dll
+Vers├úo do MSBuild 17.14.40+3e7442088 para .NET Framework
+
+  WLXPhotoBase.vcxproj -> C:\Users\mcmco\Desktop\WMMR\build\bin\Debug\WLXPhotoBase.dll
+LINK : warning LNK4075: ignoring '/INCREMENTAL' due to '/LTCG' specification [C:\Users\mcmco\Desktop\WMMR\build\src\MovieMaker\MovieMaker.vcxproj]
+  LINK : /LTCG specified but no code generation required; remove /LTCG from the link command line to improve linker performance
+  MovieMaker.vcxproj -> C:\Users\mcmco\Desktop\WMMR\build\bin\Debug\MovieMaker.exe

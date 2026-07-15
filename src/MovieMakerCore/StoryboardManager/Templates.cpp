@@ -1,3 +1,4 @@
+﻿#include "pch.h"
 /*
  * Templates.cpp
  *
@@ -39,6 +40,33 @@ ThemeEffect::ThemeEffect()
 
 ThemeEffect::~ThemeEffect()
 {
+}
+
+ThemeEffect::ThemeEffect(const ThemeEffect& other)
+    : m_type(other.m_type)
+    , m_llDurationHns(other.m_llDurationHns)
+    , m_llDelayHns(other.m_llDelayHns)
+    , m_dblIntensity(other.m_dblIntensity)
+    , m_strX3dClipName(other.m_strX3dClipName)
+{
+    for (size_t i = 0; i < other.m_arrParameters.GetCount(); ++i)
+        m_arrParameters.Add(other.m_arrParameters.GetAt(i));
+}
+
+ThemeEffect& ThemeEffect::operator=(const ThemeEffect& other)
+{
+    if (this != &other)
+    {
+        m_type = other.m_type;
+        m_llDurationHns = other.m_llDurationHns;
+        m_llDelayHns = other.m_llDelayHns;
+        m_dblIntensity = other.m_dblIntensity;
+        m_strX3dClipName = other.m_strX3dClipName;
+        m_arrParameters.RemoveAll();
+        for (size_t i = 0; i < other.m_arrParameters.GetCount(); ++i)
+            m_arrParameters.Add(other.m_arrParameters.GetAt(i));
+    }
+    return *this;
 }
 
 ThemeEffectType ThemeEffect::GetType() const throw()

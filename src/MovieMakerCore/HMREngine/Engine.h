@@ -5,7 +5,7 @@
 #include "X3DMath.h"
 #include <d3d11.h>
 #include <dxgi.h>
-#include <d3dx11.h>
+#include "d3dx11compat.h"
 #include <atlbase.h>
 #include <atlcom.h>
 #include <string>

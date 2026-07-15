@@ -95,7 +95,7 @@ public:
     HRESULT Flush() override;
 
     HRESULT GetEvent(IMFMediaEvent** ppEvent) override;
-    HRESULT BeginGetEvent(IMFMediaEventCallback* pCallback, IUnknown* punkState) override;
+    HRESULT BeginGetEvent(IMFAsyncCallback* pCallback, IUnknown* punkState) override;
     HRESULT EndGetEvent(IMFMediaEvent* pEvent, IMFMediaEvent** ppNextEvent) override;
 
     // MF-specific queries
@@ -117,7 +117,7 @@ public:
 
 private:
     CComPtr<IMFSourceReader>        m_spReader;
-    CComPtr<IMFSourceReaderCallback> m_spCallback;
+    CComPtr<MFSourceReaderCallback>    m_spCallback;
     DWORD                           m_dwVideoStreamIndex;
     DWORD                           m_dwAudioStreamIndex;
     DWORD                           m_dwStreamCount;

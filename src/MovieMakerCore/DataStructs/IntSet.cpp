@@ -25,14 +25,15 @@ IntSet::~IntSet()
 // ============================================================================
 
 IntSet::IntSet(const IntSet& other)
-    : m_arrValues(other.m_arrValues)
+    : m_arrValues()
 {
+    m_arrValues.Copy(other.m_arrValues);
 }
 
 IntSet& IntSet::operator=(const IntSet& other)
 {
     if (this != &other)
-        m_arrValues = other.m_arrValues;
+        m_arrValues.Copy(other.m_arrValues);
     return *this;
 }
 
@@ -200,7 +201,7 @@ void IntSet::UnionWith(const IntSet& other)
 void IntSet::IntersectWith(const IntSet& other)
 {
     IntSet result = this->Intersect(other);
-    m_arrValues = result.m_arrValues;
+    m_arrValues.Copy(result.m_arrValues);
 }
 
 void IntSet::Subtract(const IntSet& other)

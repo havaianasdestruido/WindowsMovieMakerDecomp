@@ -5,6 +5,9 @@
 
 namespace HMREngine
 {
+    // Forward declarations for types used before definition
+    class X3DGeometryNodeImpl;
+    class X3DAppearanceNodeImpl;
     // --- X3DGroupingNodeImpl: Grouping node bridge ---
     class X3DGroupingNodeImpl : public X3DChildNodeImpl
     {

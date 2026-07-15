@@ -1,6 +1,8 @@
+﻿#include "pch.h"
 // EffectResourceDX.cpp - HLSL effect wrapper implementation
 
 #include "EffectResourceDX.h"
+#include "../../Resources/ResourceIds.h"
 #include <d3dcompiler.h>
 
 #pragma comment(lib, "d3dcompiler.lib")
@@ -17,7 +19,7 @@ template<typename T>
 static HRESULT GetEffectVariable(ID3DX11Effect* effect, const char* name, CComPtr<T>& var)
 {
     if (!effect) return E_FAIL;
-    var = effect->GetVariableByName(name);
+    var.Attach(static_cast<T*>(effect->GetVariableByName(name)));
     return var ? S_OK : E_FAIL;
 }
 
@@ -69,7 +71,7 @@ HRESULT EffectResourceDX::LoadFromMemory(const void* data, UINT dataSize)
     CComPtr<ID3DBlob> shaderBlob;
     CComPtr<ID3DBlob> errorBlob;
 
-    HRESULT hr = D3DX11CompileEffectFromMemory(data, dataSize, nullptr, nullptr,
+    HRESULT hr = D3DX11CompileEffectFromMemory(data, dataSize, nullptr, nullptr, nullptr,
         flags, 0, m_device, &m_effect, &errorBlob, nullptr);
 
     if (FAILED(hr) && errorBlob)
@@ -138,56 +140,64 @@ HRESULT EffectResourceDX::EndPass()
 void EffectResourceDX::SetFloat(const char* name, float value)
 {
     if (!m_effect) return;
-    CComPtr<ID3DX11EffectScalarVariable> var = m_effect->GetVariableByName(name);
+    CComPtr<ID3DX11EffectScalarVariable> var;
+    var.Attach(m_effect->GetVariableByName(name)->AsScalar());
     if (var) var->SetFloat(value);
 }
 
 void EffectResourceDX::SetFloat2(const char* name, const Vec2& value)
 {
     if (!m_effect) return;
-    CComPtr<ID3DX11EffectVectorVariable> var = m_effect->GetVariableByName(name);
+    CComPtr<ID3DX11EffectVectorVariable> var;
+    var.Attach(m_effect->GetVariableByName(name)->AsVector());
     if (var) var->SetFloatVector(reinterpret_cast<const float*>(&value));
 }
 
 void EffectResourceDX::SetFloat3(const char* name, const Vec3& value)
 {
     if (!m_effect) return;
-    CComPtr<ID3DX11EffectVectorVariable> var = m_effect->GetVariableByName(name);
+    CComPtr<ID3DX11EffectVectorVariable> var;
+    var.Attach(m_effect->GetVariableByName(name)->AsVector());
     if (var) var->SetFloatVector(reinterpret_cast<const float*>(&value));
 }
 
 void EffectResourceDX::SetFloat4(const char* name, const Vec4& value)
 {
     if (!m_effect) return;
-    CComPtr<ID3DX11EffectVectorVariable> var = m_effect->GetVariableByName(name);
+    CComPtr<ID3DX11EffectVectorVariable> var;
+    var.Attach(m_effect->GetVariableByName(name)->AsVector());
     if (var) var->SetFloatVector(reinterpret_cast<const float*>(&value));
 }
 
 void EffectResourceDX::SetMatrix(const char* name, const Matrix4f& value)
 {
     if (!m_effect) return;
-    CComPtr<ID3DX11EffectMatrixVariable> var = m_effect->GetVariableByName(name);
+    CComPtr<ID3DX11EffectMatrixVariable> var;
+    var.Attach(m_effect->GetVariableByName(name)->AsMatrix());
     if (var) var->SetMatrix(reinterpret_cast<const float*>(&value));
 }
 
 void EffectResourceDX::SetTexture(const char* name, ID3D11ShaderResourceView* srv)
 {
     if (!m_effect) return;
-    CComPtr<ID3DX11EffectShaderResourceVariable> var = m_effect->GetVariableByName(name);
+    CComPtr<ID3DX11EffectShaderResourceVariable> var;
+    var.Attach(m_effect->GetVariableByName(name)->AsShaderResource());
     if (var) var->SetResource(srv);
 }
 
 void EffectResourceDX::SetInt(const char* name, int value)
 {
     if (!m_effect) return;
-    CComPtr<ID3DX11EffectScalarVariable> var = m_effect->GetVariableByName(name);
+    CComPtr<ID3DX11EffectScalarVariable> var;
+    var.Attach(m_effect->GetVariableByName(name)->AsScalar());
     if (var) var->SetInt(value);
 }
 
 void EffectResourceDX::SetBool(const char* name, bool value)
 {
     if (!m_effect) return;
-    CComPtr<ID3DX11EffectScalarVariable> var = m_effect->GetVariableByName(name);
+    CComPtr<ID3DX11EffectScalarVariable> var;
+    var.Attach(m_effect->GetVariableByName(name)->AsScalar());
     if (var) var->SetBool(value ? TRUE : FALSE);
 }
 

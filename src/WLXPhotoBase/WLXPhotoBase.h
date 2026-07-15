@@ -44,8 +44,10 @@
 #pragma warning(disable: 4505) // unreferenced local function has been removed
 #pragma warning(disable: 4100) // unreferenced formal parameter
 
-// Forward declare ATL types to avoid full ATL header dependency in public header
-struct IAtlStringMgr;
+// Use ATL::IAtlStringMgr directly - no separate forward declaration needed
+// when ATL headers are available
+#include <atlbase.h>
+#include <atlstr.h>
 
 // ============================================================================
 // WLXPHOTOBASE_EXPORTS - macro for dllexport/dllimport
@@ -133,7 +135,7 @@ WLXPHOTOBASE_API HRESULT GdiplusStatusToHresult(Gdiplus::Status status);
 namespace String
 {
     // Returns the global base string manager for ATL CStringT instances
-    WLXPHOTOBASE_API IAtlStringMgr* GetBaseStringManager();
+    WLXPHOTOBASE_API ATL::IAtlStringMgr* GetBaseStringManager();
 }
 
 // ============================================================================
@@ -173,15 +175,7 @@ namespace CPU
 
 } // namespace Base
 
-// ============================================================================
-// ATL namespace extensions
-// ============================================================================
-namespace ATL
-{
-    // ATL-compatible throw function using CAtlException
-    // Throws an ATL exception with the given HRESULT
-    WLXPHOTOBASE_API void __cdecl BaseAtlThrow(HRESULT hr);
-}
+// BaseAtlThrow is provided by ATL 14+ natively - no custom definition needed
 
 // ============================================================================
 // Include implementation details (BaseTypes) after the API declarations

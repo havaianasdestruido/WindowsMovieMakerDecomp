@@ -1,4 +1,4 @@
-/*
+﻿/*
  * TimelineBehavior.cpp
  *
  * Implementation of timeline UI behavior classes for the Sundance DirectUI
@@ -1094,10 +1094,10 @@ void TimelineSelectionRootBehavior::GetSelectionRect(RECT* prcSelection) const
 
 void TimelineSelectionRootBehavior::UpdateSelectionRect()
 {
-    m_rcSelection.left   = min(m_ptMarqueeStart.x, m_ptMarqueeEnd.x);
-    m_rcSelection.top    = min(m_ptMarqueeStart.y, m_ptMarqueeEnd.y);
-    m_rcSelection.right  = max(m_ptMarqueeStart.x, m_ptMarqueeEnd.x);
-    m_rcSelection.bottom = max(m_ptMarqueeStart.y, m_ptMarqueeEnd.y);
+    m_rcSelection.left   = std::min(m_ptMarqueeStart.x, m_ptMarqueeEnd.x);
+    m_rcSelection.top    = std::min(m_ptMarqueeStart.y, m_ptMarqueeEnd.y);
+    m_rcSelection.right  = std::max(m_ptMarqueeStart.x, m_ptMarqueeEnd.x);
+    m_rcSelection.bottom = std::max(m_ptMarqueeStart.y, m_ptMarqueeEnd.y);
 }
 
 void TimelineSelectionRootBehavior::SelectItemsInRect(const RECT* /*prcSelection*/)

@@ -2,6 +2,7 @@
 
 #include "pch.h"
 #include "TranscodeMetadata.h"
+#include <propsys.h>
 
 namespace HMRAVSource
 {
@@ -100,7 +101,7 @@ HRESULT TranscodeMetadataParser::GetDuration(LPCWSTR pszFilePath, LONGLONG* pllD
     *pllDurationHns = 0;
 
     CComPtr<IMFSourceReader> spReader;
-    HRESULT hr = MFCreateSourceReaderFromURL(pszFilePath, nullptr, nullptr, &spReader);
+    HRESULT hr = MFCreateSourceReaderFromURL(pszFilePath, nullptr, &spReader);
     if (FAILED(hr))
         return hr;
 
@@ -129,7 +130,7 @@ HRESULT TranscodeMetadataParser::GetResolution(LPCWSTR pszFilePath, DWORD* pdwWi
     *pdwHeight = 0;
 
     CComPtr<IMFSourceReader> spReader;
-    HRESULT hr = MFCreateSourceReaderFromURL(pszFilePath, nullptr, nullptr, &spReader);
+    HRESULT hr = MFCreateSourceReaderFromURL(pszFilePath, nullptr, &spReader);
     if (FAILED(hr))
         return hr;
 
@@ -178,11 +179,25 @@ HRESULT TranscodeMetadataParser::GetPropertyString(LPCWSTR pszFilePath, REFPROPE
 
     *pstrValue = CString();
 
+    CComPtr<IPropertySetStorage> spPropSetStorage;
+    HRESULT hr = StgOpenStorageEx(
+        pszFilePath,
+        STGM_READ | STGM_SHARE_DENY_WRITE,
+        STGFMT_FILE,
+        0,
+        nullptr,
+        nullptr,
+        IID_IPropertySetStorage,
+        reinterpret_cast<void**>(&spPropSetStorage));
+
     CComPtr<IPropertyStore> spStore;
-    HRESULT hr = SHCreatePropertyStoreFromProperties(
-        const_cast<LPCWSTR>(pszFilePath),
-        STGM_READ,
-        IID_PPV_ARGS(&spStore));
+    if (SUCCEEDED(hr))
+    {
+        CComPtr<IPropertyStorage> spPropStorage;
+        hr = spPropSetStorage->Open(FMTID_SummaryInformation, STGM_READ | STGM_SHARE_EXCLUSIVE, &spPropStorage);
+        if (SUCCEEDED(hr))
+            hr = spPropStorage->QueryInterface(IID_PPV_ARGS(&spStore));
+    }
 
     if (FAILED(hr))
     {

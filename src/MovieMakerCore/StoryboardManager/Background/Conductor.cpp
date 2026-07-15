@@ -1,3 +1,4 @@
+﻿#include "pch.h"
 /*
  * Conductor.cpp
  *
@@ -11,6 +12,7 @@
  */
 
 #include "Conductor.h"
+#include "AutofitProcess.h"
 
 // ============================================================================
 // MonolithicThemeOperation implementation
@@ -452,7 +454,9 @@ HRESULT Conductor::BeginThemeOperation(LPCWSTR pszName, DWORD* pdwOperationId)
     static DWORD s_dwNextOpId = 1;
     pOp->SetOperationId(s_dwNextOpId++);
 
-    GetSystemTimeAsFileTime(&pOp->m_ftStartTime);
+    FILETIME ftNow;
+    GetSystemTimeAsFileTime(&ftNow);
+    pOp->SetStartTime(ftNow);
     pOp->SetInProgress(true);
 
     m_pMTOContainer->AddOperation(pOp);
@@ -471,7 +475,9 @@ HRESULT Conductor::CompleteThemeOperation(DWORD dwOperationId)
     if (!pOp)
         return HRESULT_FROM_WIN32(ERROR_NOT_FOUND);
 
-    GetSystemTimeAsFileTime(&pOp->m_ftEndTime);
+    FILETIME ftNow;
+    GetSystemTimeAsFileTime(&ftNow);
+    pOp->SetEndTime(ftNow);
     pOp->SetInProgress(false);
     pOp->SetCompleted(true);
 
@@ -487,7 +493,9 @@ HRESULT Conductor::FailThemeOperation(DWORD dwOperationId, LPCWSTR pszError)
     if (!pOp)
         return HRESULT_FROM_WIN32(ERROR_NOT_FOUND);
 
-    GetSystemTimeAsFileTime(&pOp->m_ftEndTime);
+    FILETIME ftNow;
+    GetSystemTimeAsFileTime(&ftNow);
+    pOp->SetEndTime(ftNow);
     pOp->SetInProgress(false);
     pOp->SetFailed(true);
     pOp->SetErrorDescription(pszError);

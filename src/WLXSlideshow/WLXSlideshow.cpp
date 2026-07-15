@@ -35,22 +35,12 @@ namespace Slideshow
 // ============================================================================
 struct TemplateDef
 {
-    WCHAR   wszId[64];
-    WCHAR   wszName[128];
-    UINT32  uDefaultSlideDurationMs;
-    UINT32  uDefaultTransitionMs;
-    WCHAR   wszDefaultTransitionId[64];
-    BOOL    bSupportsPanZoom;
-
-    TemplateDef()
-        : uDefaultSlideDurationMs(5000)
-        , uDefaultTransitionMs(1000)
-        , bSupportsPanZoom(TRUE)
-    {
-        ZeroMemory(wszId, sizeof(wszId));
-        ZeroMemory(wszName, sizeof(wszName));
-        ZeroMemory(wszDefaultTransitionId, sizeof(wszDefaultTransitionId));
-    }
+    WCHAR   wszId[64] = {};
+    WCHAR   wszName[128] = {};
+    UINT32  uDefaultSlideDurationMs = 5000;
+    UINT32  uDefaultTransitionMs = 1000;
+    WCHAR   wszDefaultTransitionId[64] = {};
+    BOOL    bSupportsPanZoom = TRUE;
 };
 
 // Built-in template registry
@@ -72,6 +62,13 @@ class SlideSequence
 public:
     SlideSequence() {}
     ~SlideSequence() {}
+
+    struct SlideEntry
+    {
+        SlideshowSlideInfo  info;
+        LONGLONG            llStartTime;
+        LONGLONG            llEndTime;
+    };
 
     HRESULT Build(const SlideshowSlideInfo* pSlides, UINT32 uCount,
         const SlideshowConfig* pConfig)
@@ -113,13 +110,6 @@ public:
     }
 
 private:
-    struct SlideEntry
-    {
-        SlideshowSlideInfo  info;
-        LONGLONG            llStartTime;
-        LONGLONG            llEndTime;
-    };
-
     std::vector<SlideEntry> m_slides;
     LONGLONG                m_llTotalDuration;
 };
@@ -220,7 +210,7 @@ public:
         if (!pCount)
             return E_INVALIDARG;
 
-        UINT32 uCopy = min(*pCount, s_uBuiltinTemplateCount);
+        UINT32 uCopy = std::min(*pCount, s_uBuiltinTemplateCount);
 
         if (pTemplateIds)
         {
@@ -261,7 +251,7 @@ WLXSLD_API void __stdcall Slideshow_Destroy(HANDLE hSlideshow)
 
 WLXSLD_API HRESULT __stdcall Slideshow_Generate(HANDLE hSlideshow,
     const SlideshowSlideInfo* pSlides, UINT32 uSlideCount,
-    const SlideshowConfig* pConfig, LONGLONG* pTotalDuration)
+    const Slideshow::SlideshowConfig* pConfig, LONGLONG* pTotalDuration)
 {
     if (!hSlideshow) return E_INVALIDARG;
     return static_cast<Slideshow::SlideshowEngine*>(hSlideshow)->Generate(

@@ -1,6 +1,7 @@
 // SAXProfileBuilder.cpp - SAX-based XML profile parser implementation
 
 #include "pch.h"
+#include <xmllite.h>
 #include "SAXProfileBuilder.h"
 
 namespace HMRAVSource
@@ -152,7 +153,7 @@ HRESULT SAXProfileBuilder::ParseFromString(LPCWSTR pszXml, DWORD cchXml, EncodeP
     m_fInConstraints = false;
 
     CComPtr<IStream> spStream;
-    hr = CreateStreamOnHGlobal(nullptr, TRUE, &spStream);
+    HRESULT hr = CreateStreamOnHGlobal(nullptr, TRUE, &spStream);
     if (FAILED(hr))
         return hr;
 
@@ -196,7 +197,7 @@ HRESULT SAXProfileBuilder::ParseFromStream(IStream* pStream, EncodeProfile* pPro
         case XmlNodeType_Element:
             hr = ProcessStartElement(spReader);
             break;
-        case XmlNodeTypeEndElement:
+        case XmlNodeType_EndElement:
             hr = ProcessEndElement(spReader);
             break;
         case XmlNodeType_Text:
@@ -255,7 +256,7 @@ HRESULT SAXProfileBuilder::EnsureProfileDirectory()
 
 HRESULT SAXProfileBuilder::CreateXmlReader(IXmlReader** ppReader)
 {
-    return CreateXmlReaderInInstance(ppReader);
+    return ::CreateXmlReader(IID_PPV_ARGS(ppReader), nullptr);
 }
 
 HRESULT SAXProfileBuilder::CreateXmlWriter(LPCWSTR pszFilePath, IXmlWriter** ppWriter)
@@ -268,7 +269,7 @@ HRESULT SAXProfileBuilder::CreateXmlWriter(LPCWSTR pszFilePath, IXmlWriter** ppW
     if (FAILED(hr))
         return hr;
 
-    return CreateXmlWriterInInstance(ppWriter);
+    return ::CreateXmlWriter(IID_PPV_ARGS(ppWriter), nullptr);
 }
 
 HRESULT SAXProfileBuilder::ProcessStartElement(IXmlReader* pReader)

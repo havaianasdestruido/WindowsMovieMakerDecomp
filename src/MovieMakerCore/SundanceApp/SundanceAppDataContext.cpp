@@ -14,6 +14,7 @@
 #include "pch.h"
 #include "SundanceAppDataContext.h"
 #include "SundanceAppMain.h"
+#include "../StoryboardManager/MovieProject.h"
 
 // ============================================================================
 // Registry resource ID (for COM registration)

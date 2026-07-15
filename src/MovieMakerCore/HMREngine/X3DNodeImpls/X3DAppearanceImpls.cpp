@@ -1,3 +1,4 @@
+﻿#include "pch.h"
 // X3DAppearanceImpls.cpp - Appearance/texture/material/shader bridge implementation
 
 #include "X3DAppearanceImpls.h"
@@ -109,12 +110,13 @@ HRESULT X3DMaterialNodeImpl::Initialize(X3DMaterialNode* node)
     m_materialNode = node;
     if (node)
     {
-        m_diffuseColor = node->m_diffuseColor;
-        m_specularColor = node->m_specularColor;
-        m_emissiveColor = node->m_emissiveColor;
-        m_ambientColor = node->m_ambientColor;
-        m_shininess = node->m_shininess;
-        m_transparency = node->m_transparency;
+        MaterialNode* mat = static_cast<MaterialNode*>(node);
+        m_diffuseColor = mat->m_diffuseColor;
+        m_specularColor = mat->m_specularColor;
+        m_emissiveColor = mat->m_emissiveColor;
+        m_ambientColor = mat->m_ambientColor;
+        m_shininess = mat->m_shininess;
+        m_transparency = mat->m_transparency;
     }
     return X3DChildNodeImpl::Initialize(node);
 }

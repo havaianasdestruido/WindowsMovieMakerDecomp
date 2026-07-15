@@ -1,3 +1,5 @@
+﻿#include "pch.h"
+
 // ScenePreview.cpp - HMREngine::ScenePreview implementation
 
 #include "ScenePreview.h"

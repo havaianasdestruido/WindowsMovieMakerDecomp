@@ -45,6 +45,8 @@ namespace HMREngine
         HRESULT GetTexture(ID3D11Texture2D** ppTex) const;
         HRESULT GetSRV(ID3D11ShaderResourceView** ppSRV) const;
 
+        void Cancel();
+
         using CompleteCallback = std::function<void(const std::wstring&, HRESULT)>;
         void SetCompleteCallback(CompleteCallback cb) { m_completeCallback = cb; }
 
@@ -55,6 +57,7 @@ namespace HMREngine
         ID3D11Device* m_device = nullptr;
         std::atomic<bool> m_complete{ false };
         HRESULT m_result = S_OK;
+        std::thread m_workerThread;
         CompleteCallback m_completeCallback;
 
         void WorkerThread();
@@ -70,12 +73,12 @@ namespace HMREngine
         void StartEnumeration(X3DChildNode* rootNode);
         bool IsComplete() const { return m_complete; }
 
-        const std::vector<X3DNode*>& GetEnumeratedNodes() const { return m_nodes; }
+        const std::vector<X3DChildNode*>& GetEnumeratedNodes() const { return m_nodes; }
         UINT GetNodeCount() const { return static_cast<UINT>(m_nodes.size()); }
 
     protected:
         X3DChildNode* m_rootNode = nullptr;
-        std::vector<X3DNode*> m_nodes;
+        std::vector<X3DChildNode*> m_nodes;
         std::atomic<bool> m_complete{ false };
 
         void EnumerateRecursive(X3DChildNode* node);

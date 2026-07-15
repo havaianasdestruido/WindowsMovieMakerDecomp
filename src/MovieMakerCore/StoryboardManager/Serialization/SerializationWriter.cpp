@@ -1,3 +1,4 @@
+﻿#include "pch.h"
 /*
  * SerializationWriter.cpp
  *
@@ -125,7 +126,7 @@ HRESULT SerializationWriter::EndElement()
     if (!m_pWriter)
         return E_UNEXPECTED;
 
-    HRESULT hr = m_pWriter->WriteEndElement(nullptr);
+    HRESULT hr = m_pWriter->WriteEndElement();
     if (SUCCEEDED(hr))
     {
         if (m_dwElementDepth > 0)
@@ -181,7 +182,7 @@ HRESULT SerializationWriter::WriteAttribute(LPCWSTR pszName, DWORD dwValue)
 HRESULT SerializationWriter::WriteAttribute(LPCWSTR pszName, LONGLONG llValue)
 {
     WCHAR szBuf[64];
-    _i64tow_s(llValue, szBuf, 10);
+    _i64tow_s(llValue, szBuf, _countof(szBuf), 10);
     return WriteAttribute(pszName, szBuf);
 }
 
@@ -220,7 +221,7 @@ HRESULT SerializationWriter::BeginDocument()
     if (!m_pWriter)
         return E_UNEXPECTED;
 
-    HRESULT hr = m_pWriter->WriteStartDocument(nullptr);
+    HRESULT hr = m_pWriter->WriteStartDocument(XmlStandalone_Omit);
     m_hrLast = hr;
     return hr;
 }
@@ -230,7 +231,7 @@ HRESULT SerializationWriter::EndDocument()
     if (!m_pWriter)
         return E_UNEXPECTED;
 
-    HRESULT hr = m_pWriter->WriteEndDocument(nullptr);
+    HRESULT hr = m_pWriter->WriteEndDocument();
     m_hrLast = hr;
     return hr;
 }
@@ -400,7 +401,7 @@ HRESULT SerializationWriter::WriteTimelineElement(MovieProject* pProject)
             hr = BeginElement(L"extent");
             if (FAILED(hr)) break;
 
-            hr = WriteAttribute(L"id", pTimeline->GetExtentIdAt(e));
+            hr = WriteAttribute(L"id", static_cast<DWORD>(pTimeline->GetExtentIdAt(e)));
             if (FAILED(hr)) break;
 
             hr = EndElement();

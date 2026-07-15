@@ -1,3 +1,5 @@
+﻿#include "pch.h"
+
 // InterpolatorImpl.cpp - Interpolator implementations
 
 #include "InterpolatorImpl.h"

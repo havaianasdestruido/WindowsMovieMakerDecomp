@@ -52,7 +52,26 @@ namespace Slideshow
     class TransitionPlacer;
     class AudioSync;
     struct SlideInfo;
-    struct SlideshowConfig;
+
+    struct SlideshowConfig
+    {
+        UINT32      uSlideDurationMs;   // default slide duration in ms
+        UINT32      uTransitionDurationMs;
+        WCHAR       wszTemplateId[64];
+        WCHAR       wszAudioPath[MAX_PATH];
+        BOOL        bAutoSyncToAudio;
+        BOOL        bRandomizeTransitions;
+
+        SlideshowConfig()
+            : uSlideDurationMs(5000)
+            , uTransitionDurationMs(1000)
+            , bAutoSyncToAudio(FALSE)
+            , bRandomizeTransitions(FALSE)
+        {
+            ZeroMemory(wszTemplateId, sizeof(wszTemplateId));
+            ZeroMemory(wszAudioPath, sizeof(wszAudioPath));
+        }
+    };
 }
 
 // ============================================================================
@@ -85,29 +104,6 @@ struct SlideshowSlideInfo
 };
 
 // ============================================================================
-// Slideshow configuration
-// ============================================================================
-struct SlideshowConfig
-{
-    UINT32      uSlideDurationMs;   // default slide duration in ms
-    UINT32      uTransitionDurationMs;
-    WCHAR       wszTemplateId[64];
-    WCHAR       wszAudioPath[MAX_PATH];
-    BOOL        bAutoSyncToAudio;
-    BOOL        bRandomizeTransitions;
-
-    SlideshowConfig()
-        : uSlideDurationMs(5000)
-        , uTransitionDurationMs(1000)
-        , bAutoSyncToAudio(FALSE)
-        , bRandomizeTransitions(FALSE)
-    {
-        ZeroMemory(wszTemplateId, sizeof(wszTemplateId));
-        ZeroMemory(wszAudioPath, sizeof(wszAudioPath));
-    }
-};
-
-// ============================================================================
 // Exported functions (4 exports)
 // ============================================================================
 extern "C"
@@ -122,7 +118,7 @@ extern "C"
     // Returns the total duration in 100ns units.
     WLXSLD_API HRESULT __stdcall Slideshow_Generate(HANDLE hSlideshow,
         const SlideshowSlideInfo* pSlides, UINT32 uSlideCount,
-        const SlideshowConfig* pConfig, LONGLONG* pTotalDuration);
+        const Slideshow::SlideshowConfig* pConfig, LONGLONG* pTotalDuration);
 
     // Retrieves available slideshow template IDs.
     WLXSLD_API HRESULT __stdcall Slideshow_EnumerateTemplates(WCHAR* pTemplateIds,

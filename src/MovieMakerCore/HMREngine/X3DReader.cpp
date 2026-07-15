@@ -1,3 +1,5 @@
+﻿#include "pch.h"
+
 // X3DReader.cpp - HMREngine::X3DReader implementation
 
 #include "X3DReader.h"

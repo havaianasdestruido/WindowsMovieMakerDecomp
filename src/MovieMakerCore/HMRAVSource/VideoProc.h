@@ -76,7 +76,7 @@ public:
 
     // Lifecycle
     HRESULT Initialize(const VideoProcDesc& desc);
-    HRESULT Shutdown();
+    virtual HRESULT Shutdown();
     bool IsInitialized() const throw();
 
     // Processing
@@ -154,7 +154,7 @@ public:
 
 private:
     IDirect3DDevice9Ex*                      m_pDevice;
-    CComPtr<IDXVA2VideoProcessor>           m_spVideoProcessor;
+    IDXVA2VideoProcessor*                    m_pVideoProcessor;
     CComPtr<IDXVA2VideoProcessorEnumerator> m_spEnumerator;
     DXVA2_VideoProcessorCaps                m_vpcaps;
     D3DPRESENT_PARAMETERS                   m_d3dpp;

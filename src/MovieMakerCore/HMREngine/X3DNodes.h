@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 // X3DNodes.h - All X3D node types for HMREngine
 
 #include "HMREngine.h"
@@ -7,6 +7,7 @@
 #include <atlbase.h>
 #include <atlcom.h>
 #include <map>
+#include <memory>
 #include <string>
 #include <vector>
 #include <functional>
@@ -28,12 +29,12 @@ namespace HMREngine
 
         SAIPtr& operator=(const SAIPtr& o)
         {
-            if (this != &o) { if (m_p) m_p->Release(); m_p = o.m_p; if (m_p) m_p->AddRef(); }
+            if (this != std::addressof(o)) { if (m_p) m_p->Release(); m_p = o.m_p; if (m_p) m_p->AddRef(); }
             return *this;
         }
         SAIPtr& operator=(SAIPtr&& o) noexcept
         {
-            if (this != &o) { if (m_p) m_p->Release(); m_p = o.m_p; o.m_p = nullptr; }
+            if (this != std::addressof(o)) { if (m_p) m_p->Release(); m_p = o.m_p; o.m_p = nullptr; }
             return *this;
         }
 
@@ -69,7 +70,7 @@ namespace HMREngine
     };
 
     // Base X3D node interface
-    struct IX3DNode : public IUnknown
+    struct __declspec(uuid("E5D73B50-3F7E-4B1E-8D3A-1A2F4C6E8B90")) IX3DNode : public IUnknown
     {
         virtual const char* GetNodeName() const = 0;
         virtual const char* GetNodeTypeName() const = 0;
@@ -78,38 +79,28 @@ namespace HMREngine
     // -------------------------------------------------------------------
     // X3DNode - Base class for all scene graph nodes
     // -------------------------------------------------------------------
-    class ATL_NO_VTABLE X3DNode :
-        public CComObjectRootEx<CComSingleThreadModel>,
-        public CComCoClass<X3DNode>,
+    class X3DNode :
+
         public IX3DNode
     {
     public:
         std::string m_name;
-        std::map<std::string, CComPtr<X3DFieldNode>> m_fields;
+        std::map<std::string, std::unique_ptr<X3DFieldNode>> m_fields;
 
         virtual ~X3DNode() = default;
-
-        DECLARE_REGISTRY_RESOURCEID(IDR_X3DNODE)
-        DECLARE_NOT_AGGREGATABLE(X3DNode)
-
-        BEGIN_COM_MAP(X3DNode)
-            COM_INTERFACE_ENTRY(IX3DNode)
-            COM_INTERFACE_ENTRY(IUnknown)
-        END_COM_MAP()
 
         const char* GetNodeName() const override { return m_name.c_str(); }
         const char* GetNodeTypeName() const override { return "X3DNode"; }
 
         void SetField(const std::string& name, X3DFieldNode* field)
         {
-            CComPtr<X3DFieldNode> f(field);
-            m_fields[name] = f;
+            m_fields[name] = std::unique_ptr<X3DFieldNode>(field);
         }
 
         X3DFieldNode* GetField(const std::string& name) const
         {
             auto it = m_fields.find(name);
-            return it != m_fields.end() ? it->second.m_p : nullptr;
+            return it != m_fields.end() ? it->second.get() : nullptr;
         }
 
         template<typename T>
@@ -122,25 +113,16 @@ namespace HMREngine
     // -------------------------------------------------------------------
     // X3DChildNode - Nodes that can be children in the scene graph
     // -------------------------------------------------------------------
-    class ATL_NO_VTABLE X3DChildNode :
-        public CComObjectRootEx<CComSingleThreadModel>,
-        public IX3DNode
+    class X3DChildNode :
+        public X3DNode
     {
     public:
-        std::string m_name;
-        std::map<std::string, CComPtr<X3DFieldNode>> m_fields;
         std::vector<SAIPtr<X3DChildNode>> m_children;
         X3DChildNode* m_parent = nullptr;
         bool m_visible = true;
 
         virtual ~X3DChildNode() = default;
 
-        BEGIN_COM_MAP(X3DChildNode)
-            COM_INTERFACE_ENTRY(IX3DNode)
-            COM_INTERFACE_ENTRY(IUnknown)
-        END_COM_MAP()
-
-        const char* GetNodeName() const override { return m_name.c_str(); }
         const char* GetNodeTypeName() const override { return "X3DChildNode"; }
 
         void AddChild(X3DChildNode* child)
@@ -158,32 +140,15 @@ namespace HMREngine
 
         size_t GetNumChildren() const { return m_children.size(); }
         X3DChildNode* GetChild(size_t i) { return m_children[i].Get(); }
-
-        virtual void SetField(const std::string& name, X3DFieldNode* field)
-        {
-            CComPtr<X3DFieldNode> f(field);
-            m_fields[name] = f;
-        }
-
-        X3DFieldNode* GetField(const std::string& name) const
-        {
-            auto it = m_fields.find(name);
-            return it != m_fields.end() ? it->second.m_p : nullptr;
-        }
     };
 
     // -------------------------------------------------------------------
     // X3DGroupingNode - Grouping nodes that hold child lists
     // -------------------------------------------------------------------
-    class ATL_NO_VTABLE X3DGroupingNode :
-        public CComObjectRootEx<CComSingleThreadModel>,
+    class X3DGroupingNode :
         public X3DChildNode
     {
     public:
-        BEGIN_COM_MAP(X3DGroupingNode)
-            COM_INTERFACE_ENTRY(IX3DNode)
-            COM_INTERFACE_ENTRY(IUnknown)
-        END_COM_MAP()
 
         const char* GetNodeTypeName() const override { return "X3DGroupingNode"; }
     };
@@ -191,15 +156,10 @@ namespace HMREngine
     // -------------------------------------------------------------------
     // X3DShapeNode - Nodes that define visual appearance
     // -------------------------------------------------------------------
-    class ATL_NO_VTABLE X3DShapeNode :
-        public CComObjectRootEx<CComSingleThreadModel>,
+    class X3DShapeNode :
         public X3DChildNode
     {
     public:
-        BEGIN_COM_MAP(X3DShapeNode)
-            COM_INTERFACE_ENTRY(IX3DNode)
-            COM_INTERFACE_ENTRY(IUnknown)
-        END_COM_MAP()
 
         const char* GetNodeTypeName() const override { return "X3DShapeNode"; }
     };
@@ -207,15 +167,10 @@ namespace HMREngine
     // -------------------------------------------------------------------
     // X3DGeometryNode - Geometry definitions
     // -------------------------------------------------------------------
-    class ATL_NO_VTABLE X3DGeometryNode :
-        public CComObjectRootEx<CComSingleThreadModel>,
+    class X3DGeometryNode :
         public X3DChildNode
     {
     public:
-        BEGIN_COM_MAP(X3DGeometryNode)
-            COM_INTERFACE_ENTRY(IX3DNode)
-            COM_INTERFACE_ENTRY(IUnknown)
-        END_COM_MAP()
 
         const char* GetNodeTypeName() const override { return "X3DGeometryNode"; }
 
@@ -228,15 +183,10 @@ namespace HMREngine
     // -------------------------------------------------------------------
     // X3DTextureNode - Texture definitions
     // -------------------------------------------------------------------
-    class ATL_NO_VTABLE X3DTextureNode :
-        public CComObjectRootEx<CComSingleThreadModel>,
+    class X3DTextureNode :
         public X3DChildNode
     {
     public:
-        BEGIN_COM_MAP(X3DTextureNode)
-            COM_INTERFACE_ENTRY(IX3DNode)
-            COM_INTERFACE_ENTRY(IUnknown)
-        END_COM_MAP()
 
         const char* GetNodeTypeName() const override { return "X3DTextureNode"; }
 
@@ -247,15 +197,10 @@ namespace HMREngine
     // -------------------------------------------------------------------
     // X3DMaterialNode - Material definitions
     // -------------------------------------------------------------------
-    class ATL_NO_VTABLE X3DMaterialNode :
-        public CComObjectRootEx<CComSingleThreadModel>,
+    class X3DMaterialNode :
         public X3DChildNode
     {
     public:
-        BEGIN_COM_MAP(X3DMaterialNode)
-            COM_INTERFACE_ENTRY(IX3DNode)
-            COM_INTERFACE_ENTRY(IUnknown)
-        END_COM_MAP()
 
         const char* GetNodeTypeName() const override { return "X3DMaterialNode"; }
     };
@@ -265,23 +210,15 @@ namespace HMREngine
     // -------------------------------------------------------------------
 
     // -- Group --
-    class ATL_NO_VTABLE GroupNode :
-        public CComObjectRootEx<CComSingleThreadModel>,
+    class GroupNode :
         public X3DGroupingNode
     {
     public:
-        DECLARE_REGISTRY_RESOURCEID(IDR_GROUPNODE)
-        DECLARE_NOT_AGGREGATABLE(GroupNode)
-        BEGIN_COM_MAP(GroupNode)
-            COM_INTERFACE_ENTRY(IX3DNode)
-            COM_INTERFACE_ENTRY(IUnknown)
-        END_COM_MAP()
         const char* GetNodeTypeName() const override { return "Group"; }
     };
 
     // -- Transform --
-    class ATL_NO_VTABLE TransformNode :
-        public CComObjectRootEx<CComSingleThreadModel>,
+    class TransformNode :
         public X3DGroupingNode
     {
     public:
@@ -292,13 +229,6 @@ namespace HMREngine
         Vec3 m_center;
         Matrix4f m_matrix;
 
-        DECLARE_REGISTRY_RESOURCEID(IDR_TRANSFORMNODE)
-        DECLARE_NOT_AGGREGATABLE(TransformNode)
-        BEGIN_COM_MAP(TransformNode)
-            COM_INTERFACE_ENTRY(IX3DNode)
-            COM_INTERFACE_ENTRY(IUnknown)
-        END_COM_MAP()
-
         const char* GetNodeTypeName() const override { return "Transform"; }
 
         void UpdateMatrix()
@@ -308,27 +238,18 @@ namespace HMREngine
     };
 
     // -- Switch --
-    class ATL_NO_VTABLE SwitchNode :
-        public CComObjectRootEx<CComSingleThreadModel>,
+    class SwitchNode :
         public X3DGroupingNode
     {
     public:
         int m_choice = 0;
         bool m_enabled = true;
 
-        DECLARE_REGISTRY_RESOURCEID(IDR_SWITCHNODE)
-        DECLARE_NOT_AGGREGATABLE(SwitchNode)
-        BEGIN_COM_MAP(SwitchNode)
-            COM_INTERFACE_ENTRY(IX3DNode)
-            COM_INTERFACE_ENTRY(IUnknown)
-        END_COM_MAP()
-
         const char* GetNodeTypeName() const override { return "Switch"; }
     };
 
     // -- Shape --
-    class ATL_NO_VTABLE ShapeNode :
-        public CComObjectRootEx<CComSingleThreadModel>,
+    class ShapeNode :
         public X3DShapeNode
     {
     public:
@@ -336,39 +257,23 @@ namespace HMREngine
         SAIPtr<X3DChildNode> m_appearance;
         Matrix4f m_worldMatrix;
 
-        DECLARE_REGISTRY_RESOURCEID(IDR_SHAPENODE)
-        DECLARE_NOT_AGGREGATABLE(ShapeNode)
-        BEGIN_COM_MAP(ShapeNode)
-            COM_INTERFACE_ENTRY(IX3DNode)
-            COM_INTERFACE_ENTRY(IUnknown)
-        END_COM_MAP()
-
         const char* GetNodeTypeName() const override { return "Shape"; }
     };
 
     // -- Appearance --
-    class ATL_NO_VTABLE AppearanceNode :
-        public CComObjectRootEx<CComSingleThreadModel>,
+    class AppearanceNode :
         public X3DChildNode
     {
     public:
         SAIPtr<X3DTextureNode> m_texture;
         SAIPtr<X3DMaterialNode> m_material;
-        CComPtr<X3DFieldNode> m_shaders;
-
-        DECLARE_REGISTRY_RESOURCEID(IDR_APPEARANCENODE)
-        DECLARE_NOT_AGGREGATABLE(AppearanceNode)
-        BEGIN_COM_MAP(AppearanceNode)
-            COM_INTERFACE_ENTRY(IX3DNode)
-            COM_INTERFACE_ENTRY(IUnknown)
-        END_COM_MAP()
+        std::unique_ptr<X3DFieldNode> m_shaders;
 
         const char* GetNodeTypeName() const override { return "Appearance"; }
     };
 
     // -- ImageTexture --
-    class ATL_NO_VTABLE ImageTextureNode :
-        public CComObjectRootEx<CComSingleThreadModel>,
+    class ImageTextureNode :
         public X3DTextureNode
     {
     public:
@@ -381,20 +286,12 @@ namespace HMREngine
         bool m_repeatT = true;
         std::string m_filterType = "LINEAR";
 
-        DECLARE_REGISTRY_RESOURCEID(IDR_IMAGETEXTURENODE)
-        DECLARE_NOT_AGGREGATABLE(ImageTextureNode)
-        BEGIN_COM_MAP(ImageTextureNode)
-            COM_INTERFACE_ENTRY(IX3DNode)
-            COM_INTERFACE_ENTRY(IUnknown)
-        END_COM_MAP()
-
         const char* GetNodeTypeName() const override { return "ImageTexture"; }
         HRESULT GetTexture(ID3D11Device* pDev, ID3D11ShaderResourceView** ppSRV) override;
     };
 
     // -- MovieTexture --
-    class ATL_NO_VTABLE MovieTextureNode :
-        public CComObjectRootEx<CComSingleThreadModel>,
+    class MovieTextureNode :
         public X3DTextureNode
     {
     public:
@@ -404,20 +301,12 @@ namespace HMREngine
         bool m_play = false;
         double m_fraction = 0.0;
 
-        DECLARE_REGISTRY_RESOURCEID(IDR_MOVIETEXTURENODE)
-        DECLARE_NOT_AGGREGATABLE(MovieTextureNode)
-        BEGIN_COM_MAP(MovieTextureNode)
-            COM_INTERFACE_ENTRY(IX3DNode)
-            COM_INTERFACE_ENTRY(IUnknown)
-        END_COM_MAP()
-
         const char* GetNodeTypeName() const override { return "MovieTexture"; }
         void Update(double time) override;
     };
 
     // -- MotionTexture (custom) --
-    class ATL_NO_VTABLE MotionTextureNode :
-        public CComObjectRootEx<CComSingleThreadModel>,
+    class MotionTextureNode :
         public X3DTextureNode
     {
     public:
@@ -425,19 +314,11 @@ namespace HMREngine
         float m_offset = 0.0f;
         float m_scale = 1.0f;
 
-        DECLARE_REGISTRY_RESOURCEID(IDR_MOTIONTEXTURENODE)
-        DECLARE_NOT_AGGREGATABLE(MotionTextureNode)
-        BEGIN_COM_MAP(MotionTextureNode)
-            COM_INTERFACE_ENTRY(IX3DNode)
-            COM_INTERFACE_ENTRY(IUnknown)
-        END_COM_MAP()
-
         const char* GetNodeTypeName() const override { return "MotionTexture"; }
     };
 
     // -- TextureTransform --
-    class ATL_NO_VTABLE TextureTransformNode :
-        public CComObjectRootEx<CComSingleThreadModel>,
+    class TextureTransformNode :
         public X3DChildNode
     {
     public:
@@ -445,13 +326,6 @@ namespace HMREngine
         float m_rotation = 0.0f;
         Vec2 m_scale = Vec2(1, 1);
         Matrix4f m_matrix;
-
-        DECLARE_REGISTRY_RESOURCEID(IDR_TEXTURETRANSFORMNODE)
-        DECLARE_NOT_AGGREGATABLE(TextureTransformNode)
-        BEGIN_COM_MAP(TextureTransformNode)
-            COM_INTERFACE_ENTRY(IX3DNode)
-            COM_INTERFACE_ENTRY(IUnknown)
-        END_COM_MAP()
 
         const char* GetNodeTypeName() const override { return "TextureTransform"; }
 
@@ -466,8 +340,7 @@ namespace HMREngine
     };
 
     // -- TextureProperties --
-    class ATL_NO_VTABLE TexturePropertiesNode :
-        public CComObjectRootEx<CComSingleThreadModel>,
+    class TexturePropertiesNode :
         public X3DChildNode
     {
     public:
@@ -475,19 +348,11 @@ namespace HMREngine
         std::string m_magFilter = "LINEAR";
         std::string m_minFilter = "LINEAR";
 
-        DECLARE_REGISTRY_RESOURCEID(IDR_TEXTUREPROPERTIESNODE)
-        DECLARE_NOT_AGGREGATABLE(TexturePropertiesNode)
-        BEGIN_COM_MAP(TexturePropertiesNode)
-            COM_INTERFACE_ENTRY(IX3DNode)
-            COM_INTERFACE_ENTRY(IUnknown)
-        END_COM_MAP()
-
         const char* GetNodeTypeName() const override { return "TextureProperties"; }
     };
 
     // -- Material --
-    class ATL_NO_VTABLE MaterialNode :
-        public CComObjectRootEx<CComSingleThreadModel>,
+    class MaterialNode :
         public X3DMaterialNode
     {
     public:
@@ -498,19 +363,11 @@ namespace HMREngine
         float m_shininess = 0.2f;
         float m_transparency = 0.0f;
 
-        DECLARE_REGISTRY_RESOURCEID(IDR_MATERIALNODE)
-        DECLARE_NOT_AGGREGATABLE(MaterialNode)
-        BEGIN_COM_MAP(MaterialNode)
-            COM_INTERFACE_ENTRY(IX3DNode)
-            COM_INTERFACE_ENTRY(IUnknown)
-        END_COM_MAP()
-
         const char* GetNodeTypeName() const override { return "Material"; }
     };
 
     // -- LineProperties --
-    class ATL_NO_VTABLE LinePropertiesNode :
-        public CComObjectRootEx<CComSingleThreadModel>,
+    class LinePropertiesNode :
         public X3DChildNode
     {
     public:
@@ -518,38 +375,22 @@ namespace HMREngine
         int m_linetype = 1;
         float m_linewidthScaleFactor = 1.0f;
 
-        DECLARE_REGISTRY_RESOURCEID(IDR_LINEPROPERTIESNODE)
-        DECLARE_NOT_AGGREGATABLE(LinePropertiesNode)
-        BEGIN_COM_MAP(LinePropertiesNode)
-            COM_INTERFACE_ENTRY(IX3DNode)
-            COM_INTERFACE_ENTRY(IUnknown)
-        END_COM_MAP()
-
         const char* GetNodeTypeName() const override { return "LineProperties"; }
     };
 
     // -- FillProperties --
-    class ATL_NO_VTABLE FillPropertiesNode :
-        public CComObjectRootEx<CComSingleThreadModel>,
+    class FillPropertiesNode :
         public X3DChildNode
     {
     public:
         bool m_applied = true;
         bool m_filled = true;
 
-        DECLARE_REGISTRY_RESOURCEID(IDR_FILLPROPERTIESNODE)
-        DECLARE_NOT_AGGREGATABLE(FillPropertiesNode)
-        BEGIN_COM_MAP(FillPropertiesNode)
-            COM_INTERFACE_ENTRY(IX3DNode)
-            COM_INTERFACE_ENTRY(IUnknown)
-        END_COM_MAP()
-
         const char* GetNodeTypeName() const override { return "FillProperties"; }
     };
 
     // -- TimeSensor --
-    class ATL_NO_VTABLE TimeSensorNode :
-        public CComObjectRootEx<CComSingleThreadModel>,
+    class TimeSensorNode :
         public X3DChildNode
     {
     public:
@@ -563,18 +404,11 @@ namespace HMREngine
 
         double m_fraction = 0.0;
         double m_elapsedTime = 0.0;
-        double m.currentTime = 0.0;
+        double m_currentTime = 0.0;
         bool m_isActive = false;
 
         std::function<void(double)> m_onFractionChanged;
         std::function<void(bool)> m_onActiveChanged;
-
-        DECLARE_REGISTRY_RESOURCEID(IDR_TIMESENSORNODE)
-        DECLARE_NOT_AGGREGATABLE(TimeSensorNode)
-        BEGIN_COM_MAP(TimeSensorNode)
-            COM_INTERFACE_ENTRY(IX3DNode)
-            COM_INTERFACE_ENTRY(IUnknown)
-        END_COM_MAP()
 
         const char* GetNodeTypeName() const override { return "TimeSensor"; }
 
@@ -582,117 +416,68 @@ namespace HMREngine
     };
 
     // -- TimeTrigger --
-    class ATL_NO_VTABLE TimeTriggerNode :
-        public CComObjectRootEx<CComSingleThreadModel>,
+    class TimeTriggerNode :
         public X3DChildNode
     {
     public:
         bool m_enabled = true;
         double m_triggerTime = 0.0;
 
-        DECLARE_REGISTRY_RESOURCEID(IDR_TIMETRIGGERNODE)
-        DECLARE_NOT_AGGREGATABLE(TimeTriggerNode)
-        BEGIN_COM_MAP(TimeTriggerNode)
-            COM_INTERFACE_ENTRY(IX3DNode)
-            COM_INTERFACE_ENTRY(IUnknown)
-        END_COM_MAP()
-
         const char* GetNodeTypeName() const override { return "TimeTrigger"; }
     };
 
     // -- Coordinate --
-    class ATL_NO_VTABLE CoordinateNode :
-        public CComObjectRootEx<CComSingleThreadModel>,
+    class CoordinateNode :
         public X3DChildNode
     {
     public:
         std::vector<Vec3> m_point;
 
-        DECLARE_REGISTRY_RESOURCEID(IDR_COORDINATENODE)
-        DECLARE_NOT_AGGREGATABLE(CoordinateNode)
-        BEGIN_COM_MAP(CoordinateNode)
-            COM_INTERFACE_ENTRY(IX3DNode)
-            COM_INTERFACE_ENTRY(IUnknown)
-        END_COM_MAP()
-
         const char* GetNodeTypeName() const override { return "Coordinate"; }
     };
 
     // -- Normal --
-    class ATL_NO_VTABLE NormalNode :
-        public CComObjectRootEx<CComSingleThreadModel>,
+    class NormalNode :
         public X3DChildNode
     {
     public:
         std::vector<Vec3> m_vector;
 
-        DECLARE_REGISTRY_RESOURCEID(IDR_NORMALNODE)
-        DECLARE_NOT_AGGREGATABLE(NormalNode)
-        BEGIN_COM_MAP(NormalNode)
-            COM_INTERFACE_ENTRY(IX3DNode)
-            COM_INTERFACE_ENTRY(IUnknown)
-        END_COM_MAP()
-
         const char* GetNodeTypeName() const override { return "Normal"; }
     };
 
     // -- Color --
-    class ATL_NO_VTABLE ColorNode :
-        public CComObjectRootEx<CComSingleThreadModel>,
+    class ColorNode :
         public X3DChildNode
     {
     public:
         std::vector<Rgb> m_color;
 
-        DECLARE_REGISTRY_RESOURCEID(IDR_COLORNODE)
-        DECLARE_NOT_AGGREGATABLE(ColorNode)
-        BEGIN_COM_MAP(ColorNode)
-            COM_INTERFACE_ENTRY(IX3DNode)
-            COM_INTERFACE_ENTRY(IUnknown)
-        END_COM_MAP()
-
         const char* GetNodeTypeName() const override { return "Color"; }
     };
 
     // -- ColorRGBA --
-    class ATL_NO_VTABLE ColorRGBANode :
-        public CComObjectRootEx<CComSingleThreadModel>,
+    class ColorRGBANode :
         public X3DChildNode
     {
     public:
         std::vector<Rgba> m_color;
 
-        DECLARE_REGISTRY_RESOURCEID(IDR_COLORRGBANODE)
-        DECLARE_NOT_AGGREGATABLE(ColorRGBANode)
-        BEGIN_COM_MAP(ColorRGBANode)
-            COM_INTERFACE_ENTRY(IX3DNode)
-            COM_INTERFACE_ENTRY(IUnknown)
-        END_COM_MAP()
-
         const char* GetNodeTypeName() const override { return "ColorRGBA"; }
     };
 
     // -- TextureCoordinate --
-    class ATL_NO_VTABLE TextureCoordinateNode :
-        public CComObjectRootEx<CComSingleThreadModel>,
+    class TextureCoordinateNode :
         public X3DChildNode
     {
     public:
         std::vector<Vec2> m_point;
 
-        DECLARE_REGISTRY_RESOURCEID(IDR_TEXTURECOORDINATENODE)
-        DECLARE_NOT_AGGREGATABLE(TextureCoordinateNode)
-        BEGIN_COM_MAP(TextureCoordinateNode)
-            COM_INTERFACE_ENTRY(IX3DNode)
-            COM_INTERFACE_ENTRY(IUnknown)
-        END_COM_MAP()
-
         const char* GetNodeTypeName() const override { return "TextureCoordinate"; }
     };
 
     // -- IndexedFaceSet --
-    class ATL_NO_VTABLE IndexedFaceSetNode :
-        public CComObjectRootEx<CComSingleThreadModel>,
+    class IndexedFaceSetNode :
         public X3DGeometryNode
     {
     public:
@@ -716,13 +501,6 @@ namespace HMREngine
         UINT m_vertexCount = 0;
         UINT m_indexCount = 0;
 
-        DECLARE_REGISTRY_RESOURCEID(IDR_INDEXEDFACESETNODE)
-        DECLARE_NOT_AGGREGATABLE(IndexedFaceSetNode)
-        BEGIN_COM_MAP(IndexedFaceSetNode)
-            COM_INTERFACE_ENTRY(IX3DNode)
-            COM_INTERFACE_ENTRY(IUnknown)
-        END_COM_MAP()
-
         const char* GetNodeTypeName() const override { return "IndexedFaceSet"; }
 
         HRESULT BuildVertexBuffer(ID3D11Device* pDev, ID3D11Buffer** ppVB) override;
@@ -732,8 +510,7 @@ namespace HMREngine
     };
 
     // -- FontStyle --
-    class ATL_NO_VTABLE FontStyleNode :
-        public CComObjectRootEx<CComSingleThreadModel>,
+    class FontStyleNode :
         public X3DChildNode
     {
     public:
@@ -744,19 +521,11 @@ namespace HMREngine
         bool m_italic = false;
         bool m_language = false;
 
-        DECLARE_REGISTRY_RESOURCEID(IDR_FONTSTYLENODE)
-        DECLARE_NOT_AGGREGATABLE(FontStyleNode)
-        BEGIN_COM_MAP(FontStyleNode)
-            COM_INTERFACE_ENTRY(IX3DNode)
-            COM_INTERFACE_ENTRY(IUnknown)
-        END_COM_MAP()
-
         const char* GetNodeTypeName() const override { return "FontStyle"; }
     };
 
     // -- Text --
-    class ATL_NO_VTABLE TextNode :
-        public CComObjectRootEx<CComSingleThreadModel>,
+    class TextNode :
         public X3DGeometryNode
     {
     public:
@@ -765,19 +534,11 @@ namespace HMREngine
         MFVec2f m_maxExtent;
         SAIPtr<FontStyleNode> m_fontStyle;
 
-        DECLARE_REGISTRY_RESOURCEID(IDR_TEXTNODE)
-        DECLARE_NOT_AGGREGATABLE(TextNode)
-        BEGIN_COM_MAP(TextNode)
-            COM_INTERFACE_ENTRY(IX3DNode)
-            COM_INTERFACE_ENTRY(IUnknown)
-        END_COM_MAP()
-
         const char* GetNodeTypeName() const override { return "Text"; }
     };
 
     // -- Grid (custom node) --
-    class ATL_NO_VTABLE GridNode :
-        public CComObjectRootEx<CComSingleThreadModel>,
+    class GridNode :
         public X3DGeometryNode
     {
     public:
@@ -788,19 +549,11 @@ namespace HMREngine
         float m_lineWidth = 1.0f;
         bool m_showOrigin = true;
 
-        DECLARE_REGISTRY_RESOURCEID(IDR_GRIDNODE)
-        DECLARE_NOT_AGGREGATABLE(GridNode)
-        BEGIN_COM_MAP(GridNode)
-            COM_INTERFACE_ENTRY(IX3DNode)
-            COM_INTERFACE_ENTRY(IUnknown)
-        END_COM_MAP()
-
         const char* GetNodeTypeName() const override { return "Grid"; }
     };
 
     // -- Viewport --
-    class ATL_NO_VTABLE ViewportNode :
-        public CComObjectRootEx<CComSingleThreadModel>,
+    class ViewportNode :
         public X3DChildNode
     {
     public:
@@ -814,50 +567,27 @@ namespace HMREngine
         float m_nearClip = 0.1f;
         float m_farClip = 1000.0f;
 
-        DECLARE_REGISTRY_RESOURCEID(IDR_VIEWPORTNODE)
-        DECLARE_NOT_AGGREGATABLE(ViewportNode)
-        BEGIN_COM_MAP(ViewportNode)
-            COM_INTERFACE_ENTRY(IX3DNode)
-            COM_INTERFACE_ENTRY(IUnknown)
-        END_COM_MAP()
-
         const char* GetNodeTypeName() const override { return "Viewport"; }
     };
 
     // -- Layer --
-    class ATL_NO_VTABLE LayerNode :
-        public CComObjectRootEx<CComSingleThreadModel>,
+    class LayerNode :
         public X3DGroupingNode
     {
     public:
         bool m_pickable = true;
         bool m_visible = true;
 
-        DECLARE_REGISTRY_RESOURCEID(IDR_LAYERNODE)
-        DECLARE_NOT_AGGREGATABLE(LayerNode)
-        BEGIN_COM_MAP(LayerNode)
-            COM_INTERFACE_ENTRY(IX3DNode)
-            COM_INTERFACE_ENTRY(IUnknown)
-        END_COM_MAP()
-
         const char* GetNodeTypeName() const override { return "Layer"; }
     };
 
     // -- LayerSet --
-    class ATL_NO_VTABLE LayerSetNode :
-        public CComObjectRootEx<CComSingleThreadModel>,
+    class LayerSetNode :
         public X3DChildNode
     {
     public:
         SAIPtr<LayerNode> m_activeLayer;
         int m_ordering = 0; // 0=TRAV_ALL, 1=TRAV_LOCAL
-
-        DECLARE_REGISTRY_RESOURCEID(IDR_LAYERSETNODE)
-        DECLARE_NOT_AGGREGATABLE(LayerSetNode)
-        BEGIN_COM_MAP(LayerSetNode)
-            COM_INTERFACE_ENTRY(IX3DNode)
-            COM_INTERFACE_ENTRY(IUnknown)
-        END_COM_MAP()
 
         const char* GetNodeTypeName() const override { return "LayerSet"; }
     };
@@ -866,8 +596,7 @@ namespace HMREngine
     // Interpolator Nodes
     // -------------------------------------------------------------------
 
-    class ATL_NO_VTABLE PositionInterpolatorNode :
-        public CComObjectRootEx<CComSingleThreadModel>,
+    class PositionInterpolatorNode :
         public X3DChildNode
     {
     public:
@@ -875,19 +604,11 @@ namespace HMREngine
         MFVec3f m_value;
         bool m_enabled = true;
 
-        DECLARE_REGISTRY_RESOURCEID(IDR_POSITIONINTERPOLATORNODE)
-        DECLARE_NOT_AGGREGATABLE(PositionInterpolatorNode)
-        BEGIN_COM_MAP(PositionInterpolatorNode)
-            COM_INTERFACE_ENTRY(IX3DNode)
-            COM_INTERFACE_ENTRY(IUnknown)
-        END_COM_MAP()
-
         const char* GetNodeTypeName() const override { return "PositionInterpolator"; }
         Vec3 Interpolate(float fraction) const;
     };
 
-    class ATL_NO_VTABLE OrientationInterpolatorNode :
-        public CComObjectRootEx<CComSingleThreadModel>,
+    class OrientationInterpolatorNode :
         public X3DChildNode
     {
     public:
@@ -895,19 +616,11 @@ namespace HMREngine
         MFRotation m_value;
         bool m_enabled = true;
 
-        DECLARE_REGISTRY_RESOURCEID(IDR_ORIENTATIONINTERPOLATORNODE)
-        DECLARE_NOT_AGGREGATABLE(OrientationInterpolatorNode)
-        BEGIN_COM_MAP(OrientationInterpolatorNode)
-            COM_INTERFACE_ENTRY(IX3DNode)
-            COM_INTERFACE_ENTRY(IUnknown)
-        END_COM_MAP()
-
         const char* GetNodeTypeName() const override { return "OrientationInterpolator"; }
         Rotation4f Interpolate(float fraction) const;
     };
 
-    class ATL_NO_VTABLE ScalarInterpolatorNode :
-        public CComObjectRootEx<CComSingleThreadModel>,
+    class ScalarInterpolatorNode :
         public X3DChildNode
     {
     public:
@@ -915,19 +628,11 @@ namespace HMREngine
         MFFloat m_value;
         bool m_enabled = true;
 
-        DECLARE_REGISTRY_RESOURCEID(IDR_SCALARINTERPOLATORNODE)
-        DECLARE_NOT_AGGREGATABLE(ScalarInterpolatorNode)
-        BEGIN_COM_MAP(ScalarInterpolatorNode)
-            COM_INTERFACE_ENTRY(IX3DNode)
-            COM_INTERFACE_ENTRY(IUnknown)
-        END_COM_MAP()
-
         const char* GetNodeTypeName() const override { return "ScalarInterpolator"; }
         float Interpolate(float fraction) const;
     };
 
-    class ATL_NO_VTABLE ColorInterpolatorNode :
-        public CComObjectRootEx<CComSingleThreadModel>,
+    class ColorInterpolatorNode :
         public X3DChildNode
     {
     public:
@@ -935,32 +640,17 @@ namespace HMREngine
         MFColor m_value;
         bool m_enabled = true;
 
-        DECLARE_REGISTRY_RESOURCEID(IDR_COLORINTERPOLATORNODE)
-        DECLARE_NOT_AGGREGATABLE(ColorInterpolatorNode)
-        BEGIN_COM_MAP(ColorInterpolatorNode)
-            COM_INTERFACE_ENTRY(IX3DNode)
-            COM_INTERFACE_ENTRY(IUnknown)
-        END_COM_MAP()
-
         const char* GetNodeTypeName() const override { return "ColorInterpolator"; }
         Rgb Interpolate(float fraction) const;
     };
 
-    class ATL_NO_VTABLE CoordinateInterpolatorNode :
-        public CComObjectRootEx<CComSingleThreadModel>,
+    class CoordinateInterpolatorNode :
         public X3DChildNode
     {
     public:
         MFFloat m_key;
         MFVec3f m_value;
         bool m_enabled = true;
-
-        DECLARE_REGISTRY_RESOURCEID(IDR_COORDINATEINTERPOLATORNODE)
-        DECLARE_NOT_AGGREGATABLE(CoordinateInterpolatorNode)
-        BEGIN_COM_MAP(CoordinateInterpolatorNode)
-            COM_INTERFACE_ENTRY(IX3DNode)
-            COM_INTERFACE_ENTRY(IUnknown)
-        END_COM_MAP()
 
         const char* GetNodeTypeName() const override { return "CoordinateInterpolator"; }
     };
@@ -969,8 +659,7 @@ namespace HMREngine
     // Sequencer Nodes
     // -------------------------------------------------------------------
 
-    class ATL_NO_VTABLE IntegerSequencerNode :
-        public CComObjectRootEx<CComSingleThreadModel>,
+    class IntegerSequencerNode :
         public X3DChildNode
     {
     public:
@@ -978,32 +667,17 @@ namespace HMREngine
         MFInt32 m_value;
         bool m_enabled = true;
 
-        DECLARE_REGISTRY_RESOURCEID(IDR_INTEGERSEQUENCERNODE)
-        DECLARE_NOT_AGGREGATABLE(IntegerSequencerNode)
-        BEGIN_COM_MAP(IntegerSequencerNode)
-            COM_INTERFACE_ENTRY(IX3DNode)
-            COM_INTERFACE_ENTRY(IUnknown)
-        END_COM_MAP()
-
         const char* GetNodeTypeName() const override { return "IntegerSequencer"; }
         int Evaluate(float fraction) const;
     };
 
-    class ATL_NO_VTABLE BooleanSequencerNode :
-        public CComObjectRootEx<CComSingleThreadModel>,
+    class BooleanSequencerNode :
         public X3DChildNode
     {
     public:
         MFFloat m_key;
         MFBool m_value;
         bool m_enabled = true;
-
-        DECLARE_REGISTRY_RESOURCEID(IDR_BOOLEANSEQUENCERNODE)
-        DECLARE_NOT_AGGREGATABLE(BooleanSequencerNode)
-        BEGIN_COM_MAP(BooleanSequencerNode)
-            COM_INTERFACE_ENTRY(IX3DNode)
-            COM_INTERFACE_ENTRY(IUnknown)
-        END_COM_MAP()
 
         const char* GetNodeTypeName() const override { return "BooleanSequencer"; }
         bool Evaluate(float fraction) const;
@@ -1014,8 +688,7 @@ namespace HMREngine
     // -------------------------------------------------------------------
 
     template<typename T>
-    class ATL_NO_VTABLE MetadataTNode :
-        public CComObjectRootEx<CComSingleThreadModel>,
+    class MetadataTNode :
         public X3DChildNode
     {
     public:
@@ -1026,8 +699,7 @@ namespace HMREngine
         const char* GetNodeTypeName() const override { return "MetadataT"; }
     };
 
-    class ATL_NO_VTABLE MetadataStringNode :
-        public CComObjectRootEx<CComSingleThreadModel>,
+    class MetadataStringNode :
         public X3DChildNode
     {
     public:
@@ -1036,18 +708,10 @@ namespace HMREngine
         std::string m_value;
         MFString m_values;
 
-        DECLARE_REGISTRY_RESOURCEID(IDR_METADATASTRINGNODE)
-        DECLARE_NOT_AGGREGATABLE(MetadataStringNode)
-        BEGIN_COM_MAP(MetadataStringNode)
-            COM_INTERFACE_ENTRY(IX3DNode)
-            COM_INTERFACE_ENTRY(IUnknown)
-        END_COM_MAP()
-
         const char* GetNodeTypeName() const override { return "MetadataString"; }
     };
 
-    class ATL_NO_VTABLE MetadataDoubleNode :
-        public CComObjectRootEx<CComSingleThreadModel>,
+    class MetadataDoubleNode :
         public X3DChildNode
     {
     public:
@@ -1056,18 +720,10 @@ namespace HMREngine
         double m_value = 0.0;
         MFDouble m_values;
 
-        DECLARE_REGISTRY_RESOURCEID(IDR_METADATADOUBLENODE)
-        DECLARE_NOT_AGGREGATABLE(MetadataDoubleNode)
-        BEGIN_COM_MAP(MetadataDoubleNode)
-            COM_INTERFACE_ENTRY(IX3DNode)
-            COM_INTERFACE_ENTRY(IUnknown)
-        END_COM_MAP()
-
         const char* GetNodeTypeName() const override { return "MetadataDouble"; }
     };
 
-    class ATL_NO_VTABLE MetadataFloatNode :
-        public CComObjectRootEx<CComSingleThreadModel>,
+    class MetadataFloatNode :
         public X3DChildNode
     {
     public:
@@ -1076,18 +732,10 @@ namespace HMREngine
         float m_value = 0.0f;
         MFFloat m_values;
 
-        DECLARE_REGISTRY_RESOURCEID(IDR_METADATAFLOATNODE)
-        DECLARE_NOT_AGGREGATABLE(MetadataFloatNode)
-        BEGIN_COM_MAP(MetadataFloatNode)
-            COM_INTERFACE_ENTRY(IX3DNode)
-            COM_INTERFACE_ENTRY(IUnknown)
-        END_COM_MAP()
-
         const char* GetNodeTypeName() const override { return "MetadataFloat"; }
     };
 
-    class ATL_NO_VTABLE MetadataIntegerNode :
-        public CComObjectRootEx<CComSingleThreadModel>,
+    class MetadataIntegerNode :
         public X3DChildNode
     {
     public:
@@ -1096,18 +744,10 @@ namespace HMREngine
         int m_value = 0;
         MFInt32 m_values;
 
-        DECLARE_REGISTRY_RESOURCEID(IDR_METADATAINTEGERNODE)
-        DECLARE_NOT_AGGREGATABLE(MetadataIntegerNode)
-        BEGIN_COM_MAP(MetadataIntegerNode)
-            COM_INTERFACE_ENTRY(IX3DNode)
-            COM_INTERFACE_ENTRY(IUnknown)
-        END_COM_MAP()
-
         const char* GetNodeTypeName() const override { return "MetadataInteger"; }
     };
 
-    class ATL_NO_VTABLE MetadataBoolNode :
-        public CComObjectRootEx<CComSingleThreadModel>,
+    class MetadataBoolNode :
         public X3DChildNode
     {
     public:
@@ -1116,31 +756,16 @@ namespace HMREngine
         bool m_value = false;
         MFBool m_values;
 
-        DECLARE_REGISTRY_RESOURCEID(IDR_METADATABOOLNODE)
-        DECLARE_NOT_AGGREGATABLE(MetadataBoolNode)
-        BEGIN_COM_MAP(MetadataBoolNode)
-            COM_INTERFACE_ENTRY(IX3DNode)
-            COM_INTERFACE_ENTRY(IUnknown)
-        END_COM_MAP()
-
         const char* GetNodeTypeName() const override { return "MetadataBool"; }
     };
 
-    class ATL_NO_VTABLE MetadataSetNode :
-        public CComObjectRootEx<CComSingleThreadModel>,
+    class MetadataSetNode :
         public X3DChildNode
     {
     public:
         std::string m_name;
         std::string m_reference;
         std::vector<SAIPtr<X3DChildNode>> m_metadata;
-
-        DECLARE_REGISTRY_RESOURCEID(IDR_METADATASETNODE)
-        DECLARE_NOT_AGGREGATABLE(MetadataSetNode)
-        BEGIN_COM_MAP(MetadataSetNode)
-            COM_INTERFACE_ENTRY(IX3DNode)
-            COM_INTERFACE_ENTRY(IUnknown)
-        END_COM_MAP()
 
         const char* GetNodeTypeName() const override { return "MetadataSet"; }
     };

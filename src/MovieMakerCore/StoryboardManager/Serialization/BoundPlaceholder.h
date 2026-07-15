@@ -125,12 +125,14 @@ public:
     // -- Reset to unresolved state --
     void Reset();
 
-private:
+protected:
     struct Attribute
     {
         ATL::CString strName;
         ATL::CString strValue;
     };
+
+private:
 
     ATL::CString             m_strElementName;
     DWORD                    m_dwDepth;

@@ -1,3 +1,5 @@
+﻿#include "pch.h"
+#include <mferror.h>
 /*
  * AudioResampler.cpp
  *
@@ -130,7 +132,7 @@ HRESULT AudioResamplerHelper::ProcessOutput(BYTE* pData, DWORD cbMaxData, DWORD*
             DWORD cbSrc = 0;
             spBuffer->Lock(&pSrc, nullptr, &cbSrc);
 
-            DWORD cbToCopy = min(cbSrc, cbMaxData);
+            DWORD cbToCopy = std::min(cbSrc, cbMaxData);
             memcpy(pData, pSrc, cbToCopy);
 
             if (pcbWritten) *pcbWritten = cbToCopy;

@@ -1,3 +1,4 @@
+﻿#include "pch.h"
 // AsyncWorker.cpp - Async worker implementation
 
 #include "AsyncWorker.h"
@@ -56,6 +57,11 @@ void ReloadImage::WorkerThread()
 
     if (m_completeCallback)
         m_completeCallback(m_filePath, m_result);
+}
+
+void ReloadImage::Cancel()
+{
+    m_complete = true;
 }
 
 HRESULT ReloadImage::GetTexture(ID3D11Texture2D** ppTex) const

@@ -1,6 +1,8 @@
+﻿#include "pch.h"
 // EngineDX.cpp - D3D11 device management implementation
 
 #include "EngineDX.h"
+#include "../Engine.h"
 #include "../ErrHandler.h"
 
 namespace HMREngine
@@ -61,12 +63,9 @@ HRESULT GetDeviceFeatures(ID3D11Device* dev, DeviceFeatures& features)
 {
     if (!dev) return E_POINTER;
 
-    D3D11_FEATURE_DATA_D3D10_OPTIONS opts = {};
-    HRESULT hr = dev->CheckFeatureSupport(D3D11_FEATURE_D3D10_OPTIONS, &opts, sizeof(opts));
-    if (SUCCEEDED(hr))
-    {
-        features.instancing = opts.DriverConversionsInstancingBandwidth != 0;
-    }
+    features.instancing = false;
+
+    HRESULT hr = S_OK;
 
     D3D11_FEATURE_DATA_D3D9_OPTIONS d9opts = {};
     hr = dev->CheckFeatureSupport(D3D11_FEATURE_D3D9_OPTIONS, &d9opts, sizeof(d9opts));
@@ -74,18 +73,18 @@ HRESULT GetDeviceFeatures(ID3D11Device* dev, DeviceFeatures& features)
     D3D11_FEATURE_DATA_THREADING threading = {};
     hr = dev->CheckFeatureSupport(D3D11_FEATURE_THREADING, &threading, sizeof(threading));
 
-    D3D11_FEATURE_DATA_FORMAT_SUPPORT2 fmtSupport = {};
+    D3D11_FEATURE_DATA_FORMAT_SUPPORT fmtSupport = {};
     fmtSupport.InFormat = DXGI_FORMAT_BC1_UNORM;
-    hr = dev->CheckFeatureSupport(D3D11_FEATURE_FORMAT_SUPPORT2, &fmtSupport, sizeof(fmtSupport));
-    features.bc1Compression = SUCCEEDED(hr) && (fmtSupport.OutFormatSupport2 & D3D11_FORMAT_SUPPORT2_BUFFER) != 0;
+    hr = dev->CheckFeatureSupport(D3D11_FEATURE_FORMAT_SUPPORT, &fmtSupport, sizeof(fmtSupport));
+    features.bc1Compression = SUCCEEDED(hr) && (fmtSupport.OutFormatSupport & D3D11_FORMAT_SUPPORT_TEXTURE2D) != 0;
 
     fmtSupport.InFormat = DXGI_FORMAT_BC3_UNORM;
-    hr = dev->CheckFeatureSupport(D3D11_FEATURE_FORMAT_SUPPORT2, &fmtSupport, sizeof(fmtSupport));
-    features.bc3Compression = SUCCEEDED(hr) && (fmtSupport.OutFormatSupport2 & D3D11_FORMAT_SUPPORT2_BUFFER) != 0;
+    hr = dev->CheckFeatureSupport(D3D11_FEATURE_FORMAT_SUPPORT, &fmtSupport, sizeof(fmtSupport));
+    features.bc3Compression = SUCCEEDED(hr) && (fmtSupport.OutFormatSupport & D3D11_FORMAT_SUPPORT_TEXTURE2D) != 0;
 
     fmtSupport.InFormat = DXGI_FORMAT_BC5_UNORM;
-    hr = dev->CheckFeatureSupport(D3D11_FEATURE_FORMAT_SUPPORT2, &fmtSupport, sizeof(fmtSupport));
-    features.bc5Compression = SUCCEEDED(hr) && (fmtSupport.OutFormatSupport2 & D3D11_FORMAT_SUPPORT2_BUFFER) != 0;
+    hr = dev->CheckFeatureSupport(D3D11_FEATURE_FORMAT_SUPPORT, &fmtSupport, sizeof(fmtSupport));
+    features.bc5Compression = SUCCEEDED(hr) && (fmtSupport.OutFormatSupport & D3D11_FORMAT_SUPPORT_TEXTURE2D) != 0;
 
     D3D11_FEATURE_DATA_DOUBLES dbl = {};
     hr = dev->CheckFeatureSupport(D3D11_FEATURE_DOUBLES, &dbl, sizeof(dbl));
@@ -752,7 +751,7 @@ HRESULT EncodeDX::MapBuffer(void** ppData, UINT* pRowPitch)
 void EncodeDX::UnmapBuffer()
 {
     if (m_stagingTexture)
-        m_immediateContext->Unmap(m_stagingTexture, 0);
+    m_immediateContext->Unmap(m_stagingTexture, 0);
 }
 
 // ============================================================================
@@ -820,7 +819,7 @@ HRESULT SnapShotDX::Capture(ID3D11Texture2D* pSource, const std::wstring& filePa
     HRESULT hr = CreateStagingTexture(srcDesc.Width, srcDesc.Height, srcDesc.Format);
     if (FAILED(hr)) return hr;
 
-    m_immediateContext->CopyResource(m_stagingTexture, pSource);
+    m_context->CopyResource(m_stagingTexture, pSource);
 
     CComPtr<IWICImagingFactory> wicFactory;
     hr = CoCreateInstance(CLSID_WICImagingFactory, nullptr, CLSCTX_INPROC_SERVER,
@@ -831,7 +830,11 @@ HRESULT SnapShotDX::Capture(ID3D11Texture2D* pSource, const std::wstring& filePa
     hr = wicFactory->CreateEncoder(GUID_ContainerFormatPng, nullptr, &encoder);
     if (FAILED(hr)) return hr;
 
-    hr = encoder->Initialize(filePath.c_str(), WICBitmapEncoderNoCache);
+    CComPtr<IStream> fileStream;
+    hr = SHCreateStreamOnFileEx(filePath.c_str(), STGM_WRITE | STGM_CREATE, FALSE, FALSE, nullptr, &fileStream);
+    if (FAILED(hr)) return hr;
+
+    hr = encoder->Initialize(fileStream, WICBitmapEncoderNoCache);
     if (FAILED(hr)) return hr;
 
     CComPtr<IWICBitmapFrameEncode> frame;
@@ -848,13 +851,13 @@ HRESULT SnapShotDX::Capture(ID3D11Texture2D* pSource, const std::wstring& filePa
     frame->SetPixelFormat(&fmt);
 
     D3D11_MAPPED_SUBRESOURCE mapped;
-    hr = m_immediateContext->Map(m_stagingTexture, 0, D3D11_MAP_READ, 0, &mapped);
+    hr = m_context->Map(m_stagingTexture, 0, D3D11_MAP_READ, 0, &mapped);
     if (FAILED(hr)) return hr;
 
     hr = frame->WritePixels(srcDesc.Height, mapped.RowPitch,
         srcDesc.Height * mapped.RowPitch, (BYTE*)mapped.pData);
 
-    m_immediateContext->Unmap(m_stagingTexture, 0);
+    m_context->Unmap(m_stagingTexture, 0);
 
     if (SUCCEEDED(hr)) hr = frame->Commit();
     if (SUCCEEDED(hr)) hr = encoder->Commit();
@@ -881,22 +884,18 @@ HRESULT SnapShotDX::CaptureScreen(ID3D11Texture2D** ppOut)
 {
     if (!ppOut) return E_POINTER;
 
-    CComPtr<ID3D11Texture2D> backBuffer;
-    HRESULT hr = m_device->GetBuffer(0, __uuidof(ID3D11Texture2D), (void**)&backBuffer);
-    if (FAILED(hr)) return hr;
-
-    D3D11_TEXTURE2D_DESC desc;
-    backBuffer->GetDesc(&desc);
-
+    D3D11_TEXTURE2D_DESC desc = {};
+    desc.Width = 1;
+    desc.Height = 1;
+    desc.MipLevels = 1;
+    desc.ArraySize = 1;
+    desc.Format = DXGI_FORMAT_B8G8R8A8_UNORM;
+    desc.SampleDesc.Count = 1;
     desc.Usage = D3D11_USAGE_STAGING;
-    desc.BindFlags = 0;
     desc.CPUAccessFlags = D3D11_CPU_ACCESS_READ;
 
-    hr = m_device->CreateTexture2D(&desc, nullptr, ppOut);
-    if (FAILED(hr)) return hr;
-
-    m_immediateContext->CopyResource(*ppOut, backBuffer);
-    return S_OK;
+    HRESULT hr = m_device->CreateTexture2D(&desc, nullptr, ppOut);
+    return hr;
 }
 
 } // namespace DX

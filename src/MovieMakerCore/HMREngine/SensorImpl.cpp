@@ -1,3 +1,5 @@
+﻿#include "pch.h"
+
 // SensorImpl.cpp - TimeSensor, TimeTrigger, Switch implementations
 
 #include "SensorImpl.h"

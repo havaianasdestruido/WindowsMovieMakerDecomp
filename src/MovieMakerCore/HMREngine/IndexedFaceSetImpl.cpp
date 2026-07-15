@@ -1,3 +1,5 @@
+﻿#include "pch.h"
+
 // IndexedFaceSetImpl.cpp - IndexedFaceSet implementations
 
 #include "IndexedFaceSetImpl.h"

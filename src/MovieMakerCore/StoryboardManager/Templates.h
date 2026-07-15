@@ -94,6 +94,8 @@ class STORYBOARD_API ThemeEffect
 public:
     ThemeEffect();
     ~ThemeEffect();
+    ThemeEffect(const ThemeEffect& other);
+    ThemeEffect& operator=(const ThemeEffect& other);
 
     // Effect type
     ThemeEffectType GetType() const throw();

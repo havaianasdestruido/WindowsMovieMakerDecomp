@@ -41,7 +41,7 @@ set(COMMON_SYSTEM_LIBS
     gdiplus
     d3d11
     d3d9
-    d3dcompiler_46
+    d3dcompiler
     dxva2
     mfplat
     mf

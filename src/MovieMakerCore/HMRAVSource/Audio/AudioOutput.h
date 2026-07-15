@@ -162,7 +162,7 @@ private:
     float                           m_flVolume;
     bool                            m_fMute;
     LONGLONG                        m_llPositionHns;
-    DWORD                           m_dwBufferFrameCount;
+    UINT32                          m_dwBufferFrameCount;
     bool                            m_fInitialized;
 };
 

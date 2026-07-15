@@ -1,3 +1,5 @@
+﻿#include "pch.h"
+
 // CoordinateImpl.cpp - Coordinate/Normal/Color/ColorRGBA/TextureCoordinate implementations
 
 #include "CoordinateImpl.h"

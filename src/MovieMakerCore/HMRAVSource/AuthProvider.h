@@ -111,7 +111,7 @@ private:
     ATL::CString        m_strUrl;
     LONGLONG            m_llExpiryTimeHns;
 
-    ATL::CStringMap<ATL::CString>   m_attributes;
+    std::map<ATL::CString, ATL::CString> m_attributes;
 };
 
 // ============================================================================
@@ -169,7 +169,7 @@ private:
     bool                    m_fPending;
     ATL::CString            m_strLastError;
 
-    ATL::CStringMap<AuthCredentials> m_credentialCache;
+    std::map<ATL::CString, AuthCredentials> m_credentialCache;
 
     AuthCompleteCallback    m_completeCb;
     AuthPromptCallback      m_promptCb;

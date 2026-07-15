@@ -14,10 +14,20 @@
 
 #include "pch.h"
 #include "SundanceAppMain.h"
+#include "../StoryboardManager/TimelineTrack.h"
 #include "CommandLineParser.h"
 #include "AutoSaveManager.h"
 #include "ClipboardManager.h"
 #include "MediaBrowser.h"
+#include "../StoryboardManager/MovieProject.h"
+#include "../DataStructs/IntSet.h"
+#include "ThumbnailCache.h"
+#include "UndoManager.h"
+#include "TimelineController.h"
+#include "ProjectManager.h"
+#include "ExportController.h"
+#include "ImportController.h"
+#include "PlaybackController.h"
 
 // ============================================================================
 // Local helper classes referenced by RTTI (defined in the original binary
@@ -401,7 +411,7 @@ HRESULT SundanceAppMain::AddMediaToTimeline(LPCWSTR pszFilePath, TimelineTrack t
     if (!m_bProjectOpen || !m_pProject)
         return E_UNEXPECTED;
 
-    HRESULT hr = m_pProject->ImportMedia(pszFilePath, track);
+    HRESULT hr = m_pProject->ImportMedia(pszFilePath, static_cast<StoryboardManager::TimelineTrackType>(track));
     if (SUCCEEDED(hr))
     {
         m_bProjectDirty = true;
@@ -419,7 +429,7 @@ HRESULT SundanceAppMain::RemoveItemFromTimeline(DWORD dwItemId, TimelineTrack tr
     if (!m_bProjectOpen || !m_pProject)
         return E_UNEXPECTED;
 
-    HRESULT hr = m_pProject->RemoveItem(dwItemId, track);
+    HRESULT hr = m_pProject->RemoveItem(dwItemId, static_cast<StoryboardManager::TimelineTrackType>(track));
     if (SUCCEEDED(hr))
     {
         m_bProjectDirty = true;
@@ -437,7 +447,7 @@ HRESULT SundanceAppMain::MoveItemOnTimeline(DWORD dwItemId, TimelineTrack track,
     if (!m_bProjectOpen || !m_pProject)
         return E_UNEXPECTED;
 
-    HRESULT hr = m_pProject->MoveItem(dwItemId, track, dwNewPosition);
+    HRESULT hr = m_pProject->MoveItem(dwItemId, static_cast<StoryboardManager::TimelineTrackType>(track), dwNewPosition);
     if (SUCCEEDED(hr))
     {
         m_bProjectDirty = true;
@@ -464,10 +474,10 @@ bool SundanceAppMain::GetFirstInvalidAssetOnTrack(TimelineTrack track, UINT* pIn
     if (!m_bProjectOpen || !m_pProject)
         return false;
 
-    DWORD cItems = m_pProject->GetItemCount(track);
+    DWORD cItems = static_cast<DWORD>(m_pProject->GetItemCount(static_cast<StoryboardManager::TimelineTrackType>(track)));
     for (DWORD i = 0; i < cItems; ++i)
     {
-        if (!m_pProject->IsItemValid(i, track))
+        if (!m_pProject->IsItemValid(i, static_cast<StoryboardManager::TimelineTrackType>(track)))
         {
             *pIndex = static_cast<UINT>(i);
             return true;
@@ -490,7 +500,7 @@ void SundanceAppMain::GetMediaItemExtents(TimelineTrack track, DWORD dwItemId, B
         return;
 
     Base::Array<DWORD> extentIds;
-    m_pProject->GetExtentIdsForMediaItem(dwItemId, track, extentIds);
+    m_pProject->GetExtentIdsForMediaItem(dwItemId, static_cast<StoryboardManager::TimelineTrackType>(track), extentIds);
 
     for (size_t i = 0; i < extentIds.GetCount(); ++i)
     {
@@ -552,7 +562,7 @@ void SundanceAppMain::RequestRetranscodeForAllExtents(TimelineTrack track)
     if (!m_bProjectOpen || !m_pProject)
         return;
 
-    m_pProject->MarkAllExtentsForRetranscode(track);
+    m_pProject->MarkAllExtentsForRetranscode(static_cast<StoryboardManager::TimelineTrackType>(track));
 }
 
 // ============================================================================

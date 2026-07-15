@@ -139,6 +139,7 @@ public:
     HRESULT SaveToFile(LPCWSTR pszFilePath);
     HRESULT LoadFromStream(IStream* pStream);
     HRESULT SaveToStream(IStream* pStream);
+    HRESULT SaveToXml(IXmlWriter* pWriter);
 
     // Validation
     HRESULT Validate() const;

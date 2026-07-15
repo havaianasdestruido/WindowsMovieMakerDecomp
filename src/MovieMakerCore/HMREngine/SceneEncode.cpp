@@ -1,3 +1,5 @@
+﻿#include "pch.h"
+
 // SceneEncode.cpp - HMREngine::SceneEncode implementation
 
 #include "SceneEncode.h"

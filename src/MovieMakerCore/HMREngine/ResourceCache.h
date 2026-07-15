@@ -3,7 +3,7 @@
 
 #include "HMREngine.h"
 #include <d3d11.h>
-#include <d3dx11.h>
+#include "d3dx11compat.h"
 #include <atlbase.h>
 #include <string>
 #include <unordered_map>

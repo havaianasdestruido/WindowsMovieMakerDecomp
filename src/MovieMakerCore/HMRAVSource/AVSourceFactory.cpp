@@ -45,7 +45,14 @@ STDMETHODIMP AVSourceFactory::CreateInstance(
     if (FAILED(hr))
         return hr;
 
-    return spSource->QueryInterface(riid, ppvObject);
+    if (IsEqualIID(riid, IID_IUnknown) || IsEqualIID(riid, IID_IDispatch))
+    {
+        *ppvObject = static_cast<AVSource*>(spSource.p);
+        spSource.p->AddRef();
+        return S_OK;
+    }
+
+    return E_NOINTERFACE;
 }
 
 STDMETHODIMP AVSourceFactory::LockServer(BOOL fLock)

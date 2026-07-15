@@ -1,3 +1,4 @@
+﻿#include "pch.h"
 /*
  * BackgroundRequests.cpp
  *
@@ -45,7 +46,7 @@ void BaseBackgroundRequest::OnCompleted(HRESULT hr)
 
 void BaseBackgroundRequest::SetProgress(float flProgress)
 {
-    m_flProgress = max(0.0f, min(1.0f, flProgress));
+    m_flProgress = std::max(0.0f, std::min(1.0f, flProgress));
 }
 
 float BaseBackgroundRequest::GetProgress() const throw()

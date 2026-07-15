@@ -288,7 +288,12 @@ HRESULT AVSink::ProcessVideoFrameInternal(IMFSample* pSample)
     LONGLONG llTimestamp = 0;
     pSample->GetSampleTime(&llTimestamp);
 
-    return m_spVideoDisplay->ProcessMessage(MFVP_MESSAGE_DISPLAYSAMPLE, pSample);
+    CComPtr<IMFVideoPresenter> spPresenter;
+    HRESULT hr = m_spVideoDisplay->QueryInterface(IID_PPV_ARGS(&spPresenter));
+    if (FAILED(hr))
+        return hr;
+
+    return spPresenter->ProcessMessage((MFVP_MESSAGE_TYPE)MFVP_MESSAGE_DISPLAYSAMPLE, (ULONG_PTR)pSample);
 }
 
 HRESULT AVSink::ProcessAudioBufferInternal(IMFSample* pSample)
@@ -297,7 +302,8 @@ HRESULT AVSink::ProcessAudioBufferInternal(IMFSample* pSample)
         return E_POINTER;
 
     // Extract audio data from sample buffers and render
-    DWORD cBuffers = pSample->GetBufferCount();
+    DWORD cBuffers = 0;
+    pSample->GetBufferCount(&cBuffers);
     for (DWORD i = 0; i < cBuffers; ++i)
     {
         CComPtr<IMFMediaBuffer> spBuffer;

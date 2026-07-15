@@ -28,6 +28,8 @@
 #include <propsys.h>
 #include <shlwapi.h>
 #include <shlobj.h>
+#include <d3d9.h>
+#include <memory>
 #include <vector>
 #include <map>
 #include <string>

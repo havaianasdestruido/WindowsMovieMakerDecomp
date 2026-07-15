@@ -145,7 +145,7 @@ private:
     bool                m_fReversed;
     bool                m_fMuted;
     ExtentTranscodeState m_transcodeState;
-    HRESULT             m_hrTranscode;
+    HRESULT             m_hresult;
 
     // Title overlay properties
     ATL::CString        m_strTitleText;

@@ -59,6 +59,9 @@ public:
     bool IsAboveThreshold(float flThresholdDb) const throw();
     DWORD GetTimeAboveThresholdMs() const throw();
 
+    // Time above threshold tracking
+    void SetSampleRateForThresholdTracking(DWORD dwSampleRate);
+
     // Reset
     void Reset();
 
@@ -70,8 +73,16 @@ public:
     float GetMaxRmsLevel() const throw();
     float GetAverageRmsLevel() const throw();
 
+    // File-based analysis
+    HRESULT AnalyzeFile(LPCWSTR pszFilePath);
+    float GetPeakLevel() const throw();
+    float GetRMSLevel() const throw();
+    const ATL::CAtlArray<float>& GetWaveformData() const throw();
+
 private:
     void UpdateWindowLevel();
+
+    ATL::CAtlArray<float>   m_arrWaveformData;
 
     ATL::CAtlArray<float>   m_arrWindowBuffer;
     DWORD                   m_dwWindowSizeSamples;
@@ -87,6 +98,7 @@ private:
     float                   m_flMaxRms;
     float                   m_flTotalRms;
     DWORD                   m_dwSampleCount;
+    DWORD                   m_dwTimeAboveThresholdSamples;
     bool                    m_fInitialized;
 };
 
@@ -168,6 +180,7 @@ private:
     DWORD           m_dwReleaseTimeMs;
     float           m_flMaxDuckLevel;
     float           m_flCurrentDuckLevel;
+    DWORD           m_dwSampleRate;
     bool            m_fDuckingActive;
     bool            m_fInitialized;
 };

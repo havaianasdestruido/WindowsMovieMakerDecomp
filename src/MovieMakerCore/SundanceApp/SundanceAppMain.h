@@ -37,6 +37,11 @@ class MediaBrowser;
 class SqmLogger;
 class TelemetrySession;
 
+namespace SundanceUI
+{
+    class RibbonApp;
+}
+
 namespace StoryboardManager {
     class MovieProject;
     class MovieExtent;
@@ -140,6 +145,12 @@ public:
     void    UpdateCommandState();
     void    NotifyUIRefresh();
 
+    // -- Ribbon integration --
+    HRESULT InitializeRibbon(HINSTANCE hInstance, HWND hWnd);
+    void    ShutdownRibbon();
+    HRESULT OnRibbonCommand(UINT nCmdId);
+    SundanceUI::RibbonApp* GetRibbonApp() throw();
+
     // -- Subsystem access --
     CommandLineParser*  GetCommandLineParser() const throw();
     AutoSaveManager*    GetAutoSaveManager() const throw();
@@ -183,6 +194,9 @@ private:
     // Main window
     HWND                    m_hWndMain;
     HINSTANCE               m_hInstance;
+
+    // Ribbon
+    SundanceUI::RibbonApp*  m_pRibbonApp;
 
     // Core project
     StoryboardManagerNamespace::MovieProject* m_pProject;

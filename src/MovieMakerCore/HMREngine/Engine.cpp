@@ -274,7 +274,14 @@ namespace HMREngine
 
     HRESULT Engine::EndFrame()
     {
+        if (!m_immediateContext) return E_POINTER;
+        m_immediateContext->Flush();
         return S_OK;
+    }
+
+    HRESULT Engine::ResetDevice()
+    {
+        return HandleDeviceLost();
     }
 
     HRESULT Engine::Present()

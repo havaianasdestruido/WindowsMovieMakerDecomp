@@ -302,16 +302,36 @@ bool AVSourceProxy::EnsureOnCorrectThread() const
     return GetCurrentThreadId() == m_dwCreationThreadId;
 }
 
-HRESULT AVSourceProxy::PostToCreationThread(std::function<void()> /*fn*/)
+HRESULT AVSourceProxy::PostToCreationThread(std::function<void()> fn)
 {
-    // For cross-thread marshaling, we would use a message window
-    // to post work to the creation thread. Simplified here.
-    return E_NOTIMPL;
+    if (!fn)
+        return E_POINTER;
+
+    if (!m_hMessageWnd)
+        return E_UNEXPECTED;
+
+    auto* pfn = new (std::nothrow) std::function<void()>(std::move(fn));
+    if (!pfn)
+        return E_OUTOFMEMORY;
+
+    BOOL fPosted = PostMessage(m_hMessageWnd, WM_PROXY_INVOKE, 0,
+        reinterpret_cast<LPARAM>(pfn));
+
+    if (!fPosted)
+    {
+        delete pfn;
+        return HRESULT_FROM_WIN32(GetLastError());
+    }
+
+    return S_OK;
 }
 
-LRESULT AVSourceProxy::SendMessageToCreationThread(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM /*lParam*/)
+LRESULT AVSourceProxy::SendMessageToCreationThread(UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
-    return E_NOTIMPL;
+    if (!m_hMessageWnd)
+        return E_UNEXPECTED;
+
+    return ::SendMessage(m_hMessageWnd, uMsg, wParam, lParam);
 }
 
 LRESULT CALLBACK AVSourceProxy::ProxyWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)

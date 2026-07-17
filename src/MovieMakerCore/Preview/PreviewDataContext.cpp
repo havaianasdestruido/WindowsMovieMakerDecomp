@@ -248,7 +248,7 @@ HRESULT PreviewDataContext::SetProperty(LPCWSTR pszName, const VARIANT* varValue
         return hr;
     }
 
-    return E_NOTIMPL;
+    return DISP_E_MEMBERNOTFOUND;
 }
 
 // ============================================================================
@@ -291,9 +291,12 @@ void PreviewDataContext::RefreshPositionState()
         return;
     }
 
-    m_dblCurrentPosition = m_pPresenter->GetNormalizedPosition();
-    LONGLONG llTotal = m_pPresenter->GetCurrentPositionHns();
-    UNREFERENCED_PARAMETER(llTotal);
+    LONGLONG llCurrentHns = m_pPresenter->GetCurrentPositionHns();
+    LONGLONG llTotalHns = m_pPresenter->GetTotalDurationHns();
+
+    static const double hnsToSeconds = 1.0 / 10000000.0;
+    m_dblCurrentPosition = static_cast<double>(llCurrentHns) * hnsToSeconds;
+    m_dblTotalDuration = static_cast<double>(llTotalHns) * hnsToSeconds;
 }
 
 // ============================================================================

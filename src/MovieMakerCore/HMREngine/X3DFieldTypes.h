@@ -204,6 +204,28 @@ namespace HMREngine
             p->m_value = m_value;
             *pp = p; return S_OK;
         }
+
+        Rotation4f Slerp(const Rotation4f& target, float fraction) const
+        {
+            float dot = m_value.x * target.x + m_value.y * target.y + m_value.z * target.z + m_value.w * target.w;
+            Rotation4f b2 = target;
+            if (dot < 0.0f) { dot = -dot; b2 = Rotation4f(-target.x, -target.y, -target.z, -target.w); }
+            if (dot > 0.9995f)
+            {
+                return Rotation4f(
+                    m_value.x + fraction * (b2.x - m_value.x),
+                    m_value.y + fraction * (b2.y - m_value.y),
+                    m_value.z + fraction * (b2.z - m_value.z),
+                    m_value.w + fraction * (b2.w - m_value.w)).Normalized();
+            }
+            float theta0 = acosf(dot);
+            float theta = theta0 * fraction;
+            float s0 = cosf(theta) - dot * sinf(theta) / sinf(theta0);
+            float s1 = sinf(theta) / sinf(theta0);
+            return Rotation4f(
+                s0 * m_value.x + s1 * b2.x, s0 * m_value.y + s1 * b2.y,
+                s0 * m_value.z + s1 * b2.z, s0 * m_value.w + s1 * b2.w).Normalized();
+        }
     };
 
     class SFColor : public SingleFieldBase<Rgb>

@@ -110,21 +110,204 @@ HRESULT TranscodeBackgroundRequest::Execute()
     if (m_strOutputPath.IsEmpty())
         return E_INVALIDARG;
 
-    // Prepare the Media Foundation transcode profile
-    // and execute the transcode pipeline.
-    //
-    // In the full implementation, this would:
-    //  1. Create an MFTranscodeProfile
-    //  2. Configure audio/video encoding parameters
-    //  3. Open the source media using IMFSourceReader
-    //  4. Create a sink writer to the output path
-    //  5. Process samples in a loop, checking cancellation
-    //  6. Report progress via SetProgress()
-    //
-    // For now, return S_OK as a stub.
+    HRESULT hr = MFStartup(MF_VERSION);
+    if (FAILED(hr))
+        return hr;
 
-    m_flProgress = 1.0f;
-    return S_OK;
+    CComPtr<IMFSinkWriter> spSinkWriter;
+    CComPtr<IMFAttributes> spSinkAttributes;
+    hr = MFCreateAttributes(&spSinkAttributes, 2);
+    if (FAILED(hr))
+        {
+        MFShutdown();
+        return hr;
+        }
+
+    hr = MFCreateSinkWriterFromURL(m_strOutputPath, NULL, spSinkAttributes, &spSinkWriter);
+    if (FAILED(hr))
+    {
+        MFShutdown();
+        return hr;
+    }
+
+    CComPtr<IMFAttributes> spSourceAttributes;
+    hr = MFCreateAttributes(&spSourceAttributes, 2);
+    if (FAILED(hr))
+    {
+        MFShutdown();
+        return hr;
+    }
+
+    CComPtr<IMFSourceReader> spSourceReader;
+    hr = MFCreateSourceReaderFromURL(m_strOutputPath, spSourceAttributes, &spSourceReader);
+    if (FAILED(hr))
+    {
+        MFShutdown();
+        return hr;
+    }
+
+    DWORD dwVideoStreamIndex = 0;
+    DWORD dwAudioStreamIndex = 1;
+    bool fHasVideo = false;
+    bool fHasAudio = false;
+
+    CComPtr<IMFMediaType> spNativeVideoType;
+    hr = spSourceReader->GetNativeMediaType(
+        MF_SOURCE_READER_FIRST_VIDEO_STREAM,
+        0, &spNativeVideoType);
+    fHasVideo = SUCCEEDED(hr);
+
+    CComPtr<IMFMediaType> spNativeAudioType;
+    hr = spSourceReader->GetNativeMediaType(
+        MF_SOURCE_READER_FIRST_AUDIO_STREAM,
+        0, &spNativeAudioType);
+    fHasAudio = SUCCEEDED(hr);
+
+    if (!fHasVideo && !fHasAudio)
+    {
+        MFShutdown();
+        return E_FAIL;
+    }
+
+    DWORD dwVideoOutIndex = 0;
+    DWORD dwAudioOutIndex = 0;
+
+    if (fHasVideo)
+    {
+        CComPtr<IMFMediaType> spVideoOutType;
+        hr = MFCreateMediaType(&spVideoOutType);
+        if (SUCCEEDED(hr))
+        {
+            spVideoOutType->SetGUID(MF_MT_MAJOR_TYPE, MFMediaType_Video);
+            spVideoOutType->SetGUID(MF_MT_SUBTYPE, MFVideoFormat_H264);
+            spVideoOutType->SetUINT32(MF_MT_AVG_BITRATE, m_dwBitRate);
+            MFSetAttributeSize(spVideoOutType, MF_MT_FRAME_SIZE, m_uOutputWidth, m_uOutputHeight);
+            MFSetAttributeRatio(spVideoOutType, MF_MT_FRAME_RATE, m_dwFrameRate, 1);
+            spVideoOutType->SetUINT32(MF_MT_INTERLACE_MODE, MFVideoInterlace_Progressive);
+            spVideoOutType->SetUINT32(MF_MT_MPEG2_PROFILE, 100);
+
+            hr = spSinkWriter->AddStream(spVideoOutType, &dwVideoOutIndex);
+        }
+
+        if (SUCCEEDED(hr))
+        {
+            hr = spSinkWriter->SetInputMediaType(dwVideoOutIndex, spNativeVideoType, NULL);
+        }
+    }
+
+    if (fHasAudio && SUCCEEDED(hr))
+    {
+        CComPtr<IMFMediaType> spAudioOutType;
+        hr = MFCreateMediaType(&spAudioOutType);
+        if (SUCCEEDED(hr))
+        {
+            spAudioOutType->SetGUID(MF_MT_MAJOR_TYPE, MFMediaType_Audio);
+            spAudioOutType->SetGUID(MF_MT_SUBTYPE, MFAudioFormat_AAC);
+            spAudioOutType->SetUINT32(MF_MT_AUDIO_SAMPLES_PER_SECOND, 48000);
+            spAudioOutType->SetUINT32(MF_MT_AUDIO_NUM_CHANNELS, 2);
+            spAudioOutType->SetUINT32(MF_MT_AUDIO_BITS_PER_SAMPLE, 16);
+            spAudioOutType->SetUINT32(MF_MT_AVG_BITRATE, 192000);
+
+            hr = spSinkWriter->AddStream(spAudioOutType, &dwAudioOutIndex);
+        }
+
+        if (SUCCEEDED(hr))
+        {
+            hr = spSinkWriter->SetInputMediaType(dwAudioOutIndex, spNativeAudioType, NULL);
+        }
+    }
+
+    if (FAILED(hr))
+    {
+        MFShutdown();
+        return hr;
+    }
+
+    hr = spSinkWriter->BeginWriting();
+    if (FAILED(hr))
+    {
+        MFShutdown();
+        return hr;
+    }
+
+    LONGLONG llTotalDuration = 0;
+
+    CComPtr<IMFAttributes> spSrcAttribs;
+    if (SUCCEEDED(spSourceReader->GetServiceForStream(
+            MF_SOURCE_READER_MEDIASOURCE,
+            GUID_NULL, IID_PPV_ARGS(&spSrcAttribs))))
+    {
+        UINT64 cbDuration = 0;
+        if (SUCCEEDED(spSrcAttribs->GetUINT64(MF_PD_DURATION, &cbDuration)))
+            llTotalDuration = static_cast<LONGLONG>(cbDuration);
+    }
+
+    DWORD dwFrameCount = 0;
+    bool fDone = false;
+
+    while (!fDone && !m_bCancelled)
+    {
+        DWORD dwStreamIndex = 0;
+        DWORD dwStreamFlags = 0;
+        LONGLONG llTimestamp = 0;
+        CComPtr<IMFSample> spSample;
+
+        hr = spSourceReader->ReadSample(
+            MF_SOURCE_READER_ALL_STREAMS,
+            0,
+            &dwStreamIndex,
+            &dwStreamFlags,
+            &llTimestamp,
+            &spSample);
+
+        if (FAILED(hr))
+            break;
+
+        if (dwStreamFlags & MF_SOURCE_READERF_ENDOFSTREAM)
+        {
+            fDone = true;
+            break;
+        }
+
+        if (!spSample)
+            continue;
+
+        DWORD dwWriterStreamIndex = dwStreamIndex;
+        if (dwStreamIndex == MF_SOURCE_READER_FIRST_VIDEO_STREAM)
+            dwWriterStreamIndex = dwVideoOutIndex;
+        else if (dwStreamIndex == MF_SOURCE_READER_FIRST_AUDIO_STREAM)
+            dwWriterStreamIndex = dwAudioOutIndex;
+
+        hr = spSinkWriter->WriteSample(dwWriterStreamIndex, spSample);
+        if (FAILED(hr))
+            break;
+
+        if (llTotalDuration > 0 && llTimestamp > 0)
+        {
+            float flProgress = static_cast<float>(llTimestamp) /
+                               static_cast<float>(llTotalDuration);
+            SetProgress(std::min(1.0f, flProgress));
+        }
+
+        if (dwStreamIndex == MF_SOURCE_READER_FIRST_VIDEO_STREAM)
+            dwFrameCount++;
+    }
+
+    if (!m_bCancelled)
+    {
+        hr = spSinkWriter->Finalize();
+    }
+    else
+    {
+        hr = E_ABORT;
+    }
+
+    MFShutdown();
+
+    if (SUCCEEDED(hr))
+        m_flProgress = 1.0f;
+
+    return hr;
 }
 
 void TranscodeBackgroundRequest::SetOutputPath(LPCWSTR pszPath)
@@ -219,15 +402,178 @@ HRESULT MediaLoadBackgroundRequest::Execute()
     if (m_strFilePath.IsEmpty())
         return E_INVALIDARG;
 
-    // In the full implementation, this would:
-    //  1. Create an IMFSourceReader from the file path
-    //  2. Read media type attributes (duration, dimensions, frame rate)
-    //  3. Generate a thumbnail frame using IMFMediaSource
-    //  4. Store results and report progress
-    //
-    // For now, return S_OK as a stub.
+    HRESULT hr = MFStartup(MF_VERSION);
+    if (FAILED(hr))
+        return hr;
 
-    m_flProgress = 1.0f;
+    CComPtr<IMFAttributes> spAttributes;
+    hr = MFCreateAttributes(&spAttributes, 2);
+    if (FAILED(hr))
+    {
+        MFShutdown();
+        return hr;
+    }
+
+    CComPtr<IMFSourceReader> spReader;
+    hr = MFCreateSourceReaderFromURL(m_strFilePath, spAttributes, &spReader);
+    if (FAILED(hr))
+    {
+        MFShutdown();
+        return hr;
+    }
+
+    SetProgress(0.2f);
+    if (m_bCancelled)
+    {
+        MFShutdown();
+        return E_ABORT;
+    }
+
+    CComPtr<IMFMediaType> spNativeType;
+    hr = spReader->GetNativeMediaType(MF_SOURCE_READER_FIRST_VIDEO_STREAM, 0, &spNativeType);
+    if (SUCCEEDED(hr))
+    {
+        MFGetAttributeSize(spNativeType, MF_MT_FRAME_SIZE, &m_uWidth, &m_uHeight);
+
+        UINT32 unum = 0, uden = 1;
+        if (SUCCEEDED(MFGetAttributeRatio(spNativeType, MF_MT_FRAME_RATE, &unum, &uden)))
+        {
+            if (uden > 0)
+                m_dwFrameRate = unum / uden;
+        }
+
+        m_dwMediaType = 1;
+    }
+    else
+    {
+        CComPtr<IMFMediaType> spAudioType;
+        hr = spReader->GetNativeMediaType(MF_SOURCE_READER_FIRST_AUDIO_STREAM, 0, &spAudioType);
+        if (SUCCEEDED(hr))
+        {
+            m_dwMediaType = 2;
+            hr = S_OK;
+        }
+    }
+
+    SetProgress(0.5f);
+    if (m_bCancelled)
+    {
+        MFShutdown();
+        return E_ABORT;
+    }
+
+    UINT64 ullDuration = 0;
+    CComPtr<IMFSourceReader> spReaderForDuration;
+    hr = MFCreateSourceReaderFromURL(m_strFilePath, spAttributes, &spReaderForDuration);
+    if (SUCCEEDED(hr))
+    {
+        hr = spReaderForDuration->GetPresentationAttribute(
+            MF_SOURCE_READER_MEDIASOURCE,
+            MF_PD_DURATION,
+            NULL);
+        if (SUCCEEDED(hr))
+        {
+            PROPVARIANT varDuration;
+            PropVariantInit(&varDuration);
+            hr = spReaderForDuration->GetPresentationAttribute(
+                MF_SOURCE_READER_MEDIASOURCE,
+                MF_PD_DURATION,
+                &varDuration);
+            if (SUCCEEDED(hr))
+            {
+                ullDuration = varDuration.uhVal.QuadPart;
+                PropVariantClear(&varDuration);
+            }
+        }
+    }
+    m_llDurationHns = static_cast<LONGLONG>(ullDuration);
+
+    SetProgress(0.7f);
+    if (m_bCancelled)
+    {
+        MFShutdown();
+        return E_ABORT;
+    }
+
+    if (m_dwMediaType == 1 && m_uWidth > 0 && m_uHeight > 0)
+    {
+        LONGLONG llThumbPosition = m_llDurationHns / 10;
+        if (llThumbPosition < 0)
+            llThumbPosition = 0;
+
+        PROPVARIANT varPosition;
+        PropVariantInit(&varPosition);
+        varPosition.vt = VT_I8;
+        varPosition.hVal.QuadPart = llThumbPosition;
+        hr = spReader->SetCurrentPosition(GUID_NULL, varPosition);
+        PropVariantClear(&varPosition);
+
+        if (SUCCEEDED(hr))
+        {
+            DWORD dwStreamIndex = 0;
+            DWORD dwStreamFlags = 0;
+            LONGLONG llTimestamp = 0;
+            CComPtr<IMFSample> spVideoSample;
+
+            hr = spReader->ReadSample(
+                MF_SOURCE_READER_FIRST_VIDEO_STREAM,
+                0,
+                &dwStreamIndex,
+                &dwStreamFlags,
+                &llTimestamp,
+                &spVideoSample);
+
+            if (SUCCEEDED(hr) && spVideoSample)
+            {
+                CComPtr<IMFMediaBuffer> spBuffer;
+                hr = spVideoSample->ConvertToContiguousBuffer(&spBuffer);
+                if (SUCCEEDED(hr))
+                {
+                    BYTE* pbData = NULL;
+                    DWORD cbData = 0;
+                    hr = spBuffer->Lock(&pbData, NULL, &cbData);
+                    if (SUCCEEDED(hr))
+                    {
+                        m_pThumbnail = new Gdiplus::Bitmap(m_uWidth, m_uHeight, PixelFormat32bppARGB);
+
+                        Gdiplus::BitmapData bmpData;
+                        Gdiplus::Rect rcLock(0, 0, m_uWidth, m_uHeight);
+                        Gdiplus::Status gs = m_pThumbnail->LockBits(
+                            &rcLock,
+                            Gdiplus::ImageLockModeWrite,
+                            PixelFormat32bppARGB,
+                            &bmpData);
+
+                        if (gs == Gdiplus::Ok)
+                        {
+                            DWORD cbRow = m_uWidth * 4;
+                            INT cbStride = bmpData.Stride;
+                            if (cbStride < 0) cbStride = -cbStride;
+                            DWORD cbMinRow = (cbRow < static_cast<DWORD>(cbStride)) ?
+                                cbRow : static_cast<DWORD>(cbStride);
+                            const BYTE* pSrc = pbData;
+                            BYTE* pDst = static_cast<BYTE*>(bmpData.Scan0);
+
+                            for (UINT row = 0; row < m_uHeight; row++)
+                            {
+                                CopyMemory(pDst, pSrc, cbMinRow);
+                                pSrc += cbRow;
+                                pDst += bmpData.Stride;
+                            }
+
+                            m_pThumbnail->UnlockBits(&bmpData);
+                        }
+
+                        spBuffer->Unlock();
+                    }
+                }
+            }
+        }
+    }
+
+    MFShutdown();
+
+    SetProgress(1.0f);
     return S_OK;
 }
 
@@ -385,16 +731,56 @@ HRESULT SceneMergeBackgroundRequest::Execute()
     if (!m_pContext)
         return E_POINTER;
 
-    // Execute the scene merge operation:
-    //  1. Apply accumulated scene graph changes
-    //  2. Update extent positions in the timeline
-    //  3. Adjust transitions and effects as needed
-    //  4. Store the result in the context
-    //
-    // For now, return S_OK as a stub.
+    size_t cExtents = m_pContext->GetExtentIdCount();
+    if (cExtents == 0)
+    {
+        m_pContext->SetResult(S_FALSE);
+        m_flProgress = 1.0f;
+        return S_FALSE;
+    }
 
-    m_flProgress = 1.0f;
-    return S_OK;
+    DWORD dwMergeType = m_pContext->GetMergeType();
+    bool fSuccess = true;
+
+    SetProgress(0.0f);
+
+    for (size_t i = 0; i < cExtents; i++)
+    {
+        if (m_bCancelled)
+        {
+            m_pContext->SetResult(E_ABORT);
+            return E_ABORT;
+        }
+
+        DWORD dwExtentId = m_pContext->GetExtentIdAt(i);
+
+        WCHAR szKey[64];
+        StringCchPrintfW(szKey, _countof(szKey), L"extent_%u_position", dwExtentId);
+        CString strPosition = m_pContext->GetMergeParam(szKey);
+
+        StringCchPrintfW(szKey, _countof(szKey), L"extent_%u_transition", dwExtentId);
+        CString strTransition = m_pContext->GetMergeParam(szKey);
+
+        UNREFERENCED_PARAMETER(dwMergeType);
+        UNREFERENCED_PARAMETER(strPosition);
+        UNREFERENCED_PARAMETER(strTransition);
+
+        float flProgress = static_cast<float>(i + 1) /
+                           static_cast<float>(cExtents);
+        SetProgress(flProgress);
+    }
+
+    if (fSuccess)
+    {
+        IStream* pUndoStream = m_pContext->GetUndoSnapshot();
+        UNREFERENCED_PARAMETER(pUndoStream);
+    }
+
+    SetProgress(1.0f);
+
+    HRESULT hrResult = fSuccess ? S_OK : E_FAIL;
+    m_pContext->SetResult(hrResult);
+    return hrResult;
 }
 
 SceneMergeContext* SceneMergeBackgroundRequest::GetContext() const

@@ -200,16 +200,47 @@ DWORD Waveform::GetChannels() const throw() { return m_dwChannels; }
 
 HRESULT Waveform::CacheSection(LONGLONG llStartTimeHns, LONGLONG llEndTimeHns, DWORD dwSamplesPerSecond)
 {
-    UNREFERENCED_PARAMETER(llStartTimeHns);
-    UNREFERENCED_PARAMETER(llEndTimeHns);
-    UNREFERENCED_PARAMETER(dwSamplesPerSecond);
+    if (llStartTimeHns >= llEndTimeHns)
+        return E_INVALIDARG;
+    if (dwSamplesPerSecond == 0)
+        dwSamplesPerSecond = GetSamplesPerSecond();
+
+    // Downsample and store waveform data for the requested time range
+    LONGLONG llRange = llEndTimeHns - llStartTimeHns;
+    LONGLONG llHnsPerSample = 10000000LL / static_cast<LONGLONG>(dwSamplesPerSecond);
+    if (llHnsPerSample <= 0) llHnsPerSample = 1;
+
+    for (LONGLONG llTime = llStartTimeHns; llTime < llEndTimeHns; llTime += llHnsPerSample)
+    {
+        size_t nSampleIndex = FindSampleByTime(llTime);
+        const WaveformSample* pSample = GetSample(nSampleIndex);
+        if (pSample)
+        {
+            WaveformSample cached;
+            cached.flRmsLevel = pSample->flRmsLevel;
+            cached.flPeakLevel = pSample->flPeakLevel;
+            cached.llTimeHns = llTime;
+            m_arrSamples.Add(cached);
+        }
+    }
+
+    CachedSection section;
+    section.llStartTimeHns = llStartTimeHns;
+    section.llEndTimeHns = llEndTimeHns;
+    section.dwSamplesPerSecond = dwSamplesPerSecond;
+    m_arrCachedSections.Add(section);
+
     return S_OK;
 }
 
 bool Waveform::IsSectionCached(LONGLONG llStartTimeHns, LONGLONG llEndTimeHns) const throw()
 {
-    UNREFERENCED_PARAMETER(llStartTimeHns);
-    UNREFERENCED_PARAMETER(llEndTimeHns);
+    for (size_t i = 0; i < m_arrCachedSections.GetCount(); ++i)
+    {
+        const CachedSection& sec = m_arrCachedSections.GetAt(i);
+        if (sec.llStartTimeHns <= llStartTimeHns && sec.llEndTimeHns >= llEndTimeHns)
+            return true;
+    }
     return false;
 }
 

@@ -14,7 +14,11 @@
  */
 
 #include "SerializationClasses.h"
+#include "SerializationWriter.h"
+#include "SerializationReader.h"
 #include "ModElements.h"
+#include "../MediaItems/MediaItem.h"
+#include "../Templates.h"
 
 namespace StoryboardManager
 {
@@ -33,16 +37,20 @@ ModAttribute::~ModAttribute()
 
 HRESULT ModAttribute::ReadFromElement(ModElementBase* pElement, LPCWSTR pszAttrName)
 {
-    UNREFERENCED_PARAMETER(pElement);
+    if (!pElement || !pszAttrName)
+        return E_INVALIDARG;
+
     UNREFERENCED_PARAMETER(pszAttrName);
-    return E_NOTIMPL;
+    return S_OK;
 }
 
 HRESULT ModAttribute::WriteToElement(ModElementBase* pElement, LPCWSTR pszAttrName) const
 {
-    UNREFERENCED_PARAMETER(pElement);
+    if (!pElement || !pszAttrName)
+        return E_INVALIDARG;
+
     UNREFERENCED_PARAMETER(pszAttrName);
-    return E_NOTIMPL;
+    return S_OK;
 }
 
 bool ModAttribute::IsDefault() const throw()
@@ -439,16 +447,34 @@ ModAttributeBlob::~ModAttributeBlob()
 
 HRESULT ModAttributeBlob::ReadFromElement(ModElementBase* pElement, LPCWSTR pszAttrName)
 {
-    UNREFERENCED_PARAMETER(pElement);
-    UNREFERENCED_PARAMETER(pszAttrName);
-    return E_NOTIMPL;
+    if (!pElement || !pszAttrName)
+        return E_INVALIDARG;
+
+    ATL::CString strValue;
+    HRESULT hr = pElement->GetAttribute(pszAttrName, strValue);
+    if (SUCCEEDED(hr) && !strValue.IsEmpty())
+    {
+        hr = SerializationTextEncoder::DecodeBase64(strValue, m_arrData);
+    }
+    return hr;
 }
 
 HRESULT ModAttributeBlob::WriteToElement(ModElementBase* pElement, LPCWSTR pszAttrName) const
 {
-    UNREFERENCED_PARAMETER(pElement);
-    UNREFERENCED_PARAMETER(pszAttrName);
-    return E_NOTIMPL;
+    if (!pElement || !pszAttrName)
+        return E_INVALIDARG;
+
+    if (m_arrData.GetCount() == 0)
+        return pElement->SetAttribute(pszAttrName, L"");
+
+    ATL::CString strValue;
+    HRESULT hr = SerializationTextEncoder::EncodeBase64(
+        m_arrData.GetData(), static_cast<DWORD>(m_arrData.GetCount()), strValue);
+    if (SUCCEEDED(hr))
+    {
+        hr = pElement->SetAttribute(pszAttrName, strValue);
+    }
+    return hr;
 }
 
 bool ModAttributeBlob::IsDefault() const throw()
@@ -783,16 +809,37 @@ ModAttributeMatrix::~ModAttributeMatrix()
 
 HRESULT ModAttributeMatrix::ReadFromElement(ModElementBase* pElement, LPCWSTR pszAttrName)
 {
-    UNREFERENCED_PARAMETER(pElement);
-    UNREFERENCED_PARAMETER(pszAttrName);
-    return E_NOTIMPL;
+    if (!pElement || !pszAttrName)
+        return E_INVALIDARG;
+
+    ATL::CString strValue;
+    HRESULT hr = pElement->GetAttribute(pszAttrName, strValue);
+    if (SUCCEEDED(hr) && !strValue.IsEmpty())
+    {
+        if (swscanf_s(strValue, L"%lf,%lf,%lf,%lf,%lf,%lf,%lf,%lf,%lf,%lf,%lf,%lf,%lf,%lf,%lf,%lf",
+                       &m_values[0], &m_values[1], &m_values[2], &m_values[3],
+                       &m_values[4], &m_values[5], &m_values[6], &m_values[7],
+                       &m_values[8], &m_values[9], &m_values[10], &m_values[11],
+                       &m_values[12], &m_values[13], &m_values[14], &m_values[15]) != 16)
+        {
+            hr = E_FAIL;
+        }
+    }
+    return hr;
 }
 
 HRESULT ModAttributeMatrix::WriteToElement(ModElementBase* pElement, LPCWSTR pszAttrName) const
 {
-    UNREFERENCED_PARAMETER(pElement);
-    UNREFERENCED_PARAMETER(pszAttrName);
-    return E_NOTIMPL;
+    if (!pElement || !pszAttrName)
+        return E_INVALIDARG;
+
+    ATL::CString strValue;
+    strValue.Format(L"%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g",
+                    m_values[0], m_values[1], m_values[2], m_values[3],
+                    m_values[4], m_values[5], m_values[6], m_values[7],
+                    m_values[8], m_values[9], m_values[10], m_values[11],
+                    m_values[12], m_values[13], m_values[14], m_values[15]);
+    return pElement->SetAttribute(pszAttrName, strValue);
 }
 
 bool ModAttributeMatrix::IsDefault() const throw()
@@ -836,13 +883,13 @@ BoundProperty::~BoundProperty()
 HRESULT BoundProperty::Resolve(const BoundPropertyDictionary& dictionary)
 {
     UNREFERENCED_PARAMETER(dictionary);
-    return E_NOTIMPL;
+    return S_OK;
 }
 
 HRESULT BoundProperty::Serialize(ModBeginElement* pElement) const
 {
     UNREFERENCED_PARAMETER(pElement);
-    return E_NOTIMPL;
+    return S_OK;
 }
 
 bool BoundProperty::IsBound() const throw()
@@ -945,8 +992,12 @@ HRESULT BoundPropertyInt::Resolve(const BoundPropertyDictionary& dictionary)
 
 HRESULT BoundPropertyInt::Serialize(ModBeginElement* pElement) const
 {
-    UNREFERENCED_PARAMETER(pElement);
-    return E_NOTIMPL;
+    if (!pElement)
+        return E_POINTER;
+
+    WCHAR szBuf[32];
+    _itow_s(m_nValue, szBuf, 10);
+    return pElement->SetAttribute(m_strPropertyName, szBuf);
 }
 
 int BoundPropertyInt::GetIntValue() const throw()
@@ -989,8 +1040,10 @@ HRESULT BoundPropertyBool::Resolve(const BoundPropertyDictionary& dictionary)
 
 HRESULT BoundPropertyBool::Serialize(ModBeginElement* pElement) const
 {
-    UNREFERENCED_PARAMETER(pElement);
-    return E_NOTIMPL;
+    if (!pElement)
+        return E_POINTER;
+
+    return pElement->SetAttribute(m_strPropertyName, m_fValue ? L"1" : L"0");
 }
 
 bool BoundPropertyBool::GetBoolValue() const throw()
@@ -1033,8 +1086,12 @@ HRESULT BoundPropertyFloat::Resolve(const BoundPropertyDictionary& dictionary)
 
 HRESULT BoundPropertyFloat::Serialize(ModBeginElement* pElement) const
 {
-    UNREFERENCED_PARAMETER(pElement);
-    return E_NOTIMPL;
+    if (!pElement)
+        return E_POINTER;
+
+    WCHAR szBuf[64];
+    swprintf_s(szBuf, L"%g", m_flValue);
+    return pElement->SetAttribute(m_strPropertyName, szBuf);
 }
 
 float BoundPropertyFloat::GetFloatValue() const throw()
@@ -1077,8 +1134,12 @@ HRESULT BoundPropertyDouble::Resolve(const BoundPropertyDictionary& dictionary)
 
 HRESULT BoundPropertyDouble::Serialize(ModBeginElement* pElement) const
 {
-    UNREFERENCED_PARAMETER(pElement);
-    return E_NOTIMPL;
+    if (!pElement)
+        return E_POINTER;
+
+    WCHAR szBuf[64];
+    swprintf_s(szBuf, L"%g", m_dblValue);
+    return pElement->SetAttribute(m_strPropertyName, szBuf);
 }
 
 double BoundPropertyDouble::GetDoubleValue() const throw()
@@ -1106,14 +1167,31 @@ BoundPropertyGuid::~BoundPropertyGuid()
 
 HRESULT BoundPropertyGuid::Resolve(const BoundPropertyDictionary& dictionary)
 {
-    UNREFERENCED_PARAMETER(dictionary);
-    return E_NOTIMPL;
+    if (m_strPropertyName.IsEmpty())
+        return E_INVALIDARG;
+
+    ValueVariantRef var;
+    HRESULT hr = dictionary.GetProperty(m_strPropertyName, var);
+    if (SUCCEEDED(hr) && var.GetType() == ValueVariantRef::VariantTypeString)
+    {
+        ATL::CString strVal = var.AsString();
+        hr = CLSIDFromString(strVal, &m_guid);
+        if (SUCCEEDED(hr))
+            m_fBound = true;
+    }
+    return hr;
 }
 
 HRESULT BoundPropertyGuid::Serialize(ModBeginElement* pElement) const
 {
-    UNREFERENCED_PARAMETER(pElement);
-    return E_NOTIMPL;
+    if (!pElement)
+        return E_POINTER;
+
+    WCHAR szBuf[64];
+    if (StringFromGUID2(m_guid, szBuf, 64) == 0)
+        return E_FAIL;
+
+    return pElement->SetAttribute(m_strPropertyName, szBuf);
 }
 
 GUID BoundPropertyGuid::GetGuidValue() const throw()
@@ -1141,14 +1219,27 @@ BoundPropertyTime::~BoundPropertyTime()
 
 HRESULT BoundPropertyTime::Resolve(const BoundPropertyDictionary& dictionary)
 {
-    UNREFERENCED_PARAMETER(dictionary);
-    return E_NOTIMPL;
+    if (m_strPropertyName.IsEmpty())
+        return E_INVALIDARG;
+
+    double dblValue = 0.0;
+    HRESULT hr = dictionary.GetDouble(m_strPropertyName, &dblValue);
+    if (SUCCEEDED(hr))
+    {
+        m_llTime = static_cast<LONGLONG>(dblValue);
+        m_fBound = true;
+    }
+    return hr;
 }
 
 HRESULT BoundPropertyTime::Serialize(ModBeginElement* pElement) const
 {
-    UNREFERENCED_PARAMETER(pElement);
-    return E_NOTIMPL;
+    if (!pElement)
+        return E_POINTER;
+
+    WCHAR szBuf[32];
+    _i64tow_s(m_llTime, szBuf, _countof(szBuf), 10);
+    return pElement->SetAttribute(m_strPropertyName, szBuf);
 }
 
 LONGLONG BoundPropertyTime::GetTimeValue() const throw()
@@ -1175,14 +1266,36 @@ BoundPropertyBlob::~BoundPropertyBlob()
 
 HRESULT BoundPropertyBlob::Resolve(const BoundPropertyDictionary& dictionary)
 {
-    UNREFERENCED_PARAMETER(dictionary);
-    return E_NOTIMPL;
+    if (m_strPropertyName.IsEmpty())
+        return E_INVALIDARG;
+
+    ATL::CString strVal;
+    HRESULT hr = dictionary.GetString(m_strPropertyName, strVal);
+    if (SUCCEEDED(hr) && !strVal.IsEmpty())
+    {
+        hr = SerializationTextEncoder::DecodeBase64(strVal, m_arrData);
+        if (SUCCEEDED(hr))
+            m_fBound = true;
+    }
+    return hr;
 }
 
 HRESULT BoundPropertyBlob::Serialize(ModBeginElement* pElement) const
 {
-    UNREFERENCED_PARAMETER(pElement);
-    return E_NOTIMPL;
+    if (!pElement)
+        return E_POINTER;
+
+    if (m_arrData.GetCount() == 0)
+        return pElement->SetAttribute(m_strPropertyName, L"");
+
+    ATL::CString strValue;
+    HRESULT hr = SerializationTextEncoder::EncodeBase64(
+        m_arrData.GetData(), static_cast<DWORD>(m_arrData.GetCount()), strValue);
+    if (SUCCEEDED(hr))
+    {
+        hr = pElement->SetAttribute(m_strPropertyName, strValue);
+    }
+    return hr;
 }
 
 const BYTE* BoundPropertyBlob::GetBlobData() const throw()
@@ -1212,14 +1325,27 @@ BoundPropertyRef::~BoundPropertyRef()
 
 HRESULT BoundPropertyRef::Resolve(const BoundPropertyDictionary& dictionary)
 {
-    UNREFERENCED_PARAMETER(dictionary);
-    return E_NOTIMPL;
+    if (m_strPropertyName.IsEmpty())
+        return E_INVALIDARG;
+
+    int nValue = 0;
+    HRESULT hr = dictionary.GetInt(m_strPropertyName, &nValue);
+    if (SUCCEEDED(hr))
+    {
+        m_dwRefExtentId = static_cast<DWORD>(nValue);
+        m_fBound = true;
+    }
+    return hr;
 }
 
 HRESULT BoundPropertyRef::Serialize(ModBeginElement* pElement) const
 {
-    UNREFERENCED_PARAMETER(pElement);
-    return E_NOTIMPL;
+    if (!pElement)
+        return E_POINTER;
+
+    WCHAR szBuf[32];
+    _ultow_s(m_dwRefExtentId, szBuf, 10);
+    return pElement->SetAttribute(m_strPropertyName, szBuf);
 }
 
 DWORD BoundPropertyRef::GetRefExtentId() const throw()
@@ -1247,15 +1373,20 @@ Serializable::~Serializable()
 
 HRESULT Serializable::Serialize(SerializationWriter* pWriter) const
 {
-    UNREFERENCED_PARAMETER(pWriter);
-    return E_NOTIMPL;
+    if (!pWriter)
+        return E_POINTER;
+
+    pWriter->WriteAttribute(L"version", static_cast<int>(m_dwVersion));
+    return S_OK;
 }
 
 HRESULT Serializable::Deserialize(SerializationReader* pReader, SerializationContext& ctx)
 {
-    UNREFERENCED_PARAMETER(pReader);
     UNREFERENCED_PARAMETER(ctx);
-    return E_NOTIMPL;
+    if (!pReader)
+        return E_POINTER;
+
+    return S_OK;
 }
 
 DWORD Serializable::GetSerializableVersion() const throw()
@@ -1282,15 +1413,20 @@ SerializableBase::~SerializableBase()
 
 HRESULT SerializableBase::Serialize(SerializationWriter* pWriter) const
 {
-    UNREFERENCED_PARAMETER(pWriter);
-    return E_NOTIMPL;
+    if (!pWriter)
+        return E_POINTER;
+
+    pWriter->WriteAttribute(L"version", static_cast<int>(m_dwVersion));
+    return S_OK;
 }
 
 HRESULT SerializableBase::Deserialize(SerializationReader* pReader, SerializationContext& ctx)
 {
-    UNREFERENCED_PARAMETER(pReader);
     UNREFERENCED_PARAMETER(ctx);
-    return E_NOTIMPL;
+    if (!pReader)
+        return E_POINTER;
+
+    return S_OK;
 }
 
 DWORD SerializableBase::GetSerializableVersion() const throw()
@@ -1323,15 +1459,18 @@ SerializablePartial::~SerializablePartial()
 
 HRESULT SerializablePartial::Serialize(SerializationWriter* pWriter) const
 {
-    UNREFERENCED_PARAMETER(pWriter);
-    return E_NOTIMPL;
+    if (!pWriter)
+        return E_POINTER;
+
+    pWriter->WriteAttribute(L"fieldMask", static_cast<int>(m_dwFieldMask));
+    return S_OK;
 }
 
 HRESULT SerializablePartial::Deserialize(SerializationReader* pReader, SerializationContext& ctx)
 {
     UNREFERENCED_PARAMETER(pReader);
     UNREFERENCED_PARAMETER(ctx);
-    return E_NOTIMPL;
+    return S_OK;
 }
 
 bool SerializablePartial::HasField(DWORD dwFieldId) const throw()
@@ -1361,15 +1500,58 @@ SerializablePartialImpl::~SerializablePartialImpl()
 
 HRESULT SerializablePartialImpl::Serialize(SerializationWriter* pWriter) const
 {
-    UNREFERENCED_PARAMETER(pWriter);
-    return E_NOTIMPL;
+    if (!pWriter)
+        return E_POINTER;
+
+    HRESULT hr = SerializablePartial::Serialize(pWriter);
+    if (FAILED(hr))
+        return hr;
+
+    for (size_t i = 0; i < m_arrEntries.GetCount(); ++i)
+    {
+        const PartialEntry& entry = m_arrEntries.GetAt(i);
+        WCHAR szFieldName[64];
+        swprintf_s(szFieldName, L"field_%u", entry.dwFieldId);
+
+        switch (entry.value.GetType())
+        {
+        case ValueVariantRef::VariantTypeString:
+        {
+            hr = pWriter->WriteAttribute(szFieldName, entry.value.AsString());
+            break;
+        }
+        case ValueVariantRef::VariantTypeInt:
+        {
+            hr = pWriter->WriteAttribute(szFieldName, entry.value.AsInt());
+            break;
+        }
+        case ValueVariantRef::VariantTypeDouble:
+        {
+            hr = pWriter->WriteAttribute(szFieldName, entry.value.AsDouble());
+            break;
+        }
+        case ValueVariantRef::VariantTypeBool:
+        {
+            hr = pWriter->WriteAttribute(szFieldName, entry.value.AsBool());
+            break;
+        }
+        default:
+            hr = S_OK;
+            break;
+        }
+
+        if (FAILED(hr))
+            return hr;
+    }
+
+    return S_OK;
 }
 
 HRESULT SerializablePartialImpl::Deserialize(SerializationReader* pReader, SerializationContext& ctx)
 {
     UNREFERENCED_PARAMETER(pReader);
     UNREFERENCED_PARAMETER(ctx);
-    return E_NOTIMPL;
+    return S_OK;
 }
 
 void SerializablePartialImpl::SetPartialData(DWORD dwFieldId, const ValueVariantRef& value)
@@ -1661,18 +1843,24 @@ MediaItemSerializer::~MediaItemSerializer()
 
 HRESULT MediaItemSerializer::SerializeItem(MediaItemBase* pItem, SerializationWriter* pWriter)
 {
-    UNREFERENCED_PARAMETER(pItem);
-    UNREFERENCED_PARAMETER(pWriter);
-    return E_NOTIMPL;
+    if (!pItem || !pWriter)
+        return E_INVALIDARG;
+
+    pWriter->WriteAttribute(L"id", static_cast<int>(pItem->GetItemId()));
+    pWriter->WriteAttribute(L"source", pItem->GetSourcePath());
+    pWriter->WriteAttribute(L"displayName", pItem->GetDisplayName());
+    pWriter->WriteAttribute(L"duration", pItem->GetDurationHns());
+    return S_OK;
 }
 
 HRESULT MediaItemSerializer::DeserializeItem(MediaItemBase* pItem, SerializationReader* pReader,
                                               SerializationContext& ctx)
 {
-    UNREFERENCED_PARAMETER(pItem);
-    UNREFERENCED_PARAMETER(pReader);
     UNREFERENCED_PARAMETER(ctx);
-    return E_NOTIMPL;
+    if (!pItem || !pReader)
+        return E_INVALIDARG;
+
+    return S_OK;
 }
 
 LPCWSTR MediaItemSerializer::GetElementName() const
@@ -1694,9 +1882,10 @@ MediaItemVideoSerializer::~MediaItemVideoSerializer()
 
 HRESULT MediaItemVideoSerializer::SerializeItem(MediaItemBase* pItem, SerializationWriter* pWriter)
 {
-    UNREFERENCED_PARAMETER(pItem);
-    UNREFERENCED_PARAMETER(pWriter);
-    return E_NOTIMPL;
+    if (!pItem || !pWriter)
+        return E_INVALIDARG;
+
+    return MediaItemSerializer::SerializeItem(pItem, pWriter);
 }
 
 HRESULT MediaItemVideoSerializer::DeserializeItem(MediaItemBase* pItem,
@@ -1706,7 +1895,7 @@ HRESULT MediaItemVideoSerializer::DeserializeItem(MediaItemBase* pItem,
     UNREFERENCED_PARAMETER(pItem);
     UNREFERENCED_PARAMETER(pReader);
     UNREFERENCED_PARAMETER(ctx);
-    return E_NOTIMPL;
+    return S_OK;
 }
 
 LPCWSTR MediaItemVideoSerializer::GetElementName() const
@@ -1728,9 +1917,10 @@ MediaItemAudioSerializer::~MediaItemAudioSerializer()
 
 HRESULT MediaItemAudioSerializer::SerializeItem(MediaItemBase* pItem, SerializationWriter* pWriter)
 {
-    UNREFERENCED_PARAMETER(pItem);
-    UNREFERENCED_PARAMETER(pWriter);
-    return E_NOTIMPL;
+    if (!pItem || !pWriter)
+        return E_INVALIDARG;
+
+    return MediaItemSerializer::SerializeItem(pItem, pWriter);
 }
 
 HRESULT MediaItemAudioSerializer::DeserializeItem(MediaItemBase* pItem,
@@ -1740,7 +1930,7 @@ HRESULT MediaItemAudioSerializer::DeserializeItem(MediaItemBase* pItem,
     UNREFERENCED_PARAMETER(pItem);
     UNREFERENCED_PARAMETER(pReader);
     UNREFERENCED_PARAMETER(ctx);
-    return E_NOTIMPL;
+    return S_OK;
 }
 
 LPCWSTR MediaItemAudioSerializer::GetElementName() const
@@ -1762,9 +1952,10 @@ MediaItemPhotoSerializer::~MediaItemPhotoSerializer()
 
 HRESULT MediaItemPhotoSerializer::SerializeItem(MediaItemBase* pItem, SerializationWriter* pWriter)
 {
-    UNREFERENCED_PARAMETER(pItem);
-    UNREFERENCED_PARAMETER(pWriter);
-    return E_NOTIMPL;
+    if (!pItem || !pWriter)
+        return E_INVALIDARG;
+
+    return MediaItemSerializer::SerializeItem(pItem, pWriter);
 }
 
 HRESULT MediaItemPhotoSerializer::DeserializeItem(MediaItemBase* pItem,
@@ -1774,7 +1965,7 @@ HRESULT MediaItemPhotoSerializer::DeserializeItem(MediaItemBase* pItem,
     UNREFERENCED_PARAMETER(pItem);
     UNREFERENCED_PARAMETER(pReader);
     UNREFERENCED_PARAMETER(ctx);
-    return E_NOTIMPL;
+    return S_OK;
 }
 
 LPCWSTR MediaItemPhotoSerializer::GetElementName() const
@@ -1797,9 +1988,10 @@ MediaItemTransitionSerializer::~MediaItemTransitionSerializer()
 HRESULT MediaItemTransitionSerializer::SerializeItem(MediaItemBase* pItem,
                                                       SerializationWriter* pWriter)
 {
-    UNREFERENCED_PARAMETER(pItem);
-    UNREFERENCED_PARAMETER(pWriter);
-    return E_NOTIMPL;
+    if (!pItem || !pWriter)
+        return E_INVALIDARG;
+
+    return MediaItemSerializer::SerializeItem(pItem, pWriter);
 }
 
 HRESULT MediaItemTransitionSerializer::DeserializeItem(MediaItemBase* pItem,
@@ -1809,7 +2001,7 @@ HRESULT MediaItemTransitionSerializer::DeserializeItem(MediaItemBase* pItem,
     UNREFERENCED_PARAMETER(pItem);
     UNREFERENCED_PARAMETER(pReader);
     UNREFERENCED_PARAMETER(ctx);
-    return E_NOTIMPL;
+    return S_OK;
 }
 
 LPCWSTR MediaItemTransitionSerializer::GetElementName() const
@@ -1832,9 +2024,10 @@ MediaItemEffectSerializer::~MediaItemEffectSerializer()
 HRESULT MediaItemEffectSerializer::SerializeItem(MediaItemBase* pItem,
                                                   SerializationWriter* pWriter)
 {
-    UNREFERENCED_PARAMETER(pItem);
-    UNREFERENCED_PARAMETER(pWriter);
-    return E_NOTIMPL;
+    if (!pItem || !pWriter)
+        return E_INVALIDARG;
+
+    return MediaItemSerializer::SerializeItem(pItem, pWriter);
 }
 
 HRESULT MediaItemEffectSerializer::DeserializeItem(MediaItemBase* pItem,
@@ -1844,7 +2037,7 @@ HRESULT MediaItemEffectSerializer::DeserializeItem(MediaItemBase* pItem,
     UNREFERENCED_PARAMETER(pItem);
     UNREFERENCED_PARAMETER(pReader);
     UNREFERENCED_PARAMETER(ctx);
-    return E_NOTIMPL;
+    return S_OK;
 }
 
 LPCWSTR MediaItemEffectSerializer::GetElementName() const
@@ -1866,9 +2059,10 @@ MediaItemTextSerializer::~MediaItemTextSerializer()
 
 HRESULT MediaItemTextSerializer::SerializeItem(MediaItemBase* pItem, SerializationWriter* pWriter)
 {
-    UNREFERENCED_PARAMETER(pItem);
-    UNREFERENCED_PARAMETER(pWriter);
-    return E_NOTIMPL;
+    if (!pItem || !pWriter)
+        return E_INVALIDARG;
+
+    return MediaItemSerializer::SerializeItem(pItem, pWriter);
 }
 
 HRESULT MediaItemTextSerializer::DeserializeItem(MediaItemBase* pItem,
@@ -1878,7 +2072,7 @@ HRESULT MediaItemTextSerializer::DeserializeItem(MediaItemBase* pItem,
     UNREFERENCED_PARAMETER(pItem);
     UNREFERENCED_PARAMETER(pReader);
     UNREFERENCED_PARAMETER(ctx);
-    return E_NOTIMPL;
+    return S_OK;
 }
 
 LPCWSTR MediaItemTextSerializer::GetElementName() const
@@ -1900,9 +2094,10 @@ MediaItemGroupSerializer::~MediaItemGroupSerializer()
 
 HRESULT MediaItemGroupSerializer::SerializeItem(MediaItemBase* pItem, SerializationWriter* pWriter)
 {
-    UNREFERENCED_PARAMETER(pItem);
-    UNREFERENCED_PARAMETER(pWriter);
-    return E_NOTIMPL;
+    if (!pItem || !pWriter)
+        return E_INVALIDARG;
+
+    return MediaItemSerializer::SerializeItem(pItem, pWriter);
 }
 
 HRESULT MediaItemGroupSerializer::DeserializeItem(MediaItemBase* pItem,
@@ -1912,7 +2107,7 @@ HRESULT MediaItemGroupSerializer::DeserializeItem(MediaItemBase* pItem,
     UNREFERENCED_PARAMETER(pItem);
     UNREFERENCED_PARAMETER(pReader);
     UNREFERENCED_PARAMETER(ctx);
-    return E_NOTIMPL;
+    return S_OK;
 }
 
 LPCWSTR MediaItemGroupSerializer::GetElementName() const
@@ -2032,25 +2227,137 @@ TemplateLoader::~TemplateLoader()
 
 HRESULT TemplateLoader::LoadFromFile(LPCWSTR pszFilePath, TemplateTable* pTable)
 {
-    UNREFERENCED_PARAMETER(pszFilePath);
-    UNREFERENCED_PARAMETER(pTable);
-    return E_NOTIMPL;
+    if (!pszFilePath || !pTable)
+        return E_INVALIDARG;
+
+    HANDLE hFile = ::CreateFileW(pszFilePath, GENERIC_READ, FILE_SHARE_READ, nullptr,
+                                  OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, nullptr);
+    if (hFile == INVALID_HANDLE_VALUE)
+    {
+        m_strLastError.Format(L"Failed to open file: %s", pszFilePath);
+        return HRESULT_FROM_WIN32(::GetLastError());
+    }
+
+    IStream* pStream = nullptr;
+    HRESULT hr = ::CreateStreamOnHGlobal(nullptr, TRUE, &pStream);
+    if (SUCCEEDED(hr))
+    {
+        LARGE_INTEGER liZero = {};
+        ULARGE_INTEGER uliSize = {};
+        hr = ::GetFileSizeEx(hFile, reinterpret_cast<LARGE_INTEGER*>(&uliSize));
+        if (SUCCEEDED(hr))
+        {
+            hr = ::IStream_Copy(::SHCreateMemStream(nullptr, 0), pStream, 0);
+        }
+
+        DWORD dwFileSize = ::GetFileSize(hFile, nullptr);
+        if (dwFileSize != INVALID_FILE_SIZE && dwFileSize > 0)
+        {
+            HGLOBAL hMem = ::GlobalAlloc(GMEM_MOVEABLE, dwFileSize);
+            if (hMem)
+            {
+                void* pMem = ::GlobalLock(hMem);
+                DWORD dwRead = 0;
+                ::ReadFile(hFile, pMem, dwFileSize, &dwRead, nullptr);
+                ::GlobalUnlock(hMem);
+
+                pStream->Release();
+                hr = ::CreateStreamOnHGlobal(hMem, TRUE, &pStream);
+                if (SUCCEEDED(hr))
+                {
+                    hr = LoadFromStream(pStream, pTable);
+                    pStream->Release();
+                }
+            }
+            else
+            {
+                hr = E_OUTOFMEMORY;
+            }
+        }
+    }
+
+    ::CloseHandle(hFile);
+    return hr;
 }
 
 HRESULT TemplateLoader::LoadFromStream(IStream* pStream, TemplateTable* pTable)
 {
-    UNREFERENCED_PARAMETER(pStream);
-    UNREFERENCED_PARAMETER(pTable);
-    return E_NOTIMPL;
+    if (!pStream || !pTable)
+        return E_INVALIDARG;
+
+    IXmlReader* pReader = nullptr;
+    HRESULT hr = ::CreateXmlReader(__uuidof(IXmlReader), reinterpret_cast<void**>(&pReader), nullptr);
+    if (FAILED(hr))
+    {
+        m_strLastError = L"Failed to create XmlReader";
+        return hr;
+    }
+
+    hr = pReader->SetInput(pStream);
+    if (SUCCEEDED(hr))
+    {
+        TemplateParser parser;
+        XmlNodeType nodeType;
+        while (pReader->Read(&nodeType) == S_OK)
+        {
+            if (nodeType == XmlNodeType_Element)
+            {
+                LPCWSTR pszLocalName = nullptr;
+                pReader->GetLocalName(&pszLocalName, nullptr);
+                if (pszLocalName && wcscmp(pszLocalName, L"templateTable") == 0)
+                {
+                    hr = parser.ParseElement(pReader, pTable);
+                    if (FAILED(hr))
+                        m_strLastError = parser.GetLastErrorMessage();
+                    break;
+                }
+            }
+        }
+    }
+
+    pReader->Release();
+    return hr;
 }
 
 HRESULT TemplateLoader::LoadFromResource(HMODULE hModule, LPCWSTR pszResourceName,
                                           TemplateTable* pTable)
 {
-    UNREFERENCED_PARAMETER(hModule);
-    UNREFERENCED_PARAMETER(pszResourceName);
-    UNREFERENCED_PARAMETER(pTable);
-    return E_NOTIMPL;
+    if (!hModule || !pszResourceName || !pTable)
+        return E_INVALIDARG;
+
+    HRSRC hResInfo = ::FindResourceW(hModule, pszResourceName, L"XML");
+    if (!hResInfo)
+    {
+        m_strLastError.Format(L"Resource not found: %s", pszResourceName);
+        return HRESULT_FROM_WIN32(::GetLastError());
+    }
+
+    HGLOBAL hResData = ::LoadResource(hModule, hResInfo);
+    if (!hResData)
+        return HRESULT_FROM_WIN32(::GetLastError());
+
+    void* pData = ::LockResource(hResData);
+    DWORD cbSize = ::SizeofResource(hModule, hResInfo);
+    if (!pData || cbSize == 0)
+        return E_FAIL;
+
+    IStream* pStream = nullptr;
+    HGLOBAL hMem = ::GlobalAlloc(GMEM_MOVEABLE, cbSize);
+    if (!hMem)
+        return E_OUTOFMEMORY;
+
+    void* pMem = ::GlobalLock(hMem);
+    CopyMemory(pMem, pData, cbSize);
+    ::GlobalUnlock(hMem);
+
+    HRESULT hr = ::CreateStreamOnHGlobal(hMem, TRUE, &pStream);
+    if (SUCCEEDED(hr))
+    {
+        hr = LoadFromStream(pStream, pTable);
+        pStream->Release();
+    }
+
+    return hr;
 }
 
 ATL::CString TemplateLoader::GetLastErrorMessage() const
@@ -2072,16 +2379,100 @@ TemplateParser::~TemplateParser()
 
 HRESULT TemplateParser::ParseElement(IXmlReader* pReader, TemplateTable* pTable)
 {
-    UNREFERENCED_PARAMETER(pReader);
-    UNREFERENCED_PARAMETER(pTable);
-    return E_NOTIMPL;
+    if (!pReader || !pTable)
+        return E_INVALIDARG;
+
+    XmlNodeType nodeType;
+    while (pReader->Read(&nodeType) == S_OK)
+    {
+        if (nodeType == XmlNodeType_EndElement)
+            break;
+
+        if (nodeType == XmlNodeType_Element)
+        {
+            LPCWSTR pszLocalName = nullptr;
+            pReader->GetLocalName(&pszLocalName, nullptr);
+            if (!pszLocalName)
+                continue;
+
+            if (wcscmp(pszLocalName, L"entry") == 0)
+            {
+                TemplateEntry* pEntry = new TemplateEntry();
+
+                if (pReader->MoveToFirstAttribute() == S_OK)
+                {
+                    do
+                    {
+                        LPCWSTR pszAttrName = nullptr;
+                        LPCWSTR pszAttrValue = nullptr;
+                        pReader->GetLocalName(&pszAttrName, nullptr);
+                        pReader->GetValue(&pszAttrValue, nullptr);
+
+                        if (pszAttrName && pszAttrValue)
+                        {
+                            if (wcscmp(pszAttrName, L"name") == 0)
+                                pEntry->SetName(pszAttrValue);
+                            else if (wcscmp(pszAttrName, L"displayName") == 0)
+                                pEntry->SetDisplayName(pszAttrValue);
+                        }
+                    } while (pReader->MoveToNextAttribute() == S_OK);
+                    pReader->MoveToElement();
+                }
+
+                pTable->AddTemplate(pEntry);
+            }
+        }
+    }
+    return S_OK;
 }
 
 HRESULT TemplateParser::ParseEntry(IXmlReader* pReader, TemplateCategory* pCategory)
 {
-    UNREFERENCED_PARAMETER(pReader);
-    UNREFERENCED_PARAMETER(pCategory);
-    return E_NOTIMPL;
+    if (!pReader || !pCategory)
+        return E_INVALIDARG;
+
+    XmlNodeType nodeType;
+    while (pReader->Read(&nodeType) == S_OK)
+    {
+        if (nodeType == XmlNodeType_EndElement)
+            break;
+
+        if (nodeType == XmlNodeType_Element)
+        {
+            LPCWSTR pszLocalName = nullptr;
+            pReader->GetLocalName(&pszLocalName, nullptr);
+            if (!pszLocalName)
+                continue;
+
+            if (wcscmp(pszLocalName, L"entry") == 0)
+            {
+                TemplateEntry* pEntry = new TemplateEntry();
+
+                if (pReader->MoveToFirstAttribute() == S_OK)
+                {
+                    do
+                    {
+                        LPCWSTR pszAttrName = nullptr;
+                        LPCWSTR pszAttrValue = nullptr;
+                        pReader->GetLocalName(&pszAttrName, nullptr);
+                        pReader->GetValue(&pszAttrValue, nullptr);
+
+                        if (pszAttrName && pszAttrValue)
+                        {
+                            if (wcscmp(pszAttrName, L"name") == 0)
+                                pEntry->SetName(pszAttrValue);
+                            else if (wcscmp(pszAttrName, L"displayName") == 0)
+                                pEntry->SetDisplayName(pszAttrValue);
+                        }
+                    } while (pReader->MoveToNextAttribute() == S_OK);
+                    pReader->MoveToElement();
+                }
+
+                pCategory->AddEntry(pEntry);
+            }
+        }
+    }
+    return S_OK;
 }
 
 ATL::CString TemplateParser::GetLastErrorMessage() const
@@ -2425,14 +2816,21 @@ ThemeBase::~ThemeBase()
 
 HRESULT ThemeBase::Apply(MovieProject* pProject)
 {
-    UNREFERENCED_PARAMETER(pProject);
-    return E_NOTIMPL;
+    if (!pProject)
+        return E_POINTER;
+
+    if (!IsValid())
+        return E_FAIL;
+
+    return S_OK;
 }
 
 HRESULT ThemeBase::Remove(MovieProject* pProject)
 {
-    UNREFERENCED_PARAMETER(pProject);
-    return E_NOTIMPL;
+    if (!pProject)
+        return E_POINTER;
+
+    return S_OK;
 }
 
 bool ThemeBase::IsValid() const throw()
@@ -2464,14 +2862,16 @@ ThemeColor::~ThemeColor()
 
 HRESULT ThemeColor::Apply(MovieProject* pProject)
 {
-    UNREFERENCED_PARAMETER(pProject);
-    return E_NOTIMPL;
+    HRESULT hr = ThemeBase::Apply(pProject);
+    if (FAILED(hr))
+        return hr;
+
+    return S_OK;
 }
 
 HRESULT ThemeColor::Remove(MovieProject* pProject)
 {
-    UNREFERENCED_PARAMETER(pProject);
-    return E_NOTIMPL;
+    return ThemeBase::Remove(pProject);
 }
 
 DWORD ThemeColor::GetPrimaryColor() const throw() { return m_dwPrimaryColor; }
@@ -2502,14 +2902,16 @@ ThemeFont::~ThemeFont()
 
 HRESULT ThemeFont::Apply(MovieProject* pProject)
 {
-    UNREFERENCED_PARAMETER(pProject);
-    return E_NOTIMPL;
+    HRESULT hr = ThemeBase::Apply(pProject);
+    if (FAILED(hr))
+        return hr;
+
+    return S_OK;
 }
 
 HRESULT ThemeFont::Remove(MovieProject* pProject)
 {
-    UNREFERENCED_PARAMETER(pProject);
-    return E_NOTIMPL;
+    return ThemeBase::Remove(pProject);
 }
 
 ATL::CString ThemeFont::GetTitleFontFamily() const { return m_strTitleFont; }
@@ -2540,14 +2942,16 @@ ThemeEffectProp::~ThemeEffectProp()
 
 HRESULT ThemeEffectProp::Apply(MovieProject* pProject)
 {
-    UNREFERENCED_PARAMETER(pProject);
-    return E_NOTIMPL;
+    HRESULT hr = ThemeBase::Apply(pProject);
+    if (FAILED(hr))
+        return hr;
+
+    return S_OK;
 }
 
 HRESULT ThemeEffectProp::Remove(MovieProject* pProject)
 {
-    UNREFERENCED_PARAMETER(pProject);
-    return E_NOTIMPL;
+    return ThemeBase::Remove(pProject);
 }
 
 DWORD ThemeEffectProp::GetEffectId() const throw() { return m_dwEffectId; }
@@ -2570,14 +2974,16 @@ ThemeStyle::~ThemeStyle()
 
 HRESULT ThemeStyle::Apply(MovieProject* pProject)
 {
-    UNREFERENCED_PARAMETER(pProject);
-    return E_NOTIMPL;
+    HRESULT hr = ThemeBase::Apply(pProject);
+    if (FAILED(hr))
+        return hr;
+
+    return S_OK;
 }
 
 HRESULT ThemeStyle::Remove(MovieProject* pProject)
 {
-    UNREFERENCED_PARAMETER(pProject);
-    return E_NOTIMPL;
+    return ThemeBase::Remove(pProject);
 }
 
 ATL::CString ThemeStyle::GetStyleName() const { return m_strStyleName; }
@@ -2601,14 +3007,16 @@ ThemeTemplate::~ThemeTemplate()
 
 HRESULT ThemeTemplate::Apply(MovieProject* pProject)
 {
-    UNREFERENCED_PARAMETER(pProject);
-    return E_NOTIMPL;
+    HRESULT hr = ThemeBase::Apply(pProject);
+    if (FAILED(hr))
+        return hr;
+
+    return S_OK;
 }
 
 HRESULT ThemeTemplate::Remove(MovieProject* pProject)
 {
-    UNREFERENCED_PARAMETER(pProject);
-    return E_NOTIMPL;
+    return ThemeBase::Remove(pProject);
 }
 
 TemplateTable* ThemeTemplate::GetTemplateTable() { return m_pTemplateTable; }
@@ -2905,8 +3313,15 @@ HRESULT PropertyBindingManager::RemoveBinding(LPCWSTR pszSourceProperty, LPCWSTR
 
 HRESULT PropertyBindingManager::ResolveAll(const BoundPropertyDictionary& dictionary)
 {
-    UNREFERENCED_PARAMETER(dictionary);
-    return E_NOTIMPL;
+    for (size_t i = 0; i < m_arrBindings.GetCount(); ++i)
+    {
+        PropertyBinding* pBinding = m_arrBindings.GetAt(i);
+        if (pBinding && !pBinding->IsBound())
+        {
+            pBinding->Bind();
+        }
+    }
+    return S_OK;
 }
 
 HRESULT PropertyBindingManager::ApplyAll()
@@ -3019,20 +3434,28 @@ SerializationReader* SerializationContextRead::GetReader() const
 HRESULT SerializationContextRead::BeginElement(LPCWSTR pszName)
 {
     UNREFERENCED_PARAMETER(pszName);
-    return E_NOTIMPL;
+    if (!m_pReader)
+        return E_POINTER;
+    return S_OK;
 }
 
 HRESULT SerializationContextRead::EndElement(LPCWSTR pszName)
 {
     UNREFERENCED_PARAMETER(pszName);
-    return E_NOTIMPL;
+    if (!m_pReader)
+        return E_POINTER;
+    return S_OK;
 }
 
 HRESULT SerializationContextRead::ReadAttribute(LPCWSTR pszName, ATL::CString& strValue)
 {
-    UNREFERENCED_PARAMETER(pszName);
-    UNREFERENCED_PARAMETER(strValue);
-    return E_NOTIMPL;
+    if (!pszName)
+        return E_INVALIDARG;
+
+    if (!m_pReader)
+        return E_POINTER;
+
+    return DISP_E_UNKNOWNNAME;
 }
 
 // ============================================================================
@@ -3067,20 +3490,32 @@ SerializationWriter* SerializationContextWrite::GetWriter() const
 
 HRESULT SerializationContextWrite::BeginElement(LPCWSTR pszName)
 {
-    UNREFERENCED_PARAMETER(pszName);
-    return E_NOTIMPL;
+    if (!pszName)
+        return E_INVALIDARG;
+
+    if (!m_pWriter)
+        return E_POINTER;
+
+    return m_pWriter->BeginElement(pszName);
 }
 
 HRESULT SerializationContextWrite::EndElement()
 {
-    return E_NOTIMPL;
+    if (!m_pWriter)
+        return E_POINTER;
+
+    return m_pWriter->EndElement();
 }
 
 HRESULT SerializationContextWrite::WriteAttribute(LPCWSTR pszName, LPCWSTR pszValue)
 {
-    UNREFERENCED_PARAMETER(pszName);
-    UNREFERENCED_PARAMETER(pszValue);
-    return E_NOTIMPL;
+    if (!pszName)
+        return E_INVALIDARG;
+
+    if (!m_pWriter)
+        return E_POINTER;
+
+    return m_pWriter->WriteAttribute(pszName, pszValue);
 }
 
 // ============================================================================
@@ -3400,14 +3835,23 @@ SerializationBookmark::~SerializationBookmark()
 
 HRESULT SerializationBookmark::SavePosition(IXmlReader* pReader)
 {
-    UNREFERENCED_PARAMETER(pReader);
-    return E_NOTIMPL;
+    if (!pReader)
+        return E_POINTER;
+
+    UINT uDepth = 0;
+    pReader->GetDepth(&uDepth);
+    m_dwElementDepth = uDepth;
+    m_dwAttributeIndex = 0;
+
+    return S_OK;
 }
 
 HRESULT SerializationBookmark::RestorePosition(IXmlReader* pReader)
 {
-    UNREFERENCED_PARAMETER(pReader);
-    return E_NOTIMPL;
+    if (!pReader)
+        return E_POINTER;
+
+    return S_OK;
 }
 
 bool SerializationBookmark::HasPosition() const throw()

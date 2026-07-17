@@ -291,10 +291,83 @@ HRESULT ComplexProperty::SaveToStream(IStream* pStream)
     if (!pStream)
         return E_POINTER;
 
-    // In the full implementation, this would serialize all properties
-    // to the stream using an XML or binary format.
+    ULONG cbWritten = 0;
 
-    UNREFERENCED_PARAMETER(pStream);
+    DWORD dwNameLen = static_cast<DWORD>(m_strName.GetLength());
+    HRESULT hr = pStream->Write(&dwNameLen, sizeof(DWORD), &cbWritten);
+    if (FAILED(hr))
+        return hr;
+    if (dwNameLen > 0)
+    {
+        hr = pStream->Write(static_cast<LPCWSTR>(m_strName),
+            dwNameLen * sizeof(WCHAR), &cbWritten);
+        if (FAILED(hr))
+            return hr;
+    }
+
+    hr = pStream->Write(&m_dwType, sizeof(DWORD), &cbWritten);
+    if (FAILED(hr))
+        return hr;
+
+    DWORD dwCount = static_cast<DWORD>(m_properties.size());
+    hr = pStream->Write(&dwCount, sizeof(DWORD), &cbWritten);
+    if (FAILED(hr))
+        return hr;
+
+    for (DWORD i = 0; i < dwCount; ++i)
+    {
+        SingleProperty* pProp = m_properties[i];
+        if (!pProp)
+            continue;
+
+        ATL::CString strPropName = pProp->GetName();
+        DWORD dwPropNameLen = static_cast<DWORD>(strPropName.GetLength());
+        hr = pStream->Write(&dwPropNameLen, sizeof(DWORD), &cbWritten);
+        if (FAILED(hr))
+            return hr;
+        if (dwPropNameLen > 0)
+        {
+            hr = pStream->Write(static_cast<LPCWSTR>(strPropName),
+                dwPropNameLen * sizeof(WCHAR), &cbWritten);
+            if (FAILED(hr))
+                return hr;
+        }
+
+        PropertyValue val = pProp->GetValue();
+        hr = pStream->Write(&val.type, sizeof(LegacyPropertyType), &cbWritten);
+        if (FAILED(hr))
+            return hr;
+
+        switch (val.type)
+        {
+        case LegacyPropertyTypeInteger:
+            hr = pStream->Write(&val.nInt, sizeof(int), &cbWritten);
+            break;
+        case LegacyPropertyTypeFloat:
+            hr = pStream->Write(&val.flFloat, sizeof(float), &cbWritten);
+            break;
+        case LegacyPropertyTypeBoolean:
+            hr = pStream->Write(&val.bBool, sizeof(bool), &cbWritten);
+            break;
+        case LegacyPropertyTypeColor:
+            hr = pStream->Write(&val.crColor, sizeof(COLORREF), &cbWritten);
+            break;
+        case LegacyPropertyTypeString:
+        {
+            DWORD dwStrLen = static_cast<DWORD>(val.strValue.GetLength());
+            hr = pStream->Write(&dwStrLen, sizeof(DWORD), &cbWritten);
+            if (SUCCEEDED(hr) && dwStrLen > 0)
+                hr = pStream->Write(static_cast<LPCWSTR>(val.strValue),
+                    dwStrLen * sizeof(WCHAR), &cbWritten);
+            break;
+        }
+        default:
+            break;
+        }
+        if (FAILED(hr))
+            return hr;
+    }
+
     return S_OK;
 }
 
@@ -304,6 +377,115 @@ HRESULT ComplexProperty::LoadFromStream(IStream* pStream)
         return E_POINTER;
 
     RemoveAllProperties();
+
+    ULONG cbRead = 0;
+    DWORD dwNameLen = 0;
+    HRESULT hr = pStream->Read(&dwNameLen, sizeof(DWORD), &cbRead);
+    if (FAILED(hr) || cbRead != sizeof(DWORD))
+        return FAILED(hr) ? hr : E_FAIL;
+
+    if (dwNameLen > 0)
+    {
+        std::vector<WCHAR> buf(dwNameLen + 1);
+        hr = pStream->Read(buf.data(), dwNameLen * sizeof(WCHAR), &cbRead);
+        if (FAILED(hr) || cbRead != dwNameLen * sizeof(WCHAR))
+            return FAILED(hr) ? hr : E_FAIL;
+        buf[dwNameLen] = L'\0';
+        m_strName = buf.data();
+    }
+
+    hr = pStream->Read(&m_dwType, sizeof(DWORD), &cbRead);
+    if (FAILED(hr) || cbRead != sizeof(DWORD))
+        return FAILED(hr) ? hr : E_FAIL;
+
+    DWORD dwCount = 0;
+    hr = pStream->Read(&dwCount, sizeof(DWORD), &cbRead);
+    if (FAILED(hr) || cbRead != sizeof(DWORD))
+        return FAILED(hr) ? hr : E_FAIL;
+
+    for (DWORD i = 0; i < dwCount; ++i)
+    {
+        DWORD dwPropNameLen = 0;
+        hr = pStream->Read(&dwPropNameLen, sizeof(DWORD), &cbRead);
+        if (FAILED(hr) || cbRead != sizeof(DWORD))
+            return FAILED(hr) ? hr : E_FAIL;
+
+        CString strPropName;
+        if (dwPropNameLen > 0)
+        {
+            std::vector<WCHAR> nameBuf(dwPropNameLen + 1);
+            hr = pStream->Read(nameBuf.data(), dwPropNameLen * sizeof(WCHAR), &cbRead);
+            if (FAILED(hr) || cbRead != dwPropNameLen * sizeof(WCHAR))
+                return FAILED(hr) ? hr : E_FAIL;
+            nameBuf[dwPropNameLen] = L'\0';
+            strPropName = nameBuf.data();
+        }
+
+        LegacyPropertyType propType = LegacyPropertyTypeUnknown;
+        hr = pStream->Read(&propType, sizeof(LegacyPropertyType), &cbRead);
+        if (FAILED(hr) || cbRead != sizeof(LegacyPropertyType))
+            return FAILED(hr) ? hr : E_FAIL;
+
+        SingleProperty* pProp = new SingleProperty(strPropName);
+        pProp->SetId(i);
+
+        switch (propType)
+        {
+        case LegacyPropertyTypeInteger:
+        {
+            int nVal = 0;
+            hr = pStream->Read(&nVal, sizeof(int), &cbRead);
+            if (SUCCEEDED(hr) && cbRead == sizeof(int))
+                pProp->SetInt(nVal);
+            break;
+        }
+        case LegacyPropertyTypeFloat:
+        {
+            float flVal = 0.0f;
+            hr = pStream->Read(&flVal, sizeof(float), &cbRead);
+            if (SUCCEEDED(hr) && cbRead == sizeof(float))
+                pProp->SetFloat(flVal);
+            break;
+        }
+        case LegacyPropertyTypeBoolean:
+        {
+            bool bVal = false;
+            hr = pStream->Read(&bVal, sizeof(bool), &cbRead);
+            if (SUCCEEDED(hr) && cbRead == sizeof(bool))
+                pProp->SetBool(bVal);
+            break;
+        }
+        case LegacyPropertyTypeColor:
+        {
+            COLORREF crVal = 0;
+            hr = pStream->Read(&crVal, sizeof(COLORREF), &cbRead);
+            if (SUCCEEDED(hr) && cbRead == sizeof(COLORREF))
+                pProp->SetColor(crVal);
+            break;
+        }
+        case LegacyPropertyTypeString:
+        {
+            DWORD dwStrLen = 0;
+            hr = pStream->Read(&dwStrLen, sizeof(DWORD), &cbRead);
+            if (SUCCEEDED(hr) && cbRead == sizeof(DWORD) && dwStrLen > 0)
+            {
+                std::vector<WCHAR> strBuf(dwStrLen + 1);
+                hr = pStream->Read(strBuf.data(), dwStrLen * sizeof(WCHAR), &cbRead);
+                if (SUCCEEDED(hr) && cbRead == dwStrLen * sizeof(WCHAR))
+                {
+                    strBuf[dwStrLen] = L'\0';
+                    pProp->SetString(strBuf.data());
+                }
+            }
+            break;
+        }
+        default:
+            break;
+        }
+
+        AddProperty(pProp);
+    }
+
     return S_OK;
 }
 

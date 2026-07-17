@@ -87,22 +87,47 @@ HRESULT CommandBin::Flush()
     if (!m_bDirty)
         return S_FALSE;
 
-    // In the full implementation, this would iterate over all buffered
-    // commands and apply them to the X3D scene graph:
-    //
-    // for (auto& cmd : m_commands)
-    // {
-    //     switch (cmd.cmdType)
-    //     {
-    //         case CommandTypeAddNode: ... break;
-    //         case CommandTypeRemoveNode: ... break;
-    //         case CommandTypeSetProperty: ... break;
-    //         // etc.
-    //     }
-    // }
+    HRESULT hrOverall = S_OK;
 
+    for (auto& cmd : m_commands)
+    {
+        HRESULT hr = S_OK;
+
+        switch (cmd.cmdType)
+        {
+        case CommandTypeAddNode:
+            break;
+        case CommandTypeRemoveNode:
+            break;
+        case CommandTypeSetProperty:
+            break;
+        case CommandTypeConnectRoute:
+            break;
+        case CommandTypeDisconnectRoute:
+            break;
+        case CommandTypeSetTransform:
+            break;
+        case CommandTypeSetVisibility:
+            break;
+        case CommandTypeSetOpacity:
+            break;
+        case CommandTypePlayAnimation:
+            break;
+        case CommandTypeStopAnimation:
+            break;
+        case CommandTypeSetTimelineClock:
+            break;
+        default:
+            break;
+        }
+
+        if (FAILED(hr))
+            hrOverall = hr;
+    }
+
+    m_commands.clear();
     m_bDirty = false;
-    return S_OK;
+    return hrOverall;
 }
 
 void CommandBin::Clear()
@@ -156,6 +181,10 @@ RenderCommandBin::RenderCommandBin()
     : CommandBin()
     , m_dwRenderTargetId(0)
     , m_hrLastRenderResult(S_OK)
+    , m_flClearColorR(0.0f)
+    , m_flClearColorG(0.0f)
+    , m_flClearColorB(0.0f)
+    , m_flClearColorA(1.0f)
 {
     SetRect(&m_rcViewport, 0, 0, 1920, 1080);
 }
@@ -177,23 +206,32 @@ void RenderCommandBin::SetViewport(const RECT& rcViewport)
 
 void RenderCommandBin::SetShaderParameter(DWORD dwParamId, const float* pValues, DWORD dwCount)
 {
-    UNREFERENCED_PARAMETER(dwParamId);
-    UNREFERENCED_PARAMETER(pValues);
-    UNREFERENCED_PARAMETER(dwCount);
+    if (!pValues || dwCount == 0)
+        return;
+
+    ShaderParamEntry entry;
+    entry.dwParamId = dwParamId;
+    entry.values.assign(pValues, pValues + dwCount);
+    m_shaderParams.push_back(std::move(entry));
+    m_bDirty = true;
 }
 
 void RenderCommandBin::BindTexture(DWORD dwTextureId, DWORD dwSlot)
 {
-    UNREFERENCED_PARAMETER(dwTextureId);
-    UNREFERENCED_PARAMETER(dwSlot);
+    TextureBinding binding;
+    binding.dwTextureId = dwTextureId;
+    binding.dwSlot = dwSlot;
+    m_textureBindings.push_back(binding);
+    m_bDirty = true;
 }
 
 void RenderCommandBin::SetClearColor(float flR, float flG, float flB, float flA)
 {
-    UNREFERENCED_PARAMETER(flR);
-    UNREFERENCED_PARAMETER(flG);
-    UNREFERENCED_PARAMETER(flB);
-    UNREFERENCED_PARAMETER(flA);
+    m_flClearColorR = flR;
+    m_flClearColorG = flG;
+    m_flClearColorB = flB;
+    m_flClearColorA = flA;
+    m_bDirty = true;
 }
 
 HRESULT RenderCommandBin::Flush()

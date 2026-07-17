@@ -100,6 +100,9 @@ namespace HMREngine
             bool m_deviceLost = false;
             bool m_allowTearing = false;
 
+            Matrix4f m_view;
+            Matrix4f m_proj;
+
             virtual HRESULT HandleDeviceLost();
             HRESULT CreateDepthStencilState();
             HRESULT CreateBlendState();

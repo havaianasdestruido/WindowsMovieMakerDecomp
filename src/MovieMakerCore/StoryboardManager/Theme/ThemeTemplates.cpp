@@ -784,14 +784,103 @@ void BaseTemplate::RemoveAllPlaceholders()
 
 HRESULT BaseTemplate::LoadFromXml(IXmlReader* pReader)
 {
-    UNREFERENCED_PARAMETER(pReader);
-    return E_NOTIMPL;
+    if (!pReader)
+        return E_INVALIDARG;
+
+    LPCWSTR pwszVal = nullptr;
+    if (SUCCEEDED(XmlReaderGetAttribute(pReader, L"id", &pwszVal)) && pwszVal)
+        SetId(pwszVal);
+
+    pwszVal = nullptr;
+    if (SUCCEEDED(XmlReaderGetAttribute(pReader, L"name", &pwszVal)) && pwszVal)
+        SetName(pwszVal);
+
+    pwszVal = nullptr;
+    if (SUCCEEDED(XmlReaderGetAttribute(pReader, L"duration", &pwszVal)) && pwszVal)
+        SetDurationHns(_wtoi64(pwszVal));
+
+    XmlNodeType nodeType;
+    while (pReader->Read(&nodeType) == S_OK)
+    {
+        if (nodeType == XmlNodeType_Element)
+        {
+            LPCWSTR pwszName = nullptr;
+            pReader->GetLocalName(&pwszName, nullptr);
+
+            if (pwszName && wcscmp(pwszName, L"properties") == 0)
+            {
+                while (pReader->Read(&nodeType) == S_OK)
+                {
+                    if (nodeType == XmlNodeType_Element)
+                    {
+                        LPCWSTR pwszChild = nullptr;
+                        pReader->GetLocalName(&pwszChild, nullptr);
+                        if (pwszChild && wcscmp(pwszChild, L"property") == 0)
+                        {
+                            TemplateProperty prop;
+                            pwszVal = nullptr;
+                            if (SUCCEEDED(XmlReaderGetAttribute(pReader, L"key", &pwszVal)) && pwszVal)
+                                prop.SetKey(pwszVal);
+                            pwszVal = nullptr;
+                            if (SUCCEEDED(XmlReaderGetAttribute(pReader, L"value", &pwszVal)) && pwszVal)
+                                prop.SetValue(pwszVal);
+                            AddProperty(prop);
+                        }
+                    }
+                    else if (nodeType == XmlNodeType_EndElement)
+                    {
+                        break;
+                    }
+                }
+            }
+            else if (pwszName && wcscmp(pwszName, L"sockets") == 0)
+            {
+                TemplateSocketsParser parser;
+                parser.Parse(pReader, m_arrSockets, m_arrPlaceholders);
+            }
+        }
+        else if (nodeType == XmlNodeType_EndElement)
+        {
+            break;
+        }
+    }
+
+    return S_OK;
 }
 
 HRESULT BaseTemplate::SaveToXml(IXmlWriter* pWriter)
 {
-    UNREFERENCED_PARAMETER(pWriter);
-    return E_NOTIMPL;
+    if (!pWriter)
+        return E_INVALIDARG;
+
+    if (!m_strId.IsEmpty())
+        pWriter->WriteAttributeString(nullptr, L"id", nullptr, m_strId);
+
+    if (!m_strName.IsEmpty())
+        pWriter->WriteAttributeString(nullptr, L"name", nullptr, m_strName);
+
+    if (m_llDurationHns != 0)
+    {
+        WCHAR szValue[64] = { 0 };
+        swprintf_s(szValue, L"%lld", m_llDurationHns);
+        pWriter->WriteAttributeString(nullptr, L"duration", nullptr, szValue);
+    }
+
+    if (m_arrProperties.GetCount() > 0)
+    {
+        pWriter->WriteStartElement(nullptr, L"properties", nullptr);
+        for (size_t i = 0; i < m_arrProperties.GetCount(); ++i)
+        {
+            const TemplateProperty& prop = m_arrProperties.GetAt(i);
+            pWriter->WriteStartElement(nullptr, L"property", nullptr);
+            pWriter->WriteAttributeString(nullptr, L"key", nullptr, prop.GetKey());
+            pWriter->WriteAttributeString(nullptr, L"value", nullptr, prop.GetValue());
+            pWriter->WriteEndElement();
+        }
+        pWriter->WriteEndElement();
+    }
+
+    return S_OK;
 }
 
 LONGLONG BaseTemplate::GetDurationHns() const throw()
@@ -911,12 +1000,60 @@ ATL::CString BaseX3DTemplate::GetTemplateType() const
 
 HRESULT BaseX3DTemplate::LoadFromXml(IXmlReader* pReader)
 {
-    return BaseTemplate::LoadFromXml(pReader);
+    if (!pReader)
+        return E_INVALIDARG;
+
+    BaseTemplate::LoadFromXml(pReader);
+
+    LPCWSTR pwszVal = nullptr;
+    if (SUCCEEDED(XmlReaderGetAttribute(pReader, L"x3dScenePath", &pwszVal)) && pwszVal)
+        SetX3dScenePath(pwszVal);
+
+    pwszVal = nullptr;
+    if (SUCCEEDED(XmlReaderGetAttribute(pReader, L"renderWidth", &pwszVal)) && pwszVal)
+    {
+        UINT cx = static_cast<UINT>(_wtoi(pwszVal));
+        pwszVal = nullptr;
+        UINT cy = 1080;
+        if (SUCCEEDED(XmlReaderGetAttribute(pReader, L"renderHeight", &pwszVal)) && pwszVal)
+            cy = static_cast<UINT>(_wtoi(pwszVal));
+        SetRenderDimensions(cx, cy);
+    }
+
+    pwszVal = nullptr;
+    if (SUCCEEDED(XmlReaderGetAttribute(pReader, L"frameRate", &pwszVal)) && pwszVal)
+        SetFrameRate(static_cast<DWORD>(_wtoi(pwszVal)));
+
+    return S_OK;
 }
 
 HRESULT BaseX3DTemplate::SaveToXml(IXmlWriter* pWriter)
 {
-    return BaseTemplate::SaveToXml(pWriter);
+    if (!pWriter)
+        return E_INVALIDARG;
+
+    BaseTemplate::SaveToXml(pWriter);
+
+    if (!m_strX3dScenePath.IsEmpty())
+        pWriter->WriteAttributeString(nullptr, L"x3dScenePath", nullptr, m_strX3dScenePath);
+
+    WCHAR szValue[64] = { 0 };
+
+    if (m_uRenderWidth != 1920 || m_uRenderHeight != 1080)
+    {
+        swprintf_s(szValue, L"%u", m_uRenderWidth);
+        pWriter->WriteAttributeString(nullptr, L"renderWidth", nullptr, szValue);
+        swprintf_s(szValue, L"%u", m_uRenderHeight);
+        pWriter->WriteAttributeString(nullptr, L"renderHeight", nullptr, szValue);
+    }
+
+    if (m_dwFrameRate != 30)
+    {
+        swprintf_s(szValue, L"%u", m_dwFrameRate);
+        pWriter->WriteAttributeString(nullptr, L"frameRate", nullptr, szValue);
+    }
+
+    return S_OK;
 }
 
 // ============================================================================
@@ -1009,12 +1146,30 @@ ATL::CString CompositeX3DTemplate::GetTemplateType() const
 
 HRESULT CompositeX3DTemplate::LoadFromXml(IXmlReader* pReader)
 {
-    return BaseX3DTemplate::LoadFromXml(pReader);
+    if (!pReader)
+        return E_INVALIDARG;
+
+    BaseX3DTemplate::LoadFromXml(pReader);
+    return S_OK;
 }
 
 HRESULT CompositeX3DTemplate::SaveToXml(IXmlWriter* pWriter)
 {
-    return BaseX3DTemplate::SaveToXml(pWriter);
+    if (!pWriter)
+        return E_INVALIDARG;
+
+    pWriter->WriteStartElement(nullptr, L"compositeX3d", nullptr);
+    BaseX3DTemplate::SaveToXml(pWriter);
+
+    for (size_t i = 0; i < m_arrSubTemplates.GetCount(); ++i)
+    {
+        BaseX3DTemplate* pSub = m_arrSubTemplates.GetAt(i);
+        if (pSub)
+            pSub->SaveToXml(pWriter);
+    }
+
+    pWriter->WriteEndElement();
+    return S_OK;
 }
 
 // ============================================================================
@@ -1077,12 +1232,93 @@ ATL::CString ThemeX3DTemplate::GetTemplateType() const
 
 HRESULT ThemeX3DTemplate::LoadFromXml(IXmlReader* pReader)
 {
-    return BaseX3DTemplate::LoadFromXml(pReader);
+    if (!pReader)
+        return E_INVALIDARG;
+
+    BaseX3DTemplate::LoadFromXml(pReader);
+
+    LPCWSTR pwszVal = nullptr;
+    if (SUCCEEDED(XmlReaderGetAttribute(pReader, L"sectionType", &pwszVal)) && pwszVal)
+        SetSectionType(static_cast<SectionType>(_wtoi(pwszVal)));
+
+    pwszVal = nullptr;
+    if (SUCCEEDED(XmlReaderGetAttribute(pReader, L"backgroundModel", &pwszVal)) && pwszVal)
+        SetBackgroundModelPath(pwszVal);
+
+    pwszVal = nullptr;
+    if (SUCCEEDED(XmlReaderGetAttribute(pReader, L"cameraFov", &pwszVal)) && pwszVal)
+        SetCameraFov(static_cast<float>(_wtof(pwszVal)));
+
+    pwszVal = nullptr;
+    if (SUCCEEDED(XmlReaderGetAttribute(pReader, L"cameraNear", &pwszVal)) && pwszVal)
+        SetCameraNear(static_cast<float>(_wtof(pwszVal)));
+
+    pwszVal = nullptr;
+    if (SUCCEEDED(XmlReaderGetAttribute(pReader, L"cameraFar", &pwszVal)) && pwszVal)
+        SetCameraFar(static_cast<float>(_wtof(pwszVal)));
+
+    pwszVal = nullptr;
+    if (SUCCEEDED(XmlReaderGetAttribute(pReader, L"ambientColor", &pwszVal)) && pwszVal)
+        SetAmbientColor(static_cast<DWORD>(wcstoul(pwszVal, nullptr, 16)));
+
+    pwszVal = nullptr;
+    if (SUCCEEDED(XmlReaderGetAttribute(pReader, L"directionalColor", &pwszVal)) && pwszVal)
+        SetDirectionalColor(static_cast<DWORD>(wcstoul(pwszVal, nullptr, 16)));
+
+    return S_OK;
 }
 
 HRESULT ThemeX3DTemplate::SaveToXml(IXmlWriter* pWriter)
 {
-    return BaseX3DTemplate::SaveToXml(pWriter);
+    if (!pWriter)
+        return E_INVALIDARG;
+
+    pWriter->WriteStartElement(nullptr, L"themeX3d", nullptr);
+    BaseX3DTemplate::SaveToXml(pWriter);
+
+    WCHAR szValue[64] = { 0 };
+
+    if (m_sectionType != SectionIntro)
+    {
+        swprintf_s(szValue, L"%d", static_cast<int>(m_sectionType));
+        pWriter->WriteAttributeString(nullptr, L"sectionType", nullptr, szValue);
+    }
+
+    if (!m_strBackgroundModelPath.IsEmpty())
+        pWriter->WriteAttributeString(nullptr, L"backgroundModel", nullptr, m_strBackgroundModelPath);
+
+    if (m_flCameraFov != 60.0f)
+    {
+        swprintf_s(szValue, L"%g", m_flCameraFov);
+        pWriter->WriteAttributeString(nullptr, L"cameraFov", nullptr, szValue);
+    }
+
+    if (m_flCameraNear != 0.1f)
+    {
+        swprintf_s(szValue, L"%g", m_flCameraNear);
+        pWriter->WriteAttributeString(nullptr, L"cameraNear", nullptr, szValue);
+    }
+
+    if (m_flCameraFar != 1000.0f)
+    {
+        swprintf_s(szValue, L"%g", m_flCameraFar);
+        pWriter->WriteAttributeString(nullptr, L"cameraFar", nullptr, szValue);
+    }
+
+    if (m_dwAmbientColor != 0xFF404040)
+    {
+        swprintf_s(szValue, L"0x%08X", m_dwAmbientColor);
+        pWriter->WriteAttributeString(nullptr, L"ambientColor", nullptr, szValue);
+    }
+
+    if (m_dwDirectionalColor != 0xFFFFFFFF)
+    {
+        swprintf_s(szValue, L"0x%08X", m_dwDirectionalColor);
+        pWriter->WriteAttributeString(nullptr, L"directionalColor", nullptr, szValue);
+    }
+
+    pWriter->WriteEndElement();
+    return S_OK;
 }
 
 // ============================================================================
@@ -1154,12 +1390,70 @@ ATL::CString EffectX3DTemplate::GetTemplateType() const
 
 HRESULT EffectX3DTemplate::LoadFromXml(IXmlReader* pReader)
 {
-    return BaseX3DTemplate::LoadFromXml(pReader);
+    if (!pReader)
+        return E_INVALIDARG;
+
+    BaseX3DTemplate::LoadFromXml(pReader);
+
+    LPCWSTR pwszVal = nullptr;
+    if (SUCCEEDED(XmlReaderGetAttribute(pReader, L"effectType", &pwszVal)) && pwszVal)
+        SetEffectType(static_cast<DWORD>(_wtoi(pwszVal)));
+
+    pwszVal = nullptr;
+    if (SUCCEEDED(XmlReaderGetAttribute(pReader, L"vertexShader", &pwszVal)) && pwszVal)
+        SetVertexShaderPath(pwszVal);
+
+    pwszVal = nullptr;
+    if (SUCCEEDED(XmlReaderGetAttribute(pReader, L"pixelShader", &pwszVal)) && pwszVal)
+        SetPixelShaderPath(pwszVal);
+
+    pwszVal = nullptr;
+    if (SUCCEEDED(XmlReaderGetAttribute(pReader, L"blendMode", &pwszVal)) && pwszVal)
+        SetBlendMode(static_cast<DWORD>(_wtoi(pwszVal)));
+
+    return S_OK;
 }
 
 HRESULT EffectX3DTemplate::SaveToXml(IXmlWriter* pWriter)
 {
-    return BaseX3DTemplate::SaveToXml(pWriter);
+    if (!pWriter)
+        return E_INVALIDARG;
+
+    pWriter->WriteStartElement(nullptr, L"effectX3d", nullptr);
+    BaseX3DTemplate::SaveToXml(pWriter);
+
+    WCHAR szValue[64] = { 0 };
+
+    if (m_dwEffectType != 0)
+    {
+        swprintf_s(szValue, L"%u", m_dwEffectType);
+        pWriter->WriteAttributeString(nullptr, L"effectType", nullptr, szValue);
+    }
+
+    if (!m_strVertexShaderPath.IsEmpty())
+        pWriter->WriteAttributeString(nullptr, L"vertexShader", nullptr, m_strVertexShaderPath);
+
+    if (!m_strPixelShaderPath.IsEmpty())
+        pWriter->WriteAttributeString(nullptr, L"pixelShader", nullptr, m_strPixelShaderPath);
+
+    if (m_dwBlendMode != 0)
+    {
+        swprintf_s(szValue, L"%u", m_dwBlendMode);
+        pWriter->WriteAttributeString(nullptr, L"blendMode", nullptr, szValue);
+    }
+
+    for (size_t i = 0; i < m_arrTexturePaths.GetCount(); ++i)
+    {
+        if (!m_arrTexturePaths.GetAt(i).IsEmpty())
+        {
+            pWriter->WriteStartElement(nullptr, L"texture", nullptr);
+            pWriter->WriteAttributeString(nullptr, L"path", nullptr, m_arrTexturePaths.GetAt(i));
+            pWriter->WriteEndElement();
+        }
+    }
+
+    pWriter->WriteEndElement();
+    return S_OK;
 }
 
 // ============================================================================
@@ -1233,12 +1527,67 @@ ATL::CString ExtentX3DTemplate::GetTemplateType() const
 
 HRESULT ExtentX3DTemplate::LoadFromXml(IXmlReader* pReader)
 {
-    return BaseX3DTemplate::LoadFromXml(pReader);
+    if (!pReader)
+        return E_INVALIDARG;
+
+    BaseX3DTemplate::LoadFromXml(pReader);
+
+    LPCWSTR pwszVal = nullptr;
+    if (SUCCEEDED(XmlReaderGetAttribute(pReader, L"mediaSocketId", &pwszVal)) && pwszVal)
+        SetMediaSocketId(pwszVal);
+
+    pwszVal = nullptr;
+    if (SUCCEEDED(XmlReaderGetAttribute(pReader, L"entranceAnimation", &pwszVal)) && pwszVal)
+        SetEntranceAnimation(pwszVal);
+
+    pwszVal = nullptr;
+    if (SUCCEEDED(XmlReaderGetAttribute(pReader, L"exitAnimation", &pwszVal)) && pwszVal)
+        SetExitAnimation(pwszVal);
+
+    pwszVal = nullptr;
+    if (SUCCEEDED(XmlReaderGetAttribute(pReader, L"durationMode", &pwszVal)) && pwszVal)
+        SetDurationMode(static_cast<DurationMode>(_wtoi(pwszVal)));
+
+    pwszVal = nullptr;
+    if (SUCCEEDED(XmlReaderGetAttribute(pReader, L"aspectRatioMode", &pwszVal)) && pwszVal)
+        SetAspectRatioMode(static_cast<AspectRatioMode>(_wtoi(pwszVal)));
+
+    return S_OK;
 }
 
 HRESULT ExtentX3DTemplate::SaveToXml(IXmlWriter* pWriter)
 {
-    return BaseX3DTemplate::SaveToXml(pWriter);
+    if (!pWriter)
+        return E_INVALIDARG;
+
+    pWriter->WriteStartElement(nullptr, L"extentX3d", nullptr);
+    BaseX3DTemplate::SaveToXml(pWriter);
+
+    if (!m_strMediaSocketId.IsEmpty())
+        pWriter->WriteAttributeString(nullptr, L"mediaSocketId", nullptr, m_strMediaSocketId);
+
+    if (!m_strEntranceAnimation.IsEmpty())
+        pWriter->WriteAttributeString(nullptr, L"entranceAnimation", nullptr, m_strEntranceAnimation);
+
+    if (!m_strExitAnimation.IsEmpty())
+        pWriter->WriteAttributeString(nullptr, L"exitAnimation", nullptr, m_strExitAnimation);
+
+    WCHAR szValue[64] = { 0 };
+
+    if (m_durationMode != DurationModeFitToMedia)
+    {
+        swprintf_s(szValue, L"%d", static_cast<int>(m_durationMode));
+        pWriter->WriteAttributeString(nullptr, L"durationMode", nullptr, szValue);
+    }
+
+    if (m_aspectRatioMode != AspectRatioCrop)
+    {
+        swprintf_s(szValue, L"%d", static_cast<int>(m_aspectRatioMode));
+        pWriter->WriteAttributeString(nullptr, L"aspectRatioMode", nullptr, szValue);
+    }
+
+    pWriter->WriteEndElement();
+    return S_OK;
 }
 
 // ============================================================================

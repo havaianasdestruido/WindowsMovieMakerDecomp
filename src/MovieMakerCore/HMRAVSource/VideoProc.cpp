@@ -13,6 +13,7 @@ namespace HMRAVSource
 XVideoProc::XVideoProc()
     : m_fInitialized(false)
     , m_dwFramesProcessed(0)
+    , m_effectType(VideoEffectNone)
 {
 }
 
@@ -145,6 +146,17 @@ HRESULT XVideoProc::SetDenoise(bool fEnable)
     return S_OK;
 }
 
+HRESULT XVideoProc::SetEffect(VideoEffectType effectType)
+{
+    m_effectType = effectType;
+    return S_OK;
+}
+
+XVideoProc::VideoEffectType XVideoProc::GetEffect() const throw()
+{
+    return m_effectType;
+}
+
 HRESULT XVideoProc::AddTransform(REFGUID guidTransformClsid)
 {
     CComPtr<IMFTransform> spTransform;
@@ -201,7 +213,45 @@ HRESULT XVideoProc::CreateScaler()
 
 HRESULT XVideoProc::ConfigureTransformChain()
 {
-    return S_OK;
+    if (!m_spColorConverter)
+        return E_UNEXPECTED;
+
+    HRESULT hr = S_OK;
+
+    CComPtr<IMFMediaType> spInputType;
+    hr = MFCreateMediaType(&spInputType);
+    if (FAILED(hr))
+        return hr;
+
+    spInputType->SetGUID(MF_MT_MAJOR_TYPE, MFMediaType_Video);
+    spInputType->SetGUID(MF_MT_SUBTYPE, m_desc.guidInputSubtype);
+    spInputType->SetUINT32(MF_MT_INTERLACE_MODE, MFVideoInterlace_Progressive);
+    MFSetAttributeSize(spInputType, MF_MT_FRAME_SIZE, m_desc.uInputWidth, m_desc.uInputHeight);
+
+    hr = m_spColorConverter->SetInputType(0, spInputType, 0);
+    if (FAILED(hr))
+        return hr;
+
+    CComPtr<IMFMediaType> spOutputType;
+    hr = MFCreateMediaType(&spOutputType);
+    if (FAILED(hr))
+        return hr;
+
+    spOutputType->SetGUID(MF_MT_MAJOR_TYPE, MFMediaType_Video);
+    spOutputType->SetGUID(MF_MT_SUBTYPE, m_desc.guidOutputSubtype);
+    spOutputType->SetUINT32(MF_MT_INTERLACE_MODE, MFVideoInterlace_Progressive);
+    MFSetAttributeSize(spOutputType, MF_MT_FRAME_SIZE, m_desc.uOutputWidth, m_desc.uOutputHeight);
+
+    hr = m_spColorConverter->SetOutputType(0, spOutputType, 0);
+    if (FAILED(hr))
+        return hr;
+
+    hr = m_spColorConverter->ProcessMessage(MFT_MESSAGE_COMMAND_FLUSH, 0);
+    if (FAILED(hr))
+        return hr;
+
+    hr = m_spColorConverter->ProcessMessage(MFT_MESSAGE_NOTIFY_BEGIN_STREAMING, 0);
+    return hr;
 }
 
 HRESULT XVideoProc::ProcessThroughChain(IMFSample* pInput, IMFSample** ppOutput)
@@ -211,9 +261,58 @@ HRESULT XVideoProc::ProcessThroughChain(IMFSample* pInput, IMFSample** ppOutput)
 
     *ppOutput = nullptr;
 
-    // Pass through without processing for now
-    *ppOutput = pInput;
-    (*ppOutput)->AddRef();
+    if (!m_spColorConverter)
+    {
+        *ppOutput = pInput;
+        (*ppOutput)->AddRef();
+        return S_OK;
+    }
+
+    HRESULT hr = m_spColorConverter->ProcessInput(0, pInput, 0);
+    if (hr == MF_E_NOTACCEPTING)
+    {
+        *ppOutput = pInput;
+        (*ppOutput)->AddRef();
+        return S_OK;
+    }
+    if (FAILED(hr))
+        return hr;
+
+    MFT_OUTPUT_STREAM_INFO streamInfo = {};
+    hr = m_spColorConverter->GetOutputStreamInfo(0, &streamInfo);
+    if (FAILED(hr))
+        return hr;
+
+    CComPtr<IMFSample> spOutputSample;
+    hr = MFCreateSample(&spOutputSample);
+    if (FAILED(hr))
+        return hr;
+
+    CComPtr<IMFMediaBuffer> spOutputBuffer;
+    hr = MFCreateMemoryBuffer(streamInfo.cbSize, &spOutputBuffer);
+    if (FAILED(hr))
+        return hr;
+
+    hr = spOutputSample->AddBuffer(spOutputBuffer);
+    if (FAILED(hr))
+        return hr;
+
+    MFT_OUTPUT_DATA_BUFFER outputData = {};
+    outputData.dwStreamID = 0;
+    outputData.pSample = spOutputSample;
+
+    DWORD dwStatus = 0;
+    hr = m_spColorConverter->ProcessOutput(0, 1, &outputData, &dwStatus);
+    if (hr == MF_E_TRANSFORM_NEED_MORE_INPUT)
+    {
+        *ppOutput = pInput;
+        (*ppOutput)->AddRef();
+        return S_OK;
+    }
+    if (FAILED(hr))
+        return hr;
+
+    *ppOutput = outputData.pSample;
     return S_OK;
 }
 

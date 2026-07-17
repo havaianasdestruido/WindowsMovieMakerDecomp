@@ -125,8 +125,48 @@ namespace HMREngine
     {
         if (!m_enabled) return;
         if (m_key.m_value.empty() || m_value.m_value.empty()) return;
-        // For coordinate interpolators, we interpolate the entire array
-        m_currentValues = m_value.m_value;
+
+        size_t numKeys = m_key.m_value.size();
+        size_t valuePerKey = m_value.m_value.size() / numKeys;
+        if (valuePerKey == 0) return;
+
+        if (fraction <= m_key.m_value.front())
+        {
+            m_currentValues.assign(m_value.m_value.begin(),
+                m_value.m_value.begin() + static_cast<ptrdiff_t>(valuePerKey));
+            return;
+        }
+        if (fraction >= m_key.m_value.back())
+        {
+            m_currentValues.assign(m_value.m_value.end() - static_cast<ptrdiff_t>(valuePerKey),
+                m_value.m_value.end());
+            return;
+        }
+
+        for (size_t i = 0; i < numKeys - 1; i++)
+        {
+            if (fraction >= m_key.m_value[i] && fraction <= m_key.m_value[i + 1])
+            {
+                float range = m_key.m_value[i + 1] - m_key.m_value[i];
+                float t = range > 0.0f ? (fraction - m_key.m_value[i]) / range : 0.0f;
+
+                m_currentValues.resize(valuePerKey);
+                for (size_t v = 0; v < valuePerKey; v++)
+                {
+                    size_t idx0 = i * valuePerKey + v;
+                    size_t idx1 = (i + 1) * valuePerKey + v;
+                    if (idx0 < m_value.m_value.size() && idx1 < m_value.m_value.size())
+                        m_currentValues[v] = m_value.m_value[idx0] +
+                            (m_value.m_value[idx1] - m_value.m_value[idx0]) * t;
+                    else if (idx0 < m_value.m_value.size())
+                        m_currentValues[v] = m_value.m_value[idx0];
+                }
+                return;
+            }
+        }
+
+        m_currentValues.assign(m_value.m_value.end() - static_cast<ptrdiff_t>(valuePerKey),
+            m_value.m_value.end());
     }
 
 } // namespace HMREngine

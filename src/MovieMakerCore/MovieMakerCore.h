@@ -33,15 +33,6 @@
 #define _WIN32_IE     0x0800
 
 // ============================================================================
-// Export / import macros
-// ============================================================================
-#ifdef MOVIECORE_EXPORTS
-    #define MOVIECORE_API __declspec(dllexport)
-#else
-    #define MOVIECORE_API __declspec(dllimport)
-#endif
-
-// ============================================================================
 // Include project-wide common definitions and utility types
 // ============================================================================
 #include "common.h"

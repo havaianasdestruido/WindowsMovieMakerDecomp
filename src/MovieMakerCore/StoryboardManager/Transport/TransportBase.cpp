@@ -324,10 +324,31 @@ HRESULT RenderTransport::Stop()
 
 HRESULT RenderTransport::Seek(LONGLONG llPositionHns, DWORD dwFlags)
 {
-    UNREFERENCED_PARAMETER(llPositionHns);
-    UNREFERENCED_PARAMETER(dwFlags);
-    // Seeking not supported during render
-    return E_NOTIMPL;
+    if (m_state != TransportStateStopped && m_state != TransportStatePaused)
+    {
+        if (m_state == TransportStatePlaying)
+        {
+            SetState(TransportStateSeeking);
+        }
+        else
+        {
+            return E_UNEXPECTED;
+        }
+    }
+
+    if (dwFlags & TransportSeekFlagRelative)
+        m_llCurrentPositionHns += llPositionHns;
+    else
+        m_llCurrentPositionHns = llPositionHns;
+
+    m_llCurrentPositionHns = std::max<LONGLONG>(0, std::min(m_llCurrentPositionHns, m_llDurationHns));
+
+    FirePositionChange(m_llCurrentPositionHns);
+
+    if (m_state == TransportStateSeeking)
+        SetState(TransportStatePlaying);
+
+    return S_OK;
 }
 
 HRESULT RenderTransport::SetOutputPath(LPCWSTR pszPath)

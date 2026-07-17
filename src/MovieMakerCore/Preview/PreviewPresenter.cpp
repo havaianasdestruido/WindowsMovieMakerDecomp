@@ -175,11 +175,88 @@ HRESULT DefaultPreviewDX::Present()
 
 HRESULT DefaultPreviewDX::DrawBitmap(Gdiplus::Bitmap* pBitmap)
 {
-    UNREFERENCED_PARAMETER(pBitmap);
     if (!m_fInitialized)
         return E_UNEXPECTED;
+    if (!pBitmap || !m_pDevice || !m_pContext || !m_pSwapChain)
+        return E_INVALIDARG;
 
-    return S_OK;
+    ID3D11Texture2D* pBackBuffer = nullptr;
+    HRESULT hr = m_pSwapChain->GetBuffer(0, __uuidof(ID3D11Texture2D),
+        reinterpret_cast<void**>(&pBackBuffer));
+    if (FAILED(hr))
+        return hr;
+
+    D3D11_TEXTURE2D_DESC bufferDesc;
+    pBackBuffer->GetDesc(&bufferDesc);
+
+    UINT bmpW = pBitmap->GetWidth();
+    UINT bmpH = pBitmap->GetHeight();
+
+    Gdiplus::BitmapData bitmapData;
+    Gdiplus::Rect rect(0, 0, static_cast<INT>(bmpW), static_cast<INT>(bmpH));
+
+    if (pBitmap->LockBits(&rect, Gdiplus::ImageLockModeRead,
+            PixelFormat32bppARGB, &bitmapData) != Gdiplus::Ok)
+    {
+        pBackBuffer->Release();
+        return E_FAIL;
+    }
+
+    D3D11_TEXTURE2D_DESC texDesc = {};
+    texDesc.Width = bmpW;
+    texDesc.Height = bmpH;
+    texDesc.MipLevels = 1;
+    texDesc.ArraySize = 1;
+    texDesc.Format = DXGI_FORMAT_B8G8R8A8_UNORM;
+    texDesc.SampleDesc.Count = 1;
+    texDesc.Usage = D3D11_USAGE_STAGING;
+    texDesc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
+
+    ID3D11Texture2D* pStaging = nullptr;
+    hr = m_pDevice->CreateTexture2D(&texDesc, nullptr, &pStaging);
+    if (SUCCEEDED(hr))
+    {
+        D3D11_MAPPED_SUBRESOURCE mapped;
+        hr = m_pContext->Map(pStaging, 0, D3D11_MAP_WRITE, 0, &mapped);
+        if (SUCCEEDED(hr))
+        {
+            const BYTE* pSrc = static_cast<const BYTE*>(bitmapData.Scan0);
+            BYTE* pDst = static_cast<BYTE*>(mapped.pData);
+            UINT srcRowBytes = bmpW * 4;
+            UINT copyBytes = (std::min)(srcRowBytes, mapped.RowPitch);
+
+            for (UINT row = 0; row < bmpH; ++row)
+            {
+                memcpy(pDst + row * mapped.RowPitch,
+                       pSrc + row * bitmapData.Stride,
+                       copyBytes);
+            }
+
+            m_pContext->Unmap(pStaging, 0);
+
+            if (bmpW == bufferDesc.Width && bmpH == bufferDesc.Height)
+            {
+                m_pContext->CopyResource(pBackBuffer, pStaging);
+            }
+            else
+            {
+                D3D11_BOX srcBox = {};
+                srcBox.left = 0;
+                srcBox.top = 0;
+                srcBox.front = 0;
+                srcBox.right = (std::min)(bmpW, bufferDesc.Width);
+                srcBox.bottom = (std::min)(bmpH, bufferDesc.Height);
+                srcBox.back = 1;
+                m_pContext->CopySubresourceRegion(pBackBuffer, 0, 0, 0, 0,
+                    pStaging, 0, &srcBox);
+            }
+        }
+        pStaging->Release();
+    }
+
+    pBitmap->UnlockBits(&bitmapData);
+    pBackBuffer->Release();
+    return hr;
 }
 
 HRESULT DefaultPreviewDX::Clear()
@@ -323,6 +400,13 @@ PreviewPresenterWrapper::PreviewPresenterWrapper()
     , m_llTotalDurationHns(0)
     , m_dblVolume(1.0)
     , m_dblPlaybackSpeed(1.0)
+    , m_pCurrentFrame(nullptr)
+    , m_hdcBackBuffer(nullptr)
+    , m_hbmpBackBuffer(nullptr)
+    , m_hbmpOld(nullptr)
+    , m_cxBackBuffer(0)
+    , m_cyBackBuffer(0)
+    , m_uTimerId(0)
     , m_hRenderThread(nullptr)
     , m_hStopEvent(nullptr)
     , m_hSeekEvent(nullptr)
@@ -335,6 +419,14 @@ PreviewPresenterWrapper::PreviewPresenterWrapper()
 PreviewPresenterWrapper::~PreviewPresenterWrapper()
 {
     StopPreview();
+    StopTimer();
+    DestroyBackBuffer();
+
+    if (m_pCurrentFrame)
+    {
+        delete m_pCurrentFrame;
+        m_pCurrentFrame = nullptr;
+    }
 
     if (m_hStopEvent)
     {
@@ -400,6 +492,8 @@ HRESULT PreviewPresenterWrapper::StopPreview()
     if (!m_fPreviewActive)
         return S_FALSE;
 
+    StopTimer();
+
     if (m_hStopEvent)
         SetEvent(m_hStopEvent);
 
@@ -412,8 +506,12 @@ HRESULT PreviewPresenterWrapper::StopPreview()
 
     m_fPreviewActive = false;
     m_state = PreviewStateStopped;
-    m_llCurrentPositionHns = 0;
 
+    EnterCriticalSection(&m_csLock);
+    m_llCurrentPositionHns = 0;
+    LeaveCriticalSection(&m_csLock);
+
+    InvalidatePreview();
     return S_OK;
 }
 
@@ -428,16 +526,12 @@ HRESULT PreviewPresenterWrapper::PausePreview()
     if (m_state == PreviewStatePlaying)
     {
         m_state = PreviewStatePaused;
+        StopTimer();
     }
     else if (m_state == PreviewStatePaused)
     {
         m_state = PreviewStatePlaying;
-
-        if (m_hRenderThread)
-        {
-            SetEvent(m_hSeekEvent);
-            ResetEvent(m_hSeekEvent);
-        }
+        StartTimer();
     }
 
     return S_OK;
@@ -483,6 +577,11 @@ LONGLONG PreviewPresenterWrapper::GetCurrentPositionHns() const throw()
     return m_llCurrentPositionHns;
 }
 
+LONGLONG PreviewPresenterWrapper::GetTotalDurationHns() const throw()
+{
+    return m_llTotalDurationHns;
+}
+
 double PreviewPresenterWrapper::GetNormalizedPosition() const throw()
 {
     if (m_llTotalDurationHns <= 0)
@@ -498,15 +597,27 @@ HRESULT PreviewPresenterWrapper::SetPreviewWindow(HWND hWnd)
 {
     m_hWndPreview = hWnd;
 
-    if (m_pPreviewDX && hWnd)
+    if (hWnd)
     {
         RECT rc;
         if (GetClientRect(hWnd, &rc))
         {
-            return m_pPreviewDX->Resize(
-                static_cast<UINT>(rc.right - rc.left),
-                static_cast<UINT>(rc.bottom - rc.top));
+            UINT cx = static_cast<UINT>(rc.right - rc.left);
+            UINT cy = static_cast<UINT>(rc.bottom - rc.top);
+
+            CreateBackBuffer(cx, cy);
+
+            if (m_pPreviewDX)
+            {
+                HRESULT hr = m_pPreviewDX->Resize(cx, cy);
+                if (FAILED(hr))
+                    return hr;
+            }
         }
+    }
+    else
+    {
+        DestroyBackBuffer();
     }
 
     return S_OK;
@@ -522,9 +633,16 @@ HRESULT PreviewPresenterWrapper::ResizePreview(UINT cx, UINT cy)
     if (cx == 0 || cy == 0)
         return E_INVALIDARG;
 
-    if (m_pPreviewDX)
-        return m_pPreviewDX->Resize(cx, cy);
+    CreateBackBuffer(cx, cy);
 
+    if (m_pPreviewDX)
+    {
+        HRESULT hr = m_pPreviewDX->Resize(cx, cy);
+        if (FAILED(hr))
+            return hr;
+    }
+
+    InvalidatePreview();
     return S_OK;
 }
 
@@ -577,6 +695,21 @@ PreviewDX* PreviewPresenterWrapper::GetPreviewDX() const throw()
 }
 
 // ============================================================================
+// SetDuration
+// ============================================================================
+HRESULT PreviewPresenterWrapper::SetDuration(LONGLONG llDurationHns)
+{
+    if (llDurationHns < 0)
+        return E_INVALIDARG;
+
+    EnterCriticalSection(&m_csLock);
+    m_llTotalDurationHns = llDurationHns;
+    LeaveCriticalSection(&m_csLock);
+
+    return S_OK;
+}
+
+// ============================================================================
 // CaptureFrame
 // ============================================================================
 HRESULT PreviewPresenterWrapper::CaptureFrame(Gdiplus::Bitmap** ppBitmap)
@@ -586,10 +719,16 @@ HRESULT PreviewPresenterWrapper::CaptureFrame(Gdiplus::Bitmap** ppBitmap)
 
     *ppBitmap = nullptr;
 
-    if (!m_pPreviewDX || !m_pPreviewDX->IsInitialized())
+    if (!m_pCurrentFrame)
         return E_UNEXPECTED;
 
-    return S_OK;
+    EnterCriticalSection(&m_csLock);
+    *ppBitmap = m_pCurrentFrame->Clone(0, 0,
+        m_pCurrentFrame->GetWidth(), m_pCurrentFrame->GetHeight(),
+        m_pCurrentFrame->GetPixelFormat());
+    LeaveCriticalSection(&m_csLock);
+
+    return (*ppBitmap) ? S_OK : E_OUTOFMEMORY;
 }
 
 HRESULT PreviewPresenterWrapper::CaptureFrameToHBitmap(HBITMAP* phBitmap)
@@ -598,7 +737,15 @@ HRESULT PreviewPresenterWrapper::CaptureFrameToHBitmap(HBITMAP* phBitmap)
         return E_POINTER;
 
     *phBitmap = nullptr;
-    return S_OK;
+
+    if (!m_pCurrentFrame)
+        return E_UNEXPECTED;
+
+    EnterCriticalSection(&m_csLock);
+    m_pCurrentFrame->GetHBITMAP(Gdiplus::Color(0, 0, 0), phBitmap);
+    LeaveCriticalSection(&m_csLock);
+
+    return (*phBitmap) ? S_OK : E_FAIL;
 }
 
 // ============================================================================
@@ -669,22 +816,8 @@ void PreviewPresenterWrapper::DoRenderLoop()
         if (dwWait == WAIT_OBJECT_0 + 1)
         {
             ResetEvent(m_hSeekEvent);
-            if (m_state == PreviewStatePaused)
-            {
-                RenderCurrentFrame();
-                continue;
-            }
-        }
-
-        if (m_state == PreviewStatePlaying)
-        {
-            EnterCriticalSection(&m_csLock);
-            m_llCurrentPositionHns += static_cast<LONGLONG>(kRenderThreadSleepMs * 10000);
-            if (m_llCurrentPositionHns >= m_llTotalDurationHns)
-            {
-                m_llCurrentPositionHns = 0;
-            }
-            LeaveCriticalSection(&m_csLock);
+            RenderCurrentFrame();
+            continue;
         }
 
         if (m_state == PreviewStatePlaying || m_state == PreviewStatePaused)
@@ -699,12 +832,245 @@ void PreviewPresenterWrapper::DoRenderLoop()
 // ============================================================================
 void PreviewPresenterWrapper::RenderCurrentFrame()
 {
-    if (!m_pPreviewDX || !m_pPreviewDX->IsInitialized())
+    if (!m_hWndPreview || !IsWindow(m_hWndPreview))
         return;
 
-    m_pPreviewDX->BeginFrame();
-    m_pPreviewDX->EndFrame();
-    m_pPreviewDX->Present();
+    EnterCriticalSection(&m_csLock);
+
+    if (m_pPreviewDX && m_pPreviewDX->IsInitialized())
+    {
+        m_pPreviewDX->BeginFrame();
+        if (m_pCurrentFrame)
+        {
+            m_pPreviewDX->DrawBitmap(m_pCurrentFrame);
+        }
+        m_pPreviewDX->EndFrame();
+        m_pPreviewDX->Present();
+    }
+
+    LeaveCriticalSection(&m_csLock);
+
+    InvalidatePreview();
+}
+
+// ============================================================================
+// CreateBackBuffer
+// ============================================================================
+void PreviewPresenterWrapper::CreateBackBuffer(UINT cx, UINT cy)
+{
+    if (m_hdcBackBuffer && m_cxBackBuffer == cx && m_cyBackBuffer == cy)
+        return;
+
+    DestroyBackBuffer();
+
+    if (cx == 0 || cy == 0)
+        return;
+
+    HDC hdcScreen = GetDC(m_hWndPreview);
+    if (!hdcScreen)
+        return;
+
+    m_hdcBackBuffer = CreateCompatibleDC(hdcScreen);
+    if (m_hdcBackBuffer)
+    {
+        m_hbmpBackBuffer = CreateCompatibleBitmap(hdcScreen, cx, cy);
+        if (m_hbmpBackBuffer)
+        {
+            m_hbmpOld = static_cast<HBITMAP>(SelectObject(m_hdcBackBuffer, m_hbmpBackBuffer));
+            m_cxBackBuffer = cx;
+            m_cyBackBuffer = cy;
+
+            RECT rc = { 0, 0, static_cast<LONG>(cx), static_cast<LONG>(cy) };
+            FillRect(m_hdcBackBuffer, &rc, static_cast<HBRUSH>(GetStockObject(BLACK_BRUSH)));
+        }
+        else
+        {
+            DeleteDC(m_hdcBackBuffer);
+            m_hdcBackBuffer = nullptr;
+        }
+    }
+
+    ReleaseDC(m_hWndPreview, hdcScreen);
+}
+
+// ============================================================================
+// DestroyBackBuffer
+// ============================================================================
+void PreviewPresenterWrapper::DestroyBackBuffer()
+{
+    if (m_hdcBackBuffer)
+    {
+        if (m_hbmpOld)
+        {
+            SelectObject(m_hdcBackBuffer, m_hbmpOld);
+            m_hbmpOld = nullptr;
+        }
+        if (m_hbmpBackBuffer)
+        {
+            DeleteObject(m_hbmpBackBuffer);
+            m_hbmpBackBuffer = nullptr;
+        }
+        DeleteDC(m_hdcBackBuffer);
+        m_hdcBackBuffer = nullptr;
+    }
+    m_cxBackBuffer = 0;
+    m_cyBackBuffer = 0;
+}
+
+// ============================================================================
+// PaintFrame - WM_PAINT handler with double-buffering
+// ============================================================================
+void PreviewPresenterWrapper::PaintFrame(HDC hdc, const RECT& rcPaint)
+{
+    UNREFERENCED_PARAMETER(rcPaint);
+
+    if (!m_hdcBackBuffer)
+        return;
+
+    EnterCriticalSection(&m_csLock);
+
+    if (m_pCurrentFrame)
+    {
+        Gdiplus::Graphics g(m_hdcBackBuffer);
+        g.SetInterpolationMode(Gdiplus::InterpolationModeHighQualityBicubic);
+        g.SetPixelOffsetMode(Gdiplus::PixelOffsetModeHighQuality);
+
+        UINT imgW = m_pCurrentFrame->GetWidth();
+        UINT imgH = m_pCurrentFrame->GetHeight();
+
+        if (imgW > 0 && imgH > 0)
+        {
+            float scaleX = static_cast<float>(m_cxBackBuffer) / static_cast<float>(imgW);
+            float scaleY = static_cast<float>(m_cyBackBuffer) / static_cast<float>(imgH);
+            float scale = (std::min)(scaleX, scaleY);
+
+            float drawW = static_cast<float>(imgW) * scale;
+            float drawH = static_cast<float>(imgH) * scale;
+            float offsetX = (static_cast<float>(m_cxBackBuffer) - drawW) / 2.0f;
+            float offsetY = (static_cast<float>(m_cyBackBuffer) - drawH) / 2.0f;
+
+            g.DrawImage(m_pCurrentFrame,
+                Gdiplus::RectF(offsetX, offsetY, drawW, drawH),
+                0, 0, static_cast<float>(imgW), static_cast<float>(imgH),
+                Gdiplus::UnitPixel);
+        }
+    }
+
+    LeaveCriticalSection(&m_csLock);
+}
+
+// ============================================================================
+// PresentFrame - Blit back buffer to window
+// ============================================================================
+void PreviewPresenterWrapper::PresentFrame()
+{
+    if (!m_hWndPreview || !m_hdcBackBuffer)
+        return;
+
+    HDC hdcWindow = GetDC(m_hWndPreview);
+    if (hdcWindow)
+    {
+        BitBlt(hdcWindow, 0, 0, m_cxBackBuffer, m_cyBackBuffer,
+               m_hdcBackBuffer, 0, 0, SRCCOPY);
+        ReleaseDC(m_hWndPreview, hdcWindow);
+    }
+}
+
+// ============================================================================
+// InvalidatePreview
+// ============================================================================
+void PreviewPresenterWrapper::InvalidatePreview()
+{
+    if (m_hWndPreview && IsWindow(m_hWndPreview))
+    {
+        InvalidateRect(m_hWndPreview, nullptr, FALSE);
+    }
+}
+
+// ============================================================================
+// OnPaint
+// ============================================================================
+void PreviewPresenterWrapper::OnPaint()
+{
+    if (!m_hWndPreview || !IsWindow(m_hWndPreview))
+        return;
+
+    PAINTSTRUCT ps;
+    HDC hdc = BeginPaint(m_hWndPreview, &ps);
+    if (hdc)
+    {
+        PaintFrame(hdc, ps.rcPaint);
+        PresentFrame();
+        EndPaint(m_hWndPreview, &ps);
+    }
+}
+
+// ============================================================================
+// Playback timer
+// ============================================================================
+void PreviewPresenterWrapper::StartTimer()
+{
+    if (m_uTimerId != 0)
+        return;
+
+    DWORD intervalMs = CalculateFrameIntervalMs();
+    if (intervalMs == 0)
+        intervalMs = 33;
+
+    m_uTimerId = timeSetEvent(intervalMs, 1, OnPlaybackTimer,
+                              reinterpret_cast<DWORD_PTR>(this),
+                              TIME_PERIODIC | TIME_CALLBACK_FUNCTION);
+}
+
+void PreviewPresenterWrapper::StopTimer()
+{
+    if (m_uTimerId != 0)
+    {
+        timeKillEvent(m_uTimerId);
+        m_uTimerId = 0;
+    }
+}
+
+void CALLBACK PreviewPresenterWrapper::OnPlaybackTimer(
+    UINT /*uTimerID*/, UINT /*uMsg*/, DWORD_PTR dwUser,
+    DWORD_PTR /*dw1*/, DWORD_PTR /*dw2*/)
+{
+    PreviewPresenterWrapper* pThis = reinterpret_cast<PreviewPresenterWrapper*>(dwUser);
+    if (!pThis)
+        return;
+
+    if (pThis->m_state != PreviewStatePlaying)
+        return;
+
+    EnterCriticalSection(&pThis->m_csLock);
+    pThis->m_llCurrentPositionHns += static_cast<LONGLONG>(
+        pThis->CalculateFrameIntervalMs() * 10000 * pThis->m_dblPlaybackSpeed);
+
+    if (pThis->m_llTotalDurationHns > 0 &&
+        pThis->m_llCurrentPositionHns >= pThis->m_llTotalDurationHns)
+    {
+        pThis->m_llCurrentPositionHns = 0;
+    }
+    LeaveCriticalSection(&pThis->m_csLock);
+
+    pThis->RenderCurrentFrame();
+}
+
+DWORD PreviewPresenterWrapper::CalculateFrameIntervalMs() const
+{
+    double fps = 30.0;
+    if (m_pProject)
+    {
+        DWORD dwFrameRate = m_pProject->GetSettings().GetFrameRate();
+        if (dwFrameRate > 0)
+            fps = static_cast<double>(dwFrameRate) / 100.0;
+    }
+
+    if (fps <= 0.0)
+        fps = 30.0;
+
+    double intervalMs = 1000.0 / fps;
+    return static_cast<DWORD>(intervalMs + 0.5);
 }
 
 // ============================================================================
@@ -712,20 +1078,75 @@ void PreviewPresenterWrapper::RenderCurrentFrame()
 // ============================================================================
 int PreviewPresenterWrapper::FindExtentAtPosition(LONGLONG llPositionHns) const
 {
-    UNREFERENCED_PARAMETER(llPositionHns);
-    return -1;
+    if (!m_pProject || llPositionHns < 0)
+        return -1;
+
+    const StoryboardManager::ProjectTimeline* pTimeline =
+        m_pProject->GetTimeline(StoryboardManager::TimelineTrackTypeVideo);
+    if (!pTimeline)
+        return -1;
+
+    size_t cExtents = pTimeline->GetExtentCount();
+    if (cExtents == 0)
+        return -1;
+
+    LONGLONG llTotalDuration = pTimeline->GetTotalDurationHns();
+    if (llTotalDuration <= 0)
+        return -1;
+
+    double dblExtentDuration = static_cast<double>(llTotalDuration) / static_cast<double>(cExtents);
+    int nIndex = static_cast<int>(llPositionHns / dblExtentDuration);
+
+    if (nIndex < 0)
+        nIndex = 0;
+    if (nIndex >= static_cast<int>(cExtents))
+        nIndex = static_cast<int>(cExtents) - 1;
+
+    return nIndex;
 }
 
 LONGLONG PreviewPresenterWrapper::GetExtentStartTime(int nIndex) const
 {
-    UNREFERENCED_PARAMETER(nIndex);
-    return 0;
+    if (!m_pProject || nIndex < 0)
+        return 0;
+
+    const StoryboardManager::ProjectTimeline* pTimeline =
+        m_pProject->GetTimeline(StoryboardManager::TimelineTrackTypeVideo);
+    if (!pTimeline)
+        return 0;
+
+    size_t cExtents = pTimeline->GetExtentCount();
+    if (cExtents == 0 || nIndex >= static_cast<int>(cExtents))
+        return 0;
+
+    LONGLONG llTotalDuration = pTimeline->GetTotalDurationHns();
+    double dblExtentDuration = static_cast<double>(llTotalDuration) / static_cast<double>(cExtents);
+
+    return static_cast<LONGLONG>(nIndex * dblExtentDuration);
 }
 
 LONGLONG PreviewPresenterWrapper::GetExtentEndTime(int nIndex) const
 {
-    UNREFERENCED_PARAMETER(nIndex);
-    return 0;
+    if (!m_pProject || nIndex < 0)
+        return 0;
+
+    const StoryboardManager::ProjectTimeline* pTimeline =
+        m_pProject->GetTimeline(StoryboardManager::TimelineTrackTypeVideo);
+    if (!pTimeline)
+        return 0;
+
+    size_t cExtents = pTimeline->GetExtentCount();
+    if (cExtents == 0 || nIndex >= static_cast<int>(cExtents))
+        return 0;
+
+    LONGLONG llTotalDuration = pTimeline->GetTotalDurationHns();
+    double dblExtentDuration = static_cast<double>(llTotalDuration) / static_cast<double>(cExtents);
+
+    LONGLONG llEndTime = static_cast<LONGLONG>((nIndex + 1) * dblExtentDuration);
+    if (nIndex + 1 >= static_cast<int>(cExtents))
+        llEndTime = llTotalDuration;
+
+    return llEndTime;
 }
 
 // ============================================================================

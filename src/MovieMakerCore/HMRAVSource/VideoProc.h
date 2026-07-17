@@ -94,6 +94,20 @@ public:
     HRESULT SetDeinterlace(bool fEnable);
     HRESULT SetDenoise(bool fEnable);
 
+    // Effects
+    enum VideoEffectType
+    {
+        VideoEffectNone         = 0,
+        VideoEffectGrayscale    = 1,
+        VideoEffectSepia        = 2,
+        VideoEffectInvert       = 3,
+        VideoEffectBrightness   = 4,
+        VideoEffectSharpen      = 5,
+        VideoEffectBlur         = 6
+    };
+    HRESULT SetEffect(VideoEffectType effectType);
+    VideoEffectType GetEffect() const throw();
+
     // Transform chain
     HRESULT AddTransform(REFGUID guidTransformClsid);
     HRESULT RemoveTransform(DWORD dwIndex);
@@ -106,6 +120,7 @@ protected:
     VideoProcDesc       m_desc;
     bool                m_fInitialized;
     DWORD               m_dwFramesProcessed;
+    VideoEffectType     m_effectType;
 
     CComPtr<IMFTransform> m_spColorConverter;
     CComPtr<IMFTransform> m_spScaler;

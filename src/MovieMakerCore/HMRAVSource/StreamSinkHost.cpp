@@ -321,9 +321,29 @@ HRESULT StreamSinkHost::AddAudioStream(const EncodeAudioParams& audioParams)
     return S_OK;
 }
 
-HRESULT StreamSinkHost::RemoveStream(DWORD /*dwStreamIndex*/)
+HRESULT StreamSinkHost::RemoveStream(DWORD dwStreamIndex)
 {
-    return S_OK;
+    if (m_state == StreamSinkStateWriting)
+        return E_UNEXPECTED;
+
+    if (dwStreamIndex == m_dwVideoStreamIndex)
+        return E_INVALIDARG;
+
+    for (SIZE_T i = 0; i < m_audioSinks.GetCount(); ++i)
+    {
+        if (m_audioSinks[i].GetStreamIndex() == dwStreamIndex)
+        {
+            m_audioSinks[i].Shutdown();
+            m_audioSinks.RemoveAt(i);
+
+            if (m_dwDefaultAudioIndex >= m_audioSinks.GetCount() && m_audioSinks.GetCount() > 0)
+                m_dwDefaultAudioIndex = 0;
+
+            return S_OK;
+        }
+    }
+
+    return E_INVALIDARG;
 }
 
 HRESULT StreamSinkHost::BeginWriting()
@@ -464,9 +484,15 @@ void StreamSinkHost::ResetStats()
 // Format overrides
 // ============================================================================
 
-HRESULT StreamSinkHost::SetInputVideoType(IMFMediaType* /*pType*/)
+HRESULT StreamSinkHost::SetInputVideoType(IMFMediaType* pType)
 {
-    return S_OK;
+    if (!pType)
+        return E_POINTER;
+
+    if (!m_spSinkWriter)
+        return E_UNEXPECTED;
+
+    return m_spSinkWriter->SetInputMediaType(m_dwVideoStreamIndex, pType, nullptr);
 }
 
 HRESULT StreamSinkHost::SetInputAudioType(DWORD dwStreamIndex, IMFMediaType* pType)
@@ -519,11 +545,79 @@ HRESULT StreamSinkHost::CreateSinkWriter()
 
 HRESULT StreamSinkHost::NegotiateVideoType()
 {
-    return S_OK;
+    if (!m_spSinkWriter)
+        return E_UNEXPECTED;
+
+    const EncodeVideoParams& videoParams = m_profile.GetVideoParams();
+
+    CComPtr<IMFMediaType> spOutputType;
+    HRESULT hr = MFCreateMediaType(&spOutputType);
+    if (FAILED(hr))
+        return hr;
+
+    spOutputType->SetGUID(MF_MT_MAJOR_TYPE, MFMediaType_Video);
+
+    switch (videoParams.codec)
+    {
+    case VideoCodecH264:
+        spOutputType->SetGUID(MF_MT_SUBTYPE, MFVideoFormat_H264);
+        break;
+    case VideoCodecWMV9:
+        spOutputType->SetGUID(MF_MT_SUBTYPE, MFVideoFormat_WMVVC1);
+        break;
+    default:
+        spOutputType->SetGUID(MF_MT_SUBTYPE, MFVideoFormat_H264);
+        break;
+    }
+
+    spOutputType->SetUINT32(MF_MT_INTERLACE_MODE, MFVideoInterlace_Progressive);
+    MFSetAttributeSize(spOutputType, MF_MT_FRAME_SIZE, videoParams.uWidth, videoParams.uHeight);
+    MFSetAttributeRatio(spOutputType, MF_MT_FRAME_RATE,
+        static_cast<UINT32>(videoParams.dblFrameRate * 100), 100);
+    spOutputType->SetUINT32(MF_MT_AVG_BITRATE, videoParams.dwBitRate);
+
+    hr = m_spSinkWriter->AddStream(spOutputType, &m_dwVideoStreamIndex);
+    return hr;
 }
 
-HRESULT StreamSinkHost::NegotiateAudioType(AudioStreamSink& /*audioSink*/)
+HRESULT StreamSinkHost::NegotiateAudioType(AudioStreamSink& audioSink)
 {
+    if (!m_spSinkWriter)
+        return E_UNEXPECTED;
+
+    const EncodeAudioParams& audioParams = m_profile.GetAudioParams();
+
+    CComPtr<IMFMediaType> spOutputType;
+    HRESULT hr = MFCreateMediaType(&spOutputType);
+    if (FAILED(hr))
+        return hr;
+
+    spOutputType->SetGUID(MF_MT_MAJOR_TYPE, MFMediaType_Audio);
+
+    switch (audioParams.codec)
+    {
+    case AudioCodecAAC:
+        spOutputType->SetGUID(MF_MT_SUBTYPE, MFAudioFormat_AAC);
+        break;
+    case AudioCodecWMA:
+        spOutputType->SetGUID(MF_MT_SUBTYPE, MFAudioFormat_WMAudioV9);
+        break;
+    default:
+        spOutputType->SetGUID(MF_MT_SUBTYPE, MFAudioFormat_AAC);
+        break;
+    }
+
+    spOutputType->SetUINT32(MF_MT_AUDIO_SAMPLES_PER_SECOND, audioParams.dwSampleRate);
+    spOutputType->SetUINT32(MF_MT_AUDIO_NUM_CHANNELS, audioParams.dwChannels);
+    spOutputType->SetUINT32(MF_MT_AUDIO_BITS_PER_SAMPLE, audioParams.dwBitsPerSample);
+
+    DWORD dwStreamIndex = 0;
+    hr = m_spSinkWriter->AddStream(spOutputType, &dwStreamIndex);
+    if (FAILED(hr))
+        return hr;
+
+    audioSink.SetOutputMediaType(spOutputType);
+
     return S_OK;
 }
 

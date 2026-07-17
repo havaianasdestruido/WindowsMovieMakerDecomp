@@ -112,14 +112,54 @@ void ThemeComplexType::SetX3dTemplate(BaseX3DTemplate* pTemplate) { m_pX3dTempla
 
 HRESULT ThemeComplexType::LoadFromXml(IXmlReader* pReader)
 {
-    UNREFERENCED_PARAMETER(pReader);
-    return E_NOTIMPL;
+    if (!pReader)
+        return E_INVALIDARG;
+
+    LPCWSTR pwszVal = nullptr;
+    if (SUCCEEDED(XmlReaderGetAttribute(pReader, L"id", &pwszVal)) && pwszVal)
+        SetId(pwszVal);
+
+    pwszVal = nullptr;
+    if (SUCCEEDED(XmlReaderGetAttribute(pReader, L"name", &pwszVal)) && pwszVal)
+        SetName(pwszVal);
+
+    pwszVal = nullptr;
+    if (SUCCEEDED(XmlReaderGetAttribute(pReader, L"duration", &pwszVal)) && pwszVal)
+        SetDurationHns(_wtoi64(pwszVal));
+
+    pwszVal = nullptr;
+    if (SUCCEEDED(XmlReaderGetAttribute(pReader, L"delay", &pwszVal)) && pwszVal)
+        SetDelayHns(_wtoi64(pwszVal));
+
+    return S_OK;
 }
 
 HRESULT ThemeComplexType::SaveToXml(IXmlWriter* pWriter)
 {
-    UNREFERENCED_PARAMETER(pWriter);
-    return E_NOTIMPL;
+    if (!pWriter)
+        return E_INVALIDARG;
+
+    if (!m_strId.IsEmpty())
+        pWriter->WriteAttributeString(nullptr, L"id", nullptr, m_strId);
+
+    if (!m_strName.IsEmpty())
+        pWriter->WriteAttributeString(nullptr, L"name", nullptr, m_strName);
+
+    WCHAR szValue[64] = { 0 };
+
+    if (m_llDurationHns != 0)
+    {
+        swprintf_s(szValue, L"%lld", m_llDurationHns);
+        pWriter->WriteAttributeString(nullptr, L"duration", nullptr, szValue);
+    }
+
+    if (m_llDelayHns != 0)
+    {
+        swprintf_s(szValue, L"%lld", m_llDelayHns);
+        pWriter->WriteAttributeString(nullptr, L"delay", nullptr, szValue);
+    }
+
+    return S_OK;
 }
 
 // ============================================================================
@@ -156,8 +196,57 @@ void ThemeIntro::SetBackgroundColor(DWORD dwColor) throw() { m_dwBackgroundColor
 LONGLONG ThemeIntro::GetFadeInDurationHns() const throw() { return m_llFadeInDurationHns; }
 void ThemeIntro::SetFadeInDurationHns(LONGLONG llDuration) throw() { m_llFadeInDurationHns = llDuration; }
 
-HRESULT ThemeIntro::LoadFromXml(IXmlReader* pReader) { return ThemeComplexType::LoadFromXml(pReader); }
-HRESULT ThemeIntro::SaveToXml(IXmlWriter* pWriter) { return ThemeComplexType::SaveToXml(pWriter); }
+HRESULT ThemeIntro::LoadFromXml(IXmlReader* pReader)
+{
+    if (!pReader)
+        return E_INVALIDARG;
+
+    ThemeComplexType::LoadFromXml(pReader);
+
+    LPCWSTR pwszVal = nullptr;
+    if (SUCCEEDED(XmlReaderGetAttribute(pReader, L"backgroundColor", &pwszVal)) && pwszVal)
+        SetBackgroundColor(static_cast<DWORD>(wcstoul(pwszVal, nullptr, 16)));
+
+    pwszVal = nullptr;
+    if (SUCCEEDED(XmlReaderGetAttribute(pReader, L"fadeInDuration", &pwszVal)) && pwszVal)
+        SetFadeInDurationHns(_wtoi64(pwszVal));
+
+    pwszVal = nullptr;
+    if (SUCCEEDED(XmlReaderGetAttribute(pReader, L"durationMode", &pwszVal)) && pwszVal)
+        SetDurationMode(static_cast<IntroDurationMode>(_wtoi(pwszVal)));
+
+    return S_OK;
+}
+
+HRESULT ThemeIntro::SaveToXml(IXmlWriter* pWriter)
+{
+    if (!pWriter)
+        return E_INVALIDARG;
+
+    ThemeComplexType::SaveToXml(pWriter);
+
+    WCHAR szValue[64] = { 0 };
+
+    if (m_dwBackgroundColor != 0xFF000000)
+    {
+        swprintf_s(szValue, L"0x%08X", m_dwBackgroundColor);
+        pWriter->WriteAttributeString(nullptr, L"backgroundColor", nullptr, szValue);
+    }
+
+    if (m_llFadeInDurationHns != 5000000)
+    {
+        swprintf_s(szValue, L"%lld", m_llFadeInDurationHns);
+        pWriter->WriteAttributeString(nullptr, L"fadeInDuration", nullptr, szValue);
+    }
+
+    if (m_durationMode != IntroDurationModeFixed)
+    {
+        swprintf_s(szValue, L"%d", static_cast<int>(m_durationMode));
+        pWriter->WriteAttributeString(nullptr, L"durationMode", nullptr, szValue);
+    }
+
+    return S_OK;
+}
 
 // ============================================================================
 // ThemeMid implementation
@@ -217,8 +306,34 @@ void ThemeMid::SetDefaultTransition(ThemeTransition* pTransition) { m_pDefaultTr
 bool ThemeMid::IsLooping() const throw() { return m_fLooping; }
 void ThemeMid::SetLooping(bool fLooping) throw() { m_fLooping = fLooping; }
 
-HRESULT ThemeMid::LoadFromXml(IXmlReader* pReader) { return ThemeComplexType::LoadFromXml(pReader); }
-HRESULT ThemeMid::SaveToXml(IXmlWriter* pWriter) { return ThemeComplexType::SaveToXml(pWriter); }
+HRESULT ThemeMid::LoadFromXml(IXmlReader* pReader)
+{
+    if (!pReader)
+        return E_INVALIDARG;
+
+    ThemeComplexType::LoadFromXml(pReader);
+
+    LPCWSTR pwszVal = nullptr;
+    if (SUCCEEDED(XmlReaderGetAttribute(pReader, L"looping", &pwszVal)) && pwszVal)
+        SetLooping(wcscmp(pwszVal, L"true") == 0 || wcscmp(pwszVal, L"1") == 0);
+
+    return S_OK;
+}
+
+HRESULT ThemeMid::SaveToXml(IXmlWriter* pWriter)
+{
+    if (!pWriter)
+        return E_INVALIDARG;
+
+    ThemeComplexType::SaveToXml(pWriter);
+
+    if (!m_fLooping)
+    {
+        pWriter->WriteAttributeString(nullptr, L"looping", nullptr, L"false");
+    }
+
+    return S_OK;
+}
 
 // ============================================================================
 // ThemeOutro implementation
@@ -258,8 +373,67 @@ void ThemeOutro::SetFadeOutDurationHns(LONGLONG llDuration) throw() { m_llFadeOu
 float ThemeOutro::GetScrollSpeed() const throw() { return m_flScrollSpeed; }
 void ThemeOutro::SetScrollSpeed(float flSpeed) throw() { m_flScrollSpeed = flSpeed; }
 
-HRESULT ThemeOutro::LoadFromXml(IXmlReader* pReader) { return ThemeComplexType::LoadFromXml(pReader); }
-HRESULT ThemeOutro::SaveToXml(IXmlWriter* pWriter) { return ThemeComplexType::SaveToXml(pWriter); }
+HRESULT ThemeOutro::LoadFromXml(IXmlReader* pReader)
+{
+    if (!pReader)
+        return E_INVALIDARG;
+
+    ThemeComplexType::LoadFromXml(pReader);
+
+    LPCWSTR pwszVal = nullptr;
+    if (SUCCEEDED(XmlReaderGetAttribute(pReader, L"backgroundColor", &pwszVal)) && pwszVal)
+        SetBackgroundColor(static_cast<DWORD>(wcstoul(pwszVal, nullptr, 16)));
+
+    pwszVal = nullptr;
+    if (SUCCEEDED(XmlReaderGetAttribute(pReader, L"fadeOutDuration", &pwszVal)) && pwszVal)
+        SetFadeOutDurationHns(_wtoi64(pwszVal));
+
+    pwszVal = nullptr;
+    if (SUCCEEDED(XmlReaderGetAttribute(pReader, L"durationMode", &pwszVal)) && pwszVal)
+        SetDurationMode(static_cast<OutroDurationMode>(_wtoi(pwszVal)));
+
+    pwszVal = nullptr;
+    if (SUCCEEDED(XmlReaderGetAttribute(pReader, L"scrollSpeed", &pwszVal)) && pwszVal)
+        SetScrollSpeed(static_cast<float>(_wtof(pwszVal)));
+
+    return S_OK;
+}
+
+HRESULT ThemeOutro::SaveToXml(IXmlWriter* pWriter)
+{
+    if (!pWriter)
+        return E_INVALIDARG;
+
+    ThemeComplexType::SaveToXml(pWriter);
+
+    WCHAR szValue[64] = { 0 };
+
+    if (m_dwBackgroundColor != 0xFF000000)
+    {
+        swprintf_s(szValue, L"0x%08X", m_dwBackgroundColor);
+        pWriter->WriteAttributeString(nullptr, L"backgroundColor", nullptr, szValue);
+    }
+
+    if (m_llFadeOutDurationHns != 5000000)
+    {
+        swprintf_s(szValue, L"%lld", m_llFadeOutDurationHns);
+        pWriter->WriteAttributeString(nullptr, L"fadeOutDuration", nullptr, szValue);
+    }
+
+    if (m_durationMode != OutroDurationModeFixed)
+    {
+        swprintf_s(szValue, L"%d", static_cast<int>(m_durationMode));
+        pWriter->WriteAttributeString(nullptr, L"durationMode", nullptr, szValue);
+    }
+
+    if (m_flScrollSpeed != 50.0f)
+    {
+        swprintf_s(szValue, L"%g", m_flScrollSpeed);
+        pWriter->WriteAttributeString(nullptr, L"scrollSpeed", nullptr, szValue);
+    }
+
+    return S_OK;
+}
 
 // ============================================================================
 // ComplexIntro implementation
@@ -312,8 +486,51 @@ void ComplexIntro::RemoveAllEntranceEffects()
     m_arrEntranceEffects.RemoveAll();
 }
 
-HRESULT ComplexIntro::LoadFromXml(IXmlReader* pReader) { return ThemeIntro::LoadFromXml(pReader); }
-HRESULT ComplexIntro::SaveToXml(IXmlWriter* pWriter) { return ThemeIntro::SaveToXml(pWriter); }
+HRESULT ComplexIntro::LoadFromXml(IXmlReader* pReader)
+{
+    if (!pReader)
+        return E_INVALIDARG;
+
+    ThemeIntro::LoadFromXml(pReader);
+    return S_OK;
+}
+
+HRESULT ComplexIntro::SaveToXml(IXmlWriter* pWriter)
+{
+    if (!pWriter)
+        return E_INVALIDARG;
+
+    pWriter->WriteStartElement(nullptr, L"complexIntro", nullptr);
+    ThemeIntro::SaveToXml(pWriter);
+
+    for (size_t i = 0; i < m_arrLayers.GetCount(); ++i)
+    {
+        ThemeComplexType* pLayer = m_arrLayers.GetAt(i);
+        if (pLayer)
+            pLayer->SaveToXml(pWriter);
+    }
+
+    for (size_t i = 0; i < m_arrEntranceEffects.GetCount(); ++i)
+    {
+        ThemeEffect* pEffect = m_arrEntranceEffects.GetAt(i);
+        if (pEffect)
+        {
+            pWriter->WriteStartElement(nullptr, L"entranceEffect", nullptr);
+
+            WCHAR szValue[64] = { 0 };
+            swprintf_s(szValue, L"%d", static_cast<int>(pEffect->GetType()));
+            pWriter->WriteAttributeString(nullptr, L"type", nullptr, szValue);
+
+            swprintf_s(szValue, L"%lld", pEffect->GetDurationHns());
+            pWriter->WriteAttributeString(nullptr, L"duration", nullptr, szValue);
+
+            pWriter->WriteEndElement();
+        }
+    }
+
+    pWriter->WriteEndElement();
+    return S_OK;
+}
 
 // ============================================================================
 // SimpleIntro implementation
@@ -334,8 +551,49 @@ float SimpleIntro::GetOverlayPositionX() const throw() { return m_flOverlayPosit
 float SimpleIntro::GetOverlayPositionY() const throw() { return m_flOverlayPositionY; }
 void SimpleIntro::SetOverlayPosition(float x, float y) throw() { m_flOverlayPositionX = x; m_flOverlayPositionY = y; }
 
-HRESULT SimpleIntro::LoadFromXml(IXmlReader* pReader) { return ThemeIntro::LoadFromXml(pReader); }
-HRESULT SimpleIntro::SaveToXml(IXmlWriter* pWriter) { return ThemeIntro::SaveToXml(pWriter); }
+HRESULT SimpleIntro::LoadFromXml(IXmlReader* pReader)
+{
+    if (!pReader)
+        return E_INVALIDARG;
+
+    ThemeIntro::LoadFromXml(pReader);
+
+    LPCWSTR pwszVal = nullptr;
+    if (SUCCEEDED(XmlReaderGetAttribute(pReader, L"overlayText", &pwszVal)) && pwszVal)
+        SetOverlayText(pwszVal);
+
+    pwszVal = nullptr;
+    if (SUCCEEDED(XmlReaderGetAttribute(pReader, L"overlayX", &pwszVal)) && pwszVal)
+    {
+        float x = static_cast<float>(_wtof(pwszVal));
+        pwszVal = nullptr;
+        if (SUCCEEDED(XmlReaderGetAttribute(pReader, L"overlayY", &pwszVal)) && pwszVal)
+            SetOverlayPosition(x, static_cast<float>(_wtof(pwszVal)));
+    }
+
+    return S_OK;
+}
+
+HRESULT SimpleIntro::SaveToXml(IXmlWriter* pWriter)
+{
+    if (!pWriter)
+        return E_INVALIDARG;
+
+    pWriter->WriteStartElement(nullptr, L"simpleIntro", nullptr);
+    ThemeIntro::SaveToXml(pWriter);
+
+    if (!m_strOverlayText.IsEmpty())
+        pWriter->WriteAttributeString(nullptr, L"overlayText", nullptr, m_strOverlayText);
+
+    WCHAR szValue[64] = { 0 };
+    swprintf_s(szValue, L"%g", m_flOverlayPositionX);
+    pWriter->WriteAttributeString(nullptr, L"overlayX", nullptr, szValue);
+    swprintf_s(szValue, L"%g", m_flOverlayPositionY);
+    pWriter->WriteAttributeString(nullptr, L"overlayY", nullptr, szValue);
+
+    pWriter->WriteEndElement();
+    return S_OK;
+}
 
 // ============================================================================
 // ThemeTitle implementation
@@ -587,8 +845,45 @@ void ThemeSimpleElement::SetEffectOverlay(ThemeEffect* pEffect)
 DWORD ThemeSimpleElement::GetAspectRatioMode() const throw() { return m_dwAspectRatioMode; }
 void ThemeSimpleElement::SetAspectRatioMode(DWORD dwMode) throw() { m_dwAspectRatioMode = dwMode; }
 
-HRESULT ThemeSimpleElement::LoadFromXml(IXmlReader* pReader) { return ThemeComplexType::LoadFromXml(pReader); }
-HRESULT ThemeSimpleElement::SaveToXml(IXmlWriter* pWriter) { return ThemeComplexType::SaveToXml(pWriter); }
+HRESULT ThemeSimpleElement::LoadFromXml(IXmlReader* pReader)
+{
+    if (!pReader)
+        return E_INVALIDARG;
+
+    ThemeComplexType::LoadFromXml(pReader);
+
+    LPCWSTR pwszVal = nullptr;
+    if (SUCCEEDED(XmlReaderGetAttribute(pReader, L"mediaSocketId", &pwszVal)) && pwszVal)
+        SetMediaSocketId(pwszVal);
+
+    pwszVal = nullptr;
+    if (SUCCEEDED(XmlReaderGetAttribute(pReader, L"aspectRatioMode", &pwszVal)) && pwszVal)
+        SetAspectRatioMode(static_cast<DWORD>(_wtoi(pwszVal)));
+
+    return S_OK;
+}
+
+HRESULT ThemeSimpleElement::SaveToXml(IXmlWriter* pWriter)
+{
+    if (!pWriter)
+        return E_INVALIDARG;
+
+    pWriter->WriteStartElement(nullptr, L"simpleElement", nullptr);
+    ThemeComplexType::SaveToXml(pWriter);
+
+    if (!m_strMediaSocketId.IsEmpty())
+        pWriter->WriteAttributeString(nullptr, L"mediaSocketId", nullptr, m_strMediaSocketId);
+
+    if (m_dwAspectRatioMode != 0)
+    {
+        WCHAR szValue[64] = { 0 };
+        swprintf_s(szValue, L"%u", m_dwAspectRatioMode);
+        pWriter->WriteAttributeString(nullptr, L"aspectRatioMode", nullptr, szValue);
+    }
+
+    pWriter->WriteEndElement();
+    return S_OK;
+}
 
 // ============================================================================
 // ThemeInterior implementation
@@ -640,8 +935,66 @@ void ThemeInterior::SetMediaBounds(float left, float top, float right, float bot
     m_mediaBoundsRight = right; m_mediaBoundsBottom = bottom;
 }
 
-HRESULT ThemeInterior::LoadFromXml(IXmlReader* pReader) { return ThemeComplexType::LoadFromXml(pReader); }
-HRESULT ThemeInterior::SaveToXml(IXmlWriter* pWriter) { return ThemeComplexType::SaveToXml(pWriter); }
+HRESULT ThemeInterior::LoadFromXml(IXmlReader* pReader)
+{
+    if (!pReader)
+        return E_INVALIDARG;
+
+    ThemeComplexType::LoadFromXml(pReader);
+
+    LPCWSTR pwszVal = nullptr;
+    if (SUCCEEDED(XmlReaderGetAttribute(pReader, L"backgroundModel", &pwszVal)) && pwszVal)
+        SetBackgroundModelPath(pwszVal);
+
+    pwszVal = nullptr;
+    if (SUCCEEDED(XmlReaderGetAttribute(pReader, L"mediaLeft", &pwszVal)) && pwszVal)
+    {
+        float left = static_cast<float>(_wtof(pwszVal));
+        pwszVal = nullptr;
+        float top = 0.0f, right = 1.0f, bottom = 1.0f;
+        if (SUCCEEDED(XmlReaderGetAttribute(pReader, L"mediaTop", &pwszVal)) && pwszVal)
+            top = static_cast<float>(_wtof(pwszVal));
+        pwszVal = nullptr;
+        if (SUCCEEDED(XmlReaderGetAttribute(pReader, L"mediaRight", &pwszVal)) && pwszVal)
+            right = static_cast<float>(_wtof(pwszVal));
+        pwszVal = nullptr;
+        if (SUCCEEDED(XmlReaderGetAttribute(pReader, L"mediaBottom", &pwszVal)) && pwszVal)
+            bottom = static_cast<float>(_wtof(pwszVal));
+        SetMediaBounds(left, top, right, bottom);
+    }
+
+    return S_OK;
+}
+
+HRESULT ThemeInterior::SaveToXml(IXmlWriter* pWriter)
+{
+    if (!pWriter)
+        return E_INVALIDARG;
+
+    pWriter->WriteStartElement(nullptr, L"interior", nullptr);
+    ThemeComplexType::SaveToXml(pWriter);
+
+    if (!m_strBackgroundModelPath.IsEmpty())
+        pWriter->WriteAttributeString(nullptr, L"backgroundModel", nullptr, m_strBackgroundModelPath);
+
+    WCHAR szValue[64] = { 0 };
+
+    if (m_mediaBoundsLeft != 0.0f || m_mediaBoundsTop != 0.0f ||
+        m_mediaBoundsRight != 1.0f || m_mediaBoundsBottom != 1.0f)
+    {
+        swprintf_s(szValue, L"%g", m_mediaBoundsLeft);
+        pWriter->WriteAttributeString(nullptr, L"mediaLeft", nullptr, szValue);
+        swprintf_s(szValue, L"%g", m_mediaBoundsTop);
+        pWriter->WriteAttributeString(nullptr, L"mediaTop", nullptr, szValue);
+        swprintf_s(szValue, L"%g", m_mediaBoundsRight);
+        pWriter->WriteAttributeString(nullptr, L"mediaRight", nullptr, szValue);
+        swprintf_s(szValue, L"%g", m_mediaBoundsBottom);
+        pWriter->WriteAttributeString(nullptr, L"mediaBottom", nullptr, szValue);
+    }
+
+    pWriter->WriteEndElement();
+    return S_OK;
+}
 
 // ============================================================================
 // ThemeTransition implementation
@@ -692,8 +1045,65 @@ void ThemeTransition::RemoveAllParameters() { m_arrParameters.RemoveAll(); }
 ThemeX3DTemplate* ThemeTransition::GetX3dTemplate() { return m_pX3dTemplate; }
 void ThemeTransition::SetX3dTemplate(ThemeX3DTemplate* pTemplate) { m_pX3dTemplate = pTemplate; }
 
-HRESULT ThemeTransition::LoadFromXml(IXmlReader* pReader) { UNREFERENCED_PARAMETER(pReader); return E_NOTIMPL; }
-HRESULT ThemeTransition::SaveToXml(IXmlWriter* pWriter) { UNREFERENCED_PARAMETER(pWriter); return E_NOTIMPL; }
+HRESULT ThemeTransition::LoadFromXml(IXmlReader* pReader)
+{
+    if (!pReader)
+        return E_INVALIDARG;
+
+    LPCWSTR pwszVal = nullptr;
+    if (SUCCEEDED(XmlReaderGetAttribute(pReader, L"id", &pwszVal)) && pwszVal)
+        SetId(pwszVal);
+
+    pwszVal = nullptr;
+    if (SUCCEEDED(XmlReaderGetAttribute(pReader, L"name", &pwszVal)) && pwszVal)
+        SetName(pwszVal);
+
+    pwszVal = nullptr;
+    if (SUCCEEDED(XmlReaderGetAttribute(pReader, L"clipName", &pwszVal)) && pwszVal)
+        SetClipName(pwszVal);
+
+    pwszVal = nullptr;
+    if (SUCCEEDED(XmlReaderGetAttribute(pReader, L"duration", &pwszVal)) && pwszVal)
+        SetDurationHns(_wtoi64(pwszVal));
+
+    return S_OK;
+}
+
+HRESULT ThemeTransition::SaveToXml(IXmlWriter* pWriter)
+{
+    if (!pWriter)
+        return E_INVALIDARG;
+
+    pWriter->WriteStartElement(nullptr, L"transition", nullptr);
+
+    if (!m_strId.IsEmpty())
+        pWriter->WriteAttributeString(nullptr, L"id", nullptr, m_strId);
+
+    if (!m_strName.IsEmpty())
+        pWriter->WriteAttributeString(nullptr, L"name", nullptr, m_strName);
+
+    if (!m_strClipName.IsEmpty())
+        pWriter->WriteAttributeString(nullptr, L"clipName", nullptr, m_strClipName);
+
+    WCHAR szValue[64] = { 0 };
+    if (m_llDurationHns != 10000000)
+    {
+        swprintf_s(szValue, L"%lld", m_llDurationHns);
+        pWriter->WriteAttributeString(nullptr, L"duration", nullptr, szValue);
+    }
+
+    for (size_t i = 0; i < m_arrParameters.GetCount(); ++i)
+    {
+        TemplateProperty& prop = m_arrParameters.GetAt(i);
+        pWriter->WriteStartElement(nullptr, L"parameter", nullptr);
+        pWriter->WriteAttributeString(nullptr, L"key", nullptr, prop.GetKey());
+        pWriter->WriteAttributeString(nullptr, L"value", nullptr, prop.GetValue());
+        pWriter->WriteEndElement();
+    }
+
+    pWriter->WriteEndElement();
+    return S_OK;
+}
 
 // ============================================================================
 // ThemeEffectTemplate implementation
@@ -743,8 +1153,73 @@ void ThemeEffectTemplate::RemoveAllEffects()
 float ThemeEffectTemplate::GetDefaultIntensity() const throw() { return m_flDefaultIntensity; }
 void ThemeEffectTemplate::SetDefaultIntensity(float flIntensity) throw() { m_flDefaultIntensity = flIntensity; }
 
-HRESULT ThemeEffectTemplate::LoadFromXml(IXmlReader* pReader) { UNREFERENCED_PARAMETER(pReader); return E_NOTIMPL; }
-HRESULT ThemeEffectTemplate::SaveToXml(IXmlWriter* pWriter) { UNREFERENCED_PARAMETER(pWriter); return E_NOTIMPL; }
+HRESULT ThemeEffectTemplate::LoadFromXml(IXmlReader* pReader)
+{
+    if (!pReader)
+        return E_INVALIDARG;
+
+    LPCWSTR pwszVal = nullptr;
+    if (SUCCEEDED(XmlReaderGetAttribute(pReader, L"id", &pwszVal)) && pwszVal)
+        SetId(pwszVal);
+
+    pwszVal = nullptr;
+    if (SUCCEEDED(XmlReaderGetAttribute(pReader, L"name", &pwszVal)) && pwszVal)
+        SetName(pwszVal);
+
+    pwszVal = nullptr;
+    if (SUCCEEDED(XmlReaderGetAttribute(pReader, L"defaultIntensity", &pwszVal)) && pwszVal)
+        SetDefaultIntensity(static_cast<float>(_wtof(pwszVal)));
+
+    return S_OK;
+}
+
+HRESULT ThemeEffectTemplate::SaveToXml(IXmlWriter* pWriter)
+{
+    if (!pWriter)
+        return E_INVALIDARG;
+
+    pWriter->WriteStartElement(nullptr, L"effectTemplate", nullptr);
+
+    if (!m_strId.IsEmpty())
+        pWriter->WriteAttributeString(nullptr, L"id", nullptr, m_strId);
+
+    if (!m_strName.IsEmpty())
+        pWriter->WriteAttributeString(nullptr, L"name", nullptr, m_strName);
+
+    if (m_flDefaultIntensity != 1.0f)
+    {
+        WCHAR szValue[64] = { 0 };
+        swprintf_s(szValue, L"%g", m_flDefaultIntensity);
+        pWriter->WriteAttributeString(nullptr, L"defaultIntensity", nullptr, szValue);
+    }
+
+    for (size_t i = 0; i < m_arrEffects.GetCount(); ++i)
+    {
+        ThemeEffect* pEffect = m_arrEffects.GetAt(i);
+        if (pEffect)
+        {
+            pWriter->WriteStartElement(nullptr, L"effect", nullptr);
+
+            WCHAR szValue[64] = { 0 };
+            swprintf_s(szValue, L"%d", static_cast<int>(pEffect->GetType()));
+            pWriter->WriteAttributeString(nullptr, L"type", nullptr, szValue);
+
+            swprintf_s(szValue, L"%lld", pEffect->GetDurationHns());
+            pWriter->WriteAttributeString(nullptr, L"duration", nullptr, szValue);
+
+            if (pEffect->GetIntensity() != 1.0)
+            {
+                swprintf_s(szValue, L"%g", pEffect->GetIntensity());
+                pWriter->WriteAttributeString(nullptr, L"intensity", nullptr, szValue);
+            }
+
+            pWriter->WriteEndElement();
+        }
+    }
+
+    pWriter->WriteEndElement();
+    return S_OK;
+}
 
 // ============================================================================
 // ThemeFirstEffect / ThemeLastEffect implementation

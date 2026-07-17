@@ -40,6 +40,7 @@ PublishJob::PublishJob()
     , m_flEncodeProgress(0.0f)
     , m_flUploadProgress(0.0f)
     , m_bCancelled(false)
+    , m_bPaused(false)
     , m_pCallback(nullptr)
 {
 }
@@ -163,12 +164,34 @@ HRESULT PublishJob::Cancel()
 
 HRESULT PublishJob::Pause()
 {
-    return E_NOTIMPL;
+    if (m_status != PublishJobStatusEncoding && m_status != PublishJobStatusUploading)
+        return E_UNEXPECTED;
+
+    if (m_bPaused)
+        return S_FALSE;
+
+    m_bPaused = true;
+
+    if (m_pCallback)
+        m_pCallback->OnProgressChanged(m_flOverallProgress, L"Paused");
+
+    return S_OK;
 }
 
 HRESULT PublishJob::Resume()
 {
-    return E_NOTIMPL;
+    if (!m_bPaused)
+        return E_UNEXPECTED;
+
+    m_bPaused = false;
+
+    if (m_pCallback)
+    {
+        LPCWSTR pszStatus = (m_status == PublishJobStatusEncoding) ? L"Encoding..." : L"Uploading...";
+        m_pCallback->OnProgressChanged(m_flOverallProgress, pszStatus);
+    }
+
+    return S_OK;
 }
 
 PublishJobStatus PublishJob::GetStatus() const throw()
@@ -338,6 +361,7 @@ unsigned int __stdcall PublishBackgroundJob::ThreadProc(void* pParam)
 
 PublishBackgroundWorker::PublishBackgroundWorker()
     : m_dwMaxJobs(2)
+    , m_dwCompletedJobCount(0)
     , m_bInitialized(false)
 {
     InitializeCriticalSection(&m_csQueue);
@@ -450,12 +474,24 @@ DWORD PublishBackgroundWorker::GetActiveJobCount() const throw()
 
 DWORD PublishBackgroundWorker::GetCompletedJobCount() const throw()
 {
-    return 0;
+    EnterCriticalSection(&m_csQueue);
+    DWORD count = m_dwCompletedJobCount;
+    LeaveCriticalSection(&m_csQueue);
+    return count;
 }
 
 float PublishBackgroundWorker::GetOverallProgress() const throw()
 {
-    return 0.0f;
+    EnterCriticalSection(&m_csQueue);
+    DWORD dwPending = static_cast<DWORD>(m_pendingJobs.size());
+    DWORD dwActive = static_cast<DWORD>(m_activeJobs.size());
+    DWORD dwTotal = dwPending + dwActive + m_dwCompletedJobCount;
+    float flProgress = 0.0f;
+    if (dwTotal > 0)
+        flProgress = static_cast<float>(m_dwCompletedJobCount) /
+                     static_cast<float>(dwTotal);
+    LeaveCriticalSection(&m_csQueue);
+    return flProgress;
 }
 
 PublishBackgroundWorker* PublishBackgroundWorker::GetInstance()

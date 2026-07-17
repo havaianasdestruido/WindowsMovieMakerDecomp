@@ -42,15 +42,6 @@
 #include "WLXPhotoBase.h"
 #include "../MovieMakerCore.h"
 
-// ============================================================================
-// Export / import macros
-// ============================================================================
-#ifdef MOVIECORE_EXPORTS
-    #define DATASTRUCT_API __declspec(dllexport)
-#else
-    #define DATASTRUCT_API __declspec(dllimport)
-#endif
-
 #pragma warning(push)
 #pragma warning(disable: 4100) // unreferenced formal parameter
 #pragma warning(disable: 4505) // unreferenced local function has been removed

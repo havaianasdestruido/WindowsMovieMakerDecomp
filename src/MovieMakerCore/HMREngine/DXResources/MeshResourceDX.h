@@ -204,12 +204,12 @@ namespace HMREngine
             };
         };
 
-        // --- ScrollingTextResourceDX: Mesh for scrolling text ---
-        class ScrollingTextResourceDX : public MeshResourceDX
+        // --- ScrollingTextMeshResourceDX: Mesh for scrolling text ---
+        class ScrollingTextMeshResourceDX : public MeshResourceDX
         {
         public:
-            ScrollingTextResourceDX();
-            virtual ~ScrollingTextResourceDX();
+            ScrollingTextMeshResourceDX();
+            virtual ~ScrollingTextMeshResourceDX();
 
             HRESULT CreateScrollingTextMesh(UINT width, UINT height);
             void Release();

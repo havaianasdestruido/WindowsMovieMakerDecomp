@@ -1,6 +1,4 @@
-﻿#include "pch.h"
-
-/*
+﻿/*
  * MovieMakerCore.cpp
  *
  * Implementation of MovieMakerMain -- the sole exported function from

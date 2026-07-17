@@ -318,11 +318,111 @@ HRESULT ThemeOperationLogger::SaveToFile(LPCWSTR pszFilePath)
     if (!pszFilePath)
         return E_POINTER;
 
-    // In the full implementation, this would serialize the log to XML or JSON
-    // using IXmlWriter and store it at the given file path.
+    CComPtr<IStream> spStream;
+    HRESULT hr = SHCreateStreamOnFile(pszFilePath, STGM_WRITE | STGM_CREATE, &spStream);
+    if (FAILED(hr))
+        return hr;
 
-    UNREFERENCED_PARAMETER(pszFilePath);
-    return S_OK;
+    CComPtr<IXmlWriter> spWriter;
+    hr = CreateXmlWriter(__uuidof(IXmlWriter), reinterpret_cast<void**>(&spWriter), NULL);
+    if (FAILED(hr))
+        return hr;
+
+    hr = spWriter->SetOutput(spStream);
+    if (FAILED(hr))
+        return hr;
+
+    hr = spWriter->WriteStartDocument(XmlStandalone_Omit);
+    if (FAILED(hr))
+        return hr;
+
+    EnterCriticalSection(&m_csLog);
+
+    hr = spWriter->WriteStartElement(NULL, L"OperationLog", NULL);
+    if (FAILED(hr))
+    {
+        LeaveCriticalSection(&m_csLog);
+        return hr;
+    }
+
+    WCHAR szCount[32];
+    hr = StringCchPrintfW(szCount, _countof(szCount), L"%zu", m_vLogEntries.size());
+    if (SUCCEEDED(hr))
+    {
+        spWriter->WriteAttributeString(NULL, L"count", NULL, szCount);
+    }
+
+    for (auto pEntry : m_vLogEntries)
+    {
+        hr = spWriter->WriteStartElement(NULL, L"Operation", NULL);
+        if (FAILED(hr))
+            break;
+
+        WCHAR szId[32];
+        StringCchPrintfW(szId, _countof(szId), L"%u", pEntry->GetOperationId());
+        spWriter->WriteAttributeString(NULL, L"id", NULL, szId);
+
+        spWriter->WriteAttributeString(NULL, L"name", NULL, pEntry->GetOperationName());
+
+        if (pEntry->IsCompleted())
+            spWriter->WriteAttributeString(NULL, L"status", NULL, L"Completed");
+        else if (pEntry->IsFailed())
+            spWriter->WriteAttributeString(NULL, L"status", NULL, L"Failed");
+        else if (pEntry->IsInProgress())
+            spWriter->WriteAttributeString(NULL, L"status", NULL, L"InProgress");
+        else
+            spWriter->WriteAttributeString(NULL, L"status", NULL, L"Pending");
+
+        FILETIME ftStart = pEntry->GetStartTime();
+        FILETIME ftEnd = pEntry->GetEndTime();
+        ULARGE_INTEGER uliStart, uliEnd;
+        uliStart.LowPart = ftStart.dwLowDateTime;
+        uliStart.HighPart = ftStart.dwHighDateTime;
+        uliEnd.LowPart = ftEnd.dwLowDateTime;
+        uliEnd.HighPart = ftEnd.dwHighDateTime;
+
+        WCHAR szStart[32], szEnd[32];
+        StringCchPrintfW(szStart, _countof(szStart), L"%llu", uliStart.QuadPart);
+        StringCchPrintfW(szEnd, _countof(szEnd), L"%llu", uliEnd.QuadPart);
+        spWriter->WriteAttributeString(NULL, L"startTime", NULL, szStart);
+        spWriter->WriteAttributeString(NULL, L"endTime", NULL, szEnd);
+
+        if (pEntry->IsFailed())
+        {
+            spWriter->WriteAttributeString(NULL, L"error", NULL, pEntry->GetErrorDescription());
+        }
+
+        size_t stepCount = pEntry->GetStepCount();
+        if (stepCount > 0)
+        {
+            spWriter->WriteStartElement(NULL, L"Steps", NULL);
+            for (size_t s = 0; s < stepCount; s++)
+            {
+                spWriter->WriteStartElement(NULL, L"Step", NULL);
+                spWriter->WriteString(pEntry->GetStepAt(s));
+                spWriter->WriteEndElement();
+            }
+            spWriter->WriteEndElement();
+        }
+
+        spWriter->WriteEndElement();
+    }
+
+    LeaveCriticalSection(&m_csLog);
+
+    if (FAILED(hr))
+        return hr;
+
+    hr = spWriter->WriteEndElement();
+    if (FAILED(hr))
+        return hr;
+
+    hr = spWriter->WriteEndDocument();
+    if (FAILED(hr))
+        return hr;
+
+    hr = spWriter->Flush();
+    return hr;
 }
 
 HRESULT ThemeOperationLogger::LoadFromFile(LPCWSTR pszFilePath)
@@ -330,10 +430,94 @@ HRESULT ThemeOperationLogger::LoadFromFile(LPCWSTR pszFilePath)
     if (!pszFilePath)
         return E_POINTER;
 
-    // In the full implementation, this would deserialize a previously saved
-    // operation log from the given file path.
+    CComPtr<IStream> spStream;
+    HRESULT hr = SHCreateStreamOnFile(pszFilePath, STGM_READ, &spStream);
+    if (FAILED(hr))
+        return hr;
 
-    UNREFERENCED_PARAMETER(pszFilePath);
+    CComPtr<IXmlReader> spReader;
+    hr = CreateXmlReader(__uuidof(IXmlReader), reinterpret_cast<void**>(&spReader), NULL);
+    if (FAILED(hr))
+        return hr;
+
+    hr = spReader->SetInput(spStream);
+    if (FAILED(hr))
+        return hr;
+
+    XmlNodeType nodeType;
+    while (spReader->Read(&nodeType) == S_OK)
+    {
+        if (nodeType != XmlNodeType_Element)
+            continue;
+
+        const WCHAR* pwszLocalName = NULL;
+        hr = spReader->GetLocalName(&pwszLocalName, NULL);
+        if (FAILED(hr) || !pwszLocalName)
+            continue;
+
+        if (wcscmp(pwszLocalName, L"Operation") != 0)
+            continue;
+
+        MonolithicThemeOperation* pOp = new MonolithicThemeOperation();
+
+        const WCHAR* pValue = NULL;
+
+        if (SUCCEEDED(XmlReaderGetAttribute(spReader, L"id", &pValue)) && pValue)
+        {
+            pOp->SetOperationId((DWORD)wcstoul(pValue, NULL, 10));
+        }
+
+        if (SUCCEEDED(XmlReaderGetAttribute(spReader, L"name", &pValue)) && pValue)
+        {
+            pOp->SetOperationName(pValue);
+        }
+
+        if (SUCCEEDED(XmlReaderGetAttribute(spReader, L"status", &pValue)) && pValue)
+        {
+            if (wcscmp(pValue, L"Completed") == 0)
+            {
+                pOp->SetCompleted(true);
+            }
+            else if (wcscmp(pValue, L"Failed") == 0)
+            {
+                pOp->SetFailed(true);
+            }
+            else if (wcscmp(pValue, L"InProgress") == 0)
+            {
+                pOp->SetInProgress(true);
+            }
+        }
+
+        if (SUCCEEDED(XmlReaderGetAttribute(spReader, L"startTime", &pValue)) && pValue)
+        {
+            FILETIME ft;
+            ULARGE_INTEGER uli;
+            uli.QuadPart = _wcstoui64(pValue, NULL, 10);
+            ft.dwLowDateTime = uli.LowPart;
+            ft.dwHighDateTime = uli.HighPart;
+            pOp->SetStartTime(ft);
+        }
+
+        if (SUCCEEDED(XmlReaderGetAttribute(spReader, L"endTime", &pValue)) && pValue)
+        {
+            FILETIME ft;
+            ULARGE_INTEGER uli;
+            uli.QuadPart = _wcstoui64(pValue, NULL, 10);
+            ft.dwLowDateTime = uli.LowPart;
+            ft.dwHighDateTime = uli.HighPart;
+            pOp->SetEndTime(ft);
+        }
+
+        if (SUCCEEDED(XmlReaderGetAttribute(spReader, L"error", &pValue)) && pValue)
+        {
+            pOp->SetErrorDescription(pValue);
+        }
+
+        EnterCriticalSection(&m_csLog);
+        m_vLogEntries.push_back(pOp);
+        LeaveCriticalSection(&m_csLog);
+    }
+
     return S_OK;
 }
 

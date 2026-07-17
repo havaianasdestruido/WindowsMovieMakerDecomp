@@ -34,6 +34,9 @@ typedef const PROPVARIANT& REFUIKEY;
 
 interface IUIView;
 
+// Forward declaration of SundanceAppMain (global namespace)
+class SundanceAppMain;
+
 namespace SundanceUI
 {
 
@@ -79,14 +82,35 @@ static const UINT kRibbonCmdSaveFile      = 301;
 static const UINT kRibbonCmdPublish        = 302;
 
 // ============================================================================
+// RibbonCommandHandler callback type
+// ============================================================================
+typedef HRESULT (::SundanceAppMain::*RibbonCommandCallback)(UINT nCmdId, UI_COMMANDTYPE commandType, IUISimplePropertySet* pArgs);
+
+// ============================================================================
+// RibbonCommandEntry - per-command registration data
+// ============================================================================
+struct RIBBON_API RibbonCommandEntry
+{
+    UINT                    nCmdId;
+    RibbonCommandCallback   pCallback;
+    bool                    fEnabled;
+    bool                    fVisible;
+
+    RibbonCommandEntry()
+        : nCmdId(0)
+        , pCallback(nullptr)
+        , fEnabled(true)
+        , fVisible(true)
+    {
+    }
+};
+
+// ============================================================================
 // RibbonApp
 // ============================================================================
 // Main ribbon application host. Implements IUICommandHandler and
-// IUIApplication for the Windows 8+ ribbon framework. Dispatches
-// ribbon events and commands to the SundanceAppMain application.
+// IUIApplication for the Windows 8+ ribbon framework.
 //
-class SundanceAppMain;
-
 class RIBBON_API RibbonApp
 {
 public:
@@ -99,6 +123,7 @@ public:
 
     // Ribbon framework access
     IUIFramework* GetFramework();
+    IUIRibbon* GetRibbon();
     HRESULT LoadUI(HINSTANCE hInstance, LPCWSTR pszRibbonResource);
 
     // Command handling
@@ -121,18 +146,34 @@ public:
     HRESULT UpdateTooltip(UINT nCmdId, LPCWSTR pszTooltip);
     HRESULT UpdateLabel(UINT nCmdId, LPCWSTR pszLabel);
 
+    // Command handler registration
+    HRESULT RegisterCommandHandler(UINT nCmdId, RibbonCommandCallback pCallback);
+    HRESULT UnregisterCommandHandler(UINT nCmdId);
+
+    // Batch UI update
+    void UpdateUI();
+
+    // Per-command UI manipulation
+    HRESULT SetEnabled(UINT nCmdId, bool fEnabled);
+    HRESULT SetVisible(UINT nCmdId, bool fVisible);
+    HRESULT SetText(UINT nCmdId, LPCWSTR pszText);
+
     // Contextual tabs
     HRESULT ShowContextualTab(UINT nTabId);
     HRESULT HideContextualTab(UINT nTabId);
 
+    // IUICommandHandler methods (called by framework via CCommandHandler)
+    HRESULT Execute(UINT nCmdId, UI_COMMANDTYPE commandType, IUISimplePropertySet* pArgs);
+    HRESULT UpdateState(UINT nCmdId, PROPVARIANT* pCurrentValue, PROPVARIANT* pNewValue);
+
 private:
     HRESULT CreateUIFramework();
     HRESULT LoadRibbonFromResource(HINSTANCE hInstance, LPCWSTR pszResource);
-    HRESULT RegisterCommandHandler(UINT nCmdId);
+    HRESULT RegisterFrameworkCommands();
+    HRESULT GetRibbonView();
 
-    // IUICommandHandler implementation helpers
-    HRESULT ExecuteCommand(UINT nCmdId, UI_COMMANDTYPE commandType, IUISimplePropertySet* pArgs);
-    HRESULT QueryInterface(REFIID riid, void** ppvObject);
+    // Command handler map
+    std::map<UINT, RibbonCommandEntry> m_commandHandlers;
 
     CComPtr<IUIFramework>       m_spFramework;
     CComPtr<IUIRibbon>          m_spRibbon;
@@ -140,6 +181,9 @@ private:
     HWND                        m_hwndOwner;
     bool                        m_fInitialized;
     HINSTANCE                   m_hInstance;
+
+    // Ribbon hosting element ID
+    static const UINT UI_HOSTING_ELEMENT = 2;
 };
 
 } // namespace SundanceUI

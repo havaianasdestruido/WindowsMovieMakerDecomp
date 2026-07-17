@@ -33,6 +33,7 @@ AudioBoost::AudioBoost()
     , m_dwSampleRate(0)
     , m_dwChannels(0)
     , m_fInitialized(false)
+    , m_fNormalize(false)
 {
 }
 
@@ -101,15 +102,19 @@ HRESULT AudioBoost::ProcessBuffer(float* pBuffer, DWORD dwFrameCount)
     if (m_mode == AudioBoostModeNone)
         return S_OK;
 
-    // Measure current peak
+    // Measure current peak and RMS
     float flPeak = 0.0f;
+    float flSum = 0.0f;
     DWORD dwTotalSamples = dwFrameCount * m_dwChannels;
     for (DWORD i = 0; i < dwTotalSamples; ++i)
     {
         float flAbs = fabsf(pBuffer[i]);
         if (flAbs > flPeak) flPeak = flAbs;
+        flSum += flAbs * flAbs;
     }
     m_flMeasuredPeak = flPeak;
+    m_flMeasuredRms = (dwTotalSamples > 0) ? sqrtf(flSum / static_cast<float>(dwTotalSamples)) : 0.0f;
+    m_flMeasuredLoudness = (m_flMeasuredRms > 0.0f) ? 20.0f * log10f(m_flMeasuredRms) : -100.0f;
 
     // Compute and apply gain based on mode
     float flLinearGain = ComputeLinearGain(flPeak);
@@ -173,6 +178,49 @@ float AudioBoost::GetMeasuredPeakLevel() const throw() { return m_flMeasuredPeak
 float AudioBoost::GetMeasuredRmsLevel() const throw() { return m_flMeasuredRms; }
 float AudioBoost::GetMeasuredLoudness() const throw() { return m_flMeasuredLoudness; }
 float AudioBoost::GetAppliedGainDb() const throw() { return m_flAppliedGainDb; }
+
+void AudioBoost::SetBoostLevel(float flLevel)
+{
+    if (flLevel < 0.0f) flLevel = 0.0f;
+    if (flLevel > 2.0f) flLevel = 2.0f;
+    m_flFixedGainDb = 20.0f * log10f(flLevel > 0.0f ? flLevel : 0.0001f);
+    m_mode = AudioBoostModeFixedGain;
+}
+
+float AudioBoost::ProcessSample(float flSample)
+{
+    if (m_mode == AudioBoostModeNone)
+        return flSample;
+
+    float flLinearGain = ComputeLinearGain(fabsf(flSample));
+    float flResult = flSample * flLinearGain;
+
+    if (m_mode == AudioBoostModeCompress)
+    {
+        float flThresholdLinear = powf(10.0f, m_flCompressionThresholdDb / 20.0f);
+        float flAbs = fabsf(flSample);
+        if (flAbs > flThresholdLinear)
+        {
+            float flOver = flAbs / flThresholdLinear;
+            float flCompressed = powf(flOver, 1.0f / m_flCompressionRatio);
+            float flGain = (flThresholdLinear * flCompressed) / (flAbs > 0.0f ? flAbs : 1.0f);
+            flResult = flSample * flGain;
+        }
+    }
+
+    if (flResult > 1.0f) flResult = 1.0f;
+    if (flResult < -1.0f) flResult = -1.0f;
+    return flResult;
+}
+
+void AudioBoost::SetNormalize(bool fEnabled)
+{
+    m_fNormalize = fEnabled;
+    if (fEnabled && m_mode == AudioBoostModeNone)
+        m_mode = AudioBoostModePeakNormalize;
+    else if (!fEnabled && m_mode == AudioBoostModePeakNormalize)
+        m_mode = AudioBoostModeNone;
+}
 
 void AudioBoost::ResetAnalysis()
 {

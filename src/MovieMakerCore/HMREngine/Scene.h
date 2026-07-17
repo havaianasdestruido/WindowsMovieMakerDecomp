@@ -84,6 +84,19 @@ namespace HMREngine
         void SetMetadata(const std::string& key, const std::string& value);
         std::string GetMetadata(const std::string& key) const;
 
+        // Light management
+        void AddLight(X3DChildNode* light);
+        void RemoveLight(X3DChildNode* light);
+        const std::vector<X3DChildNode*>& GetLights() const { return m_lights; }
+        size_t GetLightCount() const { return m_lights.size(); }
+
+        // Camera management
+        void SetCamera(ViewportNode* camera);
+        ViewportNode* GetCamera() const { return m_camera; }
+
+        // Render (stub: rendering is done via RenderingList)
+        HRESULT Render();
+
         // Dirty flag
         bool IsDirty() const { return m_dirty; }
         void SetDirty(bool d) { m_dirty = d; }
@@ -93,6 +106,9 @@ namespace HMREngine
 
         SAIPtr<LayerSetNode> m_rootLayerSet;
         ViewportNode* m_activeViewport = nullptr;
+
+        std::vector<X3DChildNode*> m_lights;
+        ViewportNode* m_camera = nullptr;
 
         std::map<std::string, X3DChildNode*> m_nodeRegistry;
         std::vector<SAIRoute*> m_routes;

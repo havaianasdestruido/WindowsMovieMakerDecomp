@@ -57,6 +57,14 @@ public:
     // -- Text content --
     HRESULT WriteText(LPCWSTR pszText);
 
+    // -- Legacy project writing --
+    HRESULT WriteProject(LPCWSTR pszFilePath, MovieProject* pProject);
+    HRESULT WriteMediaItems(IXmlWriter* pWriter, MovieProject* pProject);
+    HRESULT WriteProperties(IXmlWriter* pWriter, MovieProject* pProject);
+
+    // -- XML string helpers --
+    static ATL::CString EscapeXmlString(LPCWSTR pszInput);
+
     // -- Document lifecycle --
     HRESULT BeginDocument();
     HRESULT EndDocument();

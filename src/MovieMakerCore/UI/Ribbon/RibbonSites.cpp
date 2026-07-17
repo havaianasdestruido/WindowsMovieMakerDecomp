@@ -565,4 +565,62 @@ HRESULT ToggleSite::SetLabels(LPCWSTR pszLabelOn, LPCWSTR pszLabelOff)
 
 UINT ToggleSite::GetCommandId() const throw() { return m_nCmdId; }
 
+// ============================================================================
+// RibbonSiteRegistry implementation
+// ============================================================================
+
+RibbonSiteRegistry& RibbonSiteRegistry::Instance() throw()
+{
+    static RibbonSiteRegistry s_instance;
+    return s_instance;
+}
+
+RibbonSiteRegistry::RibbonSiteRegistry() {}
+RibbonSiteRegistry::~RibbonSiteRegistry() { Clear(); }
+
+HRESULT RibbonSiteRegistry::RegisterSite(HWND hWnd, RibbonApp* pRibbon)
+{
+    if (!hWnd || !pRibbon)
+        return E_INVALIDARG;
+
+    // Replace existing entry if present
+    m_sites[hWnd] = pRibbon;
+    return S_OK;
+}
+
+HRESULT RibbonSiteRegistry::UnregisterSite(HWND hWnd)
+{
+    if (!hWnd)
+        return E_INVALIDARG;
+
+    auto it = m_sites.find(hWnd);
+    if (it == m_sites.end())
+        return S_FALSE;
+
+    m_sites.erase(it);
+    return S_OK;
+}
+
+RibbonApp* RibbonSiteRegistry::GetSite(HWND hWnd) const throw()
+{
+    if (!hWnd)
+        return nullptr;
+
+    auto it = m_sites.find(hWnd);
+    if (it == m_sites.end())
+        return nullptr;
+
+    return it->second;
+}
+
+size_t RibbonSiteRegistry::GetSiteCount() const throw()
+{
+    return m_sites.size();
+}
+
+void RibbonSiteRegistry::Clear()
+{
+    m_sites.clear();
+}
+
 } // namespace SundanceUI

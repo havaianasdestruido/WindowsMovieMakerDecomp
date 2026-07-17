@@ -187,12 +187,101 @@ namespace HMREngine
 
     void ScenePreview::RenderGrid(ExecutionContext* ctx)
     {
-        // Grid rendering uses the GridShader with a fullscreen quad
+        if (!m_engine) return;
+
+        ID3D11Device* dev = m_engine->GetDevice();
+        ID3D11DeviceContext* d3dctx = m_engine->GetImmediateContext();
+        if (!dev || !d3dctx) return;
+
+        float gridSize = 5.0f;
+        int divisions = 10;
+        float halfW = gridSize;
+        float halfH = gridSize;
+
+        struct GridLineVertex { Vec3 pos; };
+        std::vector<GridLineVertex> verts;
+        verts.reserve((divisions + 1) * 4);
+
+        float step = gridSize * 2.0f / divisions;
+
+        for (int i = 0; i <= divisions; i++)
+        {
+            float x = -halfW + i * step;
+            verts.push_back({ Vec3(x, 0.0f, -halfH) });
+            verts.push_back({ Vec3(x, 0.0f, halfH) });
+        }
+
+        for (int i = 0; i <= divisions; i++)
+        {
+            float z = -halfH + i * step;
+            verts.push_back({ Vec3(-halfW, 0.0f, z) });
+            verts.push_back({ Vec3(halfW, 0.0f, z) });
+        }
+
+        if (verts.empty()) return;
+
+        D3D11_BUFFER_DESC bd{};
+        bd.ByteWidth = static_cast<UINT>(verts.size() * sizeof(GridLineVertex));
+        bd.Usage = D3D11_USAGE_DEFAULT;
+        bd.BindFlags = D3D11_BIND_VERTEX_BUFFER;
+
+        D3D11_SUBRESOURCE_DATA init{};
+        init.pSysMemData = verts.data();
+
+        CComPtr<ID3D11Buffer> vb;
+        HRESULT hr = dev->CreateBuffer(&bd, &init, &vb);
+        if (FAILED(hr)) return;
+
+        UINT stride = sizeof(GridLineVertex);
+        UINT offset = 0;
+        d3dctx->IASetVertexBuffers(0, 1, &vb, &stride, &offset);
+        d3dctx->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_LINELIST);
+
+        d3dctx->Draw(static_cast<UINT>(verts.size()), 0);
+
+        d3dctx->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
     }
 
     void ScenePreview::RenderAxes(ExecutionContext* ctx)
     {
-        // Axes rendering (RGB lines for X/Y/Z)
+        if (!m_engine) return;
+
+        ID3D11Device* dev = m_engine->GetDevice();
+        ID3D11DeviceContext* d3dctx = m_engine->GetImmediateContext();
+        if (!dev || !d3dctx) return;
+
+        float axisLen = 2.0f;
+
+        struct AxisVertex { Vec3 pos; Vec4 color; };
+
+        AxisVertex verts[6];
+        verts[0] = { Vec3(0, 0, 0), Vec4(1, 0, 0, 1) };
+        verts[1] = { Vec3(axisLen, 0, 0), Vec4(1, 0, 0, 1) };
+        verts[2] = { Vec3(0, 0, 0), Vec4(0, 1, 0, 1) };
+        verts[3] = { Vec3(0, axisLen, 0), Vec4(0, 1, 0, 1) };
+        verts[4] = { Vec3(0, 0, 0), Vec4(0, 0, 1, 1) };
+        verts[5] = { Vec3(0, 0, axisLen), Vec4(0, 0, 1, 1) };
+
+        D3D11_BUFFER_DESC bd{};
+        bd.ByteWidth = sizeof(verts);
+        bd.Usage = D3D11_USAGE_DEFAULT;
+        bd.BindFlags = D3D11_BIND_VERTEX_BUFFER;
+
+        D3D11_SUBRESOURCE_DATA init{};
+        init.pSysMemData = verts;
+
+        CComPtr<ID3D11Buffer> vb;
+        HRESULT hr = dev->CreateBuffer(&bd, &init, &vb);
+        if (FAILED(hr)) return;
+
+        UINT stride = sizeof(AxisVertex);
+        UINT offset = 0;
+        d3dctx->IASetVertexBuffers(0, 1, &vb, &stride, &offset);
+        d3dctx->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_LINELIST);
+
+        d3dctx->Draw(6, 0);
+
+        d3dctx->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
     }
 
 } // namespace HMREngine

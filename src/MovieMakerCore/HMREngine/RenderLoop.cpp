@@ -115,6 +115,7 @@ namespace HMREngine
         m_engine->EndFrame();
         hr = m_engine->Present();
 
+        if (m_frameCb) m_frameCb(GetTime(), m_deltaTime);
         if (m_postFrameCb) m_postFrameCb(GetTime(), m_deltaTime);
 
         return hr;
@@ -132,7 +133,79 @@ namespace HMREngine
         }
 
         Scene* scene = m_engine->GetScene();
-        if (scene) scene->Update(0.0);
+        if (!scene) return E_FAIL;
+
+        scene->Update(0.0);
+
+        ID3D11Device* dev = m_engine->GetDevice();
+        ID3D11DeviceContext* d3dctx = m_engine->GetImmediateContext();
+        if (!dev || !d3dctx) return E_FAIL;
+
+        UINT w = m_engine->GetWidth();
+        UINT h = m_engine->GetHeight();
+
+        D3D11_TEXTURE2D_DESC td{};
+        td.Width = w;
+        td.Height = h;
+        td.MipLevels = 1;
+        td.ArraySize = 1;
+        td.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+        td.SampleDesc.Count = 1;
+        td.Usage = D3D11_USAGE_DEFAULT;
+        td.BindFlags = D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE;
+
+        CComPtr<ID3D11Texture2D> offTex;
+        HRESULT hr = dev->CreateTexture2D(&td, nullptr, &offTex);
+        if (FAILED(hr)) return hr;
+
+        CComPtr<ID3D11RenderTargetView> offRTV;
+        hr = dev->CreateRenderTargetView(offTex, nullptr, &offRTV);
+        if (FAILED(hr)) return hr;
+
+        CComPtr<ID3D11ShaderResourceView> offSRV;
+        hr = dev->CreateShaderResourceView(offTex, nullptr, &offSRV);
+        if (FAILED(hr)) return hr;
+
+        D3D11_TEXTURE2D_DESC dsd{};
+        dsd.Width = w;
+        dsd.Height = h;
+        dsd.MipLevels = 1;
+        dsd.ArraySize = 1;
+        dsd.Format = DXGI_FORMAT_D24_UNORM_S8_UINT;
+        dsd.SampleDesc.Count = 1;
+        dsd.Usage = D3D11_USAGE_DEFAULT;
+        dsd.BindFlags = D3D11_BIND_DEPTH_STENCIL;
+
+        CComPtr<ID3D11Texture2D> offDS;
+        hr = dev->CreateTexture2D(&dsd, nullptr, &offDS);
+        if (FAILED(hr)) return hr;
+
+        CComPtr<ID3D11DepthStencilView> offDSV;
+        hr = dev->CreateDepthStencilView(offDS, nullptr, &offDSV);
+        if (FAILED(hr)) return hr;
+
+        CComPtr<ID3D11RenderTargetView> oldRTV;
+        CComPtr<ID3D11DepthStencilView> oldDSV;
+        d3dctx->OMGetRenderTargets(1, &oldRTV.p, &oldDSV.p);
+
+        d3dctx->OMSetRenderTargets(1, &offRTV.p, offDSV);
+
+        float clearColor[4] = { 0.0f, 0.0f, 0.0f, 1.0f };
+        d3dctx->ClearRenderTargetView(offRTV, clearColor);
+        d3dctx->ClearDepthStencilView(offDSV, D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
+
+        D3D11_VIEWPORT vp{};
+        vp.Width = static_cast<float>(w);
+        vp.Height = static_cast<float>(h);
+        vp.MinDepth = 0.0f;
+        vp.MaxDepth = 1.0f;
+        d3dctx->RSSetViewports(1, &vp);
+
+        RenderingList renderList;
+        renderList.Build(scene);
+        renderList.Execute(m_engine);
+
+        d3dctx->OMSetRenderTargets(1, &oldRTV.p, oldDSV);
 
         return S_OK;
     }

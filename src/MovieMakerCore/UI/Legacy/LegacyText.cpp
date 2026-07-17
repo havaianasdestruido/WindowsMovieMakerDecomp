@@ -692,17 +692,34 @@ int LegacyTextExtent::GetLineCount() const throw()
 
 int LegacyTextExtent::HitTestPoint(const POINT& pt) const
 {
-    UNREFERENCED_PARAMETER(pt);
-    // In the full implementation, this would use GDI+ character range
-    // hit-testing to determine which character index corresponds to
-    // the given point.
-    return -1;
+    if (m_strText.IsEmpty())
+        return -1;
+
+    float flCharWidth = m_flFontSize * 0.6f;
+    if (flCharWidth <= 0.0f)
+        return -1;
+
+    int index = static_cast<int>(static_cast<float>(pt.x) / flCharWidth);
+
+    if (index < 0)
+        index = 0;
+    if (index > m_strText.GetLength())
+        index = m_strText.GetLength();
+
+    return index;
 }
 
 int LegacyTextExtent::HitTestTextPosition(DWORD dwCharIndex) const
 {
-    UNREFERENCED_PARAMETER(dwCharIndex);
-    // In the full implementation, this would compute the X,Y position
-    // of the given character index within the text layout.
-    return -1;
+    if (m_strText.IsEmpty())
+        return -1;
+
+    int nLen = m_strText.GetLength();
+    if (static_cast<int>(dwCharIndex) > nLen)
+        return -1;
+
+    float flCharWidth = m_flFontSize * 0.6f;
+    int xPos = static_cast<int>(static_cast<float>(dwCharIndex) * flCharWidth);
+
+    return xPos;
 }

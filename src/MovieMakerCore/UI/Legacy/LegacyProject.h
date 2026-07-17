@@ -45,6 +45,37 @@ struct LegacyPropertySetMap
 };
 
 // ============================================================================
+// LegacyMediaItem
+// ============================================================================
+// Represents a single media item as stored in a legacy .wlmp project file.
+// Contains the original attributes as read from the XML before conversion
+// to the current ProjectMediaItem format.
+//
+struct LegacyMediaItem
+{
+    DWORD        dwId;
+    ATL::CString strFilePath;
+    DWORD        dwMediaType;       // 0 = photo, 1 = video, 2 = audio
+    LONGLONG     llDurationMs;      // duration in legacy milliseconds
+    LONGLONG     llStartTimeMs;     // start time in legacy milliseconds
+    UINT         uWidth;
+    UINT         uHeight;
+    DWORD        dwFrameRate;
+    ATL::CString strDisplayName;
+
+    LegacyMediaItem()
+        : dwId(0)
+        , dwMediaType(0)
+        , llDurationMs(0)
+        , llStartTimeMs(0)
+        , uWidth(0)
+        , uHeight(0)
+        , dwFrameRate(0)
+    {
+    }
+};
+
+// ============================================================================
 // LegacyProjectSupport
 // ============================================================================
 // Provides reading and writing of older .wlmp format versions. This is
@@ -91,6 +122,31 @@ public:
     HRESULT WriteLegacyMediaItems(IXmlWriter* pWriter, StoryboardManager::MovieProject* pProject);
     HRESULT WriteLegacyTimeline(IXmlWriter* pWriter, StoryboardManager::MovieProject* pProject);
 
+    // -- Version get/set --
+    void SetVersion(DWORD dwMajor, DWORD dwMinor);
+    DWORD GetVersion() const throw();
+
+    // -- Media item management --
+    size_t GetMediaItemCount() const throw();
+    const LegacyMediaItem* GetMediaItem(size_t nIndex) const;
+    size_t AddMediaItem(const LegacyMediaItem& item);
+    void RemoveAllMediaItems();
+
+    // -- Project properties --
+    const std::map<ATL::CString, ATL::CString>& GetProperties() const;
+    void SetProperty(LPCWSTR pszKey, LPCWSTR pszValue);
+    ATL::CString GetProperty(LPCWSTR pszKey) const;
+
+    // -- Legacy XML element reading helpers --
+    HRESULT ReadMediaItemAttributes(IXmlReader* pReader, LegacyMediaItem& item);
+    HRESULT ReadTimelineExtent(IXmlReader* pReader, StoryboardManager::MovieExtent* pExtent);
+
+    // -- Legacy XML element writing helpers --
+    HRESULT WriteMediaItemAttributes(IXmlWriter* pWriter, const LegacyMediaItem& item);
+
+    // -- Property name mapping --
+    ATL::CString MapPropertyName(LPCWSTR pszLegacyName) const;
+
     // -- Defaults for missing legacy values --
     DWORD GetLegacyDefaultDuration() const throw();
     SIZE GetLegacyDefaultResolution() const;
@@ -102,6 +158,8 @@ private:
     UINT  m_uVersionMajor;
     UINT  m_uVersionMinor;
     std::vector<LegacyPropertySetMap> m_propertyMaps;
+    std::vector<LegacyMediaItem> m_mediaItems;
+    std::map<ATL::CString, ATL::CString> m_properties;
     bool  m_bIsLegacy;
 };
 

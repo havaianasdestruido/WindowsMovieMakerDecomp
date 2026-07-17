@@ -135,9 +135,26 @@ public:
     HRESULT GetLastRenderResult() const throw();
 
 private:
+    struct ShaderParamEntry
+    {
+        DWORD          dwParamId;
+        std::vector<float> values;
+    };
+    struct TextureBinding
+    {
+        DWORD dwTextureId;
+        DWORD dwSlot;
+    };
+
     RECT    m_rcViewport;
     DWORD   m_dwRenderTargetId;
     HRESULT m_hrLastRenderResult;
+    float   m_flClearColorR;
+    float   m_flClearColorG;
+    float   m_flClearColorB;
+    float   m_flClearColorA;
+    std::vector<ShaderParamEntry> m_shaderParams;
+    std::vector<TextureBinding>   m_textureBindings;
 };
 
 // ============================================================================

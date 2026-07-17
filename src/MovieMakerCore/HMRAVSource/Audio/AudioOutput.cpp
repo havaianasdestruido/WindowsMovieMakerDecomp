@@ -83,8 +83,20 @@ HRESULT AudioOutput::SetDefaultDevice()
 
 HRESULT AudioOutput::SetDevice(LPCWSTR pszDeviceId)
 {
-    UNREFERENCED_PARAMETER(pszDeviceId);
-    return E_NOTIMPL;
+    if (!m_spDeviceEnumerator)
+        return E_FAIL;
+
+    if (!pszDeviceId || pszDeviceId[0] == L'\0')
+        return SetDefaultDevice();
+
+    m_spDevice.Release();
+    CComPtr<IMMDevice> spDevice;
+    HRESULT hr = m_spDeviceEnumerator->GetDevice(pszDeviceId, &spDevice);
+    if (FAILED(hr))
+        return hr;
+
+    m_spDevice = spDevice;
+    return CreateAudioClient();
 }
 
 ATL::CString AudioOutput::GetDeviceName() const
@@ -109,7 +121,20 @@ ATL::CString AudioOutput::GetDeviceName() const
     return ATL::CString(L"Unknown");
 }
 
-ATL::CString AudioOutput::GetDeviceId() const { return ATL::CString(); }
+ATL::CString AudioOutput::GetDeviceId() const
+{
+    if (!m_spDevice)
+        return ATL::CString();
+
+    LPWSTR pwszDeviceId = nullptr;
+    HRESULT hr = m_spDevice->GetId(&pwszDeviceId);
+    if (FAILED(hr) || !pwszDeviceId)
+        return ATL::CString();
+
+    ATL::CString strDeviceId(pwszDeviceId);
+    CoTaskMemFree(pwszDeviceId);
+    return strDeviceId;
+}
 
 HRESULT AudioOutput::Play()
 {
@@ -149,6 +174,11 @@ HRESULT AudioOutput::Resume()
 
 HRESULT AudioOutput::Flush()
 {
+    if (m_spAudioClient && m_state == StatePlaying)
+    {
+        m_spAudioClient->Stop();
+        m_spAudioClient->Reset();
+    }
     m_llPositionHns = 0;
     return S_OK;
 }

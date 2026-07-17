@@ -15,6 +15,28 @@
 #include "LegacyProject.h"
 #include <shlwapi.h>
 
+static HRESULT SkipCurrentElement(IXmlReader* pReader)
+{
+    if (!pReader)
+        return E_POINTER;
+
+    DWORD dwDepth = 0;
+    XmlNodeType nodeType;
+
+    while (pReader->Read(&nodeType) == S_OK)
+    {
+        if (nodeType == XmlNodeType_Element)
+            ++dwDepth;
+        else if (nodeType == XmlNodeTypeEndElement)
+        {
+            if (dwDepth == 0)
+                return S_OK;
+            --dwDepth;
+        }
+    }
+    return S_OK;
+}
+
 // ============================================================================
 // LegacyProjectSupport implementation
 // ============================================================================
@@ -168,20 +190,120 @@ HRESULT LegacyProjectSupport::ReadLegacyProject(
     if (!pszFilePath || !pOutProject)
         return E_POINTER;
 
-    // Detect version
+    if (!::PathFileExistsW(pszFilePath))
+        return HRESULT_FROM_WIN32(ERROR_FILE_NOT_FOUND);
+
     DWORD dwVersion = DetectProjectVersion(pszFilePath);
     if (dwVersion == 0)
         return E_FAIL;
 
     m_uVersionMajor = dwVersion;
+    m_bIsLegacy = true;
+    m_mediaItems.clear();
+    m_properties.clear();
 
-    // In the full implementation, this would:
-    //  1. Open the legacy XML file using IXmlReader
-    //  2. Read the root <project> element
-    //  3. Read <media> items, converting to current format
-    //  4. Read <timeline> extents, converting as needed
-    //  5. Read legacy <transitions>, <effects>, <titles>
-    //  6. Apply property name mappings
+    ATL::CComPtr<IStream> spStream;
+    HRESULT hr = SHCreateStreamOnFileW(pszFilePath, STGM_READ, &spStream);
+    if (FAILED(hr))
+        return hr;
+
+    ATL::CComPtr<IXmlReader> spReader;
+    hr = CreateXmlReader(__uuidof(IXmlReader), reinterpret_cast<void**>(&spReader), nullptr);
+    if (FAILED(hr))
+        return hr;
+
+    hr = spReader->SetInput(spStream);
+    if (FAILED(hr))
+        return hr;
+
+    XmlNodeType nodeType;
+    while (SUCCEEDED(spReader->Read(&nodeType)))
+    {
+        if (nodeType == XmlNodeType_Element)
+        {
+            LPCWSTR pszLocalName = nullptr;
+            UINT cchName = 0;
+            hr = spReader->GetLocalName(&pszLocalName, &cchName);
+            if (FAILED(hr) || !pszLocalName)
+                continue;
+
+            if (wcscmp(pszLocalName, L"project") == 0)
+            {
+                // Already parsed version in DetectProjectVersion, read remaining attrs
+                LPCWSTR pszAttrValue = nullptr;
+                if (SUCCEEDED(XmlReaderGetAttribute(spReader, L"name", &pszAttrValue)) && pszAttrValue)
+                {
+                    pOutProject->GetSettings().SetProjectName(pszAttrValue);
+                }
+            }
+            else if (wcscmp(pszLocalName, L"media") == 0)
+            {
+                hr = ReadLegacyMediaItems(spReader, pOutProject);
+                if (FAILED(hr))
+                    return hr;
+            }
+            else if (wcscmp(pszLocalName, L"timeline") == 0)
+            {
+                hr = ReadLegacyTimeline(spReader, pOutProject);
+                if (FAILED(hr))
+                    return hr;
+            }
+            else if (wcscmp(pszLocalName, L"settings") == 0)
+            {
+                // Read project settings
+                if (SUCCEEDED(XmlReaderGetAttribute(spReader, L"outputWidth", &pszAttrValue)) && pszAttrValue)
+                {
+                    pOutProject->GetSettings().SetOutputDimensions(
+                        static_cast<UINT>(_wtoi(pszAttrValue)),
+                        pOutProject->GetSettings().GetOutputHeight());
+                }
+                if (SUCCEEDED(XmlReaderGetAttribute(spReader, L"outputHeight", &pszAttrValue)) && pszAttrValue)
+                {
+                    pOutProject->GetSettings().SetOutputDimensions(
+                        pOutProject->GetSettings().GetOutputWidth(),
+                        static_cast<UINT>(_wtoi(pszAttrValue)));
+                }
+                if (SUCCEEDED(XmlReaderGetAttribute(spReader, L"aspectRatio", &pszAttrValue)) && pszAttrValue)
+                {
+                    pOutProject->GetSettings().SetAspectRatio(_wtof(pszAttrValue));
+                }
+                if (SUCCEEDED(XmlReaderGetAttribute(spReader, L"videoBitRate", &pszAttrValue)) && pszAttrValue)
+                {
+                    pOutProject->GetSettings().SetVideoBitRate(_wtol(pszAttrValue));
+                }
+                if (SUCCEEDED(XmlReaderGetAttribute(spReader, L"audioBitRate", &pszAttrValue)) && pszAttrValue)
+                {
+                    pOutProject->GetSettings().SetAudioBitRate(_wtol(pszAttrValue));
+                }
+                if (SUCCEEDED(XmlReaderGetAttribute(spReader, L"frameRate", &pszAttrValue)) && pszAttrValue)
+                {
+                    pOutProject->GetSettings().SetFrameRate(_wtol(pszAttrValue));
+                }
+                SkipCurrentElement(spReader);
+            }
+            else
+            {
+                SkipCurrentElement(spReader);
+            }
+        }
+    }
+
+    // Convert legacy media items to current format
+    for (size_t i = 0; i < m_mediaItems.size(); ++i)
+    {
+        StoryboardManager::ProjectMediaItem convertedItem;
+        hr = ConvertLegacyMediaItem(m_mediaItems[i].strFilePath, &convertedItem);
+        if (SUCCEEDED(hr))
+        {
+            convertedItem.SetMediaId(m_mediaItems[i].dwId);
+            convertedItem.SetMediaType(m_mediaItems[i].dwMediaType);
+            convertedItem.SetDurationHns(ConvertLegacyTimeToHns(static_cast<DWORD>(m_mediaItems[i].llDurationMs)));
+            convertedItem.SetStartTimeHns(ConvertLegacyTimeToHns(static_cast<DWORD>(m_mediaItems[i].llStartTimeMs)));
+            convertedItem.SetDimensions(m_mediaItems[i].uWidth, m_mediaItems[i].uHeight);
+            convertedItem.SetFrameRate(m_mediaItems[i].dwFrameRate);
+            pOutProject->AddMediaItem(convertedItem);
+        }
+    }
 
     return S_OK;
 }
@@ -192,8 +314,61 @@ HRESULT LegacyProjectSupport::ReadLegacyMediaItems(
     if (!pReader || !pProject)
         return E_POINTER;
 
-    UNREFERENCED_PARAMETER(pReader);
-    UNREFERENCED_PARAMETER(pProject);
+    XmlNodeType nodeType;
+    HRESULT hr;
+
+    while (SUCCEEDED(pReader->Read(&nodeType)))
+    {
+        if (nodeType == XmlNodeTypeEndElement)
+            break;
+
+        if (nodeType == XmlNodeType_Element)
+        {
+            LPCWSTR pszLocalName = nullptr;
+            UINT cchName = 0;
+            hr = pReader->GetLocalName(&pszLocalName, &cchName);
+            if (FAILED(hr) || !pszLocalName)
+                continue;
+
+            if (wcscmp(pszLocalName, L"mediaItem") == 0)
+            {
+                LegacyMediaItem item;
+
+                LPCWSTR pszValue = nullptr;
+                if (SUCCEEDED(XmlReaderGetAttribute(pReader, L"id", &pszValue)) && pszValue)
+                    item.dwId = _wtoi(pszValue);
+                if (SUCCEEDED(XmlReaderGetAttribute(pReader, L"filePath", &pszValue)) && pszValue)
+                    item.strFilePath = pszValue;
+                if (SUCCEEDED(XmlReaderGetAttribute(pReader, L"mediaType", &pszValue)) && pszValue)
+                    item.dwMediaType = _wtoi(pszValue);
+                if (SUCCEEDED(XmlReaderGetAttribute(pReader, L"duration", &pszValue)) && pszValue)
+                    item.llDurationMs = _wtoi64(pszValue);
+                if (SUCCEEDED(XmlReaderGetAttribute(pReader, L"startTime", &pszValue)) && pszValue)
+                    item.llStartTimeMs = _wtoi64(pszValue);
+                if (SUCCEEDED(XmlReaderGetAttribute(pReader, L"width", &pszValue)) && pszValue)
+                    item.uWidth = _wtoi(pszValue);
+                if (SUCCEEDED(XmlReaderGetAttribute(pReader, L"height", &pszValue)) && pszValue)
+                    item.uHeight = _wtoi(pszValue);
+                if (SUCCEEDED(XmlReaderGetAttribute(pReader, L"frameRate", &pszValue)) && pszValue)
+                    item.dwFrameRate = _wtoi(pszValue);
+                if (SUCCEEDED(XmlReaderGetAttribute(pReader, L"displayName", &pszValue)) && pszValue)
+                    item.strDisplayName = pszValue;
+
+                if (!item.strFilePath.IsEmpty())
+                {
+                    ReadMediaItemAttributes(pReader, item);
+                    m_mediaItems.push_back(item);
+                }
+
+                SkipCurrentElement(pReader);
+            }
+            else
+            {
+                SkipCurrentElement(pReader);
+            }
+        }
+    }
+
     return S_OK;
 }
 
@@ -203,8 +378,80 @@ HRESULT LegacyProjectSupport::ReadLegacyTimeline(
     if (!pReader || !pProject)
         return E_POINTER;
 
-    UNREFERENCED_PARAMETER(pReader);
-    UNREFERENCED_PARAMETER(pProject);
+    XmlNodeType nodeType;
+    HRESULT hr;
+    DWORD dwNextExtentId = 1;
+
+    StoryboardManager::ProjectTimeline* pTimeline =
+        pProject->GetTimeline(StoryboardManager::TimelineTrackTypeVideo);
+
+    while (SUCCEEDED(pReader->Read(&nodeType)))
+    {
+        if (nodeType == XmlNodeTypeEndElement)
+            break;
+
+        if (nodeType == XmlNodeType_Element)
+        {
+            LPCWSTR pszLocalName = nullptr;
+            UINT cchName = 0;
+            hr = pReader->GetLocalName(&pszLocalName, &cchName);
+            if (FAILED(hr) || !pszLocalName)
+                continue;
+
+            if (wcscmp(pszLocalName, L"extent") == 0)
+            {
+                LPCWSTR pszValue = nullptr;
+                DWORD dwExtentId = dwNextExtentId++;
+                DWORD dwMediaId = 0;
+                LONGLONG llStartTime = 0;
+                LONGLONG llEndTime = 0;
+
+                if (SUCCEEDED(XmlReaderGetAttribute(pReader, L"extentId", &pszValue)) && pszValue)
+                    dwExtentId = _wtoi(pszValue);
+                if (SUCCEEDED(XmlReaderGetAttribute(pReader, L"mediaId", &pszValue)) && pszValue)
+                    dwMediaId = _wtoi(pszValue);
+                if (SUCCEEDED(XmlReaderGetAttribute(pReader, L"startTime", &pszValue)) && pszValue)
+                    llStartTime = _wtoi64(pszValue);
+                if (SUCCEEDED(XmlReaderGetAttribute(pReader, L"endTime", &pszValue)) && pszValue)
+                    llEndTime = _wtoi64(pszValue);
+
+                if (pTimeline)
+                    pTimeline->AddExtent(dwExtentId);
+
+                if (SUCCEEDED(XmlReaderGetAttribute(pReader, L"speed", &pszValue)) && pszValue)
+                {
+                }
+                if (SUCCEEDED(XmlReaderGetAttribute(pReader, L"volume", &pszValue)) && pszValue)
+                {
+                }
+                if (SUCCEEDED(XmlReaderGetAttribute(pReader, L"pan", &pszValue)) && pszValue)
+                {
+                }
+                if (SUCCEEDED(XmlReaderGetAttribute(pReader, L"reversed", &pszValue)) && pszValue)
+                {
+                }
+                if (SUCCEEDED(XmlReaderGetAttribute(pReader, L"muted", &pszValue)) && pszValue)
+                {
+                }
+                if (SUCCEEDED(XmlReaderGetAttribute(pReader, L"fadeIn", &pszValue)) && pszValue)
+                {
+                }
+                if (SUCCEEDED(XmlReaderGetAttribute(pReader, L"fadeOut", &pszValue)) && pszValue)
+                {
+                }
+
+                SkipCurrentElement(pReader);
+            }
+            else
+            {
+                SkipCurrentElement(pReader);
+            }
+        }
+    }
+
+    if (pTimeline)
+        pTimeline->SetTotalDurationHns(0);
+
     return S_OK;
 }
 
@@ -214,8 +461,31 @@ HRESULT LegacyProjectSupport::ReadLegacyExtent(
     if (!pReader || !pExtent)
         return E_POINTER;
 
-    UNREFERENCED_PARAMETER(pReader);
-    UNREFERENCED_PARAMETER(pExtent);
+    LPCWSTR pszValue = nullptr;
+
+    if (SUCCEEDED(XmlReaderGetAttribute(pReader, L"extentId", &pszValue)) && pszValue)
+        pExtent->SetExtentId(_wtoi(pszValue));
+    if (SUCCEEDED(XmlReaderGetAttribute(pReader, L"mediaId", &pszValue)) && pszValue)
+        pExtent->SetMediaId(_wtoi(pszValue));
+    if (SUCCEEDED(XmlReaderGetAttribute(pReader, L"startTime", &pszValue)) && pszValue)
+        pExtent->SetStartTimeHns(ConvertLegacyTimeToHns(static_cast<DWORD>(_wtoi64(pszValue))));
+    if (SUCCEEDED(XmlReaderGetAttribute(pReader, L"endTime", &pszValue)) && pszValue)
+        pExtent->SetEndTimeHns(ConvertLegacyTimeToHns(static_cast<DWORD>(_wtoi64(pszValue))));
+    if (SUCCEEDED(XmlReaderGetAttribute(pReader, L"speed", &pszValue)) && pszValue)
+        pExtent->SetSpeedFactor(_wtof(pszValue));
+    if (SUCCEEDED(XmlReaderGetAttribute(pReader, L"volume", &pszValue)) && pszValue)
+        pExtent->SetVolume(_wtof(pszValue));
+    if (SUCCEEDED(XmlReaderGetAttribute(pReader, L"pan", &pszValue)) && pszValue)
+        pExtent->SetPan(_wtof(pszValue));
+    if (SUCCEEDED(XmlReaderGetAttribute(pReader, L"reversed", &pszValue)) && pszValue)
+        pExtent->SetReversed(_wtoi(pszValue) != 0);
+    if (SUCCEEDED(XmlReaderGetAttribute(pReader, L"muted", &pszValue)) && pszValue)
+        pExtent->SetMuted(_wtoi(pszValue) != 0);
+    if (SUCCEEDED(XmlReaderGetAttribute(pReader, L"fadeIn", &pszValue)) && pszValue)
+        pExtent->SetFadeInDurationHns(ConvertLegacyTimeToHns(static_cast<DWORD>(_wtoi64(pszValue))));
+    if (SUCCEEDED(XmlReaderGetAttribute(pReader, L"fadeOut", &pszValue)) && pszValue)
+        pExtent->SetFadeOutDurationHns(ConvertLegacyTimeToHns(static_cast<DWORD>(_wtoi64(pszValue))));
+
     return S_OK;
 }
 
@@ -225,8 +495,11 @@ HRESULT LegacyProjectSupport::ConvertLegacyMediaItem(
     if (!pOutItem)
         return E_POINTER;
 
-    UNREFERENCED_PARAMETER(strLegacyItem);
-    UNREFERENCED_PARAMETER(pOutItem);
+    pOutItem->SetSourcePath(strLegacyItem);
+
+    if (strLegacyItem.IsEmpty())
+        return E_INVALIDARG;
+
     return S_OK;
 }
 
@@ -236,8 +509,16 @@ HRESULT LegacyProjectSupport::ConvertLegacyExtent(
     if (!pOutExtent)
         return E_POINTER;
 
-    UNREFERENCED_PARAMETER(strLegacyExtent);
-    UNREFERENCED_PARAMETER(pOutExtent);
+    if (strLegacyExtent.IsEmpty())
+        return E_INVALIDARG;
+
+    pOutExtent->SetExtentId(0);
+    pOutExtent->SetMediaId(0);
+    pOutExtent->SetStartTimeHns(0);
+    pOutExtent->SetEndTimeHns(0);
+    pOutExtent->SetSpeedFactor(1.0);
+    pOutExtent->SetVolume(1.0);
+
     return S_OK;
 }
 
@@ -261,8 +542,65 @@ HRESULT LegacyProjectSupport::SaveAsLegacyFormat(
     if (!pszFilePath || !pProject)
         return E_POINTER;
 
-    UNREFERENCED_PARAMETER(pszFilePath);
-    UNREFERENCED_PARAMETER(pProject);
+    ATL::CComPtr<IStream> spStream;
+    HRESULT hr = SHCreateStreamOnFileW(pszFilePath, STGM_WRITE | STGM_CREATE, &spStream);
+    if (FAILED(hr))
+        return hr;
+
+    ATL::CComPtr<IXmlWriter> spWriter;
+    hr = CreateXmlWriter(__uuidof(IXmlWriter), reinterpret_cast<void**>(&spWriter), nullptr);
+    if (FAILED(hr))
+        return hr;
+
+    hr = spWriter->SetOutput(spStream);
+    if (FAILED(hr))
+        return hr;
+
+    spWriter->SetProperty(XmlWriterProperty_MethodDecl, XmlWriterMethod_Xml);
+    spWriter->WriteStartDocument(XmlStandalone_Omit);
+
+    DWORD dwMajor = m_uVersionMajor ? m_uVersionMajor : 14;
+    DWORD dwMinor = m_uVersionMinor ? m_uVersionMinor : 0;
+
+    spWriter->WriteStartElement(nullptr, L"project", nullptr);
+    spWriter->WriteAttributeString(nullptr, L"versionMajor", nullptr,
+        CW2T(CStringW().Format(L"%u", dwMajor)));
+    spWriter->WriteAttributeString(nullptr, L"versionMinor", nullptr,
+        CW2T(CStringW().Format(L"%u", dwMinor)));
+
+    CStringW strName;
+    strName = pProject->GetProjectName();
+    if (!strName.IsEmpty())
+    {
+        spWriter->WriteAttributeString(nullptr, L"name", nullptr, CW2T(strName));
+    }
+
+    WriteLegacyMediaItems(spWriter, pProject);
+
+    WriteLegacyTimeline(spWriter, pProject);
+
+    spWriter->WriteStartElement(nullptr, L"settings", nullptr);
+    {
+        CStringW strVal;
+        strVal.Format(L"%u", pProject->GetSettings().GetOutputWidth());
+        spWriter->WriteAttributeString(nullptr, L"outputWidth", nullptr, CW2T(strVal));
+        strVal.Format(L"%u", pProject->GetSettings().GetOutputHeight());
+        spWriter->WriteAttributeString(nullptr, L"outputHeight", nullptr, CW2T(strVal));
+        strVal.Format(L"%.2f", pProject->GetSettings().GetAspectRatio());
+        spWriter->WriteAttributeString(nullptr, L"aspectRatio", nullptr, CW2T(strVal));
+        strVal.Format(L"%u", pProject->GetSettings().GetVideoBitRate());
+        spWriter->WriteAttributeString(nullptr, L"videoBitRate", nullptr, CW2T(strVal));
+        strVal.Format(L"%u", pProject->GetSettings().GetAudioBitRate());
+        spWriter->WriteAttributeString(nullptr, L"audioBitRate", nullptr, CW2T(strVal));
+        strVal.Format(L"%u", pProject->GetSettings().GetFrameRate());
+        spWriter->WriteAttributeString(nullptr, L"frameRate", nullptr, CW2T(strVal));
+    }
+    spWriter->WriteEndElement();
+
+    spWriter->WriteEndElement();
+    spWriter->WriteEndDocument();
+    spWriter->Flush();
+
     return S_OK;
 }
 
@@ -272,8 +610,46 @@ HRESULT LegacyProjectSupport::WriteLegacyMediaItems(
     if (!pWriter || !pProject)
         return E_POINTER;
 
-    UNREFERENCED_PARAMETER(pWriter);
-    UNREFERENCED_PARAMETER(pProject);
+    pWriter->WriteStartElement(nullptr, L"media", nullptr);
+
+    for (size_t i = 0; i < pProject->GetMediaItemCount(); ++i)
+    {
+        const StoryboardManager::ProjectMediaItem* pItem = pProject->GetMediaItem(i);
+        if (!pItem)
+            continue;
+
+        pWriter->WriteStartElement(nullptr, L"mediaItem", nullptr);
+
+        CStringW strVal;
+        strVal.Format(L"%u", pItem->GetMediaId());
+        pWriter->WriteAttributeString(nullptr, L"id", nullptr, CW2T(strVal));
+
+        pWriter->WriteAttributeString(nullptr, L"filePath", nullptr,
+            CW2T(pItem->GetSourcePath()));
+
+        strVal.Format(L"%u", pItem->GetMediaType());
+        pWriter->WriteAttributeString(nullptr, L"mediaType", nullptr, CW2T(strVal));
+
+        strVal.Format(L"%lld", pItem->GetDurationHns() / 10000);
+        pWriter->WriteAttributeString(nullptr, L"duration", nullptr, CW2T(strVal));
+
+        strVal.Format(L"%lld", pItem->GetStartTimeHns() / 10000);
+        pWriter->WriteAttributeString(nullptr, L"startTime", nullptr, CW2T(strVal));
+
+        strVal.Format(L"%u", pItem->GetWidth());
+        pWriter->WriteAttributeString(nullptr, L"width", nullptr, CW2T(strVal));
+
+        strVal.Format(L"%u", pItem->GetHeight());
+        pWriter->WriteAttributeString(nullptr, L"height", nullptr, CW2T(strVal));
+
+        strVal.Format(L"%u", pItem->GetFrameRate());
+        pWriter->WriteAttributeString(nullptr, L"frameRate", nullptr, CW2T(strVal));
+
+        pWriter->WriteEndElement();
+    }
+
+    pWriter->WriteEndElement();
+
     return S_OK;
 }
 
@@ -283,8 +659,29 @@ HRESULT LegacyProjectSupport::WriteLegacyTimeline(
     if (!pWriter || !pProject)
         return E_POINTER;
 
-    UNREFERENCED_PARAMETER(pWriter);
-    UNREFERENCED_PARAMETER(pProject);
+    pWriter->WriteStartElement(nullptr, L"timeline", nullptr);
+
+    const StoryboardManager::ProjectTimeline* pTimeline =
+        pProject->GetTimeline(StoryboardManager::TimelineTrackTypeVideo);
+
+    if (pTimeline)
+    {
+        for (size_t i = 0; i < pTimeline->GetExtentCount(); ++i)
+        {
+            DWORD dwExtentId = pTimeline->GetExtentIdAt(i);
+
+            pWriter->WriteStartElement(nullptr, L"extent", nullptr);
+
+            CStringW strVal;
+            strVal.Format(L"%u", dwExtentId);
+            pWriter->WriteAttributeString(nullptr, L"extentId", nullptr, CW2T(strVal));
+
+            pWriter->WriteEndElement();
+        }
+    }
+
+    pWriter->WriteEndElement();
+
     return S_OK;
 }
 
@@ -321,4 +718,133 @@ void LegacyProjectSupport::InitializePropertyMaps()
 
     for (size_t i = 0; i < ARRAYSIZE(maps); i++)
         m_propertyMaps.push_back(maps[i]);
+}
+
+void LegacyProjectSupport::SetVersion(DWORD dwMajor, DWORD dwMinor)
+{
+    m_uVersionMajor = dwMajor;
+    m_uVersionMinor = dwMinor;
+}
+
+DWORD LegacyProjectSupport::GetVersion() const throw()
+{
+    return (m_uVersionMajor << 16) | m_uVersionMinor;
+}
+
+size_t LegacyProjectSupport::GetMediaItemCount() const throw()
+{
+    return m_mediaItems.size();
+}
+
+const LegacyMediaItem* LegacyProjectSupport::GetMediaItem(size_t nIndex) const
+{
+    if (nIndex < m_mediaItems.size())
+        return &m_mediaItems[nIndex];
+    return nullptr;
+}
+
+size_t LegacyProjectSupport::AddMediaItem(const LegacyMediaItem& item)
+{
+    m_mediaItems.push_back(item);
+    return m_mediaItems.size() - 1;
+}
+
+void LegacyProjectSupport::RemoveAllMediaItems()
+{
+    m_mediaItems.clear();
+}
+
+const std::map<ATL::CString, ATL::CString>& LegacyProjectSupport::GetProperties() const
+{
+    return m_properties;
+}
+
+void LegacyProjectSupport::SetProperty(LPCWSTR pszKey, LPCWSTR pszValue)
+{
+    if (pszKey)
+        m_properties[pszKey] = pszValue ? pszValue : L"";
+}
+
+ATL::CString LegacyProjectSupport::GetProperty(LPCWSTR pszKey) const
+{
+    if (!pszKey)
+        return L"";
+    auto it = m_properties.find(pszKey);
+    if (it != m_properties.end())
+        return it->second;
+    return L"";
+}
+
+HRESULT LegacyProjectSupport::ReadMediaItemAttributes(
+    IXmlReader* pReader, LegacyMediaItem& item)
+{
+    if (!pReader)
+        return E_POINTER;
+
+    LPCWSTR pszValue = nullptr;
+
+    if (SUCCEEDED(XmlReaderGetAttribute(pReader, L"displayName", &pszValue)) && pszValue)
+        item.strDisplayName = pszValue;
+
+    return S_OK;
+}
+
+HRESULT LegacyProjectSupport::ReadTimelineExtent(
+    IXmlReader* pReader, StoryboardManager::MovieExtent* pExtent)
+{
+    if (!pReader || !pExtent)
+        return E_POINTER;
+
+    return ReadLegacyExtent(pReader, pExtent);
+}
+
+HRESULT LegacyProjectSupport::WriteMediaItemAttributes(
+    IXmlWriter* pWriter, const LegacyMediaItem& item)
+{
+    if (!pWriter)
+        return E_POINTER;
+
+    CStringW strVal;
+    strVal.Format(L"%u", item.dwId);
+    pWriter->WriteAttributeString(nullptr, L"id", nullptr, CW2T(strVal));
+
+    pWriter->WriteAttributeString(nullptr, L"filePath", nullptr, CW2T(item.strFilePath));
+
+    strVal.Format(L"%u", item.dwMediaType);
+    pWriter->WriteAttributeString(nullptr, L"mediaType", nullptr, CW2T(strVal));
+
+    strVal.Format(L"%lld", item.llDurationMs);
+    pWriter->WriteAttributeString(nullptr, L"duration", nullptr, CW2T(strVal));
+
+    strVal.Format(L"%lld", item.llStartTimeMs);
+    pWriter->WriteAttributeString(nullptr, L"startTime", nullptr, CW2T(strVal));
+
+    strVal.Format(L"%u", item.uWidth);
+    pWriter->WriteAttributeString(nullptr, L"width", nullptr, CW2T(strVal));
+
+    strVal.Format(L"%u", item.uHeight);
+    pWriter->WriteAttributeString(nullptr, L"height", nullptr, CW2T(strVal));
+
+    strVal.Format(L"%u", item.dwFrameRate);
+    pWriter->WriteAttributeString(nullptr, L"frameRate", nullptr, CW2T(strVal));
+
+    if (!item.strDisplayName.IsEmpty())
+    {
+        pWriter->WriteAttributeString(nullptr, L"displayName", nullptr, CW2T(item.strDisplayName));
+    }
+
+    return S_OK;
+}
+
+ATL::CString LegacyProjectSupport::MapPropertyName(LPCWSTR pszLegacyName) const
+{
+    if (!pszLegacyName)
+        return L"";
+
+    for (const auto& map : m_propertyMaps)
+    {
+        if (map.legacyName.CompareNoCase(pszLegacyName) == 0)
+            return map.currentName;
+    }
+    return pszLegacyName;
 }

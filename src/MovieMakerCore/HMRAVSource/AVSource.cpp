@@ -250,17 +250,22 @@ HRESULT AVSource::GetEvent(IMFMediaEvent** ppEvent)
     if (!ppEvent)
         return E_POINTER;
     *ppEvent = nullptr;
-    return E_NOTIMPL;
+    return MF_E_NOT_INITIALIZED;
 }
 
 HRESULT AVSource::BeginGetEvent(IMFAsyncCallback* pCallback, IUnknown* punkState)
 {
-    return E_NOTIMPL;
+    UNREFERENCED_PARAMETER(pCallback);
+    UNREFERENCED_PARAMETER(punkState);
+    return S_OK;
 }
 
 HRESULT AVSource::EndGetEvent(IMFMediaEvent* pEvent, IMFMediaEvent** ppNextEvent)
 {
-    return E_NOTIMPL;
+    UNREFERENCED_PARAMETER(pEvent);
+    if (ppNextEvent)
+        *ppNextEvent = nullptr;
+    return S_OK;
 }
 
 // ============================================================================

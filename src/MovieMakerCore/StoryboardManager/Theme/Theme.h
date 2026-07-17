@@ -152,12 +152,36 @@ public:
     ATL::CString GetCategory() const;
     void SetCategory(LPCWSTR pszCategory);
 
+    // Visual appearance
+    DWORD GetPrimaryColor() const throw();
+    void SetPrimaryColor(DWORD dwColor) throw();
+
+    DWORD GetSecondaryColor() const throw();
+    void SetSecondaryColor(DWORD dwColor) throw();
+
+    DWORD GetAccentColor() const throw();
+    void SetAccentColor(DWORD dwColor) throw();
+
+    ATL::CString GetFontFamily() const;
+    void SetFontFamily(LPCWSTR pszFontFamily);
+
+    float GetFontSize() const throw();
+    void SetFontSize(float flSize) throw();
+
+    // Apply theme properties to a theme element (stub)
+    HRESULT ApplyToElement(class ThemeComplexType* pElement);
+
 private:
     ATL::CString        m_strName;
     ATL::CString        m_strDisplayName;
     ATL::CString        m_strDescription;
     ATL::CString        m_strThumbnailPath;
     ATL::CString        m_strCategory;
+    ATL::CString        m_strFontFamily;
+    DWORD               m_dwPrimaryColor;
+    DWORD               m_dwSecondaryColor;
+    DWORD               m_dwAccentColor;
+    float               m_flFontSize;
     DWORD               m_dwVersionMajor;
     DWORD               m_dwVersionMinor;
     ThemeLoadState      m_loadState;

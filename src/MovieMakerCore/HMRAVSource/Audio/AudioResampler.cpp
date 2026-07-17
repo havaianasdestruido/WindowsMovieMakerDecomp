@@ -130,19 +130,31 @@ HRESULT AudioResamplerHelper::ProcessOutput(BYTE* pData, DWORD cbMaxData, DWORD*
         {
             BYTE* pSrc = nullptr;
             DWORD cbSrc = 0;
-            spBuffer->Lock(&pSrc, nullptr, &cbSrc);
+            hr = spBuffer->Lock(&pSrc, nullptr, &cbSrc);
+            if (SUCCEEDED(hr))
+            {
+                DWORD cbToCopy = std::min(cbSrc, cbMaxData);
+                memcpy(pData, pSrc, cbToCopy);
 
-            DWORD cbToCopy = std::min(cbSrc, cbMaxData);
-            memcpy(pData, pSrc, cbToCopy);
+                if (pcbWritten) *pcbWritten = cbToCopy;
 
-            if (pcbWritten) *pcbWritten = cbToCopy;
+                LONGLONG llTime = 0;
+                spOutputSample->GetSampleTime(&llTime);
+                if (pllTimestampHns) *pllTimestampHns = llTime;
 
-            LONGLONG llTime = 0;
-            spOutputSample->GetSampleTime(&llTime);
-            if (pllTimestampHns) *pllTimestampHns = llTime;
-
-            spBuffer->Unlock();
+                spBuffer->Unlock();
+            }
         }
+        else
+        {
+            if (pcbWritten) *pcbWritten = 0;
+            if (pllTimestampHns) *pllTimestampHns = 0;
+        }
+    }
+    else
+    {
+        if (pcbWritten) *pcbWritten = 0;
+        if (pllTimestampHns) *pllTimestampHns = 0;
     }
 
     return hr;

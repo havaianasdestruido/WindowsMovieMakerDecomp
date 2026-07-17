@@ -170,7 +170,88 @@ namespace HMREngine
 
     HRESULT X3DReader::ParseJSON(const char* data, size_t length, X3DParseContext& ctx)
     {
-        // JSON X3D format parsing
+        std::string content(data, length);
+        size_t pos = 0;
+
+        auto skipWhitespace = [&]() {
+            while (pos < content.size() && (content[pos] == ' ' || content[pos] == '\t' ||
+                content[pos] == '\r' || content[pos] == '\n')) pos++;
+        };
+
+        auto readToken = [&]() -> std::string {
+            skipWhitespace();
+            if (pos >= content.size()) return "";
+            if (content[pos] == '"') {
+                pos++;
+                size_t start = pos;
+                while (pos < content.size() && content[pos] != '"') pos++;
+                return content.substr(start, pos++ - start);
+            }
+            size_t start = pos;
+            while (pos < content.size() && content[pos] != ',' && content[pos] != '}' &&
+                   content[pos] != ']' && content[pos] != ' ' && content[pos] != '\n') pos++;
+            return content.substr(start, pos - start);
+        };
+
+        auto expect = [&](char c) {
+            skipWhitespace();
+            if (pos < content.size() && content[pos] == c) { pos++; return true; }
+            return false;
+        };
+
+        std::function<void()> parseObject;
+        parseObject = [&]() {
+            skipWhitespace();
+            if (!expect('{')) return;
+            while (pos < content.size()) {
+                skipWhitespace();
+                if (content[pos] == '}') { pos++; return; }
+                std::string key = readToken();
+                if (key.empty()) return;
+                if (!expect(':')) return;
+                skipWhitespace();
+                if (content[pos] == '{') {
+                    X3DChildNode* child = CreateNode(key);
+                    if (child) {
+                        X3DChildNode* parent = ctx.GetCurrentNode();
+                        if (parent) parent->AddChild(child);
+                        ctx.PushNode(child);
+                        parseObject();
+                        ctx.PopNode();
+                    } else {
+                        parseObject();
+                    }
+                } else if (content[pos] == '[') {
+                    pos++;
+                    while (pos < content.size() && content[pos] != ']') pos++;
+                    if (pos < content.size()) pos++;
+                } else {
+                    std::string val = readToken();
+                    if (ctx.GetCurrentNode()) {
+                        X3DFieldNode* field = CreateField(key);
+                        if (field) {
+                            switch (field->GetFieldType()) {
+                            case FieldType::SFFloat:
+                            case FieldType::SFDouble: { float fv; if (ParseFloat(val, fv)) static_cast<SFFloat*>(field)->m_value = fv; break; }
+                            case FieldType::SFInt32: { int iv; if (ParseInt(val, iv)) static_cast<SFInt32*>(field)->m_value = iv; break; }
+                            case FieldType::SFBool: { bool bv; if (ParseBool(val, bv)) static_cast<SFBool*>(field)->m_value = bv; break; }
+                            case FieldType::SFVec3f: { Vec3 vv; if (ParseVec3f(val, vv)) static_cast<SFVec3f*>(field)->m_value = vv; break; }
+                            case FieldType::SFRotation: { Rotation4f rv; if (ParseRotation(val, rv)) static_cast<SFRotation*>(field)->m_value = rv; break; }
+                            case FieldType::SFColor: { Rgb cv; if (ParseColor(val, cv)) static_cast<SFColor*>(field)->m_value = cv; break; }
+                            case FieldType::SFString: static_cast<SFString*>(field)->m_value = val; break;
+                            default: break;
+                            }
+                            ctx.GetCurrentNode()->SetField(key, field);
+                            field->Release();
+                        }
+                    }
+                }
+                skipWhitespace();
+                if (content[pos] == ',') pos++;
+            }
+        };
+
+        parseObject();
         return S_OK;
     }
 
@@ -604,12 +685,104 @@ namespace HMREngine
 
     HRESULT X3DReader::ParseXMLElement(void* xmlNode, X3DParseContext& ctx)
     {
+        // xmlNode is actually IXmlReader* cast to void*
+        if (!xmlNode || !ctx.scene) return E_POINTER;
+
+        IXmlReader* reader = static_cast<IXmlReader*>(xmlNode);
+        XmlNodeType nodeType;
+        const WCHAR* localName = nullptr;
+
+        while (reader->Read(&nodeType) == S_OK)
+        {
+            if (nodeType == XmlNodeType_Element)
+            {
+                reader->GetLocalName(&localName, nullptr);
+                if (!localName) continue;
+
+                int charCount = 0;
+                reader->GetLocalNameLength(&localName, &charCount);
+                // Convert wide to narrow
+                std::string tagName(charCount, '\0');
+                for (int i = 0; i < charCount; i++)
+                    tagName[i] = static_cast<char>(localName[i]);
+
+                std::string lower = ToLower(tagName);
+                X3DChildNode* node = CreateNode(tagName);
+                if (node)
+                {
+                    X3DChildNode* parent = ctx.GetCurrentNode();
+                    if (parent) parent->AddChild(node);
+                    ctx.PushNode(node);
+
+                    // Read attributes
+                    HRESULT hr = reader->MoveToFirstAttribute();
+                    while (SUCCEEDED(hr))
+                    {
+                        const WCHAR* attrName = nullptr;
+                        const WCHAR* attrValue = nullptr;
+                        reader->GetLocalName(&attrName, nullptr);
+                        reader->GetValue(&attrValue, nullptr);
+
+                        if (attrName && attrValue)
+                        {
+                            std::string aName, aVal;
+                            int aLen = 0;
+                            reader->GetLocalNameLength(&attrName, &aLen);
+                            aName.resize(aLen);
+                            for (int i = 0; i < aLen; i++) aName[i] = static_cast<char>(attrName[i]);
+
+                            int vLen = 0;
+                            reader->GetValueLength(&attrValue, &vLen);
+                            aVal.resize(vLen);
+                            for (int i = 0; i < vLen; i++) aVal[i] = static_cast<char>(attrValue[i]);
+
+                            X3DFieldNode* field = CreateField(aName);
+                            if (field)
+                            {
+                                switch (field->GetFieldType())
+                                {
+                                case FieldType::SFFloat: { float fv; if (ParseFloat(aVal, fv)) static_cast<SFFloat*>(field)->m_value = fv; break; }
+                                case FieldType::SFInt32: { int iv; if (ParseInt(aVal, iv)) static_cast<SFInt32*>(field)->m_value = iv; break; }
+                                case FieldType::SFBool: { bool bv; if (ParseBool(aVal, bv)) static_cast<SFBool*>(field)->m_value = bv; break; }
+                                case FieldType::SFVec3f: { Vec3 vv; if (ParseVec3f(aVal, vv)) static_cast<SFVec3f*>(field)->m_value = vv; break; }
+                                case FieldType::SFRotation: { Rotation4f rv; if (ParseRotation(aVal, rv)) static_cast<SFRotation*>(field)->m_value = rv; break; }
+                                case FieldType::SFColor: { Rgb cv; if (ParseColor(aVal, cv)) static_cast<SFColor*>(field)->m_value = cv; break; }
+                                case FieldType::SFString: static_cast<SFString*>(field)->m_value = aVal; break;
+                                default: break;
+                                }
+                                node->SetField(aName, field);
+                                field->Release();
+                            }
+                        }
+                        hr = reader->MoveToNextAttribute();
+                    }
+                    reader->MoveToElement();
+                }
+            }
+            else if (nodeType == XmlNodeTypeEndElement)
+            {
+                ctx.PopNode();
+            }
+        }
+
         return S_OK;
     }
 
     X3DChildNode* X3DReader::CreateNodeFromXML(void* xmlElement)
     {
-        return nullptr;
+        if (!xmlElement) return nullptr;
+
+        IXmlReader* reader = static_cast<IXmlReader*>(xmlElement);
+        const WCHAR* localName = nullptr;
+        int charCount = 0;
+        reader->GetLocalName(&localName, &charCount);
+        if (!localName || charCount == 0) return nullptr;
+
+        std::string tagName(charCount, '\0');
+        for (int i = 0; i < charCount; i++)
+            tagName[i] = static_cast<char>(localName[i]);
+
+        return CreateNode(tagName);
     }
 
 } // namespace HMREngine

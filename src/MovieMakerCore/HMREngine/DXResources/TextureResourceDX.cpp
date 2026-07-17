@@ -412,8 +412,49 @@ HRESULT MotionTextureResourceDX::LoadFromStrip(const std::wstring& stripPath,
 HRESULT MotionTextureResourceDX::CreateFrameFromStripData(const BYTE* stripData,
     UINT stripSize, UINT frameIndex, ID3D11Texture2D** ppTex)
 {
-    if (!stripData || !ppTex) return E_POINTER;
-    return E_NOTIMPL;
+    if (!stripData || !ppTex || !m_device) return E_POINTER;
+    if (frameIndex >= m_frameCount) return E_INVALIDARG;
+    if (m_frameWidth == 0 || m_frameHeight == 0) return E_FAIL;
+
+    D3D11_TEXTURE2D_DESC srcDesc = {};
+    if (m_stripTexture)
+        m_stripTexture->GetDesc(&srcDesc);
+    else
+        return E_FAIL;
+
+    D3D11_TEXTURE2D_DESC frameDesc = {};
+    frameDesc.Width = m_frameWidth;
+    frameDesc.Height = m_frameHeight;
+    frameDesc.MipLevels = 1;
+    frameDesc.ArraySize = 1;
+    frameDesc.Format = srcDesc.Format;
+    frameDesc.SampleDesc.Count = 1;
+    frameDesc.Usage = D3D11_USAGE_DEFAULT;
+    frameDesc.BindFlags = D3D11_BIND_SHADER_RESOURCE;
+
+    std::vector<BYTE> framePixels(m_frameWidth * m_frameHeight * 4);
+
+    UINT bytesPerPixel = 4;
+    if (srcDesc.Format == DXGI_FORMAT_B5G6R5_UNORM || srcDesc.Format == DXGI_FORMAT_B5G5R5A1_UNORM || srcDesc.Format == DXGI_FORMAT_B4G4R4A4_UNORM)
+        bytesPerPixel = 2;
+
+    UINT stripRowPitch = srcDesc.Width * bytesPerPixel;
+    UINT frameRowPitch = m_frameWidth * bytesPerPixel;
+
+    for (UINT y = 0; y < m_frameHeight; ++y)
+    {
+        UINT srcOffset = (frameIndex * m_frameWidth + y * stripRowPitch);
+        if (srcOffset + frameRowPitch > stripSize) break;
+
+        memcpy(framePixels.data() + y * frameRowPitch, stripData + srcOffset, frameRowPitch);
+    }
+
+    D3D11_SUBRESOURCE_DATA initData = {};
+    initData.pSysMem = framePixels.data();
+    initData.SysMemPitch = frameRowPitch;
+
+    HRESULT hr = m_device->CreateTexture2D(&frameDesc, &initData, ppTex);
+    return hr;
 }
 
 HRESULT MotionTextureResourceDX::GetTextureForFrame(UINT frameIndex, ID3D11ShaderResourceView** ppSRV)

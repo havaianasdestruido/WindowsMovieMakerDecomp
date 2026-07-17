@@ -175,10 +175,10 @@ namespace HMREngine
 #define DXGI_ERROR_DEVICE_RESET ((HRESULT)0x887A0006L)
 #endif
 #ifndef D3DERR_DEVICELOST
-#define D3DERR_DEVICELOST ((HRESULT)0x887608C8L)
+// Not restored: HMREngine::HMRError::D3DERR_DEVICELOST enum takes precedence
 #endif
 #ifndef D3DERR_DEVICENOTRESET
-#define D3DERR_DEVICENOTRESET ((HRESULT)0x887608C9L)
+// Not restored: HMREngine::HMRError::D3DERR_DEVICENOTRESET enum takes precedence
 #endif
 
 } // namespace HMREngine

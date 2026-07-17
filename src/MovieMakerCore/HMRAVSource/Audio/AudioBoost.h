@@ -85,6 +85,11 @@ public:
     HRESULT ProcessBuffer(float* pBuffer, DWORD dwFrameCount);
     HRESULT ProcessBufferInt16(short* pBuffer, DWORD dwSampleCount);
 
+    // Convenience
+    void SetBoostLevel(float flLevel);
+    float ProcessSample(float flSample);
+    void SetNormalize(bool fEnabled);
+
     // Analysis results
     float GetMeasuredPeakLevel() const throw();
     float GetMeasuredRmsLevel() const throw();
@@ -115,6 +120,7 @@ private:
     DWORD           m_dwSampleRate;
     DWORD           m_dwChannels;
     bool            m_fInitialized;
+    bool            m_fNormalize;
 };
 
 } // namespace HMRAVSource

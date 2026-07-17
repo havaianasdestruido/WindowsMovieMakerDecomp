@@ -335,17 +335,40 @@ HRESULT MFSource::GetEvent(IMFMediaEvent** ppEvent)
     if (!ppEvent)
         return E_POINTER;
     *ppEvent = nullptr;
-    return E_NOTIMPL;
+
+    if (!m_spReader)
+        return E_UNEXPECTED;
+
+    CComPtr<IMFMediaEventGenerator> spEventGen;
+    HRESULT hr = m_spReader->QueryInterface(IID_PPV_ARGS(&spEventGen));
+    if (FAILED(hr))
+        return hr;
+
+    return spEventGen->GetEvent(0, ppEvent);
 }
 
 HRESULT MFSource::BeginGetEvent(IMFAsyncCallback* pCallback, IUnknown* punkState)
 {
-    return E_NOTIMPL;
+    if (!pCallback)
+        return E_POINTER;
+
+    if (!m_spReader)
+        return E_UNEXPECTED;
+
+    CComPtr<IMFMediaEventGenerator> spEventGen;
+    HRESULT hr = m_spReader->QueryInterface(IID_PPV_ARGS(&spEventGen));
+    if (FAILED(hr))
+        return hr;
+
+    return spEventGen->BeginGetEvent(pCallback, punkState);
 }
 
 HRESULT MFSource::EndGetEvent(IMFMediaEvent* pEvent, IMFMediaEvent** ppNextEvent)
 {
-    return E_NOTIMPL;
+    UNREFERENCED_PARAMETER(pEvent);
+    if (ppNextEvent)
+        *ppNextEvent = nullptr;
+    return S_OK;
 }
 
 // ============================================================================

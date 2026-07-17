@@ -318,14 +318,90 @@ HRESULT VideoCapture::CreateCaptureEngine()
 
 HRESULT VideoCapture::ConfigureCaptureEngine()
 {
+    if (!m_spCaptureEngine && !m_spMediaSource)
+        return E_UNEXPECTED;
+
+    CComPtr<IMFMediaType> spMediaType;
+    HRESULT hr = FindBestMediaType(spMediaType);
+    if (FAILED(hr))
+        return hr;
+
+    if (spMediaType && m_spMediaSource)
+    {
+        CComPtr<IMFSourceReader> spReader;
+        hr = MFCreateSourceReaderFromMediaSource(m_spMediaSource, nullptr, &spReader);
+        if (SUCCEEDED(hr))
+        {
+            hr = spReader->SetCurrentMediaType(
+                MF_SOURCE_READER_FIRST_VIDEO_STREAM, nullptr, spMediaType);
+        }
+    }
+
     return S_OK;
 }
 
 HRESULT VideoCapture::FindBestMediaType(CComPtr<IMFMediaType>& spType)
 {
-    // Find the best matching media type for the requested resolution
     spType = nullptr;
-    return S_OK;
+
+    if (!m_spMediaSource)
+        return E_UNEXPECTED;
+
+    CComPtr<IMFSourceReader> spReader;
+    HRESULT hr = MFCreateSourceReaderFromMediaSource(m_spMediaSource, nullptr, &spReader);
+    if (FAILED(hr))
+        return hr;
+
+    DWORD dwBestScore = 0;
+
+    for (DWORD dwTypeIndex = 0; ; ++dwTypeIndex)
+    {
+        CComPtr<IMFMediaType> spCandidate;
+        hr = spReader->GetNativeMediaType(
+            MF_SOURCE_READER_FIRST_VIDEO_STREAM, dwTypeIndex, &spCandidate);
+        if (hr == MF_E_NO_MORE_TYPES)
+            break;
+        if (FAILED(hr))
+            continue;
+
+        UINT32 uWidth = 0, uHeight = 0;
+        MFGetAttributeSize(spCandidate, MF_MT_FRAME_SIZE, &uWidth, &uHeight);
+
+        double dblFrameRate = 0.0;
+        UINT32 uNumerator = 0, uDenominator = 1;
+        if (SUCCEEDED(MFGetAttributeRatio(spCandidate, MF_MT_FRAME_RATE, &uNumerator, &uDenominator))
+            && uDenominator > 0)
+        {
+            dblFrameRate = static_cast<double>(uNumerator) / static_cast<double>(uDenominator);
+        }
+
+        DWORD dwScore = 0;
+        if (uWidth == m_config.uRequestedWidth && uHeight == m_config.uRequestedHeight)
+            dwScore += 1000;
+        else
+            dwScore += abs(static_cast<int>(uWidth) - static_cast<int>(m_config.uRequestedWidth)) +
+                       abs(static_cast<int>(uHeight) - static_cast<int>(m_config.uRequestedHeight));
+
+        double dblDiff = fabs(dblFrameRate - m_config.dblRequestedFrameRate);
+        if (dblDiff < 1.0)
+            dwScore += 500;
+        else if (dblDiff < 5.0)
+            dwScore += 200;
+
+        if (dwScore > dwBestScore)
+        {
+            dwBestScore = dwScore;
+            spType = spCandidate;
+        }
+    }
+
+    if (!spType)
+    {
+        hr = spReader->GetNativeMediaType(
+            MF_SOURCE_READER_FIRST_VIDEO_STREAM, 0, &spType);
+    }
+
+    return spType ? S_OK : MF_E_NO_MORE_TYPES;
 }
 
 } // namespace HMRAVSource

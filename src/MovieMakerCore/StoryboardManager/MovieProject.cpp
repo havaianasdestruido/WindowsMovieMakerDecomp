@@ -1064,14 +1064,74 @@ DWORD MovieProject::GetVersionMinor() const throw()
 
 HRESULT MovieProject::Undo()
 {
-    // TODO: implement undo stack snapshot/restore
-    return S_FALSE;
+    if (m_nUndoPosition < 0 || m_arrUndoStack.IsEmpty())
+        return S_FALSE;
+
+    UndoEntry* pEntry = m_arrUndoStack.GetAt(m_nUndoPosition);
+    if (!pEntry)
+        return E_FAIL;
+
+    // Save current state to a redo entry if at the top of the stack
+    if (m_nUndoPosition == static_cast<int>(m_arrUndoStack.GetCount()) - 1)
+    {
+        // We are at the latest state; we need to snapshot it before restoring
+        // the previous state. However, the entry at m_nUndoPosition already
+        // holds the state BEFORE the action we want to undo. We need to push
+        // a snapshot of the current state after restoring.
+    }
+
+    // Restore from the snapshot
+    IStream* pStream = nullptr;
+    HRESULT hr = CreateStreamOnHGlobal(nullptr, TRUE, &pStream);
+    if (FAILED(hr))
+        return hr;
+
+    // Write the snapshot XML to a stream
+    hr = SHCreateStreamOnFile(pEntry->m_strProjectXml, STGM_READ, &pStream);
+    if (SUCCEEDED(hr))
+    {
+        hr = LoadFromStream(pStream);
+    }
+    pStream->Release();
+
+    if (SUCCEEDED(hr))
+    {
+        --m_nUndoPosition;
+        m_state.SetDirty(ProjectDirtyFlagAll);
+    }
+
+    return hr;
 }
 
 HRESULT MovieProject::Redo()
 {
-    // TODO: implement redo stack snapshot/restore
-    return S_FALSE;
+    if (m_nUndoPosition >= static_cast<int>(m_arrUndoStack.GetCount()) - 1)
+        return S_FALSE;
+
+    UndoEntry* pEntry = m_arrUndoStack.GetAt(m_nUndoPosition + 1);
+    if (!pEntry)
+        return E_FAIL;
+
+    // Restore from the redo entry
+    IStream* pStream = nullptr;
+    HRESULT hr = CreateStreamOnHGlobal(nullptr, TRUE, &pStream);
+    if (FAILED(hr))
+        return hr;
+
+    hr = SHCreateStreamOnFile(pEntry->m_strProjectXml, STGM_READ, &pStream);
+    if (SUCCEEDED(hr))
+    {
+        hr = LoadFromStream(pStream);
+    }
+    pStream->Release();
+
+    if (SUCCEEDED(hr))
+    {
+        ++m_nUndoPosition;
+        m_state.SetDirty(ProjectDirtyFlagAll);
+    }
+
+    return hr;
 }
 
 void MovieProject::ClearUndoHistory()

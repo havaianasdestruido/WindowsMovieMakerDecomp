@@ -51,8 +51,14 @@ namespace HMREngine
         void AddGridCommand(GridNode* grid, const Matrix4f& worldMatrix, float depth);
         void AddCustomCommand(std::function<void(Engine*)> draw, int phase, float depth);
 
+        // Renderable management
+        void AddRenderable(X3DChildNode* renderable, int sortOrder);
+        void RemoveRenderable(X3DChildNode* renderable);
+        void RenderAll(Engine* engine);
+
     private:
         std::vector<RenderCommand> m_commands;
+        std::vector<std::pair<X3DChildNode*, int>> m_renderables;
 
         void Sort();
         void ExecuteShape(RenderCommand& cmd, Engine* engine);

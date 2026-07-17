@@ -139,6 +139,44 @@ private:
 };
 
 // ============================================================================
+// PublishJobQueue
+// ============================================================================
+// FIFO queue for managing publish jobs. Supports priority ordering,
+// job deduplication, and queue persistence for crash recovery.
+//
+class PublishJobQueue
+{
+public:
+    PublishJobQueue();
+    virtual ~PublishJobQueue();
+
+    // -- Queue management --
+    HRESULT Enqueue(PublishJob* pJob);
+    HRESULT Dequeue(PublishJob** ppJob);
+    HRESULT Peek(PublishJob** ppJob) const;
+
+    // -- Cancellation --
+    HRESULT CancelJob(DWORD dwJobId);
+    HRESULT CancelAll();
+
+    // -- Status --
+    DWORD GetCount() const throw();
+    bool  IsEmpty() const throw();
+
+    // -- Peek at pending jobs --
+    DWORD GetPendingJobIdAt(DWORD dwIndex) const;
+
+    // -- Deduplication --
+    bool HasJobForService(LPCWSTR pszServiceName) const;
+
+    // -- Clear --
+    void Clear();
+
+private:
+    std::deque<PublishJob*> m_jobs;
+};
+
+// ============================================================================
 // PublishManager
 // ============================================================================
 // Top-level manager for the publishing workflow. Coordinates the publish
@@ -177,6 +215,8 @@ public:
 private:
     PublishManagerConfig*  m_pConfig;
     PublishManagerState*   m_pState;
+    PublishJobQueue         m_jobQueue;
+    DWORD                   m_dwNextJobId;
     bool                   m_bInitialized;
 };
 
@@ -301,44 +341,6 @@ private:
     bool         m_bWasRetried;
     ATL::CString m_strServiceName;
     ULONGLONG    m_cbResultFileSize;
-};
-
-// ============================================================================
-// PublishJobQueue
-// ============================================================================
-// FIFO queue for managing publish jobs. Supports priority ordering,
-// job deduplication, and queue persistence for crash recovery.
-//
-class PublishJobQueue
-{
-public:
-    PublishJobQueue();
-    virtual ~PublishJobQueue();
-
-    // -- Queue management --
-    HRESULT Enqueue(PublishJob* pJob);
-    HRESULT Dequeue(PublishJob** ppJob);
-    HRESULT Peek(PublishJob** ppJob) const;
-
-    // -- Cancellation --
-    HRESULT CancelJob(DWORD dwJobId);
-    HRESULT CancelAll();
-
-    // -- Status --
-    DWORD GetCount() const throw();
-    bool  IsEmpty() const throw();
-
-    // -- Peek at pending jobs --
-    DWORD GetPendingJobIdAt(DWORD dwIndex) const;
-
-    // -- Deduplication --
-    bool HasJobForService(LPCWSTR pszServiceName) const;
-
-    // -- Clear --
-    void Clear();
-
-private:
-    std::deque<PublishJob*> m_jobs;
 };
 
 // ============================================================================

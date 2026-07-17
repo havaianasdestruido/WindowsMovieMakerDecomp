@@ -268,7 +268,7 @@ HRESULT AudioCaptureSession::StartSession()
 
     m_fActive = true;
     m_state = CaptureStateCapturing;
-    m_llStartTimeHns = 0;
+    m_llStartTimeHns = MFGetSystemTime();
 
     return m_pAudioCapture->StartCapture();
 }
@@ -326,7 +326,10 @@ bool AudioCaptureSession::IsActive() const throw()
 
 LONGLONG AudioCaptureSession::GetSessionDurationHns() const throw()
 {
-    return 0;
+    if (!m_fActive)
+        return 0;
+
+    return MFGetSystemTime() - m_llStartTimeHns;
 }
 
 } // namespace HMRAVSource

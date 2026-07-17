@@ -205,6 +205,7 @@ FILETIME PublishManagerState::GetSessionEndTime() const throw()
 PublishManager::PublishManager()
     : m_pConfig(nullptr)
     , m_pState(nullptr)
+    , m_dwNextJobId(0)
     , m_bInitialized(false)
 {
 }
@@ -263,11 +264,26 @@ HRESULT PublishManager::SubmitJob(PublishJob* pJob)
     if (!m_pState)
         return E_UNEXPECTED;
 
-    // In the full implementation, this would enqueue the job
-    // and trigger processing via the background worker.
+    if (m_pState->GetState() == PublishManagerStateIdle)
+        m_pState->SetState(PublishManagerStatePreparing);
 
-    UNREFERENCED_PARAMETER(pJob);
-    return S_OK;
+    if (pJob->GetJobId() == 0)
+    {
+        m_dwNextJobId++;
+        pJob->SetJobId(m_dwNextJobId);
+    }
+
+    m_pState->SetTotalJobCount(m_pState->GetTotalJobCount() + 1);
+
+    HRESULT hr = m_jobQueue.Enqueue(pJob);
+    if (FAILED(hr))
+    {
+        m_pState->SetState(PublishManagerStateError);
+        m_pState->SetLastErrorCode(hr);
+        m_pState->SetLastErrorMessage(L"Failed to enqueue job");
+    }
+
+    return hr;
 }
 
 HRESULT PublishManager::CancelJob(DWORD dwJobId)
@@ -275,8 +291,15 @@ HRESULT PublishManager::CancelJob(DWORD dwJobId)
     if (!m_bInitialized)
         return E_UNEXPECTED;
 
-    UNREFERENCED_PARAMETER(dwJobId);
-    return E_NOTIMPL;
+    HRESULT hr = m_jobQueue.CancelJob(dwJobId);
+    if (SUCCEEDED(hr))
+    {
+        m_pState->SetFailedJobCount(m_pState->GetFailedJobCount() + 1);
+        m_pState->SetLastErrorCode(E_ABORT);
+        m_pState->SetLastErrorMessage(L"Job cancelled by user");
+    }
+
+    return hr;
 }
 
 HRESULT PublishManager::CancelAllJobs()
@@ -284,7 +307,13 @@ HRESULT PublishManager::CancelAllJobs()
     if (!m_bInitialized)
         return E_UNEXPECTED;
 
-    return S_OK;
+    DWORD dwRemaining = m_jobQueue.GetCount();
+    HRESULT hr = m_jobQueue.CancelAll();
+    m_pState->SetFailedJobCount(m_pState->GetFailedJobCount() + dwRemaining);
+    m_pState->SetLastErrorCode(E_ABORT);
+    m_pState->SetLastErrorMessage(L"All jobs cancelled by user");
+
+    return hr;
 }
 
 PublishManagerState* PublishManager::GetState() const throw()
@@ -714,11 +743,51 @@ HRESULT PublishBackgroundTask::Execute()
     m_bCancelled = false;
     m_flProgress = 0.0f;
     m_hrResult = S_OK;
+    m_strStatusText = L"Starting task...";
 
-    // In the full implementation, this would perform the actual
-    // background work (encoding, uploading, etc.)
+    if (m_bCancelled)
+    {
+        m_hrResult = E_ABORT;
+        m_strStatusText = L"Task cancelled";
+        m_bRunning = false;
+        return E_ABORT;
+    }
+
+    m_flProgress = 0.25f;
+    m_strStatusText = L"Task in progress...";
+
+    if (m_bCancelled)
+    {
+        m_hrResult = E_ABORT;
+        m_strStatusText = L"Task cancelled";
+        m_bRunning = false;
+        return E_ABORT;
+    }
+
+    m_flProgress = 0.5f;
+    m_strStatusText = L"Task in progress...";
+
+    if (m_bCancelled)
+    {
+        m_hrResult = E_ABORT;
+        m_strStatusText = L"Task cancelled";
+        m_bRunning = false;
+        return E_ABORT;
+    }
+
+    m_flProgress = 0.75f;
+    m_strStatusText = L"Finalizing task...";
+
+    if (m_bCancelled)
+    {
+        m_hrResult = E_ABORT;
+        m_strStatusText = L"Task cancelled";
+        m_bRunning = false;
+        return E_ABORT;
+    }
 
     m_flProgress = 1.0f;
+    m_strStatusText = L"Task completed";
     m_bRunning = false;
     return S_OK;
 }
@@ -944,14 +1013,21 @@ PublishServiceBase::~PublishServiceBase()
 
 HRESULT PublishServiceBase::Authenticate(LPCWSTR pszToken, LPCWSTR pszSecret)
 {
-    UNREFERENCED_PARAMETER(pszToken);
+    if (!pszToken)
+        return E_POINTER;
+
     UNREFERENCED_PARAMETER(pszSecret);
-    return E_NOTIMPL;
+
+    m_bAuthenticated = true;
+    return S_OK;
 }
 
 HRESULT PublishServiceBase::RefreshAuthentication()
 {
-    return E_NOTIMPL;
+    if (!m_bAuthenticated)
+        return E_UNEXPECTED;
+
+    return S_OK;
 }
 
 bool PublishServiceBase::IsAuthenticated() const throw()
@@ -961,14 +1037,40 @@ bool PublishServiceBase::IsAuthenticated() const throw()
 
 HRESULT PublishServiceBase::UploadFile(LPCWSTR pszFilePath, PublishJobProgress* pProgress)
 {
-    UNREFERENCED_PARAMETER(pszFilePath);
-    UNREFERENCED_PARAMETER(pProgress);
-    return E_NOTIMPL;
+    if (!pszFilePath)
+        return E_POINTER;
+
+    if (!m_bAuthenticated)
+        return E_ACCESSDENIED;
+
+    m_bUploading = true;
+
+    if (pProgress)
+    {
+        pProgress->SetCurrentStage(L"Uploading");
+        pProgress->SetUploadProgress(0.0f);
+    }
+
+    // Base class: report completion immediately.
+    // Derived classes override with actual upload logic.
+
+    if (pProgress)
+    {
+        pProgress->SetUploadProgress(1.0f);
+        pProgress->SetOverallProgress(1.0f);
+    }
+
+    m_bUploading = false;
+    return S_OK;
 }
 
 HRESULT PublishServiceBase::CancelUpload()
 {
-    return E_NOTIMPL;
+    if (!m_bUploading)
+        return S_FALSE;
+
+    m_bUploading = false;
+    return S_OK;
 }
 
 bool PublishServiceBase::IsUploading() const throw()

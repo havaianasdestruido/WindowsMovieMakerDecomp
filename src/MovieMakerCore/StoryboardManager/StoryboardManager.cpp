@@ -46,6 +46,13 @@ STORYBOARD_API HRESULT StoryboardManagerInitialize()
     if (g_fStoryboardInitialized)
         return S_FALSE; // already initialized
 
+    // Create and initialize the global template table
+    if (!g_pGlobalTemplateTable)
+    {
+        g_pGlobalTemplateTable = new TemplateTable();
+        g_pGlobalTemplateTable->InitializeDefaults();
+    }
+
     g_fStoryboardInitialized = true;
 
     return S_OK;
@@ -206,6 +213,109 @@ bool TranscodeState::IsFailed() const throw()
 bool TranscodeState::IsInProgress() const throw()
 {
     return m_state == ExtentTranscodeStateInProgress;
+}
+
+// ============================================================================
+// StoryboardManager class implementation
+// ============================================================================
+
+StoryboardManager::StoryboardManager()
+    : m_pCurrentProject(nullptr)
+    , m_pCurrentTrack(nullptr)
+    , m_pTemplateTable(g_pGlobalTemplateTable)
+{
+}
+
+StoryboardManager::~StoryboardManager()
+{
+    delete m_pCurrentProject;
+    m_pCurrentProject = nullptr;
+    m_pCurrentTrack = nullptr;
+}
+
+StoryboardManager& StoryboardManager::GetInstance()
+{
+    static StoryboardManager s_instance;
+    return s_instance;
+}
+
+MovieProject* StoryboardManager::NewProject()
+{
+    delete m_pCurrentProject;
+    m_pCurrentProject = MovieProject::CreateEmpty();
+    m_pCurrentTrack = nullptr;
+    return m_pCurrentProject;
+}
+
+HRESULT StoryboardManager::OpenProject(LPCWSTR pszPath)
+{
+    if (!pszPath || !pszPath[0])
+        return E_INVALIDARG;
+
+    MovieProject* pProject = MovieProject::CreateEmpty();
+    HRESULT hr = pProject->Load(pszPath);
+    if (FAILED(hr))
+    {
+        delete pProject;
+        return hr;
+    }
+
+    delete m_pCurrentProject;
+    m_pCurrentProject = pProject;
+    m_pCurrentTrack = nullptr;
+    return S_OK;
+}
+
+HRESULT StoryboardManager::SaveProject(LPCWSTR pszPath)
+{
+    if (!m_pCurrentProject)
+        return E_UNEXPECTED;
+
+    return m_pCurrentProject->Save(pszPath);
+}
+
+MovieProject* StoryboardManager::GetProject() const
+{
+    return m_pCurrentProject;
+}
+
+bool StoryboardManager::CanUndo() const
+{
+    return m_pCurrentProject && m_pCurrentProject->GetState().CanUndo();
+}
+
+bool StoryboardManager::CanRedo() const
+{
+    return m_pCurrentProject && m_pCurrentProject->GetState().CanRedo();
+}
+
+HRESULT StoryboardManager::Undo()
+{
+    if (!m_pCurrentProject)
+        return E_UNEXPECTED;
+    return m_pCurrentProject->Undo();
+}
+
+HRESULT StoryboardManager::Redo()
+{
+    if (!m_pCurrentProject)
+        return E_UNEXPECTED;
+    return m_pCurrentProject->Redo();
+}
+
+TimelineTrack* StoryboardManager::GetCurrentTrack() const
+{
+    return m_pCurrentTrack;
+}
+
+void StoryboardManager::SetCurrentTrack(TimelineTrack* pTrack)
+{
+    m_pCurrentTrack = pTrack;
+}
+
+TemplateTable* StoryboardManager::GetTemplateTable()
+{
+    return m_pTemplateTable;
 }
 
 } // namespace StoryboardManager

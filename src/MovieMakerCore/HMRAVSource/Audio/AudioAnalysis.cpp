@@ -13,6 +13,9 @@
 
 #include "AudioAnalysis.h"
 #include <cmath>
+#include <mfapi.h>
+#include <mfidl.h>
+#include <mfreadwrite.h>
 
 namespace HMRAVSource
 {
@@ -34,6 +37,7 @@ AudioRMSData::AudioRMSData()
     , m_flMaxRms(0.0f)
     , m_flTotalRms(0.0f)
     , m_dwSampleCount(0)
+    , m_dwTimeAboveThresholdSamples(0)
     , m_fInitialized(false)
 {
 }
@@ -98,6 +102,12 @@ HRESULT AudioRMSData::FeedSamples(const float* pSamples, DWORD dwFrameCount)
         m_flCurrentRms = sqrtf(flBatchSum / static_cast<float>(dwTotalSamples));
     }
 
+    // Track time above threshold (use -30 dB as default threshold)
+    if (m_flCurrentRms > powf(10.0f, -30.0f / 20.0f))
+    {
+        m_dwTimeAboveThresholdSamples += dwTotalSamples;
+    }
+
     // Update running statistics
     if (m_flCurrentRms > m_flMaxRms)
         m_flMaxRms = m_flCurrentRms;
@@ -146,7 +156,10 @@ bool AudioRMSData::IsAboveThreshold(float flThresholdDb) const throw()
 
 DWORD AudioRMSData::GetTimeAboveThresholdMs() const throw()
 {
-    return 0;
+    if (m_dwSampleRate == 0 || m_dwChannels == 0) return 0;
+    DWORD dwTotalSamplesPerMs = (m_dwSampleRate * m_dwChannels) / 1000;
+    if (dwTotalSamplesPerMs == 0) return 0;
+    return m_dwTimeAboveThresholdSamples / dwTotalSamplesPerMs;
 }
 
 void AudioRMSData::Reset()
@@ -157,6 +170,11 @@ void AudioRMSData::Reset()
     m_flCurrentPeak = 0.0f;
     m_flWindowRms = 0.0f;
     m_flWindowPeak = 0.0f;
+    m_dwTimeAboveThresholdSamples = 0;
+    m_flMaxRms = 0.0f;
+    m_flTotalRms = 0.0f;
+    m_dwSampleCount = 0;
+    m_arrWaveformData.RemoveAll();
 }
 
 DWORD AudioRMSData::GetWindowSizeMs() const throw() { return m_dwWindowSizeMs; }
@@ -170,6 +188,11 @@ void AudioRMSData::SetWindowSizeMs(DWORD dwMs) throw()
 }
 
 float AudioRMSData::GetMaxRmsLevel() const throw() { return m_flMaxRms; }
+
+void AudioRMSData::SetSampleRateForThresholdTracking(DWORD dwSampleRate)
+{
+    m_dwSampleRate = dwSampleRate;
+}
 
 float AudioRMSData::GetAverageRmsLevel() const throw()
 {
@@ -236,6 +259,7 @@ DuckingTrackDataSource::DuckingTrackDataSource()
     , m_dwReleaseTimeMs(500)
     , m_flMaxDuckLevel(0.5f)
     , m_flCurrentDuckLevel(0.0f)
+    , m_dwSampleRate(44100)
     , m_fDuckingActive(false)
     , m_fInitialized(false)
 {
@@ -249,6 +273,8 @@ DuckingTrackDataSource::~DuckingTrackDataSource()
 HRESULT DuckingTrackDataSource::Initialize(DWORD dwSampleRate, DWORD dwChannels)
 {
     if (m_fInitialized) return S_FALSE;
+
+    m_dwSampleRate = dwSampleRate > 0 ? dwSampleRate : 44100;
 
     HRESULT hr = m_rmsData.Initialize(dwSampleRate, dwChannels);
     if (FAILED(hr)) return hr;
@@ -279,11 +305,14 @@ HRESULT DuckingTrackDataSource::ProcessBuffer(const float* pBuffer, DWORD dwFram
     float flLevelDb = m_rmsData.GetCurrentRmsLevelDb();
     bool fAboveThreshold = flLevelDb > m_flThresholdDb;
 
+    DWORD dwFramesPerMs = m_dwSampleRate / 1000;
+    if (dwFramesPerMs == 0) dwFramesPerMs = 44;
+
     if (fAboveThreshold)
     {
         // Increase duck level (attack)
         float flTargetDuck = m_flMaxDuckLevel;
-        float flStepPerFrame = 1.0f / static_cast<float>(m_dwAttackTimeMs * 44); // approx samples per ms
+        float flStepPerFrame = 1.0f / static_cast<float>(m_dwAttackTimeMs * dwFramesPerMs);
         m_flCurrentDuckLevel += flStepPerFrame * static_cast<float>(dwFrameCount);
         if (m_flCurrentDuckLevel > flTargetDuck)
             m_flCurrentDuckLevel = flTargetDuck;
@@ -293,7 +322,7 @@ HRESULT DuckingTrackDataSource::ProcessBuffer(const float* pBuffer, DWORD dwFram
     else
     {
         // Decrease duck level (release)
-        float flStepPerFrame = 1.0f / static_cast<float>(m_dwReleaseTimeMs * 44);
+        float flStepPerFrame = 1.0f / static_cast<float>(m_dwReleaseTimeMs * dwFramesPerMs);
         m_flCurrentDuckLevel -= flStepPerFrame * static_cast<float>(dwFrameCount);
         if (m_flCurrentDuckLevel < 0.0f)
         {
@@ -327,5 +356,124 @@ void DuckingTrackDataSource::SetMaxDuckLevel(float flLevel) throw()
 
 AudioRMSData* DuckingTrackDataSource::GetRmsData() { return &m_rmsData; }
 const AudioRMSData* DuckingTrackDataSource::GetRmsData() const { return &m_rmsData; }
+
+// ============================================================================
+// File-based audio analysis
+// ============================================================================
+
+HRESULT AudioRMSData::AnalyzeFile(LPCWSTR pszFilePath)
+{
+    if (!pszFilePath || !m_fInitialized) return E_INVALIDARG;
+
+    m_arrWaveformData.RemoveAll();
+    m_flMaxRms = 0.0f;
+    m_flTotalRms = 0.0f;
+    m_dwSampleCount = 0;
+
+    CComPtr<IMFSourceReader> spReader;
+    HRESULT hr = MFCreateSourceReaderFromURL(pszFilePath, nullptr, &spReader);
+    if (FAILED(hr)) return hr;
+
+    CComPtr<IMFMediaType> spAudioType;
+    hr = spReader->GetNativeMediaType(
+        MF_SOURCE_READER_FIRST_AUDIO_STREAM,
+        0, &spAudioType);
+    if (FAILED(hr)) return hr;
+
+    UINT32 samplesPerSec = 0;
+    spAudioType->GetUINT32(MF_MT_AUDIO_SAMPLES_PER_SECOND, &samplesPerSec);
+    UINT32 channels = 0;
+    spAudioType->GetUINT32(MF_MT_AUDIO_NUM_CHANNELS, &channels);
+
+    if (samplesPerSec == 0) samplesPerSec = m_dwSampleRate;
+    if (channels == 0) channels = m_dwChannels;
+    if (samplesPerSec == 0 || channels == 0) return E_FAIL;
+
+    DWORD samplesPerWindow = samplesPerSec * m_dwWindowSizeMs / 1000;
+    if (samplesPerWindow == 0) samplesPerWindow = 1;
+
+    std::vector<float> windowAccumulator(samplesPerWindow * channels, 0.0f);
+    DWORD windowSampleIndex = 0;
+
+    while (true)
+    {
+        CComPtr<IMFSample> spSample;
+        DWORD dwStreamFlags = 0;
+        hr = spReader->ReadSample(
+            static_cast<DWORD>(MF_SOURCE_READER_FIRST_AUDIO_STREAM),
+            0, nullptr, &dwStreamFlags, nullptr, &spSample);
+
+        if (FAILED(hr)) break;
+        if (dwStreamFlags & MF_SOURCE_READERF_ENDOFSTREAM) break;
+        if (!spSample) continue;
+
+        CComPtr<IMFMediaBuffer> spBuffer;
+        hr = spSample->ConvertToContiguousBuffer(&spBuffer);
+        if (FAILED(hr)) continue;
+
+        BYTE* pData = nullptr;
+        DWORD cbData = 0;
+        hr = spBuffer->Lock(&pData, nullptr, &cbData);
+        if (FAILED(hr)) continue;
+
+        DWORD dwSampleCount = cbData / (channels * sizeof(float));
+        const float* pFloatData = reinterpret_cast<const float*>(pData);
+
+        for (DWORD s = 0; s < dwSampleCount; ++s)
+        {
+            for (DWORD c = 0; c < channels; ++c)
+            {
+                windowAccumulator[windowSampleIndex * channels + c] += pFloatData[s * channels + c];
+            }
+            windowSampleIndex++;
+
+            if (windowSampleIndex >= samplesPerWindow)
+            {
+                float flSum = 0.0f;
+                float flPeak = 0.0f;
+                DWORD totalWindowSamples = samplesPerWindow * channels;
+
+                for (DWORD i = 0; i < totalWindowSamples; ++i)
+                {
+                    float flAbs = fabsf(windowAccumulator[i]);
+                    if (flAbs > flPeak) flPeak = flAbs;
+                    flSum += flAbs * flAbs;
+                }
+
+                float flRms = (totalWindowSamples > 0)
+                    ? sqrtf(flSum / static_cast<float>(totalWindowSamples))
+                    : 0.0f;
+
+                m_arrWaveformData.Add(flRms);
+
+                if (flRms > m_flMaxRms) m_flMaxRms = flRms;
+                m_flTotalRms += flRms;
+                m_dwSampleCount++;
+
+                memset(windowAccumulator.data(), 0, totalWindowSamples * sizeof(float));
+                windowSampleIndex = 0;
+            }
+        }
+
+        spBuffer->Unlock();
+    }
+
+    return S_OK;
+}
+
+float AudioRMSData::GetPeakLevel() const throw()
+{
+    return m_flCurrentPeak;
+}
+
+float AudioRMSData::GetRMSLevel() const throw()
+{
+    return m_flCurrentRms;
+}
+
+const ATL::CAtlArray<float>& AudioRMSData::GetWaveformData() const throw()
+{
+    return m_arrWaveformData;
+}
 
 } // namespace HMRAVSource

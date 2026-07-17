@@ -53,6 +53,7 @@ namespace HMREngine
         class ShatterGridResourceDX;
         class PageCurlGridResourceDX;
         class ScrollingTextResourceDX;
+        class ScrollingTextMeshResourceDX;
 
         class TextResourceBaseDX;
         class TextResourceDX;

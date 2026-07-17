@@ -297,8 +297,64 @@ HRESULT TranscodeManager::CreateSink()
 
 HRESULT TranscodeManager::ConfigureTransforms()
 {
-    // Media Foundation transform chain configuration is handled
-    // internally by the sink writer when output types are set.
+    if (!m_spSink)
+        return E_UNEXPECTED;
+
+    if (m_params.fIncludeVideo)
+    {
+        UINT32 unFlags = MFT_ENUM_FLAG_SYNCMFT;
+        if (m_params.fHardwareAcceleration)
+            unFlags = MFT_ENUM_FLAG_HARDWARE | MFT_ENUM_FLAG_SYNCMFT;
+
+        IMFActivate** ppActivates = nullptr;
+        UINT32 cMFTs = 0;
+        HRESULT hr = MFTEnumEx(
+            MFT_CATEGORY_VIDEO_ENCODER,
+            unFlags,
+            nullptr,
+            nullptr,
+            &ppActivates,
+            &cMFTs);
+
+        if (SUCCEEDED(hr) && cMFTs > 0)
+        {
+            ppActivates[0]->QueryInterface(IID_PPV_ARGS(&m_spVideoTransform));
+            for (UINT32 i = 0; i < cMFTs; ++i)
+                ppActivates[i]->Release();
+            CoTaskMemFree(ppActivates);
+        }
+
+        if (m_spVideoTransform)
+        {
+            CComPtr<IMFAttributes> spAttrs;
+            if (SUCCEEDED(m_spVideoTransform->GetAttributes(&spAttrs)))
+            {
+                spAttrs->SetUINT32(MF_TRANSFORM_ASYNC_UNLOCK, TRUE);
+            }
+        }
+    }
+
+    if (m_params.fIncludeAudio)
+    {
+        IMFActivate** ppActivates = nullptr;
+        UINT32 cMFTs = 0;
+        HRESULT hr = MFTEnumEx(
+            MFT_CATEGORY_AUDIO_ENCODER,
+            MFT_ENUM_FLAG_SYNCMFT,
+            nullptr,
+            nullptr,
+            &ppActivates,
+            &cMFTs);
+
+        if (SUCCEEDED(hr) && cMFTs > 0)
+        {
+            ppActivates[0]->QueryInterface(IID_PPV_ARGS(&m_spAudioTransform));
+            for (UINT32 i = 0; i < cMFTs; ++i)
+                ppActivates[i]->Release();
+            CoTaskMemFree(ppActivates);
+        }
+    }
+
     return S_OK;
 }
 

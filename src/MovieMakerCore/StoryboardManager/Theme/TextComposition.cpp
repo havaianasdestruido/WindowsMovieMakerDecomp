@@ -852,14 +852,126 @@ HRESULT TextManager::SetDWriteFactory(IDWriteFactory* pFactory)
 
 HRESULT TextManager::LoadFromXml(IXmlReader* pReader)
 {
-    UNREFERENCED_PARAMETER(pReader);
-    return E_NOTIMPL;
+    if (!pReader)
+        return E_INVALIDARG;
+
+    XmlNodeType nodeType;
+    while (pReader->Read(&nodeType) == S_OK)
+    {
+        if (nodeType == XmlNodeType_Element)
+        {
+            LPCWSTR pwszName = nullptr;
+            pReader->GetLocalName(&pwszName, nullptr);
+
+            if (pwszName && wcscmp(pwszName, L"textItem") == 0)
+            {
+                TextCollectionItem item = { 0 };
+                item.fVisible = true;
+                item.layoutMode = TextLayoutModeNormal;
+                item.flFontSize = 36.0f;
+                item.dwFontColor = 0xFFFFFFFF;
+
+                LPCWSTR pwszVal = nullptr;
+                if (SUCCEEDED(XmlReaderGetAttribute(pReader, L"text", &pwszVal)) && pwszVal)
+                    item.strText = pwszVal;
+
+                pwszVal = nullptr;
+                if (SUCCEEDED(XmlReaderGetAttribute(pReader, L"fontFamily", &pwszVal)) && pwszVal)
+                    item.strFontFamily = pwszVal;
+
+                pwszVal = nullptr;
+                if (SUCCEEDED(XmlReaderGetAttribute(pReader, L"fontSize", &pwszVal)) && pwszVal)
+                    item.flFontSize = static_cast<float>(_wtof(pwszVal));
+
+                pwszVal = nullptr;
+                if (SUCCEEDED(XmlReaderGetAttribute(pReader, L"fontColor", &pwszVal)) && pwszVal)
+                    item.dwFontColor = static_cast<DWORD>(wcstoul(pwszVal, nullptr, 16));
+
+                pwszVal = nullptr;
+                if (SUCCEEDED(XmlReaderGetAttribute(pReader, L"fontStyle", &pwszVal)) && pwszVal)
+                    item.dwFontStyle = static_cast<DWORD>(_wtoi(pwszVal));
+
+                pwszVal = nullptr;
+                if (SUCCEEDED(XmlReaderGetAttribute(pReader, L"posX", &pwszVal)) && pwszVal)
+                    item.flPositionX = static_cast<float>(_wtof(pwszVal));
+
+                pwszVal = nullptr;
+                if (SUCCEEDED(XmlReaderGetAttribute(pReader, L"posY", &pwszVal)) && pwszVal)
+                    item.flPositionY = static_cast<float>(_wtof(pwszVal));
+
+                pwszVal = nullptr;
+                if (SUCCEEDED(XmlReaderGetAttribute(pReader, L"layoutMode", &pwszVal)) && pwszVal)
+                    item.layoutMode = static_cast<TextLayoutMode>(_wtoi(pwszVal));
+
+                pwszVal = nullptr;
+                if (SUCCEEDED(XmlReaderGetAttribute(pReader, L"visible", &pwszVal)) && pwszVal)
+                    item.fVisible = (wcscmp(pwszVal, L"true") == 0 || wcscmp(pwszVal, L"1") == 0);
+
+                AddItem(item);
+            }
+        }
+        else if (nodeType == XmlNodeType_EndElement)
+        {
+            break;
+        }
+    }
+
+    return S_OK;
 }
 
 HRESULT TextManager::SaveToXml(IXmlWriter* pWriter)
 {
-    UNREFERENCED_PARAMETER(pWriter);
-    return E_NOTIMPL;
+    if (!pWriter)
+        return E_INVALIDARG;
+
+    for (size_t i = 0; i < m_arrItems.GetCount(); ++i)
+    {
+        const TextCollectionItem& item = m_arrItems.GetAt(i);
+
+        pWriter->WriteStartElement(nullptr, L"textItem", nullptr);
+
+        if (!item.strText.IsEmpty())
+            pWriter->WriteAttributeString(nullptr, L"text", nullptr, item.strText);
+
+        if (!item.strFontFamily.IsEmpty())
+            pWriter->WriteAttributeString(nullptr, L"fontFamily", nullptr, item.strFontFamily);
+
+        WCHAR szValue[64] = { 0 };
+
+        if (item.flFontSize != 36.0f)
+        {
+            swprintf_s(szValue, L"%g", item.flFontSize);
+            pWriter->WriteAttributeString(nullptr, L"fontSize", nullptr, szValue);
+        }
+
+        if (item.dwFontColor != 0xFFFFFFFF)
+        {
+            swprintf_s(szValue, L"0x%08X", item.dwFontColor);
+            pWriter->WriteAttributeString(nullptr, L"fontColor", nullptr, szValue);
+        }
+
+        if (item.dwFontStyle != 0)
+        {
+            swprintf_s(szValue, L"%u", item.dwFontStyle);
+            pWriter->WriteAttributeString(nullptr, L"fontStyle", nullptr, szValue);
+        }
+
+        swprintf_s(szValue, L"%g", item.flPositionX);
+        pWriter->WriteAttributeString(nullptr, L"posX", nullptr, szValue);
+
+        swprintf_s(szValue, L"%g", item.flPositionY);
+        pWriter->WriteAttributeString(nullptr, L"posY", nullptr, szValue);
+
+        swprintf_s(szValue, L"%d", static_cast<int>(item.layoutMode));
+        pWriter->WriteAttributeString(nullptr, L"layoutMode", nullptr, szValue);
+
+        if (!item.fVisible)
+            pWriter->WriteAttributeString(nullptr, L"visible", nullptr, L"false");
+
+        pWriter->WriteEndElement();
+    }
+
+    return S_OK;
 }
 
 DWORD TextManager::GenerateNextItemId()

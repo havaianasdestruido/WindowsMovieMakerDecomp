@@ -79,6 +79,7 @@ public:
     HRESULT SeekTo(LONGLONG llPositionHns);
     HRESULT SeekToNormalized(double dblPosition);
     LONGLONG GetCurrentPositionHns() const throw();
+    LONGLONG GetTotalDurationHns() const throw();
     double   GetNormalizedPosition() const throw();
 
     // -- Window management --
@@ -98,6 +99,9 @@ public:
     HRESULT CaptureFrame(Gdiplus::Bitmap** ppBitmap);
     HRESULT CaptureFrameToHBitmap(HBITMAP* phBitmap);
 
+    // -- Duration --
+    HRESULT SetDuration(LONGLONG llDurationHns);
+
     // -- Volume --
     HRESULT SetVolume(double dblVolume);
     double  GetVolume() const throw();
@@ -105,6 +109,9 @@ public:
     // -- Speed --
     HRESULT SetPlaybackSpeed(double dblSpeed);
     double  GetPlaybackSpeed() const throw();
+
+    // -- Paint --
+    void OnPaint();
 
     // -- Playback state --
     enum PreviewState
@@ -123,6 +130,20 @@ private:
     void DoRenderLoop();
     void RenderCurrentFrame();
 
+    // -- Back-buffer rendering --
+    void CreateBackBuffer(UINT cx, UINT cy);
+    void DestroyBackBuffer();
+    void PaintFrame(HDC hdc, const RECT& rcPaint);
+    void PresentFrame();
+    void InvalidatePreview();
+
+    // -- Playback timer --
+    void StartTimer();
+    void StopTimer();
+    static void CALLBACK OnPlaybackTimer(UINT uTimerID, UINT uMsg,
+                                         DWORD_PTR dwUser, DWORD_PTR dw1, DWORD_PTR dw2);
+    DWORD CalculateFrameIntervalMs() const;
+
     // -- Extent navigation --
     int  FindExtentAtPosition(LONGLONG llPositionHns) const;
     LONGLONG GetExtentStartTime(int nIndex) const;
@@ -138,6 +159,18 @@ private:
     LONGLONG        m_llTotalDurationHns;
     double          m_dblVolume;
     double          m_dblPlaybackSpeed;
+
+    // -- Frame rendering --
+    Gdiplus::Bitmap* m_pCurrentFrame;
+    HDC              m_hdcBackBuffer;
+    HBITMAP          m_hbmpBackBuffer;
+    HBITMAP          m_hbmpOld;
+    UINT             m_cxBackBuffer;
+    UINT             m_cyBackBuffer;
+
+    // -- Playback timer --
+    UINT_PTR         m_uTimerId;
+    static const UINT_PTR kPlaybackTimerId = 1;
 
     // -- Threading --
     HANDLE          m_hRenderThread;

@@ -420,9 +420,13 @@ HRESULT EngineDX::ResetDevice()
 
 HRESULT EngineDX::HandleDeviceLost()
 {
+    m_deviceLost = true;
+
     if (m_errorHandler)
     {
+        m_errorHandler->HandleError(HMRError::D3DERR_DEVICELOST, "D3D11 device lost");
     }
+
     return S_OK;
 }
 
@@ -522,6 +526,8 @@ void EngineDX::EnableBackfaceCulling(bool enable)
 
 void EngineDX::SetViewProjection(const Matrix4f& view, const Matrix4f& proj)
 {
+    m_view = view;
+    m_proj = proj;
 }
 
 // ============================================================================

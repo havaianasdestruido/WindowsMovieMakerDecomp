@@ -491,6 +491,44 @@ private:
     bool        m_fChecked;
 };
 
+// ============================================================================
+// RibbonSiteRegistry
+// ============================================================================
+// Maps HWNDs to RibbonApp instances, allowing multiple windows to each
+// host their own ribbon. Used by the window proc to route WM_COMMAND
+// to the correct RibbonApp.
+//
+class RibbonApp;
+
+class RIBBON_API RibbonSiteRegistry
+{
+public:
+    static RibbonSiteRegistry& Instance() throw();
+
+    // Register a window as hosting a ribbon
+    HRESULT RegisterSite(HWND hWnd, RibbonApp* pRibbon);
+
+    // Unregister a window
+    HRESULT UnregisterSite(HWND hWnd);
+
+    // Get the ribbon for a window (returns nullptr if not registered)
+    RibbonApp* GetSite(HWND hWnd) const throw();
+
+    // Number of registered sites
+    size_t GetSiteCount() const throw();
+
+    // Clear all sites
+    void Clear();
+
+private:
+    RibbonSiteRegistry();
+    ~RibbonSiteRegistry();
+    RibbonSiteRegistry(const RibbonSiteRegistry&);
+    RibbonSiteRegistry& operator=(const RibbonSiteRegistry&);
+
+    std::map<HWND, RibbonApp*> m_sites;
+};
+
 } // namespace SundanceUI
 
 #endif // RIBBONSITES_H

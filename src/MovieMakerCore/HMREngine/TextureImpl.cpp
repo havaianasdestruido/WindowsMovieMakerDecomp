@@ -54,6 +54,10 @@ namespace HMREngine
         m_loop = node->m_loop;
         m_speed = node->m_speed;
         m_playing = node->m_play;
+        if (!node->m_url.empty())
+        {
+            m_resource = cache->GetAVResource(node->m_url);
+        }
         return S_OK;
     }
 
@@ -79,7 +83,37 @@ namespace HMREngine
 
     HRESULT MovieTextureImpl::GetTexture(ID3D11Device* dev, ID3D11ShaderResourceView** ppSRV)
     {
-        return E_NOTIMPL;
+        if (!m_cache || !dev || !ppSRV) return E_POINTER;
+
+        if (!m_resource)
+        {
+            // Try to load from the first URL
+            if (!m_cache) return E_FAIL;
+            const std::string& path = m_resource ? m_resource->path : "";
+            if (path.empty()) return E_FAIL;
+            m_resource = m_cache->GetAVResource(path);
+        }
+
+        if (!m_resource || !m_resource->decoder) return E_FAIL;
+
+        // The AVResource holds decoded video data; create a texture for the current frame.
+        // If no decoder, return failure.
+        D3D11_TEXTURE2D_DESC td{};
+        td.Width = m_resource->width > 0 ? m_resource->width : 1;
+        td.Height = m_resource->height > 0 ? m_resource->height : 1;
+        td.MipLevels = 1;
+        td.ArraySize = 1;
+        td.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+        td.SampleDesc.Count = 1;
+        td.Usage = D3D11_USAGE_DEFAULT;
+        td.BindFlags = D3D11_BIND_SHADER_RESOURCE;
+
+        CComPtr<ID3D11Texture2D> tex;
+        HRESULT hr = dev->CreateTexture2D(&td, nullptr, &tex);
+        if (FAILED(hr)) return hr;
+
+        hr = dev->CreateShaderResourceView(tex, nullptr, ppSRV);
+        return hr;
     }
 
     // MotionTextureImpl
@@ -93,6 +127,10 @@ namespace HMREngine
         m_cache = cache;
         m_offset = node->m_offset;
         m_scale = node->m_scale;
+        if (!node->m_url.empty())
+        {
+            m_resource = cache->GetMotionTexture(node->m_url);
+        }
         return S_OK;
     }
 
@@ -108,7 +146,29 @@ namespace HMREngine
 
     HRESULT MotionTextureImpl::GetTexture(ID3D11Device* dev, ID3D11ShaderResourceView** ppSRV)
     {
-        return E_NOTIMPL;
+        if (!m_cache || !dev || !ppSRV) return E_POINTER;
+        if (!m_resource) return E_FAIL;
+
+        if (m_resource->srv)
+        {
+            *ppSRV = m_resource->srv;
+            (*ppSRV)->AddRef();
+            return S_OK;
+        }
+
+        if (!m_resource->path.empty())
+        {
+            MotionTextureResource* mt = m_cache->GetMotionTexture(m_resource->path);
+            if (mt && mt->srv)
+            {
+                m_resource = mt;
+                *ppSRV = mt->srv;
+                (*ppSRV)->AddRef();
+                return S_OK;
+            }
+        }
+
+        return E_FAIL;
     }
 
     // TextureTransformImpl

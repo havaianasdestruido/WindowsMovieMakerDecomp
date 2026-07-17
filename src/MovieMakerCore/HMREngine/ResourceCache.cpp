@@ -16,6 +16,57 @@ namespace HMREngine
         PurgeAll();
     }
 
+    TextureResource* ResourceCache::CreateTextureFromFile(const std::string& path)
+    {
+        return GetTexture(path);
+    }
+
+    EffectResource* ResourceCache::CreateEffectFromMemory(const void* data, size_t size)
+    {
+        if (!m_device || !data || size == 0) return nullptr;
+
+        std::lock_guard<std::mutex> lock(m_mutex);
+
+        CComPtr<ID3DX11Effect> effect;
+        HRESULT hr = D3DX11CreateEffectFromMemory(
+            data, static_cast<UINT>(size), 0, m_device, &effect);
+
+        if (FAILED(hr)) return nullptr;
+
+        auto res = std::make_unique<EffectResource>();
+        res->path = "[memory]";
+        res->effect = effect;
+
+        D3DX11_EFFECT_DESC ed;
+        if (SUCCEEDED(effect->GetDesc(&ed)) && ed.Techniques > 0)
+        {
+            res->technique = effect->GetTechniqueByIndex(0);
+        }
+
+        std::string key = "[memory_" + std::to_string(reinterpret_cast<uintptr_t>(data)) + "]";
+        EffectResource* ptr = res.get();
+        m_effects[key] = std::move(res);
+        return ptr;
+    }
+
+    void* ResourceCache::GetResource(const std::string& id)
+    {
+        std::lock_guard<std::mutex> lock(m_mutex);
+        auto it = m_genericResources.find(id);
+        return it != m_genericResources.end() ? it->second : nullptr;
+    }
+
+    void ResourceCache::CacheResource(const std::string& id, void* resource)
+    {
+        std::lock_guard<std::mutex> lock(m_mutex);
+        m_genericResources[id] = resource;
+    }
+
+    void ResourceCache::Clear()
+    {
+        PurgeAll();
+    }
+
     std::string ResourceCache::NormalizePath(const std::string& path)
     {
         std::string result = path;
@@ -303,6 +354,7 @@ namespace HMREngine
         m_meshes.clear();
         m_avResources.clear();
         m_motionTextures.clear();
+        m_genericResources.clear();
     }
 
     size_t ResourceCache::GetTextureMemory() const

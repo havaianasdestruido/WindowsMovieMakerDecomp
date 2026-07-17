@@ -85,6 +85,14 @@ public:
     // -- Skip unknown elements (forward compatibility) --
     HRESULT SkipCurrentElement(IXmlReader* pReader);
 
+    // -- Legacy project reading --
+    HRESULT ReadProject(LPCWSTR pszFilePath, MovieProject* pProject);
+    HRESULT ReadMediaItems(IXmlReader* pReader, MovieProject* pProject);
+    HRESULT ReadProperties(IXmlReader* pReader, MovieProject* pProject);
+
+    // -- XML string helpers --
+    static ATL::CString ParseXmlString(LPCWSTR pszInput);
+
     // -- Attribute reading helpers --
     static HRESULT ReadIntAttribute(IXmlReader* pReader, LPCWSTR pszName, int* pValue);
     static HRESULT ReadDwordAttribute(IXmlReader* pReader, LPCWSTR pszName, DWORD* pValue);

@@ -125,6 +125,12 @@ public:
     // -- Reset to unresolved state --
     void Reset();
 
+    // -- Property binding --
+    HRESULT Bind(LPCWSTR pszProperty, BoundPropertyDictionary* pTarget);
+    HRESULT Unbind(LPCWSTR pszProperty);
+    HRESULT Update();
+    bool IsBound(LPCWSTR pszProperty) const;
+
 protected:
     struct Attribute
     {
@@ -144,6 +150,14 @@ private:
     ATL::CAtlArray<Attribute> m_arrAttributes;
     bool                     m_fResolved;
     ResolutionSource         m_resolutionSource;
+
+    // Property bindings (property name -> target dictionary)
+    struct PropertyBinding
+    {
+        ATL::CString              strProperty;
+        BoundPropertyDictionary*  pTarget;
+    };
+    ATL::CAtlArray<PropertyBinding> m_arrBindings;
 };
 
 // ============================================================================

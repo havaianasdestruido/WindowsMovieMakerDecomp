@@ -96,9 +96,24 @@ STDMETHODIMP MFByteStreamOnStream::GetLength(QWORD* pqwLength)
     return S_OK;
 }
 
-STDMETHODIMP MFByteStreamOnStream::SetLength(QWORD /*qwLength*/)
+STDMETHODIMP MFByteStreamOnStream::SetLength(QWORD qwLength)
 {
-    return E_NOTIMPL;
+    if (!m_spStream)
+        return E_UNEXPECTED;
+
+    EnterCriticalSection(&m_csLock);
+
+    LARGE_INTEGER liZero = {};
+    HRESULT hr = m_spStream->Seek(liZero, STREAM_SEEK_SET, nullptr);
+    if (SUCCEEDED(hr))
+    {
+        ULARGE_INTEGER uliSize = {};
+        uliSize.QuadPart = static_cast<ULONGLONG>(qwLength);
+        hr = m_spStream->SetSize(uliSize);
+    }
+
+    LeaveCriticalSection(&m_csLock);
+    return hr;
 }
 
 STDMETHODIMP MFByteStreamOnStream::GetCurrentPosition(QWORD* pqwPosition)
@@ -199,35 +214,76 @@ STDMETHODIMP MFByteStreamOnStream::EndRead(IMFAsyncResult* pResult, ULONG* pcbRe
 
 STDMETHODIMP MFByteStreamOnStream::Write(const BYTE* pb, ULONG cb, ULONG* pcbWritten)
 {
-    UNREFERENCED_PARAMETER(pb);
-    UNREFERENCED_PARAMETER(cb);
-
     if (pcbWritten)
         *pcbWritten = 0;
 
-    return E_NOTIMPL;
+    if (!pb || cb == 0)
+        return E_INVALIDARG;
+
+    if (!m_spStream)
+        return E_UNEXPECTED;
+
+    EnterCriticalSection(&m_csLock);
+
+    ULONG cbWritten = 0;
+    HRESULT hr = m_spStream->Write(const_cast<BYTE*>(pb), cb, &cbWritten);
+
+    if (SUCCEEDED(hr))
+    {
+        m_qwPosition += cbWritten;
+        if (pcbWritten)
+            *pcbWritten = cbWritten;
+    }
+
+    LeaveCriticalSection(&m_csLock);
+    return hr;
 }
 
 STDMETHODIMP MFByteStreamOnStream::BeginWrite(const BYTE* pb, ULONG cb, IMFAsyncCallback* pCallback, IUnknown* punkState)
 {
-    UNREFERENCED_PARAMETER(pb);
-    UNREFERENCED_PARAMETER(cb);
     UNREFERENCED_PARAMETER(punkState);
 
-    if (pCallback)
-        return E_NOTIMPL;
+    if (!pb || cb == 0)
+        return E_INVALIDARG;
 
-    return E_NOTIMPL;
+    if (!m_spStream)
+        return E_UNEXPECTED;
+
+    ULONG cbWritten = 0;
+    HRESULT hrWrite = m_spStream->Write(const_cast<BYTE*>(pb), cb, &cbWritten);
+
+    if (SUCCEEDED(hrWrite))
+    {
+        EnterCriticalSection(&m_csLock);
+        m_qwPosition += cbWritten;
+        LeaveCriticalSection(&m_csLock);
+    }
+
+    if (pCallback)
+    {
+        CComPtr<MFAsyncResult> spResult;
+        HRESULT hr = MFAsyncResult::CreateInstance(
+            static_cast<IUnknown*>(this), punkState, pCallback, &spResult);
+        if (SUCCEEDED(hr))
+        {
+            spResult->SetAsyncResult(hrWrite);
+            hr = spResult->InvokeCallback();
+            return hr;
+        }
+    }
+
+    return hrWrite;
 }
 
 STDMETHODIMP MFByteStreamOnStream::EndWrite(IMFAsyncResult* pResult, ULONG* pcbWritten)
 {
-    UNREFERENCED_PARAMETER(pResult);
-
     if (pcbWritten)
         *pcbWritten = 0;
 
-    return E_NOTIMPL;
+    if (!pResult)
+        return E_POINTER;
+
+    return pResult->GetStatus();
 }
 
 STDMETHODIMP MFByteStreamOnStream::Seek(

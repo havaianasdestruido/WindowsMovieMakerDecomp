@@ -98,6 +98,7 @@ add_library(${TARGET} SHARED
     StoryboardManager/Transport/TransportBase.cpp
     StoryboardManager/Transport/CommandBin.cpp
     HMREngine/AsyncWorker.cpp
+    HMREngine/ErrHandler.cpp
     HMREngine/X3DNodes.cpp
     HMREngine/DXResources/EngineDX.cpp
     HMREngine/DXResources/TextureResourceDX.cpp

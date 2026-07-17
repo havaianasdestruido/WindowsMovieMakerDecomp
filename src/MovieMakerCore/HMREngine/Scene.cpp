@@ -157,4 +157,42 @@ namespace HMREngine
         return it != m_metadata.end() ? it->second : "";
     }
 
+    void Scene::AddLight(X3DChildNode* light)
+    {
+        if (light && std::find(m_lights.begin(), m_lights.end(), light) == m_lights.end())
+        {
+            m_lights.push_back(light);
+            m_dirty = true;
+        }
+    }
+
+    void Scene::RemoveLight(X3DChildNode* light)
+    {
+        auto it = std::find(m_lights.begin(), m_lights.end(), light);
+        if (it != m_lights.end())
+        {
+            m_lights.erase(it);
+            m_dirty = true;
+        }
+    }
+
+    void Scene::SetCamera(ViewportNode* camera)
+    {
+        m_camera = camera;
+        m_dirty = true;
+    }
+
+    HRESULT Scene::Render()
+    {
+        if (!m_engine) return E_POINTER;
+
+        if (m_dirty)
+        {
+            PropagateRoutes();
+            m_dirty = false;
+        }
+
+        return S_OK;
+    }
+
 } // namespace HMREngine

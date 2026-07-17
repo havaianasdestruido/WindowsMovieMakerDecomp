@@ -92,7 +92,15 @@ public:
     bool IsSectionCached(LONGLONG llStartTimeHns, LONGLONG llEndTimeHns) const throw();
 
 private:
+    struct CachedSection
+    {
+        LONGLONG llStartTimeHns;
+        LONGLONG llEndTimeHns;
+        DWORD    dwSamplesPerSecond;
+    };
+
     ATL::CAtlArray<WaveformSample>  m_arrSamples;
+    ATL::CAtlArray<CachedSection>   m_arrCachedSections;
     DWORD                           m_dwSampleRate;
     DWORD                           m_dwChannels;
     LONGLONG                        m_llDurationHns;

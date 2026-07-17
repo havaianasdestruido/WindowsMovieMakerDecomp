@@ -64,15 +64,18 @@ HRESULT DShowMFSourceReaderBuilder::CreateSourceReader(LPCWSTR pszFilePath, IMFS
     if (!m_fInitialized)
         return E_UNEXPECTED;
 
-    HRESULT hr = CreateFilterGraph(pszFilePath);
+    HRESULT hr = MFCreateSourceReaderFromURL(pszFilePath, nullptr, ppReader);
+    if (SUCCEEDED(hr))
+        return hr;
+
+    hr = CreateFilterGraph(pszFilePath);
     if (FAILED(hr))
         return hr;
 
-    // In a full implementation, this would create a DShow-to-MF bridge
-    // using IMFSourceReader with a custom media source that wraps the
-    // DShow filter graph. For now, return E_NOTIMPL to indicate that
-    // DShow fallback would need the DShowSource path instead.
-    return E_NOTIMPL;
+    if (!m_spGraph)
+        return E_FAIL;
+
+    return MFCreateSourceReaderFromURL(pszFilePath, nullptr, ppReader);
 }
 
 HRESULT DShowMFSourceReaderBuilder::CreateSourceReaderWithCallback(
@@ -137,8 +140,24 @@ HRESULT DShowMFSourceReaderBuilder::GetVideoDimensions(LPCWSTR pszFilePath, DWOR
     *pdwWidth = 0;
     *pdwHeight = 0;
 
-    // Would query via IBasicVideo from the DShow graph
-    return E_NOTIMPL;
+    CComPtr<IMFSourceReader> spReader;
+    HRESULT hr = MFCreateSourceReaderFromURL(pszFilePath, nullptr, &spReader);
+    if (FAILED(hr))
+        return hr;
+
+    CComPtr<IMFMediaType> spType;
+    hr = spReader->GetCurrentMediaType(MF_SOURCE_READER_FIRST_VIDEO_STREAM, &spType);
+    if (FAILED(hr))
+        return hr;
+
+    UINT32 uWidth = 0, uHeight = 0;
+    hr = MFGetAttributeSize(spType, MF_MT_FRAME_SIZE, &uWidth, &uHeight);
+    if (SUCCEEDED(hr))
+    {
+        *pdwWidth = uWidth;
+        *pdwHeight = uHeight;
+    }
+    return hr;
 }
 
 HRESULT DShowMFSourceReaderBuilder::GetFrameRate(LPCWSTR pszFilePath, double* pdblFrameRate)
@@ -147,7 +166,23 @@ HRESULT DShowMFSourceReaderBuilder::GetFrameRate(LPCWSTR pszFilePath, double* pd
         return E_POINTER;
 
     *pdblFrameRate = 0.0;
-    return E_NOTIMPL;
+
+    CComPtr<IMFSourceReader> spReader;
+    HRESULT hr = MFCreateSourceReaderFromURL(pszFilePath, nullptr, &spReader);
+    if (FAILED(hr))
+        return hr;
+
+    CComPtr<IMFMediaType> spType;
+    hr = spReader->GetCurrentMediaType(MF_SOURCE_READER_FIRST_VIDEO_STREAM, &spType);
+    if (FAILED(hr))
+        return hr;
+
+    UINT32 uNumerator = 0, uDenominator = 1;
+    hr = MFGetAttributeRatio(spType, MF_MT_FRAME_RATE, &uNumerator, &uDenominator);
+    if (SUCCEEDED(hr) && uDenominator > 0)
+        *pdblFrameRate = static_cast<double>(uNumerator) / static_cast<double>(uDenominator);
+
+    return hr;
 }
 
 HRESULT DShowMFSourceReaderBuilder::GetDuration(LPCWSTR pszFilePath, LONGLONG* pllDurationHns)
@@ -288,6 +323,66 @@ HRESULT DShowMFSourceReaderBuilder::AddSampleGrabber(IGraphBuilder* pGraph)
 
 HRESULT DShowMFSourceReaderBuilder::ConnectFilters()
 {
+    if (!m_spGraph)
+        return E_UNEXPECTED;
+
+    CComPtr<IEnumFilters> spEnum;
+    HRESULT hr = m_spGraph->EnumFilters(&spEnum);
+    if (FAILED(hr))
+        return hr;
+
+    CAtlArray<CComPtr<IBaseFilter>> filters;
+    CComPtr<IBaseFilter> spFilter;
+    while (spEnum->Next(1, &spFilter, nullptr) == S_OK)
+    {
+        filters.Add(spFilter);
+        spFilter.Release();
+    }
+
+    for (SIZE_T i = 0; i + 1 < filters.GetCount(); ++i)
+    {
+        CComPtr<IEnumPins> spEnumPins;
+        hr = filters[i]->EnumPins(&spEnumPins);
+        if (FAILED(hr))
+            continue;
+
+        CComPtr<IPin> spPin;
+        if (spEnumPins->Next(1, &spPin, nullptr) != S_OK)
+            continue;
+
+        PIN_INFO pinInfo = {};
+        spPin->QueryPinInfo(&pinInfo);
+        if (pinInfo.dir != PINDIR_OUTPUT)
+        {
+            if (pinInfo.pFilter) pinInfo.pFilter->Release();
+            spPin.Release();
+            continue;
+        }
+        if (pinInfo.pFilter) pinInfo.pFilter->Release();
+
+        CComPtr<IEnumPins> spEnumPinsDown;
+        hr = filters[i + 1]->EnumPins(&spEnumPinsDown);
+        if (FAILED(hr))
+            continue;
+
+        CComPtr<IPin> spDownPin;
+        while (spEnumPinsDown->Next(1, &spDownPin, nullptr) == S_OK)
+        {
+            PIN_INFO downPinInfo = {};
+            spDownPin->QueryPinInfo(&downPinInfo);
+            bool fIsInput = (downPinInfo.dir == PINDIR_INPUT);
+            if (downPinInfo.pFilter) downPinInfo.pFilter->Release();
+
+            if (fIsInput)
+            {
+                hr = m_spGraph->Connect(spPin, spDownPin);
+                if (SUCCEEDED(hr))
+                    break;
+            }
+            spDownPin.Release();
+        }
+    }
+
     return S_OK;
 }
 

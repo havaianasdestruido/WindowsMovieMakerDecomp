@@ -38,7 +38,7 @@ namespace HMREngine
 
     void ErrHandler::HandleError(const std::string& msg)
     {
-        HandleError(HMRError::E_FAIL, msg, "", 0);
+        HandleError(static_cast<HMRError>(1), msg, "", 0);
     }
 
     void ErrHandler::HandleHRESULT(HRESULT hr, const std::string& context)

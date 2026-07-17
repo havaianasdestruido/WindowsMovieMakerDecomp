@@ -32,8 +32,10 @@ namespace HMREngine
         // Callbacks
         using PreFrameCallback = std::function<void(double time, double deltaTime)>;
         using PostFrameCallback = std::function<void(double time, double deltaTime)>;
+        using FrameCallback = std::function<void(double time, double deltaTime)>;
         void SetPreFrameCallback(PreFrameCallback cb) { m_preFrameCb = cb; }
         void SetPostFrameCallback(PostFrameCallback cb) { m_postFrameCb = cb; }
+        void SetFrameCallback(FrameCallback cb) { m_frameCb = cb; }
 
         // Target frame rate
         void SetTargetFPS(double fps) { m_targetFPS = fps; }
@@ -61,6 +63,7 @@ namespace HMREngine
 
         PreFrameCallback m_preFrameCb;
         PostFrameCallback m_postFrameCb;
+        FrameCallback m_frameCb;
 
         void UpdateTiming();
     };

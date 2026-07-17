@@ -1,6 +1,4 @@
-﻿#include "pch.h"
-
-/*
+﻿/*
  * dllmain.cpp
  *
  * DLL entry point and global initialization/shutdown for MovieMakerCore.dll.

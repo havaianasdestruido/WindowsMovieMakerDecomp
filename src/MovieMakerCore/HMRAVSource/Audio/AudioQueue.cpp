@@ -242,7 +242,57 @@ DWORD AudioQueue::GetMaxItems() const throw() { return m_dwMaxItems; }
 HRESULT AudioQueue::SetMaxItems(DWORD dwMaxItems)
 {
     if (dwMaxItems == 0) return E_INVALIDARG;
-    m_dwMaxItems = dwMaxItems;
+
+    EnterCriticalSection(&m_cs);
+
+    if (dwMaxItems != m_dwMaxItems)
+    {
+        ATL::CAtlArray<AudioQueueItem> arrNewItems;
+        arrNewItems.SetCount(dwMaxItems);
+
+        DWORD dwCopyCount = m_dwCount < dwMaxItems ? m_dwCount : dwMaxItems;
+        DWORD dwDropped = m_dwCount > dwMaxItems ? m_dwCount - dwMaxItems : 0;
+
+        for (DWORD i = 0; i < dwCopyCount; ++i)
+        {
+            DWORD srcIndex = (m_dwHead + dwDropped + i) % m_dwMaxItems;
+            AudioQueueItem& dst = arrNewItems.GetAt(i);
+            AudioQueueItem& src = m_arrItems.GetAt(srcIndex);
+            dst.arrData.RemoveAll();
+            dst.arrData.SetCount(src.cbData);
+            if (src.cbData > 0)
+                memcpy(dst.arrData.GetData(), src.arrData.GetData(), src.cbData);
+            dst.cbData = src.cbData;
+            dst.llTimestampHns = src.llTimestampHns;
+            dst.dwFlags = src.dwFlags;
+        }
+
+        m_arrItems.RemoveAll();
+        m_arrItems.SetCount(dwMaxItems);
+        for (DWORD i = 0; i < dwCopyCount; ++i)
+        {
+            AudioQueueItem& dst = m_arrItems.GetAt(i);
+            AudioQueueItem& src = arrNewItems.GetAt(i);
+            dst.arrData.RemoveAll();
+            dst.arrData.SetCount(src.cbData);
+            if (src.cbData > 0)
+                memcpy(dst.arrData.GetData(), src.arrData.GetData(), src.cbData);
+            dst.cbData = src.cbData;
+            dst.llTimestampHns = src.llTimestampHns;
+            dst.dwFlags = src.dwFlags;
+        }
+
+        m_dwMaxItems = dwMaxItems;
+        m_dwHead = 0;
+        m_dwTail = dwCopyCount;
+        m_dwCount = dwCopyCount;
+        m_dwTotalDropped += dwDropped;
+
+        if (m_dwCount == 0)
+            ResetEvent(m_hEventItemAvailable);
+    }
+
+    LeaveCriticalSection(&m_cs);
     return S_OK;
 }
 

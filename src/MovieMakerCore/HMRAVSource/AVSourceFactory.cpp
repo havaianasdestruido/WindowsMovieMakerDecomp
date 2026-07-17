@@ -199,13 +199,69 @@ bool AVSourceFactory::IsLegacyAudioFormat(LPCWSTR pszExtension)
     return false;
 }
 
-VideoCodec AVSourceFactory::DetectVideoCodec(LPCWSTR /*pszFilePath*/)
+VideoCodec AVSourceFactory::DetectVideoCodec(LPCWSTR pszFilePath)
 {
+    if (!pszFilePath)
+        return VideoCodecUnknown;
+
+    CComPtr<IMFSourceReader> spReader;
+    HRESULT hr = MFCreateSourceReaderFromURL(pszFilePath, nullptr, &spReader);
+    if (FAILED(hr))
+        return VideoCodecUnknown;
+
+    CComPtr<IMFMediaType> spType;
+    hr = spReader->GetCurrentMediaType(
+        MF_SOURCE_READER_FIRST_VIDEO_STREAM, &spType);
+    if (FAILED(hr))
+        return VideoCodecUnknown;
+
+    GUID guidSubtype = GUID_NULL;
+    hr = spType->GetGUID(MF_MT_SUBTYPE, &guidSubtype);
+    if (FAILED(hr))
+        return VideoCodecUnknown;
+
+    if (guidSubtype == MFVideoFormat_H264)
+        return VideoCodecH264;
+    if (guidSubtype == MFVideoFormat_WMVVC1 || guidSubtype == MFVideoFormat_WMV3)
+        return VideoCodecWMV9;
+    if (guidSubtype == MFVideoFormat_MP43 || guidSubtype == MFVideoFormat_MP4V)
+        return VideoCodecMPEG4;
+    if (guidSubtype == MFVideoFormat_HEVC)
+        return VideoCodecH265;
+
     return VideoCodecUnknown;
 }
 
-AudioCodec AVSourceFactory::DetectAudioCodec(LPCWSTR /*pszFilePath*/)
+AudioCodec AVSourceFactory::DetectAudioCodec(LPCWSTR pszFilePath)
 {
+    if (!pszFilePath)
+        return AudioCodecUnknown;
+
+    CComPtr<IMFSourceReader> spReader;
+    HRESULT hr = MFCreateSourceReaderFromURL(pszFilePath, nullptr, &spReader);
+    if (FAILED(hr))
+        return AudioCodecUnknown;
+
+    CComPtr<IMFMediaType> spType;
+    hr = spReader->GetCurrentMediaType(
+        MF_SOURCE_READER_FIRST_AUDIO_STREAM, &spType);
+    if (FAILED(hr))
+        return AudioCodecUnknown;
+
+    GUID guidSubtype = GUID_NULL;
+    hr = spType->GetGUID(MF_MT_SUBTYPE, &guidSubtype);
+    if (FAILED(hr))
+        return AudioCodecUnknown;
+
+    if (guidSubtype == MFAudioFormat_AAC)
+        return AudioCodecAAC;
+    if (guidSubtype == MFAudioFormat_WMAudioV9 || guidSubtype == MFAudioFormat_WMAudioV8)
+        return AudioCodecWMA;
+    if (guidSubtype == MFAudioFormat_MP3)
+        return AudioCodecMP3;
+    if (guidSubtype == MFAudioFormat_PCM)
+        return AudioCodecPCM;
+
     return AudioCodecUnknown;
 }
 

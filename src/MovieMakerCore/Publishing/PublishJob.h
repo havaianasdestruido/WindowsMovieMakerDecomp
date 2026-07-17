@@ -129,6 +129,7 @@ private:
     float              m_flEncodeProgress;
     float              m_flUploadProgress;
     bool               m_bCancelled;
+    bool               m_bPaused;
 
     PublishProgressCallBack* m_pCallback; // not owned
 };
@@ -200,6 +201,7 @@ private:
     mutable CRITICAL_SECTION            m_csQueue;
 
     DWORD  m_dwMaxJobs;
+    DWORD  m_dwCompletedJobCount;
     bool   m_bInitialized;
 
     static PublishBackgroundWorker* s_pInstance;

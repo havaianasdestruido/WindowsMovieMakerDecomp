@@ -72,6 +72,15 @@ namespace HMREngine
 
         void SetDevice(ID3D11Device* dev) { m_device = dev; }
 
+        // High-level creation helpers
+        TextureResource* CreateTextureFromFile(const std::string& path);
+        EffectResource* CreateEffectFromMemory(const void* data, size_t size);
+
+        // Generic resource cache
+        void* GetResource(const std::string& id);
+        void CacheResource(const std::string& id, void* resource);
+        void Clear();
+
         // Texture resources
         TextureResource* GetTexture(const std::string& path);
         void ReleaseTexture(const std::string& path);
@@ -120,6 +129,7 @@ namespace HMREngine
         std::unordered_map<std::string, std::unique_ptr<MeshResource>> m_meshes;
         std::unordered_map<std::string, std::unique_ptr<AVResource>> m_avResources;
         std::unordered_map<std::string, std::unique_ptr<MotionTextureResource>> m_motionTextures;
+        std::unordered_map<std::string, void*> m_genericResources;
 
         HRESULT LoadTextureFromFile(const std::string& path, TextureResource* res);
         HRESULT LoadEffectFromFile(const std::string& path, EffectResource* res);

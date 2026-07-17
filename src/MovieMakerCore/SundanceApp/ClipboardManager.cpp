@@ -14,6 +14,7 @@
 #include "pch.h"
 #include "ClipboardManager.h"
 #include "SundanceAppMain.h"
+#include "TimelineController.h"
 
 // ============================================================================
 // Construction / destruction
@@ -135,9 +136,33 @@ HRESULT ClipboardManager::Delete()
     if (!m_pAppMain)
         return E_UNEXPECTED;
 
-    // Delete is equivalent to cut without putting data on clipboard
-    // TODO: implement selection deletion via timeline controller
-    return S_OK;
+    if (!m_pAppMain->IsProjectOpen())
+        return E_UNEXPECTED;
+
+    // Serialize the current selection, then remove items from timeline
+    ReleaseClipboardData();
+    HRESULT hr = SerializeSelection();
+    if (FAILED(hr))
+        return hr;
+
+    if (m_clipboardData.empty())
+        return S_FALSE;
+
+    // Remove each selected item from the timeline
+    for (size_t i = 0; i < m_clipboardData.size(); ++i)
+    {
+        const ClipboardEntry& entry = m_clipboardData[i];
+        HRESULT hrDel = m_pAppMain->RemoveItemFromTimeline(
+            entry.dwItemId,
+            static_cast<TimelineTrack>(entry.track));
+        if (FAILED(hrDel))
+            hr = hrDel;
+    }
+
+    // Clear clipboard after delete (items no longer exist)
+    ReleaseClipboardData();
+
+    return hr;
 }
 
 // ============================================================================
@@ -198,12 +223,65 @@ void ClipboardManager::OnClipboardChanged()
 // ============================================================================
 HRESULT ClipboardManager::SerializeSelection()
 {
-    // TODO: Query the timeline controller for the current selection,
-    // serialize each selected item into a ClipboardEntry, and store
-    // them in m_clipboardData.
+    if (!m_pAppMain)
+        return E_UNEXPECTED;
 
-    // Placeholder: return S_FALSE (no selection)
-    return S_FALSE;
+    if (!m_pAppMain->IsProjectOpen())
+        return E_UNEXPECTED;
+
+    StoryboardManagerNamespace::MovieProject* pProject = m_pAppMain->GetProject();
+    if (!pProject)
+        return E_UNEXPECTED;
+
+    TimelineController* pTimeline = m_pAppMain->GetTimelineController();
+    LONGLONG llCursorPos = pTimeline ? pTimeline->GetCurrentPosition() : 0;
+
+    // Iterate through all track types and collect items
+    for (int t = 0; t <= static_cast<int>(StoryboardManager::TimelineTrackTypeTransition); ++t)
+    {
+        StoryboardManager::TimelineTrackType track =
+            static_cast<StoryboardManager::TimelineTrackType>(t);
+
+        const StoryboardManager::ProjectTimeline* pTrackTimeline = pProject->GetTimeline(track);
+        if (!pTrackTimeline)
+            continue;
+
+        size_t cExtents = pTrackTimeline->GetExtentCount();
+        for (size_t i = 0; i < cExtents; ++i)
+        {
+            DWORD dwExtentId = pTrackTimeline->GetExtentIdAt(i);
+
+            // Find the media item that owns this extent
+            // We store the extent id as the item identifier
+            int nMediaIndex = pProject->FindMediaItemById(dwExtentId);
+            if (nMediaIndex < 0)
+                continue;
+
+            const StoryboardManager::ProjectMediaItem* pItem = pProject->GetMediaItem(nMediaIndex);
+            if (!pItem)
+                continue;
+
+            ClipboardEntry entry;
+            entry.dwItemId = dwExtentId;
+            entry.track = track;
+            entry.dwPosition = static_cast<DWORD>(i);  // position in timeline order
+            entry.strSourceFile = pItem->GetSourcePath();
+            entry.dwDuration = static_cast<DWORD>(pItem->GetDurationHns() / 10000); // hns to ms
+
+            // Serialize the item metadata
+            CStringA strSerialized;
+            strSerialized.Format("id:%lu,track:%d,pos:%lu,dur:%lu,file:%S",
+                entry.dwItemId, entry.track, entry.dwPosition,
+                entry.dwDuration, (LPCWSTR)entry.strSourceFile);
+            entry.serializedData.assign(
+                reinterpret_cast<const BYTE*>(strSerialized.GetString()),
+                reinterpret_cast<const BYTE*>(strSerialized.GetString()) + strSerialized.GetLength());
+
+            m_clipboardData.push_back(entry);
+        }
+    }
+
+    return m_clipboardData.empty() ? S_FALSE : S_OK;
 }
 
 // ============================================================================
@@ -214,10 +292,39 @@ HRESULT ClipboardManager::DeserializeAndPaste()
     if (m_clipboardData.empty())
         return S_FALSE;
 
-    // TODO: For each entry in m_clipboardData, deserialize and insert
-    // at the current timeline cursor position via the timeline controller.
+    if (!m_pAppMain)
+        return E_UNEXPECTED;
 
-    return S_OK;
+    if (!m_pAppMain->IsProjectOpen())
+        return E_UNEXPECTED;
+
+    StoryboardManagerNamespace::MovieProject* pProject = m_pAppMain->GetProject();
+    if (!pProject)
+        return E_UNEXPECTED;
+
+    TimelineController* pTimeline = m_pAppMain->GetTimelineController();
+    LONGLONG llPastePosition = pTimeline ? pTimeline->GetCurrentPosition() : 0;
+
+    HRESULT hr = S_OK;
+
+    // Paste each clipboard entry at the current cursor position
+    for (size_t i = 0; i < m_clipboardData.size(); ++i)
+    {
+        const ClipboardEntry& entry = m_clipboardData[i];
+
+        // Re-import the media file at the paste position
+        if (!entry.strSourceFile.IsEmpty())
+        {
+            HRESULT hrPaste = m_pAppMain->AddMediaToTimeline(
+                entry.strSourceFile,
+                static_cast<TimelineTrack>(entry.track));
+
+            if (FAILED(hrPaste))
+                hr = hrPaste;
+        }
+    }
+
+    return hr;
 }
 
 // ============================================================================

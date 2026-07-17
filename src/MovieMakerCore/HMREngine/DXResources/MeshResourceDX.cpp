@@ -508,6 +508,50 @@ void PageCurlGridResourceDX::Release()
 }
 
 // ============================================================================
+// ScrollingTextMeshResourceDX (mesh)
+// ============================================================================
+ScrollingTextMeshResourceDX::ScrollingTextMeshResourceDX() = default;
+ScrollingTextMeshResourceDX::~ScrollingTextMeshResourceDX() { Release(); }
+
+HRESULT ScrollingTextMeshResourceDX::CreateScrollingTextMesh(UINT width, UINT height)
+{
+    if (width == 0 || height == 0) return E_INVALIDARG;
+    if (!m_device) return E_FAIL;
+
+    Release();
+
+    m_meshWidth = width;
+    m_meshHeight = height;
+
+    float halfW = static_cast<float>(width) * 0.5f;
+    float halfH = static_cast<float>(height) * 0.5f;
+
+    VertexPosTex vertices[4] = {};
+    vertices[0].position = Vec3(-halfW, -halfH, 0.0f);
+    vertices[0].texCoord = Vec2(0.0f, 1.0f);
+
+    vertices[1].position = Vec3(halfW, -halfH, 0.0f);
+    vertices[1].texCoord = Vec2(1.0f, 1.0f);
+
+    vertices[2].position = Vec3(-halfW, halfH, 0.0f);
+    vertices[2].texCoord = Vec2(0.0f, 0.0f);
+
+    vertices[3].position = Vec3(halfW, halfH, 0.0f);
+    vertices[3].texCoord = Vec2(1.0f, 0.0f);
+
+    WORD indices[6] = { 0, 2, 1, 1, 2, 3 };
+
+    return CreateFromData(vertices, 4, sizeof(VertexPosTex), indices, 6);
+}
+
+void ScrollingTextMeshResourceDX::Release()
+{
+    MeshResourceDX::Release();
+    m_meshWidth = 0;
+    m_meshHeight = 0;
+}
+
+// ============================================================================
 // WipeMeshResourceDX
 WipeMeshResourceDX::WipeMeshResourceDX() = default;
 WipeMeshResourceDX::~WipeMeshResourceDX() { Release(); }

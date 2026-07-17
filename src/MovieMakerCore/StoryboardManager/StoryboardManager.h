@@ -49,15 +49,6 @@
 #include "WLXPhotoBase.h"
 #include "../MovieMakerCore.h"
 
-// ============================================================================
-// Export / import macros
-// ============================================================================
-#ifdef MOVIECORE_EXPORTS
-    #define STORYBOARD_API __declspec(dllexport)
-#else
-    #define STORYBOARD_API __declspec(dllimport)
-#endif
-
 #pragma warning(push)
 #pragma warning(disable: 4100) // unreferenced formal parameter
 #pragma warning(disable: 4505) // unreferenced local function has been removed
@@ -247,6 +238,46 @@ STORYBOARD_API void StoryboardManagerShutdown();
 
 // Returns true if StoryboardManager has been successfully initialized.
 STORYBOARD_API bool StoryboardManagerIsInitialized();
+
+// ============================================================================
+// StoryboardManager
+// ============================================================================
+// Top-level project manager. Manages the current project, active track,
+// template table, and undo state for the storyboard editor.
+//
+class STORYBOARD_API StoryboardManager
+{
+public:
+    StoryboardManager();
+    ~StoryboardManager();
+
+    // Singleton access
+    static StoryboardManager& GetInstance();
+
+    // Project management
+    MovieProject* NewProject();
+    HRESULT OpenProject(LPCWSTR pszPath);
+    HRESULT SaveProject(LPCWSTR pszPath = nullptr);
+    MovieProject* GetProject() const;
+
+    // Undo manager (delegates to project undo stack)
+    bool CanUndo() const;
+    bool CanRedo() const;
+    HRESULT Undo();
+    HRESULT Redo();
+
+    // Active track
+    TimelineTrack* GetCurrentTrack() const;
+    void SetCurrentTrack(TimelineTrack* pTrack);
+
+    // Template table
+    TemplateTable* GetTemplateTable();
+
+private:
+    MovieProject*       m_pCurrentProject;
+    TimelineTrack*      m_pCurrentTrack;
+    TemplateTable*      m_pTemplateTable;
+};
 
 } // namespace StoryboardManager
 

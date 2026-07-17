@@ -29,6 +29,10 @@ Theme::Theme()
     , m_loadState(ThemeLoadStateUnloaded)
     , m_renderMode(ThemeRenderModeNone)
     , m_fBuiltIn(false)
+    , m_dwPrimaryColor(0xFF2E74B5)   // Movie Maker blue
+    , m_dwSecondaryColor(0xFF4472C4)  // lighter blue
+    , m_dwAccentColor(0xFFED7D31)     // orange accent
+    , m_flFontSize(36.0f)
     , m_pIntro(nullptr)
     , m_pMid(nullptr)
     , m_pOutro(nullptr)
@@ -344,6 +348,32 @@ HRESULT Theme::LoadFromStream(IStream* pStream)
                 {
                     SetDisplayName(pwszValue);
                 }
+
+                pwszValue = nullptr;
+                if (SUCCEEDED(XmlReaderGetAttribute(spReader, L"primaryColor", &pwszValue)) && pwszValue)
+                {
+                    SetPrimaryColor(static_cast<DWORD>(wcstoul(pwszValue, nullptr, 16)));
+                }
+                pwszValue = nullptr;
+                if (SUCCEEDED(XmlReaderGetAttribute(spReader, L"secondaryColor", &pwszValue)) && pwszValue)
+                {
+                    SetSecondaryColor(static_cast<DWORD>(wcstoul(pwszValue, nullptr, 16)));
+                }
+                pwszValue = nullptr;
+                if (SUCCEEDED(XmlReaderGetAttribute(spReader, L"accentColor", &pwszValue)) && pwszValue)
+                {
+                    SetAccentColor(static_cast<DWORD>(wcstoul(pwszValue, nullptr, 16)));
+                }
+                pwszValue = nullptr;
+                if (SUCCEEDED(XmlReaderGetAttribute(spReader, L"fontFamily", &pwszValue)) && pwszValue)
+                {
+                    SetFontFamily(pwszValue);
+                }
+                pwszValue = nullptr;
+                if (SUCCEEDED(XmlReaderGetAttribute(spReader, L"fontSize", &pwszValue)) && pwszValue)
+                {
+                    SetFontSize(static_cast<float>(_wtof(pwszValue)));
+                }
                 break;
             }
         }
@@ -355,8 +385,99 @@ HRESULT Theme::LoadFromStream(IStream* pStream)
 
 HRESULT Theme::SaveToXml(IXmlWriter* pWriter)
 {
-    UNREFERENCED_PARAMETER(pWriter);
-    return E_NOTIMPL;
+    if (!pWriter)
+        return E_INVALIDARG;
+
+    pWriter->WriteStartElement(nullptr, L"theme", nullptr);
+
+    pWriter->WriteAttributeString(nullptr, L"name", nullptr, m_strName);
+
+    if (!m_strDisplayName.IsEmpty())
+        pWriter->WriteAttributeString(nullptr, L"displayName", nullptr, m_strDisplayName);
+
+    if (!m_strDescription.IsEmpty())
+        pWriter->WriteAttributeString(nullptr, L"description", nullptr, m_strDescription);
+
+    if (!m_strCategory.IsEmpty())
+        pWriter->WriteAttributeString(nullptr, L"category", nullptr, m_strCategory);
+
+    if (!m_strFontFamily.IsEmpty() && m_strFontFamily.Compare(L"Segoe UI") != 0)
+        pWriter->WriteAttributeString(nullptr, L"fontFamily", nullptr, m_strFontFamily);
+
+    WCHAR szValue[64] = { 0 };
+
+    if (m_flFontSize != 36.0f)
+    {
+        swprintf_s(szValue, L"%g", m_flFontSize);
+        pWriter->WriteAttributeString(nullptr, L"fontSize", nullptr, szValue);
+    }
+
+    if (m_dwPrimaryColor != 0xFF2E74B5)
+    {
+        swprintf_s(szValue, L"0x%08X", m_dwPrimaryColor);
+        pWriter->WriteAttributeString(nullptr, L"primaryColor", nullptr, szValue);
+    }
+
+    if (m_dwSecondaryColor != 0xFF4472C4)
+    {
+        swprintf_s(szValue, L"0x%08X", m_dwSecondaryColor);
+        pWriter->WriteAttributeString(nullptr, L"secondaryColor", nullptr, szValue);
+    }
+
+    if (m_dwAccentColor != 0xFFED7D31)
+    {
+        swprintf_s(szValue, L"0x%08X", m_dwAccentColor);
+        pWriter->WriteAttributeString(nullptr, L"accentColor", nullptr, szValue);
+    }
+
+    swprintf_s(szValue, L"%u.%u", m_dwVersionMajor, m_dwVersionMinor);
+    pWriter->WriteAttributeString(nullptr, L"version", nullptr, szValue);
+
+    if (m_fBuiltIn)
+        pWriter->WriteAttributeString(nullptr, L"builtIn", nullptr, L"true");
+
+    // Write intro section
+    if (m_pIntro)
+    {
+        pWriter->WriteStartElement(nullptr, L"intro", nullptr);
+        m_pIntro->SaveToXml(pWriter);
+        pWriter->WriteEndElement();
+    }
+
+    // Write mid section
+    if (m_pMid)
+    {
+        pWriter->WriteStartElement(nullptr, L"mid", nullptr);
+        m_pMid->SaveToXml(pWriter);
+        pWriter->WriteEndElement();
+    }
+
+    // Write outro section
+    if (m_pOutro)
+    {
+        pWriter->WriteStartElement(nullptr, L"outro", nullptr);
+        m_pOutro->SaveToXml(pWriter);
+        pWriter->WriteEndElement();
+    }
+
+    // Write effect templates
+    for (size_t i = 0; i < m_arrEffectTemplates.GetCount(); ++i)
+    {
+        ThemeEffectTemplate* pEffTpl = m_arrEffectTemplates.GetAt(i);
+        if (pEffTpl)
+            pEffTpl->SaveToXml(pWriter);
+    }
+
+    // Write transition templates
+    for (size_t i = 0; i < m_arrTransitionTemplates.GetCount(); ++i)
+    {
+        ThemeTransition* pTrans = m_arrTransitionTemplates.GetAt(i);
+        if (pTrans)
+            pTrans->SaveToXml(pWriter);
+    }
+
+    pWriter->WriteEndElement();
+    return S_OK;
 }
 
 HRESULT Theme::SaveToStream(IStream* pStream)
@@ -377,6 +498,33 @@ HRESULT Theme::SaveToStream(IStream* pStream)
     spWriter->WriteAttributeString(nullptr, L"name", nullptr, m_strName);
     if (!m_strDisplayName.IsEmpty())
         spWriter->WriteAttributeString(nullptr, L"displayName", nullptr, m_strDisplayName);
+
+    // Visual appearance attributes
+    WCHAR szValue[64] = { 0 };
+    if (m_dwPrimaryColor != 0xFF2E74B5)
+    {
+        swprintf_s(szValue, L"0x%08X", m_dwPrimaryColor);
+        spWriter->WriteAttributeString(nullptr, L"primaryColor", nullptr, szValue);
+    }
+    if (m_dwSecondaryColor != 0xFF4472C4)
+    {
+        swprintf_s(szValue, L"0x%08X", m_dwSecondaryColor);
+        spWriter->WriteAttributeString(nullptr, L"secondaryColor", nullptr, szValue);
+    }
+    if (m_dwAccentColor != 0xFFED7D31)
+    {
+        swprintf_s(szValue, L"0x%08X", m_dwAccentColor);
+        spWriter->WriteAttributeString(nullptr, L"accentColor", nullptr, szValue);
+    }
+    if (!m_strFontFamily.IsEmpty() && m_strFontFamily.Compare(L"Segoe UI") != 0)
+    {
+        spWriter->WriteAttributeString(nullptr, L"fontFamily", nullptr, m_strFontFamily);
+    }
+    if (m_flFontSize != 36.0f)
+    {
+        swprintf_s(szValue, L"%g", m_flFontSize);
+        spWriter->WriteAttributeString(nullptr, L"fontSize", nullptr, szValue);
+    }
 
     spWriter->WriteEndElement();
     spWriter->WriteEndDocument();
@@ -414,6 +562,105 @@ ATL::CString Theme::GetCategory() const
 void Theme::SetCategory(LPCWSTR pszCategory)
 {
     m_strCategory = pszCategory ? pszCategory : L"";
+}
+
+DWORD Theme::GetPrimaryColor() const throw()
+{
+    return m_dwPrimaryColor;
+}
+
+void Theme::SetPrimaryColor(DWORD dwColor) throw()
+{
+    m_dwPrimaryColor = dwColor;
+}
+
+DWORD Theme::GetSecondaryColor() const throw()
+{
+    return m_dwSecondaryColor;
+}
+
+void Theme::SetSecondaryColor(DWORD dwColor) throw()
+{
+    m_dwSecondaryColor = dwColor;
+}
+
+DWORD Theme::GetAccentColor() const throw()
+{
+    return m_dwAccentColor;
+}
+
+void Theme::SetAccentColor(DWORD dwColor) throw()
+{
+    m_dwAccentColor = dwColor;
+}
+
+ATL::CString Theme::GetFontFamily() const
+{
+    return m_strFontFamily;
+}
+
+void Theme::SetFontFamily(LPCWSTR pszFontFamily)
+{
+    m_strFontFamily = pszFontFamily ? pszFontFamily : L"Segoe UI";
+}
+
+float Theme::GetFontSize() const throw()
+{
+    return m_flFontSize;
+}
+
+void Theme::SetFontSize(float flSize) throw()
+{
+    m_flFontSize = flSize;
+}
+
+HRESULT Theme::ApplyToElement(ThemeComplexType* pElement)
+{
+    if (!pElement)
+        return E_INVALIDARG;
+
+    BaseX3DTemplate* pX3d = pElement->GetX3dTemplate();
+    if (pX3d)
+    {
+        TemplateProperty* pProp = pX3d->FindProperty(L"primaryColor");
+        if (pProp)
+        {
+            WCHAR szValue[64] = { 0 };
+            swprintf_s(szValue, L"0x%08X", m_dwPrimaryColor);
+            pProp->SetValue(szValue);
+        }
+
+        pProp = pX3d->FindProperty(L"secondaryColor");
+        if (pProp)
+        {
+            WCHAR szValue[64] = { 0 };
+            swprintf_s(szValue, L"0x%08X", m_dwSecondaryColor);
+            pProp->SetValue(szValue);
+        }
+
+        pProp = pX3d->FindProperty(L"accentColor");
+        if (pProp)
+        {
+            WCHAR szValue[64] = { 0 };
+            swprintf_s(szValue, L"0x%08X", m_dwAccentColor);
+            pProp->SetValue(szValue);
+        }
+
+        pProp = pX3d->FindProperty(L"fontFamily");
+        if (pProp)
+        {
+            pProp->SetValue(m_strFontFamily);
+        }
+    }
+
+    for (size_t i = 0; i < pElement->GetChildCount(); ++i)
+    {
+        ThemeComplexType* pChild = pElement->GetChild(i);
+        if (pChild)
+            ApplyToElement(pChild);
+    }
+
+    return S_OK;
 }
 
 // ============================================================================
@@ -815,8 +1062,76 @@ ThemeProject* ThemeManager::CreateThemeProject(Theme* pTheme)
 
 HRESULT ThemeManager::LoadBuiltInThemes()
 {
-    // Built-in themes are loaded from embedded resources or the default theme set.
-    // This is a placeholder for the actual built-in theme loading logic.
+    // Create a default "Contemporary" theme
+    Theme* pContemporary = new Theme();
+    pContemporary->SetName(L"Contemporary");
+    pContemporary->SetDisplayName(L"Contemporary");
+    pContemporary->SetDescription(L"A modern, clean look with smooth crossfade transitions");
+    pContemporary->SetCategory(L"AutoMovie");
+    pContemporary->SetBuiltIn(true);
+    pContemporary->SetPrimaryColor(0xFF2E74B5);
+    pContemporary->SetSecondaryColor(0xFF4472C4);
+    pContemporary->SetAccentColor(0xFFED7D31);
+    pContemporary->SetFontFamily(L"Segoe UI");
+    pContemporary->SetFontSize(36.0f);
+
+    ThemeIntro* pIntro = new ThemeIntro();
+    ThemeTitle* pTitle = new ThemeTitle();
+    pTitle->SetText(L"");
+    pTitle->SetFontFamily(L"Segoe UI");
+    pTitle->SetFontSize(48.0f);
+    pTitle->SetFontColor(0xFFFFFFFF);
+    pTitle->SetPosition(0.5f, 0.5f);
+    pTitle->SetAnimation(TitleAnimationFadeIn);
+    pTitle->SetAlignment(ThemeTitle::TextAlignmentCenter);
+    pIntro->SetTitle(pTitle);
+    pIntro->SetDurationMode(ThemeIntro::IntroDurationModeFitToTitle);
+    pIntro->SetBackgroundColor(0xFF000000);
+    pIntro->SetFadeInDurationHns(5000000);
+    pContemporary->SetIntro(pIntro);
+
+    ThemeMid* pMid = new ThemeMid();
+    ThemePrimaryTrack* pTrack = new ThemePrimaryTrack();
+    pTrack->SetName(L"Primary");
+    pTrack->SetBoundTrackType(TimelineTrackTypeVideo);
+    pTrack->SetAutoFill(true);
+    pMid->AddTrack(pTrack);
+
+    ThemeEffectTemplate* pEffTpl = new ThemeEffectTemplate();
+    pEffTpl->SetName(L"Default Effect");
+    pEffTpl->SetDefaultIntensity(1.0f);
+    ThemeEffect* pFade = new ThemeEffect();
+    pFade->SetType(ThemeEffectTypeFade);
+    pFade->SetDurationHns(5000000);
+    pEffTpl->AddEffect(pFade);
+    pMid->SetDefaultEffectTemplate(pEffTpl);
+
+    ThemeTransition* pTrans = new ThemeTransition();
+    pTrans->SetName(L"Crossfade");
+    pTrans->SetClipName(L"crossfade");
+    pTrans->SetDurationHns(10000000);
+    pMid->SetDefaultTransition(pTrans);
+    pMid->SetLooping(true);
+    pContemporary->SetMid(pMid);
+
+    ThemeOutro* pOutro = new ThemeOutro();
+    ThemeTitle* pCreditsTitle = new ThemeTitle();
+    pCreditsTitle->SetFontFamily(L"Segoe UI");
+    pCreditsTitle->SetFontSize(24.0f);
+    pCreditsTitle->SetFontColor(0xFFFFFFFF);
+    pCreditsTitle->SetPosition(0.5f, 0.5f);
+    pCreditsTitle->SetAnimation(TitleAnimationScrollUp);
+    pOutro->SetCreditsTitle(pCreditsTitle);
+    pOutro->SetDurationMode(ThemeOutro::OutroDurationModeScrollText);
+    pOutro->SetBackgroundColor(0xFF000000);
+    pOutro->SetFadeOutDurationHns(5000000);
+    pOutro->SetScrollSpeed(50.0f);
+    pContemporary->SetOutro(pOutro);
+
+    pContemporary->SetLoadState(ThemeLoadStateLoaded);
+    AddTheme(pContemporary);
+    SetDefaultTheme(L"Contemporary");
+
     return S_OK;
 }
 

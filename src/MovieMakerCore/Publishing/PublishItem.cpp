@@ -290,10 +290,62 @@ HRESULT PublishItemPropertyStore::SaveToRegistry(LPCWSTR pszRegistryKey)
     if (!pszRegistryKey)
         return E_POINTER;
 
-    // In the full implementation, this would save all entries to
-    // the Windows registry under HKCU\Software\Microsoft\WL\MovieMaker
+    HKEY hKey = nullptr;
+    LSTATUS ls = RegCreateKeyExW(HKEY_CURRENT_USER, pszRegistryKey, 0, nullptr,
+                                  REG_OPTION_NON_VOLATILE, KEY_WRITE, nullptr, &hKey, nullptr);
+    if (ls != ERROR_SUCCESS)
+        return HRESULT_FROM_WIN32(ls);
 
-    UNREFERENCED_PARAMETER(pszRegistryKey);
+    RegDeleteTreeW(hKey, L"Services");
+
+    for (size_t i = 0; i < m_entries.size(); ++i)
+    {
+        const StoreEntry& entry = m_entries[i];
+        const PublishItemProperties& props = entry.properties;
+
+        WCHAR szSubKey[64];
+        StringCchPrintfW(szSubKey, ARRAYSIZE(szSubKey),
+                         L"Services\\Service_%u", static_cast<DWORD>(entry.serviceType));
+
+        HKEY hServiceKey = nullptr;
+        ls = RegCreateKeyExW(hKey, szSubKey, 0, nullptr, REG_OPTION_NON_VOLATILE,
+                              KEY_WRITE, nullptr, &hServiceKey, nullptr);
+        if (ls != ERROR_SUCCESS)
+            continue;
+
+        auto writeStr = [&](LPCWSTR pszName, LPCWSTR pszValue)
+        {
+            RegSetValueExW(hServiceKey, pszName, 0, REG_SZ,
+                           reinterpret_cast<const BYTE*>(pszValue),
+                           static_cast<DWORD>((wcslen(pszValue) + 1) * sizeof(WCHAR)));
+        };
+
+        auto writeDword = [&](LPCWSTR pszName, DWORD dwValue)
+        {
+            RegSetValueExW(hServiceKey, pszName, 0, REG_DWORD,
+                           reinterpret_cast<const BYTE*>(&dwValue), sizeof(DWORD));
+        };
+
+        writeStr(L"DisplayName", props.GetDisplayName());
+        writeStr(L"ServiceUrl", props.GetServiceUrl());
+        writeStr(L"AuthToken", props.GetAuthToken());
+        writeStr(L"AuthSecret", props.GetAuthSecret());
+        writeStr(L"Title", props.GetTitle());
+        writeStr(L"Description", props.GetDescription());
+        writeStr(L"Tags", props.GetTags());
+        writeDword(L"PrivacyPublic", props.IsPrivacyPublic() ? 1 : 0);
+        writeDword(L"AllowComments", props.IsCommentsAllowed() ? 1 : 0);
+        writeDword(L"AllowEmbedding", props.IsEmbeddingAllowed() ? 1 : 0);
+        writeDword(L"MaxVideoWidth", props.GetMaxVideoWidth());
+        writeDword(L"MaxVideoHeight", props.GetMaxVideoHeight());
+        writeDword(L"MaxFileSizeMB", props.GetMaxFileSizeMB());
+        writeDword(L"MaxDurationSec", props.GetMaxDurationSec());
+        writeStr(L"Category", props.GetCategory());
+
+        RegCloseKey(hServiceKey);
+    }
+
+    RegCloseKey(hKey);
     return S_OK;
 }
 
@@ -303,6 +355,124 @@ HRESULT PublishItemPropertyStore::LoadFromRegistry(LPCWSTR pszRegistryKey)
         return E_POINTER;
 
     m_entries.clear();
+
+    HKEY hKey = nullptr;
+    LSTATUS ls = RegOpenKeyExW(HKEY_CURRENT_USER, pszRegistryKey, 0, KEY_READ, &hKey);
+    if (ls != ERROR_SUCCESS)
+        return HRESULT_FROM_WIN32(ls);
+
+    HKEY hServicesKey = nullptr;
+    ls = RegOpenKeyExW(hKey, L"Services", 0, KEY_READ, &hServicesKey);
+    if (ls != ERROR_SUCCESS)
+    {
+        RegCloseKey(hKey);
+        return HRESULT_FROM_WIN32(ls);
+    }
+
+    DWORD dwIndex = 0;
+    WCHAR szSubKey[256];
+    DWORD cchSubKey = ARRAYSIZE(szSubKey);
+
+    while (RegEnumKeyExW(hServicesKey, dwIndex, szSubKey, &cchSubKey,
+                          nullptr, nullptr, nullptr, nullptr) == ERROR_SUCCESS)
+    {
+        HKEY hServiceKey = nullptr;
+        if (RegOpenKeyExW(hServicesKey, szSubKey, 0, KEY_READ, &hServiceKey) == ERROR_SUCCESS)
+        {
+            DWORD dwServiceType = 0;
+            if (wcsncmp(szSubKey, L"Service_", 8) == 0)
+                dwServiceType = static_cast<DWORD>(_wtoi(szSubKey + 8));
+
+            StoreEntry entry;
+            entry.serviceType = static_cast<PublishServiceType>(dwServiceType);
+
+            auto readStr = [&](LPCWSTR pszName, ATL::CString& strOut)
+            {
+                WCHAR szValue[1024] = {};
+                DWORD cbValue = sizeof(szValue);
+                DWORD dwType = 0;
+                if (RegQueryValueExW(hServiceKey, pszName, nullptr, &dwType,
+                                     reinterpret_cast<LPBYTE>(szValue),
+                                     &cbValue) == ERROR_SUCCESS && dwType == REG_SZ)
+                    strOut = szValue;
+            };
+
+            auto readDword = [&](LPCWSTR pszName, DWORD& dwOut)
+            {
+                DWORD cbValue = sizeof(DWORD);
+                DWORD dwType = 0;
+                if (RegQueryValueExW(hServiceKey, pszName, nullptr, &dwType,
+                                     reinterpret_cast<LPBYTE>(&dwOut),
+                                     &cbValue) == ERROR_SUCCESS && dwType == REG_DWORD)
+                { }
+            };
+
+            DWORD dwTemp = 0;
+
+            // Use local variables and set after reading
+            ATL::CString strVal;
+            readStr(L"DisplayName", strVal);
+            entry.properties.SetDisplayName(strVal);
+
+            readStr(L"ServiceUrl", strVal);
+            entry.properties.SetServiceUrl(strVal);
+
+            readStr(L"AuthToken", strVal);
+            entry.properties.SetAuthToken(strVal);
+
+            readStr(L"AuthSecret", strVal);
+            entry.properties.SetAuthSecret(strVal);
+
+            readStr(L"Title", strVal);
+            entry.properties.SetTitle(strVal);
+
+            readStr(L"Description", strVal);
+            entry.properties.SetDescription(strVal);
+
+            readStr(L"Tags", strVal);
+            entry.properties.SetTags(strVal);
+
+            dwTemp = 1;
+            readDword(L"PrivacyPublic", dwTemp);
+            entry.properties.SetPrivacyPublic(dwTemp != 0);
+
+            dwTemp = 1;
+            readDword(L"AllowComments", dwTemp);
+            entry.properties.SetAllowComments(dwTemp != 0);
+
+            dwTemp = 1;
+            readDword(L"AllowEmbedding", dwTemp);
+            entry.properties.SetAllowEmbedding(dwTemp != 0);
+
+            dwTemp = 1920;
+            readDword(L"MaxVideoWidth", dwTemp);
+            entry.properties.SetMaxVideoWidth(dwTemp);
+
+            dwTemp = 1080;
+            readDword(L"MaxVideoHeight", dwTemp);
+            entry.properties.SetMaxVideoHeight(dwTemp);
+
+            dwTemp = 2048;
+            readDword(L"MaxFileSizeMB", dwTemp);
+            entry.properties.SetMaxFileSizeMB(dwTemp);
+
+            dwTemp = 3600;
+            readDword(L"MaxDurationSec", dwTemp);
+            entry.properties.SetMaxDurationSec(dwTemp);
+
+            readStr(L"Category", strVal);
+            entry.properties.SetCategory(strVal);
+
+            m_entries.push_back(entry);
+            RegCloseKey(hServiceKey);
+        }
+
+        cchSubKey = ARRAYSIZE(szSubKey);
+        dwIndex++;
+    }
+
+    RegCloseKey(hServicesKey);
+    RegCloseKey(hKey);
     return S_OK;
 }
 

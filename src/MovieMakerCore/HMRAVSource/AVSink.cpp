@@ -256,9 +256,21 @@ HRESULT AVSink::CreateVideoRenderer()
 
 HRESULT AVSink::CreateAudioRenderer()
 {
-    // Audio rendering is handled by the audio output subsystem
-    // This creates a placeholder for the audio renderer control
-    return S_OK;
+    if (!m_fEnableAudio)
+        return S_OK;
+
+    CComPtr<IMFAttributes> spAttributes;
+    HRESULT hr = MFCreateAttributes(&spAttributes, 1);
+    if (FAILED(hr))
+        return hr;
+
+    CComPtr<IMFMediaSink> spSink;
+    hr = MFCreateAudioRenderer(spAttributes, &spSink);
+    if (FAILED(hr))
+        return hr;
+
+    m_spAudioRenderer = spSink;
+    return hr;
 }
 
 HRESULT AVSink::ConfigureVideoRenderer()
@@ -274,7 +286,45 @@ HRESULT AVSink::ConfigureVideoRenderer()
 
 HRESULT AVSink::ConfigureAudioRenderer()
 {
-    return S_OK;
+    if (!m_spAudioRenderer || !m_fEnableAudio)
+        return S_OK;
+
+    CComPtr<IMFMediaType> spMediaType;
+    HRESULT hr = MFCreateMediaType(&spMediaType);
+    if (FAILED(hr))
+        return hr;
+
+    spMediaType->SetGUID(MF_MT_MAJOR_TYPE, MFMediaType_Audio);
+    spMediaType->SetGUID(MF_MT_SUBTYPE, MFAudioFormat_PCM);
+    spMediaType->SetUINT32(MF_MT_AUDIO_SAMPLES_PER_SECOND, m_dwAudioSampleRate);
+    spMediaType->SetUINT32(MF_MT_AUDIO_NUM_CHANNELS, m_dwAudioChannels);
+    spMediaType->SetUINT32(MF_MT_AUDIO_BITS_PER_SAMPLE, m_dwAudioBitsPerSample);
+    spMediaType->SetUINT32(MF_MT_BLOCK_ALIGNMENT,
+        m_dwAudioChannels * (m_dwAudioBitsPerSample / 8));
+
+    CComPtr<IMFMediaSink> spSink;
+    hr = m_spAudioRenderer->QueryInterface(IID_PPV_ARGS(&spSink));
+    if (FAILED(hr))
+        return hr;
+
+    DWORD cStreams = 0;
+    hr = spSink->GetStreamSinkCount(&cStreams);
+    if (SUCCEEDED(hr) && cStreams > 0)
+    {
+        CComPtr<IMFStreamSink> spStreamSink;
+        hr = spSink->GetStreamSinkByIndex(0, &spStreamSink);
+        if (SUCCEEDED(hr))
+        {
+            CComPtr<IMFMediaTypeHandler> spHandler;
+            hr = spStreamSink->GetMediaTypeHandler(&spHandler);
+            if (SUCCEEDED(hr))
+            {
+                hr = spHandler->SetCurrentMediaType(spMediaType);
+            }
+        }
+    }
+
+    return hr;
 }
 
 HRESULT AVSink::ProcessVideoFrameInternal(IMFSample* pSample)

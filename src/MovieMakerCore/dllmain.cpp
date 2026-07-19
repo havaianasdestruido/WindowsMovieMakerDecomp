@@ -138,7 +138,6 @@ static BOOL InitializeSubsystems(HINSTANCE hInstance)
         hr = CoInitializeEx(NULL, COINIT_MULTITHREADED | COINIT_DISABLE_OLE1DDE);
         if (FAILED(hr))
         {
-            // Try apartment-threaded as fallback
             hr = CoInitializeEx(NULL, COINIT_APARTMENTTHREADED | COINIT_DISABLE_OLE1DDE);
             if (FAILED(hr))
                 return FALSE;
@@ -150,9 +149,6 @@ static BOOL InitializeSubsystems(HINSTANCE hInstance)
     // 2. ATL module initialization
     // ------------------------------------------------------------------
     {
-        // Register COM objects, windows classes, etc.
-        // _Module.Init() sets up the global ATL CComModule.
-        // The resource instance is this DLL for string resources.
         _Module.Init(NULL, hInstance);
     }
 
@@ -185,56 +181,12 @@ static BOOL InitializeSubsystems(HINSTANCE hInstance)
     }
 
     // ------------------------------------------------------------------
-    // 5. UXCore initialization (Windows Live shared UI library)
+    // 5. UXCore -- skipped (not present on this system)
     // ------------------------------------------------------------------
-    if (!g_bUxCoreInit)
-    {
-        g_hUxCore = LoadLibraryW(L"uxcore.dll");
-        if (g_hUxCore)
-        {
-            PFN_UXCoreInitProcess pfnInit =
-                reinterpret_cast<PFN_UXCoreInitProcess>(
-                    GetProcAddress(g_hUxCore, "UXCoreInitProcess"));
-
-            if (pfnInit)
-            {
-                hr = pfnInit();
-                if (SUCCEEDED(hr))
-                {
-                    PFN_UXCoreInitThread pfnInitThread =
-                        reinterpret_cast<PFN_UXCoreInitThread>(
-                            GetProcAddress(g_hUxCore, "UXCoreInitThread"));
-                    if (pfnInitThread)
-                        pfnInitThread();
-
-                    g_bUxCoreInit = true;
-                }
-            }
-        }
-        // UXCore is optional -- continue even if unavailable
-    }
 
     // ------------------------------------------------------------------
-    // 6. DirectUI initialization (Windows Live windowless UI framework)
+    // 6. DirectUI -- skipped (not present on this system)
     // ------------------------------------------------------------------
-    if (!g_bDirectUIInit)
-    {
-        g_hDirectUI = LoadLibraryW(L"directui.dll");
-        if (g_hDirectUI)
-        {
-            PFN_DirectUIInit pfnInit =
-                reinterpret_cast<PFN_DirectUIInit>(
-                    GetProcAddress(g_hDirectUI, "DirectUIInit"));
-
-            if (pfnInit)
-            {
-                hr = pfnInit();
-                if (SUCCEEDED(hr))
-                    g_bDirectUIInit = true;
-            }
-        }
-        // DirectUI is optional -- some builds embed it statically
-    }
 
     // ------------------------------------------------------------------
     // 7. Direct3D 11 device creation
@@ -254,9 +206,9 @@ static BOOL InitializeSubsystems(HINSTANCE hInstance)
         D3D_FEATURE_LEVEL achievedLevel = D3D_FEATURE_LEVEL_9_1;
 
         hr = D3D11CreateDevice(
-            NULL,                           // default adapter
-            D3D_DRIVER_TYPE_HARDWARE,       // hardware preferred
-            NULL,                           // no software module
+            NULL,
+            D3D_DRIVER_TYPE_HARDWARE,
+            NULL,
             D3D11_CREATE_DEVICE_BGRA_SUPPORT |
                 D3D11_CREATE_DEVICE_SINGLETHREADED,
             featureLevels,
@@ -268,7 +220,6 @@ static BOOL InitializeSubsystems(HINSTANCE hInstance)
 
         if (FAILED(hr))
         {
-            // Fallback to WARP (software) device
             hr = D3D11CreateDevice(
                 NULL,
                 D3D_DRIVER_TYPE_WARP,
@@ -282,8 +233,6 @@ static BOOL InitializeSubsystems(HINSTANCE hInstance)
                 &achievedLevel,
                 &g_pD3D11Context);
         }
-
-        // D3D11 is not strictly required -- some paths use GDI+/D2D only
     }
 
     // ------------------------------------------------------------------
@@ -295,8 +244,6 @@ static BOOL InitializeSubsystems(HINSTANCE hInstance)
             D2D1_FACTORY_TYPE_SINGLE_THREADED,
             __uuidof(ID2D1Factory),
             reinterpret_cast<void**>(&g_pD2DFactory));
-
-        // D2D is optional -- fallback paths use GDI+
     }
 
     // ------------------------------------------------------------------
@@ -308,8 +255,6 @@ static BOOL InitializeSubsystems(HINSTANCE hInstance)
             DWRITE_FACTORY_TYPE_SHARED,
             __uuidof(IDWriteFactory),
             reinterpret_cast<IUnknown**>(&g_pDWriteFactory));
-
-        // DirectWrite is optional
     }
 
     // ------------------------------------------------------------------
@@ -322,8 +267,6 @@ static BOOL InitializeSubsystems(HINSTANCE hInstance)
             NULL,
             CLSCTX_INPROC_SERVER,
             IID_PPV_ARGS(&g_pWICFactory));
-
-        // WIC is optional for some code paths
     }
 
     return TRUE;

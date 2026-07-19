@@ -157,11 +157,50 @@ public:
 // ============================================================================
 // AppMain -- the Sundance application object
 // ============================================================================
+static const wchar_t* kMainWindowClass = L"WindowsLiveMovieMakerMain";
+static const wchar_t* kMainWindowTitle = L"Windows Live Movie Maker";
+
+static LRESULT CALLBACK SundanceWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
+{
+    switch (uMsg)
+    {
+    case WM_CREATE:
+        return 0;
+
+    case WM_SIZE:
+        InvalidateRect(hWnd, NULL, TRUE);
+        return 0;
+
+    case WM_PAINT:
+    {
+        PAINTSTRUCT ps;
+        HDC hdc = BeginPaint(hWnd, &ps);
+        RECT rc;
+        GetClientRect(hWnd, &rc);
+        FillRect(hdc, &rc, (HBRUSH)(COLOR_WINDOW + 1));
+        SetBkMode(hdc, TRANSPARENT);
+        SetTextColor(hdc, RGB(100, 100, 100));
+        DrawTextW(hdc, L"Windows Live Movie Maker\n\nProject: (empty)\n\nImport media to get started.",
+                  -1, &rc, DT_CENTER | DT_VCENTER | DT_WORDBREAK);
+        EndPaint(hWnd, &ps);
+        return 0;
+    }
+
+    case WM_DESTROY:
+        PostQuitMessage(0);
+        return 0;
+
+    default:
+        return DefWindowProcW(hWnd, uMsg, wParam, lParam);
+    }
+}
+
 class AppMain
 {
 public:
     AppMain()
         : m_hInstance(NULL)
+        , m_hWnd(NULL)
         , m_hAccelTable(NULL)
         , m_bInitialized(false)
         , m_bRunning(false)
@@ -190,9 +229,37 @@ public:
                       ICC_TAB_CLASSES | ICC_PROGRESS_CLASS | ICC_LISTVIEW_CLASSES;
         InitCommonControlsEx(&icex);
 
+        // Register main window class
+        WNDCLASSEXW wc = { 0 };
+        wc.cbSize = sizeof(wc);
+        wc.style = CS_HREDRAW | CS_VREDRAW;
+        wc.lpfnWndProc = SundanceWndProc;
+        wc.hInstance = hInstance;
+        wc.hCursor = LoadCursor(NULL, IDC_ARROW);
+        wc.hbrBackground = (HBRUSH)(COLOR_WINDOW + 1);
+        wc.lpszClassName = kMainWindowClass;
+        RegisterClassExW(&wc);
+
+        // Create main application window
+        m_hWnd = CreateWindowExW(
+            0,
+            kMainWindowClass,
+            kMainWindowTitle,
+            WS_OVERLAPPEDWINDOW,
+            CW_USEDEFAULT, CW_USEDEFAULT,
+            1200, 800,
+            NULL, NULL, hInstance, NULL);
+
+        if (!m_hWnd)
+            return E_FAIL;
+
         // Load keyboard accelerators from resource
         m_hAccelTable = ::LoadAccelerators(hInstance,
             MAKEINTRESOURCE(/* IDR_MAIN_ACCEL */ 100));
+
+        // Show the window
+        ShowWindow(m_hWnd, SW_SHOW);
+        UpdateWindow(m_hWnd);
 
         m_bInitialized = true;
 
@@ -208,11 +275,6 @@ public:
 
         m_bRunning = true;
 
-        // Create the main application window (Sundance main frame)
-        // In the full implementation, this creates the DirectUI-based
-        // main window with the ribbon UI, timeline, and preview pane.
-        //
-        // For this framework stub, we run a minimal message loop.
         MSG msg = { 0 };
         BOOL bRet;
 
@@ -220,7 +282,6 @@ public:
         {
             if (bRet == -1)
             {
-                // GetMessage error
                 m_nExitCode = SUNDANCE_EXIT_APP_ERROR;
                 break;
             }
@@ -231,7 +292,6 @@ public:
                 ::DispatchMessage(&msg);
             }
 
-            // Check if application should exit
             if (msg.message == WM_QUIT)
             {
                 m_nExitCode = static_cast<int>(msg.wParam);
@@ -250,21 +310,31 @@ public:
         if (!m_bInitialized)
             return;
 
+        if (m_hWnd)
+        {
+            DestroyWindow(m_hWnd);
+            m_hWnd = NULL;
+        }
+
         if (m_hAccelTable)
         {
             ::DestroyAcceleratorTable(m_hAccelTable);
             m_hAccelTable = NULL;
         }
 
+        UnregisterClassW(kMainWindowClass, m_hInstance);
+
         m_bInitialized = false;
     }
 
     HINSTANCE GetInstance() const { return m_hInstance; }
+    HWND GetHWnd() const { return m_hWnd; }
     bool IsInitialized() const { return m_bInitialized; }
     bool IsRunning() const { return m_bRunning; }
 
 private:
     HINSTANCE           m_hInstance;
+    HWND                m_hWnd;
     HACCEL              m_hAccelTable;
     ApplicationOptions  m_options;
     bool                m_bInitialized;
@@ -326,7 +396,6 @@ MOVIECORE_API int __cdecl MovieMakerMain(int argc, wchar_t** argv)
 
     if (::GetLastError() == ERROR_ALREADY_EXISTS)
     {
-        // Another instance is running -- attempt to activate it
         HWND hExisting = ::FindWindowW(
             L"WindowsLiveMovieMakerMain",
             SUNDANCE_PRODUCT_NAME);

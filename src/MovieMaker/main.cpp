@@ -32,18 +32,21 @@ static LONG WINAPI VexHandler(PEXCEPTION_POINTERS ep)
 int WINAPI WinMain(HINSTANCE /*hInstance*/, HINSTANCE /*hPrevInstance*/,
                    LPSTR /*lpCmdLine*/, int /*nShowCmd*/)
 {
+    OutputDebugStringW(L"[WMMR] WinMain: Entry\n");
+
     // -- Step 1: Bootstrap WLXPhotoBase (the shared "base" DLL) --
     HMODULE hPhotoBase = LoadLibraryA("WLXPhotoBase.dll");
     if (hPhotoBase)
     {
-        WLXPhotoBase_Init();
+        __try { WLXPhotoBase_Init(); } __except(EXCEPTION_EXECUTE_HANDLER) {
+        }
     }
 
     // -- Step 2: Load MovieMakerCore.dll --
     HMODULE hCore = LoadLibraryExA(
         "MovieMakerCore.dll",
         NULL,
-        0); // LOAD_LIBRARY_SEARCH_DLL_LOAD_DIR is implicit on Vista+
+        0);
 
     if (!hCore)
     {

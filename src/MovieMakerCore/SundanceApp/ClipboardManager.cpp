@@ -15,6 +15,7 @@
 #include "ClipboardManager.h"
 #include "SundanceAppMain.h"
 #include "TimelineController.h"
+#include "UndoManager.h"
 
 // ============================================================================
 // Construction / destruction
@@ -24,6 +25,7 @@ ClipboardManager::ClipboardManager()
     , m_bHasData(false)
     , m_bCutMode(false)
     , m_uClipFormat(0)
+    , m_uWmmrFormat(0)
 {
 }
 
@@ -64,11 +66,22 @@ void ClipboardManager::Shutdown()
 HRESULT ClipboardManager::RegisterFormat()
 {
     m_uClipFormat = ::RegisterClipboardFormatW(kSundanceClipboardFormat);
-    return m_uClipFormat ? S_OK : E_FAIL;
+    if (!m_uClipFormat)
+        return E_FAIL;
+
+    m_uWmmrFormat = ::RegisterClipboardFormatW(kWmmrClipboardFormat);
+    if (!m_uWmmrFormat)
+        return E_FAIL;
+
+    return S_OK;
 }
 
 // ============================================================================
 // Cut
+//
+// Serializes the current selection into the internal clipboard buffer,
+// then removes the source items from the timeline inside a single undo
+// transaction so the entire cut can be undone in one step.
 // ============================================================================
 HRESULT ClipboardManager::Cut()
 {
@@ -81,10 +94,25 @@ HRESULT ClipboardManager::Cut()
 
     m_bCutMode = true;
 
-    // Mark selected items for deletion on paste
-    // The actual deletion happens in the timeline controller
-    // after a successful paste operation
-    return S_OK;
+    // Remove the source items from the timeline, grouped as one undo entry
+    UndoManager* pUndoMgr = m_pAppMain->GetUndoManager();
+    if (pUndoMgr)
+        pUndoMgr->BeginTransaction();
+
+    for (size_t i = 0; i < m_clipboardData.size(); ++i)
+    {
+        const ClipboardEntry& entry = m_clipboardData[i];
+        HRESULT hrDel = m_pAppMain->RemoveItemFromTimeline(
+            entry.dwItemId,
+            static_cast<TimelineTrack>(entry.track));
+        if (FAILED(hrDel))
+            hr = hrDel;
+    }
+
+    if (pUndoMgr)
+        pUndoMgr->EndTransaction();
+
+    return hr;
 }
 
 // ============================================================================
@@ -108,21 +136,36 @@ HRESULT ClipboardManager::Copy()
 
 // ============================================================================
 // Paste
+//
+// Deserializes clipboard data and adds the items to the timeline.
+// Each paste operation is grouped as a single undo transaction.
 // ============================================================================
 HRESULT ClipboardManager::Paste()
 {
     if (!m_pAppMain || !m_bHasData)
         return E_UNEXPECTED;
 
+    UndoManager* pUndoMgr = m_pAppMain->GetUndoManager();
+    if (pUndoMgr)
+        pUndoMgr->BeginTransaction();
+
     HRESULT hr = DeserializeAndPaste();
-    if (SUCCEEDED(hr))
+
+    if (FAILED(hr))
     {
-        if (m_bCutMode)
-        {
-            // After a successful paste in cut mode, clear the source items
-            ReleaseClipboardData();
-            m_bCutMode = false;
-        }
+        if (pUndoMgr)
+            pUndoMgr->CancelTransaction();
+        return hr;
+    }
+
+    if (pUndoMgr)
+        pUndoMgr->EndTransaction();
+
+    if (m_bCutMode)
+    {
+        // After a successful paste in cut mode, clear the source items
+        ReleaseClipboardData();
+        m_bCutMode = false;
     }
 
     return hr;
@@ -130,6 +173,9 @@ HRESULT ClipboardManager::Paste()
 
 // ============================================================================
 // Delete
+//
+// Serializes the current selection for undo, then removes each selected
+// item from the timeline inside a single undo transaction.
 // ============================================================================
 HRESULT ClipboardManager::Delete()
 {
@@ -139,7 +185,7 @@ HRESULT ClipboardManager::Delete()
     if (!m_pAppMain->IsProjectOpen())
         return E_UNEXPECTED;
 
-    // Serialize the current selection, then remove items from timeline
+    // Serialize the current selection so we can reference it
     ReleaseClipboardData();
     HRESULT hr = SerializeSelection();
     if (FAILED(hr))
@@ -147,6 +193,11 @@ HRESULT ClipboardManager::Delete()
 
     if (m_clipboardData.empty())
         return S_FALSE;
+
+    // Group all removals as a single undo entry
+    UndoManager* pUndoMgr = m_pAppMain->GetUndoManager();
+    if (pUndoMgr)
+        pUndoMgr->BeginTransaction();
 
     // Remove each selected item from the timeline
     for (size_t i = 0; i < m_clipboardData.size(); ++i)
@@ -159,10 +210,330 @@ HRESULT ClipboardManager::Delete()
             hr = hrDel;
     }
 
+    if (pUndoMgr)
+        pUndoMgr->EndTransaction();
+
     // Clear clipboard after delete (items no longer exist)
     ReleaseClipboardData();
 
     return hr;
+}
+
+// ============================================================================
+// CopySelection — system clipboard copy (WMMR_MediaItems format)
+//
+// Serializes the selection and places it on the Windows system clipboard
+// using the WMMR_MediaItems format, enabling cross-process paste.
+// ============================================================================
+HRESULT ClipboardManager::CopySelection()
+{
+    if (!m_pAppMain)
+        return E_UNEXPECTED;
+
+    if (!m_pAppMain->IsProjectOpen())
+        return E_UNEXPECTED;
+
+    // Serialize the current selection
+    ReleaseClipboardData();
+    HRESULT hr = SerializeSelection();
+    if (FAILED(hr))
+        return hr;
+
+    if (m_clipboardData.empty())
+        return S_FALSE;
+
+    // Compute total size: DWORD count header + per-entry serialized data
+    DWORD dwCount = static_cast<DWORD>(m_clipboardData.size());
+    DWORD cbTotal = sizeof(DWORD); // item count header
+
+    for (size_t i = 0; i < m_clipboardData.size(); ++i)
+    {
+        // Per entry: itemId(4) + track(4) + position(4) + duration(4) +
+        //            sourceFileLen(4) + sourceFileBytes + dataLen(4) + dataBytes
+        const ClipboardEntry& entry = m_clipboardData[i];
+        int cchFile = entry.strSourceFile.GetLength();
+        cbTotal += sizeof(DWORD) * 4;                      // id, track, pos, dur
+        cbTotal += sizeof(DWORD);                           // sourceFileLen
+        cbTotal += static_cast<DWORD>(cchFile * sizeof(WCHAR)); // sourceFileBytes
+        cbTotal += sizeof(DWORD);                           // dataLen
+        cbTotal += static_cast<DWORD>(entry.serializedData.size()); // dataBytes
+    }
+
+    HGLOBAL hMem = ::GlobalAlloc(GMEM_MOVEABLE | GMEM_ZEROINIT, cbTotal);
+    if (!hMem)
+        return E_OUTOFMEMORY;
+
+    BYTE* pDst = static_cast<BYTE*>(::GlobalLock(hMem));
+    if (!pDst)
+    {
+        ::GlobalFree(hMem);
+        return E_OUTOFMEMORY;
+    }
+
+    // Write header
+    ::memcpy(pDst, &dwCount, sizeof(DWORD));
+    pDst += sizeof(DWORD);
+
+    // Write each entry
+    for (size_t i = 0; i < m_clipboardData.size(); ++i)
+    {
+        const ClipboardEntry& entry = m_clipboardData[i];
+
+        ::memcpy(pDst, &entry.dwItemId, sizeof(DWORD));
+        pDst += sizeof(DWORD);
+
+        DWORD dwTrack = static_cast<DWORD>(entry.track);
+        ::memcpy(pDst, &dwTrack, sizeof(DWORD));
+        pDst += sizeof(DWORD);
+
+        ::memcpy(pDst, &entry.dwPosition, sizeof(DWORD));
+        pDst += sizeof(DWORD);
+
+        ::memcpy(pDst, &entry.dwDuration, sizeof(DWORD));
+        pDst += sizeof(DWORD);
+
+        int cchFile = entry.strSourceFile.GetLength();
+        DWORD cchFileDw = static_cast<DWORD>(cchFile);
+        ::memcpy(pDst, &cchFileDw, sizeof(DWORD));
+        pDst += sizeof(DWORD);
+
+        if (cchFile > 0)
+        {
+            ::memcpy(pDst, static_cast<LPCWSTR>(entry.strSourceFile),
+                     cchFile * sizeof(WCHAR));
+            pDst += cchFile * sizeof(WCHAR);
+        }
+
+        DWORD cbData = static_cast<DWORD>(entry.serializedData.size());
+        ::memcpy(pDst, &cbData, sizeof(DWORD));
+        pDst += sizeof(DWORD);
+
+        if (cbData > 0)
+        {
+            ::memcpy(pDst, entry.serializedData.data(), cbData);
+            pDst += cbData;
+        }
+    }
+
+    ::GlobalUnlock(hMem);
+
+    // Place data on the system clipboard
+    if (!::OpenClipboard(m_pAppMain->GetMainWindow()))
+    {
+        ::GlobalFree(hMem);
+        return E_FAIL;
+    }
+
+    ::EmptyClipboard();
+    HANDLE hSet = ::SetClipboardData(m_uWmmrFormat, hMem);
+    ::CloseClipboard();
+
+    if (!hSet)
+        return E_FAIL;
+
+    return S_OK;
+}
+
+// ============================================================================
+// PasteSelection — system clipboard paste (WMMR_MediaItems format)
+//
+// Reads serialized selection data from the Windows system clipboard and
+// adds the items to the current timeline.
+// ============================================================================
+HRESULT ClipboardManager::PasteSelection()
+{
+    if (!m_pAppMain)
+        return E_UNEXPECTED;
+
+    if (!m_pAppMain->IsProjectOpen())
+        return E_UNEXPECTED;
+
+    // Check if our format is available on the system clipboard
+    if (!::IsClipboardFormatAvailable(m_uWmmrFormat))
+        return S_FALSE;
+
+    if (!::OpenClipboard(m_pAppMain->GetMainWindow()))
+        return E_FAIL;
+
+    HANDLE hData = ::GetClipboardData(m_uWmmrFormat);
+    if (!hData)
+    {
+        ::CloseClipboard();
+        return S_FALSE;
+    }
+
+    BYTE* pSrc = static_cast<BYTE*>(::GlobalLock(hData));
+    if (!pSrc)
+    {
+        ::CloseClipboard();
+        return E_FAIL;
+    }
+
+    DWORD cbSize = static_cast<DWORD>(::GlobalSize(hData));
+
+    // Read header: item count
+    if (cbSize < sizeof(DWORD))
+    {
+        ::GlobalUnlock(hData);
+        ::CloseClipboard();
+        return S_FALSE;
+    }
+
+    DWORD dwCount = 0;
+    ::memcpy(&dwCount, pSrc, sizeof(DWORD));
+    pSrc += sizeof(DWORD);
+    cbSize -= sizeof(DWORD);
+
+    // Parse each entry
+    std::vector<ClipboardEntry> entries;
+    entries.reserve(dwCount);
+
+    for (DWORD i = 0; i < dwCount; ++i)
+    {
+        if (cbSize < sizeof(DWORD) * 5) // id, track, pos, dur, fileLen
+            break;
+
+        ClipboardEntry entry;
+
+        ::memcpy(&entry.dwItemId, pSrc, sizeof(DWORD));
+        pSrc += sizeof(DWORD);
+
+        DWORD dwTrack = 0;
+        ::memcpy(&dwTrack, pSrc, sizeof(DWORD));
+        entry.track = static_cast<StoryboardManager::TimelineTrackType>(dwTrack);
+        pSrc += sizeof(DWORD);
+
+        ::memcpy(&entry.dwPosition, pSrc, sizeof(DWORD));
+        pSrc += sizeof(DWORD);
+
+        ::memcpy(&entry.dwDuration, pSrc, sizeof(DWORD));
+        pSrc += sizeof(DWORD);
+
+        DWORD cchFile = 0;
+        ::memcpy(&cchFile, pSrc, sizeof(DWORD));
+        pSrc += sizeof(DWORD);
+        cbSize -= sizeof(DWORD) * 5;
+
+        if (cchFile > 0)
+        {
+            DWORD cbFile = cchFile * sizeof(WCHAR);
+            if (cbSize < cbFile)
+                break;
+
+            entry.strSourceFile = ATL::CString(
+                reinterpret_cast<LPCWSTR>(pSrc), static_cast<int>(cchFile));
+            pSrc += cbFile;
+            cbSize -= cbFile;
+        }
+
+        if (cbSize < sizeof(DWORD))
+            break;
+
+        DWORD cbData = 0;
+        ::memcpy(&cbData, pSrc, sizeof(DWORD));
+        pSrc += sizeof(DWORD);
+        cbSize -= sizeof(DWORD);
+
+        if (cbData > 0)
+        {
+            if (cbSize < cbData)
+                break;
+
+            entry.serializedData.assign(pSrc, pSrc + cbData);
+            pSrc += cbData;
+            cbSize -= cbData;
+        }
+
+        entries.push_back(entry);
+    }
+
+    ::GlobalUnlock(hData);
+    ::CloseClipboard();
+
+    if (entries.empty())
+        return S_FALSE;
+
+    // Paste each entry as a grouped undo transaction
+    UndoManager* pUndoMgr = m_pAppMain->GetUndoManager();
+    if (pUndoMgr)
+        pUndoMgr->BeginTransaction();
+
+    HRESULT hr = S_OK;
+    for (size_t i = 0; i < entries.size(); ++i)
+    {
+        const ClipboardEntry& entry = entries[i];
+        if (!entry.strSourceFile.IsEmpty())
+        {
+            HRESULT hrPaste = m_pAppMain->AddMediaToTimeline(
+                entry.strSourceFile,
+                static_cast<TimelineTrack>(entry.track));
+            if (FAILED(hrPaste))
+                hr = hrPaste;
+        }
+    }
+
+    if (pUndoMgr)
+        pUndoMgr->EndTransaction();
+
+    return hr;
+}
+
+// ============================================================================
+// DeleteSelection
+//
+// Serializes the current selection, removes the items from the timeline
+// inside a single undo transaction, then clears the internal buffer.
+// ============================================================================
+HRESULT ClipboardManager::DeleteSelection()
+{
+    if (!m_pAppMain)
+        return E_UNEXPECTED;
+
+    if (!m_pAppMain->IsProjectOpen())
+        return E_UNEXPECTED;
+
+    ReleaseClipboardData();
+    HRESULT hr = SerializeSelection();
+    if (FAILED(hr))
+        return hr;
+
+    if (m_clipboardData.empty())
+        return S_FALSE;
+
+    UndoManager* pUndoMgr = m_pAppMain->GetUndoManager();
+    if (pUndoMgr)
+        pUndoMgr->BeginTransaction();
+
+    for (size_t i = 0; i < m_clipboardData.size(); ++i)
+    {
+        const ClipboardEntry& entry = m_clipboardData[i];
+        HRESULT hrDel = m_pAppMain->RemoveItemFromTimeline(
+            entry.dwItemId,
+            static_cast<TimelineTrack>(entry.track));
+        if (FAILED(hrDel))
+            hr = hrDel;
+    }
+
+    if (pUndoMgr)
+        pUndoMgr->EndTransaction();
+
+    ReleaseClipboardData();
+    return hr;
+}
+
+// ============================================================================
+// HasData — checks both internal clipboard and system clipboard
+// ============================================================================
+bool ClipboardManager::HasData() const throw()
+{
+    if (m_bHasData)
+        return true;
+
+    // Check system clipboard for our custom format
+    if (m_uWmmrFormat && ::IsClipboardFormatAvailable(m_uWmmrFormat))
+        return true;
+
+    return false;
 }
 
 // ============================================================================
@@ -180,7 +551,8 @@ bool ClipboardManager::CanCopy() const throw()
 
 bool ClipboardManager::CanPaste() const throw()
 {
-    return m_pAppMain && m_pAppMain->IsProjectOpen() && m_bHasData;
+    return m_pAppMain && m_pAppMain->IsProjectOpen() &&
+           (m_bHasData || (m_uWmmrFormat && ::IsClipboardFormatAvailable(m_uWmmrFormat)));
 }
 
 bool ClipboardManager::CanDelete() const throw()
@@ -212,9 +584,14 @@ void ClipboardManager::ClearClipboard()
 void ClipboardManager::OnClipboardChanged()
 {
     // Check if our custom format is on the system clipboard
-    if (::IsClipboardFormatAvailable(m_uClipFormat))
+    if (::IsClipboardFormatAvailable(m_uClipFormat) ||
+        ::IsClipboardFormatAvailable(m_uWmmrFormat))
     {
-        // Data available from external source if needed
+        // Clear internal buffer if external clipboard has taken precedence
+        if (!m_bCutMode)
+        {
+            ReleaseClipboardData();
+        }
     }
 }
 

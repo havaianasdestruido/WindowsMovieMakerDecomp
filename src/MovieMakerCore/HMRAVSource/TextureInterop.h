@@ -87,6 +87,7 @@ public:
 protected:
     TextureInteropDesc  m_desc;
     bool                m_fInitialized;
+    HANDLE              m_hSharedHandle;
 
     CComPtr<IDirect3DTexture9>     m_spTexture;
     CComPtr<IDirect3DSurface9>     m_spSurface;

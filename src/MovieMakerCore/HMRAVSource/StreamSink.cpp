@@ -219,7 +219,11 @@ HRESULT StreamSink::Flush()
     if (m_state != StreamSinkStateWriting)
         return E_UNEXPECTED;
 
-    return m_spSinkWriter->Flush(m_dwVideoStreamIndex);
+    HRESULT hr = m_spSinkWriter->Flush(m_dwVideoStreamIndex);
+    if (SUCCEEDED(hr) && m_desc.fHasAudio)
+        hr = m_spSinkWriter->Flush(m_dwAudioStreamIndex);
+
+    return hr;
 }
 
 // ============================================================================
@@ -341,7 +345,8 @@ HRESULT StreamSink::ConfigureAudioStream()
 
     spOutputType->SetUINT32(MF_MT_AUDIO_SAMPLES_PER_SECOND, audio.dwSampleRate);
     spOutputType->SetUINT32(MF_MT_AUDIO_NUM_CHANNELS, audio.dwChannels);
-    spOutputType->SetUINT32(MF_MT_AUDIO_AVG_BYTES_PER_SECTION, audio.dwBitRate / 8);
+    spOutputType->SetUINT32(MF_MT_AUDIO_AVG_BYTES_PER_SECTION,
+        audio.dwBitRate > 0 ? audio.dwBitRate / 8 : audio.dwSampleRate * audio.dwChannels * 2);
 
     // Input type (PCM)
     CComPtr<IMFMediaType> spInputType;

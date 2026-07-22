@@ -52,9 +52,6 @@ size_t PublishSummaryDialog::GetJobResultCount() const throw()
 
 INT_PTR PublishSummaryDialog::ShowModal(HWND hWndParent)
 {
-    // In the full implementation, this would create a task dialog
-    // or custom dialog showing publish summary information.
-
     TASKDIALOGCONFIG config = {};
     config.cbSize = sizeof(config);
     config.hwndParent = hWndParent;
@@ -62,21 +59,53 @@ INT_PTR PublishSummaryDialog::ShowModal(HWND hWndParent)
     config.pszWindowTitle = L"Publish Summary";
     config.pszMainInstruction = L"Your movie has been published";
 
-    // Count successes and failures
     DWORD dwSuccess = 0;
     DWORD dwFailed = 0;
+    DWORD dwCancelled = 0;
     for (const auto& result : m_jobResults)
     {
         if (SUCCEEDED(result.hrResult))
             dwSuccess++;
+        else if (result.hrResult == E_ABORT)
+            dwCancelled++;
         else
             dwFailed++;
     }
 
+    m_summaryResult.dwTotalJobs = static_cast<DWORD>(m_jobResults.size());
+    m_summaryResult.dwSuccessfulJobs = dwSuccess;
+    m_summaryResult.dwFailedJobs = dwFailed;
+    m_summaryResult.dwCancelledJobs = dwCancelled;
+
     ATL::CString strContent;
-    strContent.Format(L"Successfully published: %u\nFailed: %u\nTotal uploaded: %s",
-                      dwSuccess, dwFailed,
+    strContent.Format(L"Successful: %u  Failed: %u  Cancelled: %u\nTotal uploaded: %s",
+                      dwSuccess, dwFailed, dwCancelled,
                       FormatFileSize(m_summaryResult.llTotalBytesUploaded));
+
+    if (!m_jobResults.empty())
+    {
+        strContent += L"\n\n";
+        for (const auto& result : m_jobResults)
+        {
+            ATL::CString strEntry;
+            if (SUCCEEDED(result.hrResult))
+            {
+                if (!result.strUrl.IsEmpty())
+                    strEntry.Format(L"[OK] %s - %s\n", result.strTitle.GetString(), result.strUrl.GetString());
+                else
+                    strEntry.Format(L"[OK] %s\n", result.strTitle.GetString());
+            }
+            else if (result.hrResult == E_ABORT)
+            {
+                strEntry.Format(L"[Cancelled] %s\n", result.strTitle.GetString());
+            }
+            else
+            {
+                strEntry.Format(L"[Failed] %s (0x%08X)\n", result.strTitle.GetString(), result.hrResult);
+            }
+            strContent += strEntry;
+        }
+    }
 
     config.pszContent = strContent;
 

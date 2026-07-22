@@ -342,6 +342,11 @@ void SundanceAppDataContext::RefreshCommandProperties()
 
     m_bCanUndo = pApp->CanUndo();
     m_bCanRedo = pApp->CanRedo();
+
+    // Update clipboard availability from model
+    FirePropertyChanged(L"CanCut");
+    FirePropertyChanged(L"CanCopy");
+    FirePropertyChanged(L"CanPaste");
 }
 
 // ============================================================================

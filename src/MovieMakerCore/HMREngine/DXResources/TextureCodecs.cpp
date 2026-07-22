@@ -25,6 +25,8 @@ HRESULT STDMETHODCALLTYPE CTextureCodecBase::Encode(
     if (!pData || !ppTexture || width == 0 || height == 0) return E_INVALIDARG;
     if (format == DXGI_FORMAT_UNKNOWN) return E_INVALIDARG;
 
+    *ppTexture = nullptr;
+
     D3D11_TEXTURE2D_DESC td = {};
     td.Width = width;
     td.Height = height;
@@ -47,7 +49,17 @@ HRESULT STDMETHODCALLTYPE CTextureCodecBase::Encode(
     initData.pSysMem = pData;
     initData.SysMemPitch = rowPitch;
 
-    return D3D11CreateTexture2D(ppTexture, &td, &initData, nullptr);
+    ID3D11Device* dev = nullptr;
+    HRESULT hr = D3D11CreateDevice(nullptr, D3D_DRIVER_TYPE_HARDWARE, nullptr,
+        0, nullptr, 0, D3D11_SDK_VERSION, &dev, nullptr, nullptr);
+    if (FAILED(hr))
+        hr = D3D11CreateDevice(nullptr, D3D_DRIVER_TYPE_WARP, nullptr,
+            0, nullptr, 0, D3D11_SDK_VERSION, &dev, nullptr, nullptr);
+    if (FAILED(hr)) return hr;
+
+    hr = dev->CreateTexture2D(&td, &initData, ppTexture);
+    dev->Release();
+    return hr;
 }
 
 HRESULT STDMETHODCALLTYPE CTextureCodecBase::Decode(

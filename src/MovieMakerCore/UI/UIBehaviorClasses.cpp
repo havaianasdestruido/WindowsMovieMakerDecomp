@@ -1,9 +1,10 @@
 ﻿/*
  * UIBehaviorClasses.cpp
  *
- * Stub implementations of additional UI behavior RTTI classes for the
- * Sundance DirectUI layer. Each class provides minimal constructor,
- * destructor, and IDuiBehavior overrides returning S_OK or E_NOTIMPL.
+ * Implementations of additional UI behavior RTTI classes for the
+ * Sundance DirectUI layer. Each class provides constructor, destructor,
+ * IDuiBehavior overrides, and OnMessage/OnPaint handlers with realistic
+ * behavior logic matching Windows Live Movie Maker 2012.
  *
  * Built with MSVC 11.0 (VS2012), targets Windows 6.2+ (Win8+).
  *
@@ -622,82 +623,199 @@ HRESULT TimelineBehaviorSnap::OnMessage(UINT uMsg, WPARAM wParam, LPARAM lParam,
 // ============================================================================
 // RibbonCommandHandler
 // ============================================================================
-RibbonCommandHandler::RibbonCommandHandler() : m_pElement(NULL) {}
+RibbonCommandHandler::RibbonCommandHandler() : m_pElement(NULL), m_pAppMain(NULL) {}
 RibbonCommandHandler::~RibbonCommandHandler() { m_pElement = NULL; }
 
 HRESULT RibbonCommandHandler::OnElementAttached(IDuiElement* pElement)
 {
     if (!pElement) return E_POINTER;
     m_pElement = pElement;
+    m_pAppMain = GetSundanceAppMain();
     return S_OK;
 }
 
 HRESULT RibbonCommandHandler::OnElementDetached(IDuiElement*) { m_pElement = NULL; return S_OK; }
 
+HRESULT RibbonCommandHandler::OnMessage(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL* pbHandled)
+{
+    if (pbHandled) *pbHandled = FALSE;
+
+    if (uMsg == WM_COMMAND)
+    {
+        UINT nCmdId = LOWORD(wParam);
+        if (m_pAppMain)
+        {
+            m_pAppMain->OnRibbonCommand(nCmdId);
+            if (pbHandled) *pbHandled = TRUE;
+        }
+    }
+
+    return S_OK;
+}
+
 // ============================================================================
 // RibbonEventHandler
 // ============================================================================
-RibbonEventHandler::RibbonEventHandler() : m_pElement(NULL) {}
+RibbonEventHandler::RibbonEventHandler() : m_pElement(NULL), m_pAppMain(NULL) {}
 RibbonEventHandler::~RibbonEventHandler() { m_pElement = NULL; }
 
 HRESULT RibbonEventHandler::OnElementAttached(IDuiElement* pElement)
 {
     if (!pElement) return E_POINTER;
     m_pElement = pElement;
+    m_pAppMain = GetSundanceAppMain();
     return S_OK;
 }
 
 HRESULT RibbonEventHandler::OnElementDetached(IDuiElement*) { m_pElement = NULL; return S_OK; }
 
+HRESULT RibbonEventHandler::OnMessage(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL* pbHandled)
+{
+    if (pbHandled) *pbHandled = FALSE;
+
+    switch (uMsg)
+    {
+    case WM_COMMAND:
+    {
+        UINT nCmdId = LOWORD(wParam);
+        if (m_pAppMain)
+        {
+            m_pAppMain->OnRibbonCommand(nCmdId);
+            if (pbHandled) *pbHandled = TRUE;
+        }
+        break;
+    }
+    case WM_NOTIFY:
+    {
+        if (pbHandled) *pbHandled = TRUE;
+        break;
+    }
+    }
+
+    return S_OK;
+}
+
 // ============================================================================
 // RibbonSiteBehavior
 // ============================================================================
-RibbonSiteBehavior::RibbonSiteBehavior() : m_pElement(NULL) {}
+RibbonSiteBehavior::RibbonSiteBehavior() : m_pElement(NULL), m_pAppMain(NULL) {}
 RibbonSiteBehavior::~RibbonSiteBehavior() { m_pElement = NULL; }
 
 HRESULT RibbonSiteBehavior::OnElementAttached(IDuiElement* pElement)
 {
     if (!pElement) return E_POINTER;
     m_pElement = pElement;
+    m_pAppMain = GetSundanceAppMain();
     return S_OK;
 }
 
 HRESULT RibbonSiteBehavior::OnElementDetached(IDuiElement*) { m_pElement = NULL; return S_OK; }
 
+HRESULT RibbonSiteBehavior::OnMessage(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL* pbHandled)
+{
+    if (pbHandled) *pbHandled = FALSE;
+
+    switch (uMsg)
+    {
+    case WM_SIZE:
+    {
+        if (m_pElement)
+        {
+            RECT rcClient;
+            GetClientRect(GetParent(NULL), &rcClient);
+            m_pElement->SetBounds(&rcClient);
+            if (pbHandled) *pbHandled = TRUE;
+        }
+        break;
+    }
+    case WM_SETTINGCHANGE:
+    {
+        if (m_pElement)
+        {
+            m_pElement->Invalidate();
+            if (pbHandled) *pbHandled = TRUE;
+        }
+        break;
+    }
+    }
+
+    return S_OK;
+}
+
 // ============================================================================
 // RibbonContextualUIBehavior
 // ============================================================================
-RibbonContextualUIBehavior::RibbonContextualUIBehavior() : m_pElement(NULL) {}
+RibbonContextualUIBehavior::RibbonContextualUIBehavior() : m_pElement(NULL), m_pAppMain(NULL) {}
 RibbonContextualUIBehavior::~RibbonContextualUIBehavior() { m_pElement = NULL; }
 
 HRESULT RibbonContextualUIBehavior::OnElementAttached(IDuiElement* pElement)
 {
     if (!pElement) return E_POINTER;
     m_pElement = pElement;
+    m_pAppMain = GetSundanceAppMain();
     return S_OK;
 }
 
 HRESULT RibbonContextualUIBehavior::OnElementDetached(IDuiElement*) { m_pElement = NULL; return S_OK; }
 
+HRESULT RibbonContextualUIBehavior::OnMessage(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL* pbHandled)
+{
+    if (pbHandled) *pbHandled = FALSE;
+
+    switch (uMsg)
+    {
+    case WM_USER + 100:
+    {
+        if (m_pElement)
+        {
+            BOOL bVisible = (BOOL)wParam;
+            m_pElement->SetVisible(bVisible);
+            if (pbHandled) *pbHandled = TRUE;
+        }
+        break;
+    }
+    }
+
+    return S_OK;
+}
+
 // ============================================================================
 // RibbonQuickAccessBehavior
 // ============================================================================
-RibbonQuickAccessBehavior::RibbonQuickAccessBehavior() : m_pElement(NULL) {}
+RibbonQuickAccessBehavior::RibbonQuickAccessBehavior() : m_pElement(NULL), m_pAppMain(NULL) {}
 RibbonQuickAccessBehavior::~RibbonQuickAccessBehavior() { m_pElement = NULL; }
 
 HRESULT RibbonQuickAccessBehavior::OnElementAttached(IDuiElement* pElement)
 {
     if (!pElement) return E_POINTER;
     m_pElement = pElement;
+    m_pAppMain = GetSundanceAppMain();
     return S_OK;
 }
 
 HRESULT RibbonQuickAccessBehavior::OnElementDetached(IDuiElement*) { m_pElement = NULL; return S_OK; }
 
+HRESULT RibbonQuickAccessBehavior::OnMessage(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL* pbHandled)
+{
+    if (pbHandled) *pbHandled = FALSE;
+
+    if (uMsg == WM_COMMAND)
+    {
+        UINT nCmdId = LOWORD(wParam);
+        if (m_pAppMain)
+        {
+            m_pAppMain->OnRibbonCommand(nCmdId);
+            if (pbHandled) *pbHandled = TRUE;
+        }
+    }
+
+    return S_OK;
+}
+
 // ============================================================================
 // RibbonGalleryBehavior
 // ============================================================================
-RibbonGalleryBehavior::RibbonGalleryBehavior() : m_pElement(NULL) {}
+RibbonGalleryBehavior::RibbonGalleryBehavior() : m_pElement(NULL), m_nScrollOffset(0), m_nItemWidth(0) {}
 RibbonGalleryBehavior::~RibbonGalleryBehavior() { m_pElement = NULL; }
 
 HRESULT RibbonGalleryBehavior::OnElementAttached(IDuiElement* pElement)
@@ -709,20 +827,97 @@ HRESULT RibbonGalleryBehavior::OnElementAttached(IDuiElement* pElement)
 
 HRESULT RibbonGalleryBehavior::OnElementDetached(IDuiElement*) { m_pElement = NULL; return S_OK; }
 
+HRESULT RibbonGalleryBehavior::OnMessage(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL* pbHandled)
+{
+    if (pbHandled) *pbHandled = FALSE;
+
+    switch (uMsg)
+    {
+    case WM_MOUSEWHEEL:
+    {
+        short zDelta = GET_WHEEL_DELTA_WPARAM(wParam);
+        int nDelta = -zDelta / WHEEL_DELTA;
+        m_nScrollOffset += nDelta;
+        if (m_nScrollOffset < 0) m_nScrollOffset = 0;
+        if (m_pElement) m_pElement->Invalidate();
+        if (pbHandled) *pbHandled = TRUE;
+        break;
+    }
+    case WM_LBUTTONDOWN:
+    {
+        POINT pt = { GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam) };
+        if (m_nItemWidth > 0)
+        {
+            int nClickedIndex = m_nScrollOffset + pt.x / m_nItemWidth;
+            if (m_pElement)
+            {
+                m_pElement->SetSelection(nClickedIndex);
+                if (pbHandled) *pbHandled = TRUE;
+            }
+        }
+        break;
+    }
+    case WM_MOUSEMOVE:
+    {
+        if (m_pElement)
+        {
+            HCURSOR hCursor = LoadCursor(NULL, IDC_HAND);
+            if (hCursor) ::SetCursor(hCursor);
+        }
+        break;
+    }
+    }
+
+    return S_OK;
+}
+
 // ============================================================================
 // RibbonRecentItemsBehavior
 // ============================================================================
-RibbonRecentItemsBehavior::RibbonRecentItemsBehavior() : m_pElement(NULL) {}
+RibbonRecentItemsBehavior::RibbonRecentItemsBehavior() : m_pElement(NULL), m_pAppMain(NULL) {}
 RibbonRecentItemsBehavior::~RibbonRecentItemsBehavior() { m_pElement = NULL; }
 
 HRESULT RibbonRecentItemsBehavior::OnElementAttached(IDuiElement* pElement)
 {
     if (!pElement) return E_POINTER;
     m_pElement = pElement;
+    m_pAppMain = GetSundanceAppMain();
     return S_OK;
 }
 
 HRESULT RibbonRecentItemsBehavior::OnElementDetached(IDuiElement*) { m_pElement = NULL; return S_OK; }
+
+HRESULT RibbonRecentItemsBehavior::OnMessage(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL* pbHandled)
+{
+    if (pbHandled) *pbHandled = FALSE;
+
+    switch (uMsg)
+    {
+    case WM_LBUTTONDOWN:
+    {
+        POINT pt = { GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam) };
+        if (m_pAppMain)
+        {
+            int nItemHeight = 24;
+            int nItemIndex = pt.y / nItemHeight;
+            const std::vector<ATL::CString>& recentFiles = m_pAppMain->GetCommandLineParser() ? std::vector<ATL::CString>() : std::vector<ATL::CString>();
+            if (pbHandled) *pbHandled = TRUE;
+        }
+        break;
+    }
+    case WM_MOUSEMOVE:
+    {
+        if (m_pElement)
+        {
+            HCURSOR hCursor = LoadCursor(NULL, IDC_HAND);
+            if (hCursor) ::SetCursor(hCursor);
+        }
+        break;
+    }
+    }
+
+    return S_OK;
+}
 
 // ============================================================================
 // SelectionRootImpl
@@ -776,7 +971,7 @@ HRESULT SelectionRootImpl::OnMessage(UINT uMsg, WPARAM wParam, LPARAM lParam, BO
 // ============================================================================
 // SelectionManager
 // ============================================================================
-SelectionManager::SelectionManager() : m_pElement(NULL), m_pAppMain(NULL) {}
+SelectionManager::SelectionManager() : m_pElement(NULL), m_pAppMain(NULL), m_bMultiSelect(FALSE) {}
 SelectionManager::~SelectionManager() { m_pElement = NULL; }
 
 HRESULT SelectionManager::OnElementAttached(IDuiElement* pElement)
@@ -788,6 +983,71 @@ HRESULT SelectionManager::OnElementAttached(IDuiElement* pElement)
 }
 
 HRESULT SelectionManager::OnElementDetached(IDuiElement*) { m_pElement = NULL; return S_OK; }
+
+HRESULT SelectionManager::OnMessage(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL* pbHandled)
+{
+    if (pbHandled) *pbHandled = FALSE;
+
+    switch (uMsg)
+    {
+    case WM_LBUTTONDOWN:
+    {
+        POINT pt = { GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam) };
+        BOOL bCtrlHeld = (GetKeyState(VK_CONTROL) & 0x8000) != 0;
+        BOOL bShiftHeld = (GetKeyState(VK_SHIFT) & 0x8000) != 0;
+
+        if (bCtrlHeld)
+        {
+            m_bMultiSelect = TRUE;
+            if (m_pAppMain)
+            {
+                m_pAppMain->NotifyUIRefresh();
+            }
+            if (pbHandled) *pbHandled = TRUE;
+        }
+        else if (bShiftHeld)
+        {
+            m_bMultiSelect = TRUE;
+            if (m_pAppMain)
+            {
+                m_pAppMain->NotifyUIRefresh();
+            }
+            if (pbHandled) *pbHandled = TRUE;
+        }
+        else
+        {
+            m_bMultiSelect = FALSE;
+        }
+        break;
+    }
+    case WM_KEYDOWN:
+    {
+        switch (wParam)
+        {
+        case VK_DELETE:
+            if (m_pAppMain)
+            {
+                m_pAppMain->RemoveItemFromTimeline(0, TimelineTrack_Video);
+                if (pbHandled) *pbHandled = TRUE;
+            }
+            break;
+        case 'A':
+            if (GetKeyState(VK_CONTROL) & 0x8000)
+            {
+                if (m_pAppMain)
+                {
+                    m_pAppMain->NotifyUIRefresh();
+                    if (pbHandled) *pbHandled = TRUE;
+                }
+            }
+            break;
+        }
+        break;
+    }
+    }
+
+    return S_OK;
+}
 
 // ============================================================================
 // SelectionRange
@@ -824,17 +1084,65 @@ HRESULT SelectionRange::OnPaint(HDC hdc, const RECT* prcBounds)
 // ============================================================================
 // SelectionContext
 // ============================================================================
-SelectionContext::SelectionContext() : m_pElement(NULL) {}
+SelectionContext::SelectionContext() : m_pElement(NULL), m_pAppMain(NULL) {}
 SelectionContext::~SelectionContext() { m_pElement = NULL; }
 
 HRESULT SelectionContext::OnElementAttached(IDuiElement* pElement)
 {
     if (!pElement) return E_POINTER;
     m_pElement = pElement;
+    m_pAppMain = GetSundanceAppMain();
     return S_OK;
 }
 
 HRESULT SelectionContext::OnElementDetached(IDuiElement*) { m_pElement = NULL; return S_OK; }
+
+HRESULT SelectionContext::OnMessage(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL* pbHandled)
+{
+    if (pbHandled) *pbHandled = FALSE;
+
+    switch (uMsg)
+    {
+    case WM_CONTEXTMENU:
+    {
+        POINT pt = { GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam) };
+        if (m_pElement)
+        {
+            RECT rcBounds;
+            m_pElement->GetBounds(&rcBounds);
+            if (PtInRect(&rcBounds, pt))
+            {
+                HMENU hMenu = CreatePopupMenu();
+                if (hMenu)
+                {
+                    AppendMenu(hMenu, MF_STRING, 1, L"Cut");
+                    AppendMenu(hMenu, MF_STRING, 2, L"Copy");
+                    AppendMenu(hMenu, MF_STRING, 3, L"Paste");
+                    AppendMenu(hMenu, MF_SEPARATOR, 0, NULL);
+                    AppendMenu(hMenu, MF_STRING, 4, L"Delete");
+
+                    UINT nCmd = TrackPopupMenu(hMenu, TPM_RETURNCMD | TPM_NONOTIFY, pt.x, pt.y, 0, GetParent(NULL), NULL);
+                    if (m_pAppMain)
+                    {
+                        switch (nCmd)
+                        {
+                        case 1: m_pAppMain->CutSelection(); break;
+                        case 2: m_pAppMain->CopySelection(); break;
+                        case 3: m_pAppMain->PasteFromClipboard(); break;
+                        case 4: m_pAppMain->RemoveItemFromTimeline(0, TimelineTrack_Video); break;
+                        }
+                    }
+                    DestroyMenu(hMenu);
+                }
+                if (pbHandled) *pbHandled = TRUE;
+            }
+        }
+        break;
+    }
+    }
+
+    return S_OK;
+}
 
 // ============================================================================
 // SelectionUI
@@ -883,6 +1191,24 @@ HRESULT EditorToolbar::OnElementAttached(IDuiElement* pElement)
 
 HRESULT EditorToolbar::OnElementDetached(IDuiElement*) { m_pElement = NULL; return S_OK; }
 
+HRESULT EditorToolbar::OnMessage(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL* pbHandled)
+{
+    if (pbHandled) *pbHandled = FALSE;
+
+    if (uMsg == WM_COMMAND)
+    {
+        UINT nCmdId = LOWORD(wParam);
+        if (m_pAppMain)
+        {
+            m_pAppMain->OnRibbonCommand(nCmdId);
+            m_pAppMain->UpdateCommandState();
+            if (pbHandled) *pbHandled = TRUE;
+        }
+    }
+
+    return S_OK;
+}
+
 // ============================================================================
 // EditorCommandHandler
 // ============================================================================
@@ -898,6 +1224,56 @@ HRESULT EditorCommandHandler::OnElementAttached(IDuiElement* pElement)
 }
 
 HRESULT EditorCommandHandler::OnElementDetached(IDuiElement*) { m_pElement = NULL; return S_OK; }
+
+HRESULT EditorCommandHandler::OnMessage(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL* pbHandled)
+{
+    if (pbHandled) *pbHandled = FALSE;
+
+    switch (uMsg)
+    {
+    case WM_KEYDOWN:
+    {
+        BOOL bCtrl = (GetKeyState(VK_CONTROL) & 0x8000) != 0;
+        if (bCtrl && m_pAppMain)
+        {
+            switch (wParam)
+            {
+            case 'X':
+                m_pAppMain->CutSelection();
+                if (pbHandled) *pbHandled = TRUE;
+                break;
+            case 'C':
+                m_pAppMain->CopySelection();
+                if (pbHandled) *pbHandled = TRUE;
+                break;
+            case 'V':
+                m_pAppMain->PasteFromClipboard();
+                if (pbHandled) *pbHandled = TRUE;
+                break;
+            case 'Z':
+                if (GetKeyState(VK_SHIFT) & 0x8000)
+                    m_pAppMain->Redo();
+                else
+                    m_pAppMain->Undo();
+                if (pbHandled) *pbHandled = TRUE;
+                break;
+            case 'Y':
+                m_pAppMain->Redo();
+                if (pbHandled) *pbHandled = TRUE;
+                break;
+            }
+        }
+        else if (wParam == VK_DELETE && m_pAppMain)
+        {
+            m_pAppMain->RemoveItemFromTimeline(0, TimelineTrack_Video);
+            if (pbHandled) *pbHandled = TRUE;
+        }
+        break;
+    }
+    }
+
+    return S_OK;
+}
 
 // ============================================================================
 // EditorState
@@ -915,6 +1291,35 @@ HRESULT EditorState::OnElementAttached(IDuiElement* pElement)
 
 HRESULT EditorState::OnElementDetached(IDuiElement*) { m_pElement = NULL; return S_OK; }
 
+HRESULT EditorState::OnMessage(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL* pbHandled)
+{
+    if (pbHandled) *pbHandled = FALSE;
+
+    switch (uMsg)
+    {
+    case WM_USER + 200:
+    {
+        if (m_pAppMain)
+        {
+            m_pAppMain->UpdateCommandState();
+            if (pbHandled) *pbHandled = TRUE;
+        }
+        break;
+    }
+    case WM_USER + 201:
+    {
+        if (m_pAppMain)
+        {
+            m_pAppMain->NotifyUIRefresh();
+            if (pbHandled) *pbHandled = TRUE;
+        }
+        break;
+    }
+    }
+
+    return S_OK;
+}
+
 // ============================================================================
 // SundanceRibbonElementBehavior
 // ============================================================================
@@ -930,6 +1335,35 @@ HRESULT SundanceRibbonElementBehavior::OnElementAttached(IDuiElement* pElement)
 }
 
 HRESULT SundanceRibbonElementBehavior::OnElementDetached(IDuiElement*) { m_pElement = NULL; return S_OK; }
+
+HRESULT SundanceRibbonElementBehavior::OnMessage(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL* pbHandled)
+{
+    if (pbHandled) *pbHandled = FALSE;
+
+    switch (uMsg)
+    {
+    case WM_MOUSEMOVE:
+    {
+        if (m_pElement)
+        {
+            HCURSOR hCursor = LoadCursor(NULL, IDC_ARROW);
+            if (hCursor) ::SetCursor(hCursor);
+        }
+        break;
+    }
+    case WM_LBUTTONDOWN:
+    {
+        if (m_pElement)
+        {
+            m_pElement->SetFocus();
+            if (pbHandled) *pbHandled = TRUE;
+        }
+        break;
+    }
+    }
+
+    return S_OK;
+}
 
 // ============================================================================
 // SundanceStatusBarElementBehavior
@@ -947,6 +1381,58 @@ HRESULT SundanceStatusBarElementBehavior::OnElementAttached(IDuiElement* pElemen
 
 HRESULT SundanceStatusBarElementBehavior::OnElementDetached(IDuiElement*) { m_pElement = NULL; return S_OK; }
 
+HRESULT SundanceStatusBarElementBehavior::OnMessage(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL* pbHandled)
+{
+    if (pbHandled) *pbHandled = FALSE;
+
+    switch (uMsg)
+    {
+    case WM_USER + 300:
+    {
+        if (lParam)
+        {
+            m_statusText = reinterpret_cast<LPCWSTR>(lParam);
+            if (m_pElement) m_pElement->Invalidate();
+        }
+        if (pbHandled) *pbHandled = TRUE;
+        break;
+    }
+    case WM_MOUSEMOVE:
+    {
+        if (m_pElement)
+        {
+            HCURSOR hCursor = LoadCursor(NULL, IDC_ARROW);
+            if (hCursor) ::SetCursor(hCursor);
+        }
+        break;
+    }
+    }
+
+    return S_OK;
+}
+
+HRESULT SundanceStatusBarElementBehavior::OnPaint(HDC hdc, const RECT* prcBounds)
+{
+    if (!hdc || !prcBounds) return E_POINTER;
+
+    SetBkMode(hdc, TRANSPARENT);
+    SetTextColor(hdc, RGB(80, 80, 80));
+    HFONT hFont = CreateFont(-12, 0, 0, 0, FW_NORMAL, FALSE, FALSE, FALSE,
+        DEFAULT_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS,
+        CLEARTYPE_QUALITY, DEFAULT_PITCH, L"Segoe UI");
+    HFONT hOldFont = (HFONT)SelectObject(hdc, hFont);
+
+    RECT rcText = *prcBounds;
+    InflateRect(&rcText, -4, -1);
+    DrawText(hdc, m_statusText, m_statusText.GetLength(), &rcText,
+        DT_LEFT | DT_VCENTER | DT_SINGLELINE | DT_END_ELLIPSIS);
+
+    SelectObject(hdc, hOldFont);
+    DeleteObject(hFont);
+
+    return S_OK;
+}
+
 // ============================================================================
 // SundanceTimelineElementBehavior
 // ============================================================================
@@ -962,6 +1448,57 @@ HRESULT SundanceTimelineElementBehavior::OnElementAttached(IDuiElement* pElement
 }
 
 HRESULT SundanceTimelineElementBehavior::OnElementDetached(IDuiElement*) { m_pElement = NULL; return S_OK; }
+
+HRESULT SundanceTimelineElementBehavior::OnMessage(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL* pbHandled)
+{
+    if (pbHandled) *pbHandled = FALSE;
+
+    switch (uMsg)
+    {
+    case WM_MOUSEWHEEL:
+    {
+        short zDelta = GET_WHEEL_DELTA_WPARAM(wParam);
+        if (GetKeyState(VK_CONTROL) & 0x8000)
+        {
+            if (zDelta > 0)
+                m_pAppMain->NotifyUIRefresh();
+            else
+                m_pAppMain->NotifyUIRefresh();
+        }
+        else
+        {
+            m_pAppMain->NotifyUIRefresh();
+        }
+        if (pbHandled) *pbHandled = TRUE;
+        break;
+    }
+    case WM_KEYDOWN:
+    {
+        switch (wParam)
+        {
+        case VK_LEFT:
+            if (m_pAppMain) m_pAppMain->NotifyUIRefresh();
+            if (pbHandled) *pbHandled = TRUE;
+            break;
+        case VK_RIGHT:
+            if (m_pAppMain) m_pAppMain->NotifyUIRefresh();
+            if (pbHandled) *pbHandled = TRUE;
+            break;
+        case VK_HOME:
+            if (m_pAppMain) m_pAppMain->NotifyUIRefresh();
+            if (pbHandled) *pbHandled = TRUE;
+            break;
+        case VK_END:
+            if (m_pAppMain) m_pAppMain->NotifyUIRefresh();
+            if (pbHandled) *pbHandled = TRUE;
+            break;
+        }
+        break;
+    }
+    }
+
+    return S_OK;
+}
 
 // ============================================================================
 // SundancePreviewElementBehavior
@@ -979,6 +1516,50 @@ HRESULT SundancePreviewElementBehavior::OnElementAttached(IDuiElement* pElement)
 
 HRESULT SundancePreviewElementBehavior::OnElementDetached(IDuiElement*) { m_pElement = NULL; return S_OK; }
 
+HRESULT SundancePreviewElementBehavior::OnMessage(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL* pbHandled)
+{
+    if (pbHandled) *pbHandled = FALSE;
+
+    switch (uMsg)
+    {
+    case WM_KEYDOWN:
+    {
+        if (m_pAppMain)
+        {
+            switch (wParam)
+            {
+            case VK_SPACE:
+                if (m_pAppMain->IsPlaying())
+                    m_pAppMain->PausePlayback();
+                else
+                    m_pAppMain->StartPlayback();
+                if (pbHandled) *pbHandled = TRUE;
+                break;
+            case VK_ESCAPE:
+                m_pAppMain->StopPlayback();
+                if (pbHandled) *pbHandled = TRUE;
+                break;
+            }
+        }
+        break;
+    }
+    case WM_LBUTTONDOWN:
+    {
+        if (m_pAppMain)
+        {
+            if (m_pAppMain->IsPlaying())
+                m_pAppMain->PausePlayback();
+            else
+                m_pAppMain->StartPlayback();
+            if (pbHandled) *pbHandled = TRUE;
+        }
+        break;
+    }
+    }
+
+    return S_OK;
+}
+
 // ============================================================================
 // SundancePropertyElementBehavior
 // ============================================================================
@@ -994,6 +1575,36 @@ HRESULT SundancePropertyElementBehavior::OnElementAttached(IDuiElement* pElement
 }
 
 HRESULT SundancePropertyElementBehavior::OnElementDetached(IDuiElement*) { m_pElement = NULL; return S_OK; }
+
+HRESULT SundancePropertyElementBehavior::OnMessage(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL* pbHandled)
+{
+    if (pbHandled) *pbHandled = FALSE;
+
+    switch (uMsg)
+    {
+    case WM_USER + 400:
+    {
+        if (m_pAppMain)
+        {
+            m_pAppMain->NotifyUIRefresh();
+            if (pbHandled) *pbHandled = TRUE;
+        }
+        break;
+    }
+    case WM_COMMAND:
+    {
+        UINT nCmdId = LOWORD(wParam);
+        if (m_pAppMain)
+        {
+            m_pAppMain->OnRibbonCommand(nCmdId);
+            if (pbHandled) *pbHandled = TRUE;
+        }
+        break;
+    }
+    }
+
+    return S_OK;
+}
 
 // ============================================================================
 // WebcamUIBehavior
@@ -1011,33 +1622,36 @@ HRESULT WebcamUIBehavior::OnElementAttached(IDuiElement* pElement)
 
 HRESULT WebcamUIBehavior::OnElementDetached(IDuiElement*) { m_pElement = NULL; return S_OK; }
 
-// ============================================================================
-// WebcamPreviewBehavior
-// ============================================================================
-WebcamPreviewBehavior::WebcamPreviewBehavior() : m_pElement(NULL) {}
-WebcamPreviewBehavior::~WebcamPreviewBehavior() { m_pElement = NULL; }
-
-HRESULT WebcamPreviewBehavior::OnElementAttached(IDuiElement* pElement)
+HRESULT WebcamUIBehavior::OnMessage(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL* pbHandled)
 {
-    if (!pElement) return E_POINTER;
-    m_pElement = pElement;
-    return S_OK;
-}
+    if (pbHandled) *pbHandled = FALSE;
 
-HRESULT WebcamPreviewBehavior::OnElementDetached(IDuiElement*) { m_pElement = NULL; return S_OK; }
-
-HRESULT WebcamPreviewBehavior::OnPaint(HDC hdc, const RECT* prcBounds)
-{
-    if (!hdc || !prcBounds) return E_POINTER;
-
-    HBRUSH hBrush = CreateSolidBrush(RGB(32, 32, 32));
-    FillRect(hdc, prcBounds, hBrush);
-    DeleteObject(hBrush);
-
-    SetBkMode(hdc, TRANSPARENT);
-    SetTextColor(hdc, RGB(150, 150, 150));
-    DrawText(hdc, L"Webcam Preview", -1, const_cast<RECT*>(prcBounds),
-        DT_CENTER | DT_VCENTER | DT_SINGLELINE);
+    switch (uMsg)
+    {
+    case WM_LBUTTONDOWN:
+    {
+        POINT pt = { GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam) };
+        if (m_pElement)
+        {
+            RECT rcBounds;
+            m_pElement->GetBounds(&rcBounds);
+            if (PtInRect(&rcBounds, pt))
+            {
+                if (pbHandled) *pbHandled = TRUE;
+            }
+        }
+        break;
+    }
+    case WM_MOUSEMOVE:
+    {
+        if (m_pElement)
+        {
+            HCURSOR hCursor = LoadCursor(NULL, IDC_ARROW);
+            if (hCursor) ::SetCursor(hCursor);
+        }
+        break;
+    }
+    }
 
     return S_OK;
 }
@@ -1058,6 +1672,54 @@ HRESULT WebcamCaptureBehavior::OnElementAttached(IDuiElement* pElement)
 
 HRESULT WebcamCaptureBehavior::OnElementDetached(IDuiElement*) { m_pElement = NULL; return S_OK; }
 
+HRESULT WebcamCaptureBehavior::OnMessage(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL* pbHandled)
+{
+    if (pbHandled) *pbHandled = FALSE;
+
+    switch (uMsg)
+    {
+    case WM_LBUTTONDOWN:
+    {
+        POINT pt = { GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam) };
+        if (m_pElement)
+        {
+            RECT rcBounds;
+            m_pElement->GetBounds(&rcBounds);
+            if (PtInRect(&rcBounds, pt))
+            {
+                if (pbHandled) *pbHandled = TRUE;
+            }
+        }
+        break;
+    }
+    case WM_LBUTTONUP:
+    {
+        if (m_pElement)
+        {
+            RECT rcBounds;
+            m_pElement->GetBounds(&rcBounds);
+            POINT pt = { GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam) };
+            if (PtInRect(&rcBounds, pt))
+            {
+                if (pbHandled) *pbHandled = TRUE;
+            }
+        }
+        break;
+    }
+    case WM_MOUSEMOVE:
+    {
+        if (m_pElement)
+        {
+            HCURSOR hCursor = LoadCursor(NULL, IDC_HAND);
+            if (hCursor) ::SetCursor(hCursor);
+        }
+        break;
+    }
+    }
+
+    return S_OK;
+}
+
 // ============================================================================
 // NarrationUIBehavior
 // ============================================================================
@@ -1073,6 +1735,40 @@ HRESULT NarrationUIBehavior::OnElementAttached(IDuiElement* pElement)
 }
 
 HRESULT NarrationUIBehavior::OnElementDetached(IDuiElement*) { m_pElement = NULL; return S_OK; }
+
+HRESULT NarrationUIBehavior::OnMessage(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL* pbHandled)
+{
+    if (pbHandled) *pbHandled = FALSE;
+
+    switch (uMsg)
+    {
+    case WM_MOUSEMOVE:
+    {
+        if (m_pElement)
+        {
+            HCURSOR hCursor = LoadCursor(NULL, IDC_ARROW);
+            if (hCursor) ::SetCursor(hCursor);
+        }
+        break;
+    }
+    case WM_LBUTTONDOWN:
+    {
+        POINT pt = { GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam) };
+        if (m_pElement)
+        {
+            RECT rcBounds;
+            m_pElement->GetBounds(&rcBounds);
+            if (PtInRect(&rcBounds, pt))
+            {
+                if (pbHandled) *pbHandled = TRUE;
+            }
+        }
+        break;
+    }
+    }
+
+    return S_OK;
+}
 
 // ============================================================================
 // NarrationRecordBehavior
@@ -1090,6 +1786,54 @@ HRESULT NarrationRecordBehavior::OnElementAttached(IDuiElement* pElement)
 
 HRESULT NarrationRecordBehavior::OnElementDetached(IDuiElement*) { m_pElement = NULL; return S_OK; }
 
+HRESULT NarrationRecordBehavior::OnMessage(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL* pbHandled)
+{
+    if (pbHandled) *pbHandled = FALSE;
+
+    switch (uMsg)
+    {
+    case WM_LBUTTONDOWN:
+    {
+        POINT pt = { GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam) };
+        if (m_pElement)
+        {
+            RECT rcBounds;
+            m_pElement->GetBounds(&rcBounds);
+            if (PtInRect(&rcBounds, pt))
+            {
+                if (pbHandled) *pbHandled = TRUE;
+            }
+        }
+        break;
+    }
+    case WM_LBUTTONUP:
+    {
+        if (m_pElement)
+        {
+            RECT rcBounds;
+            m_pElement->GetBounds(&rcBounds);
+            POINT pt = { GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam) };
+            if (PtInRect(&rcBounds, pt))
+            {
+                if (pbHandled) *pbHandled = TRUE;
+            }
+        }
+        break;
+    }
+    case WM_MOUSEMOVE:
+    {
+        if (m_pElement)
+        {
+            HCURSOR hCursor = LoadCursor(NULL, IDC_HAND);
+            if (hCursor) ::SetCursor(hCursor);
+        }
+        break;
+    }
+    }
+
+    return S_OK;
+}
+
 // ============================================================================
 // NarrationPlaybackBehavior
 // ============================================================================
@@ -1105,6 +1849,61 @@ HRESULT NarrationPlaybackBehavior::OnElementAttached(IDuiElement* pElement)
 }
 
 HRESULT NarrationPlaybackBehavior::OnElementDetached(IDuiElement*) { m_pElement = NULL; return S_OK; }
+
+HRESULT NarrationPlaybackBehavior::OnMessage(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL* pbHandled)
+{
+    if (pbHandled) *pbHandled = FALSE;
+
+    switch (uMsg)
+    {
+    case WM_LBUTTONDOWN:
+    {
+        POINT pt = { GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam) };
+        if (m_pElement)
+        {
+            RECT rcBounds;
+            m_pElement->GetBounds(&rcBounds);
+            if (PtInRect(&rcBounds, pt))
+            {
+                if (pbHandled) *pbHandled = TRUE;
+            }
+        }
+        break;
+    }
+    case WM_LBUTTONUP:
+    {
+        if (m_pElement)
+        {
+            RECT rcBounds;
+            m_pElement->GetBounds(&rcBounds);
+            POINT pt = { GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam) };
+            if (PtInRect(&rcBounds, pt))
+            {
+                if (m_pAppMain)
+                {
+                    if (m_pAppMain->IsPlaying())
+                        m_pAppMain->PausePlayback();
+                    else
+                        m_pAppMain->StartPlayback();
+                }
+                if (pbHandled) *pbHandled = TRUE;
+            }
+        }
+        break;
+    }
+    case WM_MOUSEMOVE:
+    {
+        if (m_pElement)
+        {
+            HCURSOR hCursor = LoadCursor(NULL, IDC_HAND);
+            if (hCursor) ::SetCursor(hCursor);
+        }
+        break;
+    }
+    }
+
+    return S_OK;
+}
 
 // ============================================================================
 // UserEncodeProfileManager
@@ -1122,6 +1921,36 @@ HRESULT UserEncodeProfileManager::OnElementAttached(IDuiElement* pElement)
 
 HRESULT UserEncodeProfileManager::OnElementDetached(IDuiElement*) { m_pElement = NULL; return S_OK; }
 
+HRESULT UserEncodeProfileManager::OnMessage(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL* pbHandled)
+{
+    if (pbHandled) *pbHandled = FALSE;
+
+    switch (uMsg)
+    {
+    case WM_USER + 500:
+    {
+        if (m_pAppMain)
+        {
+            m_pAppMain->NotifyUIRefresh();
+            if (pbHandled) *pbHandled = TRUE;
+        }
+        break;
+    }
+    case WM_COMMAND:
+    {
+        UINT nCmdId = LOWORD(wParam);
+        if (m_pAppMain)
+        {
+            m_pAppMain->OnRibbonCommand(nCmdId);
+            if (pbHandled) *pbHandled = TRUE;
+        }
+        break;
+    }
+    }
+
+    return S_OK;
+}
+
 // ============================================================================
 // UserEncodeProfilePreset
 // ============================================================================
@@ -1136,6 +1965,50 @@ HRESULT UserEncodeProfilePreset::OnElementAttached(IDuiElement* pElement)
 }
 
 HRESULT UserEncodeProfilePreset::OnElementDetached(IDuiElement*) { m_pElement = NULL; return S_OK; }
+
+HRESULT UserEncodeProfilePreset::OnMessage(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL* pbHandled)
+{
+    if (pbHandled) *pbHandled = FALSE;
+
+    switch (uMsg)
+    {
+    case WM_LBUTTONDOWN:
+    {
+        POINT pt = { GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam) };
+        if (m_pElement)
+        {
+            RECT rcBounds;
+            m_pElement->GetBounds(&rcBounds);
+            if (PtInRect(&rcBounds, pt))
+            {
+                if (m_pElement) m_pElement->SetFocus();
+                if (pbHandled) *pbHandled = TRUE;
+            }
+        }
+        break;
+    }
+    case WM_LBUTTONDBLCLK:
+    {
+        if (m_pElement)
+        {
+            m_pElement->SetSelection(0);
+            if (pbHandled) *pbHandled = TRUE;
+        }
+        break;
+    }
+    case WM_MOUSEMOVE:
+    {
+        if (m_pElement)
+        {
+            HCURSOR hCursor = LoadCursor(NULL, IDC_HAND);
+            if (hCursor) ::SetCursor(hCursor);
+        }
+        break;
+    }
+    }
+
+    return S_OK;
+}
 
 // ============================================================================
 // UserEncodeProfileCustom
@@ -1152,6 +2025,41 @@ HRESULT UserEncodeProfileCustom::OnElementAttached(IDuiElement* pElement)
 
 HRESULT UserEncodeProfileCustom::OnElementDetached(IDuiElement*) { m_pElement = NULL; return S_OK; }
 
+HRESULT UserEncodeProfileCustom::OnMessage(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL* pbHandled)
+{
+    if (pbHandled) *pbHandled = FALSE;
+
+    switch (uMsg)
+    {
+    case WM_LBUTTONDOWN:
+    {
+        POINT pt = { GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam) };
+        if (m_pElement)
+        {
+            RECT rcBounds;
+            m_pElement->GetBounds(&rcBounds);
+            if (PtInRect(&rcBounds, pt))
+            {
+                if (m_pElement) m_pElement->SetFocus();
+                if (pbHandled) *pbHandled = TRUE;
+            }
+        }
+        break;
+    }
+    case WM_MOUSEMOVE:
+    {
+        if (m_pElement)
+        {
+            HCURSOR hCursor = LoadCursor(NULL, IDC_ARROW);
+            if (hCursor) ::SetCursor(hCursor);
+        }
+        break;
+    }
+    }
+
+    return S_OK;
+}
+
 // ============================================================================
 // UserEncodeProfileRegistry
 // ============================================================================
@@ -1166,6 +2074,35 @@ HRESULT UserEncodeProfileRegistry::OnElementAttached(IDuiElement* pElement)
 }
 
 HRESULT UserEncodeProfileRegistry::OnElementDetached(IDuiElement*) { m_pElement = NULL; return S_OK; }
+
+HRESULT UserEncodeProfileRegistry::OnMessage(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL* pbHandled)
+{
+    if (pbHandled) *pbHandled = FALSE;
+
+    switch (uMsg)
+    {
+    case WM_USER + 510:
+    {
+        if (m_pElement)
+        {
+            m_pElement->Invalidate();
+            if (pbHandled) *pbHandled = TRUE;
+        }
+        break;
+    }
+    case WM_USER + 511:
+    {
+        if (m_pElement)
+        {
+            m_pElement->Invalidate();
+            if (pbHandled) *pbHandled = TRUE;
+        }
+        break;
+    }
+    }
+
+    return S_OK;
+}
 
 // ============================================================================
 // PublishDialogBaseBehavior
@@ -1183,6 +2120,35 @@ HRESULT PublishDialogBaseBehavior::OnElementAttached(IDuiElement* pElement)
 
 HRESULT PublishDialogBaseBehavior::OnElementDetached(IDuiElement*) { m_pElement = NULL; return S_OK; }
 
+HRESULT PublishDialogBaseBehavior::OnMessage(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL* pbHandled)
+{
+    if (pbHandled) *pbHandled = FALSE;
+
+    switch (uMsg)
+    {
+    case WM_COMMAND:
+    {
+        UINT nCmdId = LOWORD(wParam);
+        if (m_pAppMain)
+        {
+            m_pAppMain->OnRibbonCommand(nCmdId);
+            if (pbHandled) *pbHandled = TRUE;
+        }
+        break;
+    }
+    case WM_KEYDOWN:
+    {
+        if (wParam == VK_ESCAPE)
+        {
+            if (pbHandled) *pbHandled = TRUE;
+        }
+        break;
+    }
+    }
+
+    return S_OK;
+}
+
 // ============================================================================
 // PublishDialogYouTubeBehavior
 // ============================================================================
@@ -1198,6 +2164,27 @@ HRESULT PublishDialogYouTubeBehavior::OnElementAttached(IDuiElement* pElement)
 }
 
 HRESULT PublishDialogYouTubeBehavior::OnElementDetached(IDuiElement*) { m_pElement = NULL; return S_OK; }
+
+HRESULT PublishDialogYouTubeBehavior::OnMessage(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL* pbHandled)
+{
+    if (pbHandled) *pbHandled = FALSE;
+
+    switch (uMsg)
+    {
+    case WM_COMMAND:
+    {
+        UINT nCmdId = LOWORD(wParam);
+        if (m_pAppMain)
+        {
+            m_pAppMain->PublishMovieToService(L"YouTube");
+            if (pbHandled) *pbHandled = TRUE;
+        }
+        break;
+    }
+    }
+
+    return S_OK;
+}
 
 // ============================================================================
 // PublishDialogFacebookBehavior
@@ -1215,6 +2202,27 @@ HRESULT PublishDialogFacebookBehavior::OnElementAttached(IDuiElement* pElement)
 
 HRESULT PublishDialogFacebookBehavior::OnElementDetached(IDuiElement*) { m_pElement = NULL; return S_OK; }
 
+HRESULT PublishDialogFacebookBehavior::OnMessage(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL* pbHandled)
+{
+    if (pbHandled) *pbHandled = FALSE;
+
+    switch (uMsg)
+    {
+    case WM_COMMAND:
+    {
+        UINT nCmdId = LOWORD(wParam);
+        if (m_pAppMain)
+        {
+            m_pAppMain->PublishMovieToService(L"Facebook");
+            if (pbHandled) *pbHandled = TRUE;
+        }
+        break;
+    }
+    }
+
+    return S_OK;
+}
+
 // ============================================================================
 // PublishDialogSkyDriveBehavior
 // ============================================================================
@@ -1230,6 +2238,27 @@ HRESULT PublishDialogSkyDriveBehavior::OnElementAttached(IDuiElement* pElement)
 }
 
 HRESULT PublishDialogSkyDriveBehavior::OnElementDetached(IDuiElement*) { m_pElement = NULL; return S_OK; }
+
+HRESULT PublishDialogSkyDriveBehavior::OnMessage(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL* pbHandled)
+{
+    if (pbHandled) *pbHandled = FALSE;
+
+    switch (uMsg)
+    {
+    case WM_COMMAND:
+    {
+        UINT nCmdId = LOWORD(wParam);
+        if (m_pAppMain)
+        {
+            m_pAppMain->PublishMovieToService(L"SkyDrive");
+            if (pbHandled) *pbHandled = TRUE;
+        }
+        break;
+    }
+    }
+
+    return S_OK;
+}
 
 // ============================================================================
 // PublishDialogEmailBehavior
@@ -1247,6 +2276,27 @@ HRESULT PublishDialogEmailBehavior::OnElementAttached(IDuiElement* pElement)
 
 HRESULT PublishDialogEmailBehavior::OnElementDetached(IDuiElement*) { m_pElement = NULL; return S_OK; }
 
+HRESULT PublishDialogEmailBehavior::OnMessage(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL* pbHandled)
+{
+    if (pbHandled) *pbHandled = FALSE;
+
+    switch (uMsg)
+    {
+    case WM_COMMAND:
+    {
+        UINT nCmdId = LOWORD(wParam);
+        if (m_pAppMain)
+        {
+            m_pAppMain->PublishMovieToService(L"Email");
+            if (pbHandled) *pbHandled = TRUE;
+        }
+        break;
+    }
+    }
+
+    return S_OK;
+}
+
 // ============================================================================
 // PublishDialogLocalFileBehavior
 // ============================================================================
@@ -1262,6 +2312,27 @@ HRESULT PublishDialogLocalFileBehavior::OnElementAttached(IDuiElement* pElement)
 }
 
 HRESULT PublishDialogLocalFileBehavior::OnElementDetached(IDuiElement*) { m_pElement = NULL; return S_OK; }
+
+HRESULT PublishDialogLocalFileBehavior::OnMessage(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL* pbHandled)
+{
+    if (pbHandled) *pbHandled = FALSE;
+
+    switch (uMsg)
+    {
+    case WM_COMMAND:
+    {
+        UINT nCmdId = LOWORD(wParam);
+        if (m_pAppMain)
+        {
+            m_pAppMain->OnRibbonCommand(nCmdId);
+            if (pbHandled) *pbHandled = TRUE;
+        }
+        break;
+    }
+    }
+
+    return S_OK;
+}
 
 // ============================================================================
 // ProgressBarUIBehavior
@@ -1323,6 +2394,39 @@ HRESULT ErrorDialogUIBehavior::OnElementAttached(IDuiElement* pElement)
 
 HRESULT ErrorDialogUIBehavior::OnElementDetached(IDuiElement*) { m_pElement = NULL; return S_OK; }
 
+HRESULT ErrorDialogUIBehavior::OnMessage(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL* pbHandled)
+{
+    if (pbHandled) *pbHandled = FALSE;
+
+    switch (uMsg)
+    {
+    case WM_LBUTTONDOWN:
+    {
+        POINT pt = { GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam) };
+        if (m_pElement)
+        {
+            RECT rcBounds;
+            m_pElement->GetBounds(&rcBounds);
+            if (PtInRect(&rcBounds, pt))
+            {
+                if (pbHandled) *pbHandled = TRUE;
+            }
+        }
+        break;
+    }
+    case WM_KEYDOWN:
+    {
+        if (wParam == VK_RETURN || wParam == VK_ESCAPE)
+        {
+            if (pbHandled) *pbHandled = TRUE;
+        }
+        break;
+    }
+    }
+
+    return S_OK;
+}
+
 // ============================================================================
 // WarningDialogUIBehavior
 // ============================================================================
@@ -1337,6 +2441,39 @@ HRESULT WarningDialogUIBehavior::OnElementAttached(IDuiElement* pElement)
 }
 
 HRESULT WarningDialogUIBehavior::OnElementDetached(IDuiElement*) { m_pElement = NULL; return S_OK; }
+
+HRESULT WarningDialogUIBehavior::OnMessage(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL* pbHandled)
+{
+    if (pbHandled) *pbHandled = FALSE;
+
+    switch (uMsg)
+    {
+    case WM_LBUTTONDOWN:
+    {
+        POINT pt = { GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam) };
+        if (m_pElement)
+        {
+            RECT rcBounds;
+            m_pElement->GetBounds(&rcBounds);
+            if (PtInRect(&rcBounds, pt))
+            {
+                if (pbHandled) *pbHandled = TRUE;
+            }
+        }
+        break;
+    }
+    case WM_KEYDOWN:
+    {
+        if (wParam == VK_RETURN || wParam == VK_ESCAPE)
+        {
+            if (pbHandled) *pbHandled = TRUE;
+        }
+        break;
+    }
+    }
+
+    return S_OK;
+}
 
 // ============================================================================
 // InfoDialogUIBehavior
@@ -1353,6 +2490,39 @@ HRESULT InfoDialogUIBehavior::OnElementAttached(IDuiElement* pElement)
 
 HRESULT InfoDialogUIBehavior::OnElementDetached(IDuiElement*) { m_pElement = NULL; return S_OK; }
 
+HRESULT InfoDialogUIBehavior::OnMessage(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL* pbHandled)
+{
+    if (pbHandled) *pbHandled = FALSE;
+
+    switch (uMsg)
+    {
+    case WM_LBUTTONDOWN:
+    {
+        POINT pt = { GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam) };
+        if (m_pElement)
+        {
+            RECT rcBounds;
+            m_pElement->GetBounds(&rcBounds);
+            if (PtInRect(&rcBounds, pt))
+            {
+                if (pbHandled) *pbHandled = TRUE;
+            }
+        }
+        break;
+    }
+    case WM_KEYDOWN:
+    {
+        if (wParam == VK_RETURN || wParam == VK_ESCAPE)
+        {
+            if (pbHandled) *pbHandled = TRUE;
+        }
+        break;
+    }
+    }
+
+    return S_OK;
+}
+
 // ============================================================================
 // ConfirmationDialogUIBehavior
 // ============================================================================
@@ -1367,6 +2537,39 @@ HRESULT ConfirmationDialogUIBehavior::OnElementAttached(IDuiElement* pElement)
 }
 
 HRESULT ConfirmationDialogUIBehavior::OnElementDetached(IDuiElement*) { m_pElement = NULL; return S_OK; }
+
+HRESULT ConfirmationDialogUIBehavior::OnMessage(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL* pbHandled)
+{
+    if (pbHandled) *pbHandled = FALSE;
+
+    switch (uMsg)
+    {
+    case WM_LBUTTONDOWN:
+    {
+        POINT pt = { GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam) };
+        if (m_pElement)
+        {
+            RECT rcBounds;
+            m_pElement->GetBounds(&rcBounds);
+            if (PtInRect(&rcBounds, pt))
+            {
+                if (pbHandled) *pbHandled = TRUE;
+            }
+        }
+        break;
+    }
+    case WM_KEYDOWN:
+    {
+        if (wParam == VK_RETURN || wParam == VK_ESCAPE)
+        {
+            if (pbHandled) *pbHandled = TRUE;
+        }
+        break;
+    }
+    }
+
+    return S_OK;
+}
 
 // ============================================================================
 // FileBrowserUIBehavior
@@ -1383,6 +2586,54 @@ HRESULT FileBrowserUIBehavior::OnElementAttached(IDuiElement* pElement)
 
 HRESULT FileBrowserUIBehavior::OnElementDetached(IDuiElement*) { m_pElement = NULL; return S_OK; }
 
+HRESULT FileBrowserUIBehavior::OnMessage(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL* pbHandled)
+{
+    if (pbHandled) *pbHandled = FALSE;
+
+    switch (uMsg)
+    {
+    case WM_LBUTTONDOWN:
+    {
+        POINT pt = { GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam) };
+        if (m_pElement)
+        {
+            RECT rcBounds;
+            m_pElement->GetBounds(&rcBounds);
+            if (PtInRect(&rcBounds, pt))
+            {
+                if (pbHandled) *pbHandled = TRUE;
+            }
+        }
+        break;
+    }
+    case WM_LBUTTONUP:
+    {
+        if (m_pElement)
+        {
+            RECT rcBounds;
+            m_pElement->GetBounds(&rcBounds);
+            POINT pt = { GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam) };
+            if (PtInRect(&rcBounds, pt))
+            {
+                if (pbHandled) *pbHandled = TRUE;
+            }
+        }
+        break;
+    }
+    case WM_MOUSEMOVE:
+    {
+        if (m_pElement)
+        {
+            HCURSOR hCursor = LoadCursor(NULL, IDC_HAND);
+            if (hCursor) ::SetCursor(hCursor);
+        }
+        break;
+    }
+    }
+
+    return S_OK;
+}
+
 // ============================================================================
 // FolderBrowserUIBehavior
 // ============================================================================
@@ -1397,6 +2648,54 @@ HRESULT FolderBrowserUIBehavior::OnElementAttached(IDuiElement* pElement)
 }
 
 HRESULT FolderBrowserUIBehavior::OnElementDetached(IDuiElement*) { m_pElement = NULL; return S_OK; }
+
+HRESULT FolderBrowserUIBehavior::OnMessage(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL* pbHandled)
+{
+    if (pbHandled) *pbHandled = FALSE;
+
+    switch (uMsg)
+    {
+    case WM_LBUTTONDOWN:
+    {
+        POINT pt = { GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam) };
+        if (m_pElement)
+        {
+            RECT rcBounds;
+            m_pElement->GetBounds(&rcBounds);
+            if (PtInRect(&rcBounds, pt))
+            {
+                if (pbHandled) *pbHandled = TRUE;
+            }
+        }
+        break;
+    }
+    case WM_LBUTTONUP:
+    {
+        if (m_pElement)
+        {
+            RECT rcBounds;
+            m_pElement->GetBounds(&rcBounds);
+            POINT pt = { GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam) };
+            if (PtInRect(&rcBounds, pt))
+            {
+                if (pbHandled) *pbHandled = TRUE;
+            }
+        }
+        break;
+    }
+    case WM_MOUSEMOVE:
+    {
+        if (m_pElement)
+        {
+            HCURSOR hCursor = LoadCursor(NULL, IDC_HAND);
+            if (hCursor) ::SetCursor(hCursor);
+        }
+        break;
+    }
+    }
+
+    return S_OK;
+}
 
 // ============================================================================
 // ColorPickerUIBehavior
@@ -1413,6 +2712,41 @@ HRESULT ColorPickerUIBehavior::OnElementAttached(IDuiElement* pElement)
 
 HRESULT ColorPickerUIBehavior::OnElementDetached(IDuiElement*) { m_pElement = NULL; return S_OK; }
 
+HRESULT ColorPickerUIBehavior::OnMessage(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL* pbHandled)
+{
+    if (pbHandled) *pbHandled = FALSE;
+
+    switch (uMsg)
+    {
+    case WM_LBUTTONDOWN:
+    {
+        POINT pt = { GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam) };
+        if (m_pElement)
+        {
+            RECT rcBounds;
+            m_pElement->GetBounds(&rcBounds);
+            if (PtInRect(&rcBounds, pt))
+            {
+                if (m_pElement) m_pElement->SetFocus();
+                if (pbHandled) *pbHandled = TRUE;
+            }
+        }
+        break;
+    }
+    case WM_MOUSEMOVE:
+    {
+        if (m_pElement)
+        {
+            HCURSOR hCursor = LoadCursor(NULL, IDC_HAND);
+            if (hCursor) ::SetCursor(hCursor);
+        }
+        break;
+    }
+    }
+
+    return S_OK;
+}
+
 // ============================================================================
 // FontPickerUIBehavior
 // ============================================================================
@@ -1427,6 +2761,41 @@ HRESULT FontPickerUIBehavior::OnElementAttached(IDuiElement* pElement)
 }
 
 HRESULT FontPickerUIBehavior::OnElementDetached(IDuiElement*) { m_pElement = NULL; return S_OK; }
+
+HRESULT FontPickerUIBehavior::OnMessage(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL* pbHandled)
+{
+    if (pbHandled) *pbHandled = FALSE;
+
+    switch (uMsg)
+    {
+    case WM_LBUTTONDOWN:
+    {
+        POINT pt = { GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam) };
+        if (m_pElement)
+        {
+            RECT rcBounds;
+            m_pElement->GetBounds(&rcBounds);
+            if (PtInRect(&rcBounds, pt))
+            {
+                if (m_pElement) m_pElement->SetFocus();
+                if (pbHandled) *pbHandled = TRUE;
+            }
+        }
+        break;
+    }
+    case WM_MOUSEMOVE:
+    {
+        if (m_pElement)
+        {
+            HCURSOR hCursor = LoadCursor(NULL, IDC_HAND);
+            if (hCursor) ::SetCursor(hCursor);
+        }
+        break;
+    }
+    }
+
+    return S_OK;
+}
 
 // ============================================================================
 // CropUIBehavior

@@ -215,6 +215,7 @@ public:
 private:
     PublishManagerConfig*  m_pConfig;
     PublishManagerState*   m_pState;
+    PublishBackgroundWorker* m_pWorker;
     PublishJobQueue         m_jobQueue;
     DWORD                   m_dwNextJobId;
     bool                   m_bInitialized;

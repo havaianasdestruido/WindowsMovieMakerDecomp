@@ -19,6 +19,8 @@ MFSourceReaderCallback::MFSourceReaderCallback()
     , m_hrLastStatus(S_OK)
 {
     m_hEvent = CreateEventW(nullptr, TRUE, FALSE, nullptr);
+    if (!m_hEvent)
+        m_hrLastStatus = HRESULT_FROM_WIN32(GetLastError());
 }
 
 MFSourceReaderCallback::~MFSourceReaderCallback()
@@ -153,6 +155,10 @@ MFSource::MFSource()
     , m_dwAudioStreamIndex(0)
     , m_dwStreamCount(0)
     , m_fAsyncMode(false)
+    , m_llCachedDuration(0)
+    , m_uCachedWidth(0)
+    , m_uCachedHeight(0)
+    , m_dblCachedFrameRate(0.0)
 {
     m_type = AVSourceTypeFile;
 }
@@ -610,9 +616,25 @@ HRESULT MFSource::CreateSourceReader(const AVSourceDesc& desc)
     if (!m_spCallback)
         return E_OUTOFMEMORY;
 
+    CComPtr<IMFAttributes> spAttributes;
+    hr = MFCreateAttributes(&spAttributes, 1);
+    if (FAILED(hr))
+    {
+        m_spCallback = nullptr;
+        return hr;
+    }
+
+    hr = spAttributes->SetUnknown(MF_SOURCE_READER_ASYNC_CALLBACK,
+        static_cast<IMFSourceReaderCallback*>(m_spCallback.p));
+    if (FAILED(hr))
+    {
+        m_spCallback = nullptr;
+        return hr;
+    }
+
     hr = MFCreateSourceReaderFromURL(
         desc.strFilePath.GetString(),
-        nullptr,
+        spAttributes,
         &m_spReader);
 
     if (FAILED(hr))
@@ -621,6 +643,7 @@ HRESULT MFSource::CreateSourceReader(const AVSourceDesc& desc)
         return hr;
     }
 
+    m_fAsyncMode = true;
     return S_OK;
 }
 

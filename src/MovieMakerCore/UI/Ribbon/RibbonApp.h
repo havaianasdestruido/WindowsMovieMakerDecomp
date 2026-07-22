@@ -76,6 +76,51 @@ static const UINT kRibbonCmdSetCredits    = 253;
 static const UINT kRibbonCmdSpeed         = 260;
 static const UINT kRibbonCmdVolume        = 261;
 
+// Additional Home tab commands
+static const UINT kRibbonCmdZoomToTimeline = 270;
+
+// Visual Effects tab commands
+static const UINT kRibbonCmdEffectsGallery   = 400;
+static const UINT kRibbonCmdEffectNone       = 401;
+static const UINT kRibbonCmdEffectGrayscale  = 402;
+static const UINT kRibbonCmdEffectSepia      = 403;
+static const UINT kRibbonCmdEffectNegative   = 404;
+static const UINT kRibbonCmdEffectFadeIn     = 405;
+static const UINT kRibbonCmdEffectFadeOut    = 406;
+static const UINT kRibbonCmdBrightness       = 410;
+static const UINT kRibbonCmdContrast         = 411;
+static const UINT kRibbonCmdSaturation       = 412;
+static const UINT kRibbonCmdSharpen          = 413;
+
+// Animations tab commands
+static const UINT kRibbonCmdTransitionGallery = 500;
+static const UINT kRibbonCmdTransitionNone    = 501;
+static const UINT kRibbonCmdTransitionCrossfade = 502;
+static const UINT kRibbonCmdTransitionWipe    = 503;
+static const UINT kRibbonCmdTransitionSlide   = 504;
+static const UINT kRibbonCmdTransitionFade    = 505;
+static const UINT kRibbonCmdPanZoomGallery    = 510;
+static const UINT kRibbonCmdPanZoomNone       = 511;
+static const UINT kRibbonCmdPanZoomSlowPan    = 512;
+static const UINT kRibbonCmdPanZoomZoomIn     = 513;
+static const UINT kRibbonCmdPanZoomZoomOut    = 514;
+
+// Project tab commands
+static const UINT kRibbonCmdAspectRatio       = 600;
+static const UINT kRibbonCmdAudioMix          = 601;
+static const UINT kRibbonCmdVideoVolume       = 602;
+static const UINT kRibbonCmdNarrationVolume   = 603;
+static const UINT kRibbonCmdMusicVolume       = 604;
+static const UINT kRibbonCmdSetStartPoint     = 610;
+static const UINT kRibbonCmdSetEndPoint       = 611;
+
+// View tab commands
+static const UINT kRibbonCmdZoomToFit         = 700;
+static const UINT kRibbonCmdZoomIn            = 701;
+static const UINT kRibbonCmdZoomOut           = 702;
+static const UINT kRibbonCmdShowStoryboard    = 703;
+static const UINT kRibbonCmdPreviewQuality    = 704;
+
 // Share tab commands
 static const UINT kRibbonCmdSaveMovie     = 300;
 static const UINT kRibbonCmdSaveFile      = 301;
@@ -118,12 +163,18 @@ struct RIBBON_API RibbonCommandEntry
     RibbonCommandCallback   pCallback;
     bool                    fEnabled;
     bool                    fVisible;
+    bool                    fPressed;
+    ATL::CString            strTooltip;
+    ATL::CString            strLabel;
+    ATL::CString            strLabelDescription;
+    ATL::CString            strRepresentativeString;
 
     RibbonCommandEntry()
         : nCmdId(0)
         , pCallback(nullptr)
         , fEnabled(true)
         , fVisible(true)
+        , fPressed(false)
     {
     }
 };
@@ -184,6 +235,7 @@ public:
     HRESULT SetEnabled(UINT nCmdId, bool fEnabled);
     HRESULT SetVisible(UINT nCmdId, bool fVisible);
     HRESULT SetText(UINT nCmdId, LPCWSTR pszText);
+    HRESULT SetPressed(UINT nCmdId, bool fPressed);
 
     // Contextual tabs
     HRESULT ShowContextualTab(UINT nTabId);
@@ -199,6 +251,8 @@ private:
     HRESULT RegisterFrameworkCommands();
     HRESULT GetRibbonView();
     void    RegisterCommonCommands();
+    HRESULT UpdateCommandStateFromApp();
+    bool    ComputeCommandEnabled(UINT nCmdId);
 
     // Command handler map
     std::map<UINT, RibbonCommandEntry> m_commandHandlers;
@@ -212,6 +266,8 @@ private:
     HWND                        m_hwndOwner;
     bool                        m_fInitialized;
     HINSTANCE                   m_hInstance;
+    UINT                        m_nActiveTab;
+    std::vector<ATL::CString>   m_vecRecentFiles;
 
     // Ribbon hosting element ID
     static const UINT UI_HOSTING_ELEMENT = 2;

@@ -317,6 +317,42 @@ void PreviewDataContext::RefreshPositionState()
 }
 
 // ============================================================================
+// GetCurrentPositionHns
+// ============================================================================
+LONGLONG PreviewDataContext::GetCurrentPositionHns() const throw()
+{
+    if (m_pPresenter)
+        return m_pPresenter->GetCurrentPositionHns();
+    return m_llCurrentPositionHns;
+}
+
+// ============================================================================
+// GetTotalDurationHns
+// ============================================================================
+LONGLONG PreviewDataContext::GetTotalDurationHns() const throw()
+{
+    if (m_pPresenter)
+        return m_pPresenter->GetTotalDurationHns();
+    return m_llTotalDurationHns;
+}
+
+// ============================================================================
+// SetCurrentPositionHns
+// ============================================================================
+void PreviewDataContext::SetCurrentPositionHns(LONGLONG llPositionHns)
+{
+    m_llCurrentPositionHns = llPositionHns;
+
+    if (m_pPresenter)
+        m_pPresenter->SeekTo(llPositionHns);
+
+    static const double hnsToSeconds = 1.0 / 10000000.0;
+    m_dblCurrentPosition = static_cast<double>(llPositionHns) * hnsToSeconds;
+
+    FirePropertyChanged(kPropCurrentPosition);
+}
+
+// ============================================================================
 // Notification handlers
 // ============================================================================
 void PreviewDataContext::OnPlaybackStateChanged()

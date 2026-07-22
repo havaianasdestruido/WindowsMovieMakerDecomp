@@ -71,6 +71,9 @@ add_library(${TARGET} SHARED
     HMRAVSource/Audio/AudioBoost.cpp
     HMRAVSource/Audio/AudioResampler.cpp
     HMRAVSource/Audio/AudioAnalysis.cpp
+    HMRAVSource/Audio/AudioFadeProcessor.cpp
+    HMRAVSource/Audio/AudioDuckingProcessor.cpp
+    HMRAVSource/Audio/AudioChannelMapper.cpp
     DataStructs/IntSet.cpp
     DataStructs/StringSet.cpp
     UI/Ribbon/RibbonApp.cpp

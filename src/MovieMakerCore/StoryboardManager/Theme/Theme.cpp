@@ -759,6 +759,84 @@ HRESULT Theme::ApplyToElement(ThemeComplexType* pElement)
     return S_OK;
 }
 
+HRESULT Theme::Apply(ThemeProject* pProject)
+{
+    if (!pProject)
+        return E_INVALIDARG;
+
+    pProject->SetTheme(this);
+
+    // Apply font families from theme to project overrides
+    if (!m_strFontFamily.IsEmpty())
+    {
+        pProject->SetTitleFontFamily(m_strFontFamily);
+        pProject->SetCreditsFontFamily(m_strFontFamily);
+    }
+
+    // Apply colors from theme to project overrides
+    pProject->SetTitleFontColor(m_dwPrimaryColor);
+    pProject->SetCreditsFontColor(m_dwSecondaryColor);
+    pProject->SetBackgroundColor(m_dwPrimaryColor);
+
+    // Apply intro/outro enabled state based on theme sections
+    pProject->SetIntroEnabled(m_pIntro != nullptr);
+    pProject->SetOutroEnabled(m_pOutro != nullptr);
+
+    // Apply durations from theme sections
+    if (m_pIntro)
+    {
+        LONGLONG llIntroDuration = m_pIntro->GetDurationHns();
+        if (llIntroDuration > 0)
+            pProject->SetTitleDurationHns(llIntroDuration);
+    }
+
+    if (m_pOutro)
+    {
+        LONGLONG llOutroDuration = m_pOutro->GetDurationHns();
+        if (llOutroDuration > 0)
+            pProject->SetCreditsDurationHns(llOutroDuration);
+    }
+
+    // Apply transition duration from mid section default transition
+    if (m_pMid)
+    {
+        ThemeTransition* pTrans = m_pMid->GetDefaultTransition();
+        if (pTrans)
+        {
+            LONGLONG llTransDuration = pTrans->GetDurationHns();
+            if (llTransDuration > 0)
+                pProject->SetTransitionDurationHns(llTransDuration);
+        }
+    }
+
+    return S_OK;
+}
+
+HRESULT Theme::Remove(ThemeProject* pProject)
+{
+    if (!pProject)
+        return E_INVALIDARG;
+
+    // Disconnect the theme association
+    pProject->SetTheme(nullptr);
+
+    // Reset all theme-overridden properties to defaults
+    pProject->SetTitleText(L"");
+    pProject->SetCreditsText(L"");
+    pProject->SetTitleFontFamily(L"Segoe UI");
+    pProject->SetCreditsFontFamily(L"Segoe UI");
+    pProject->SetTitleFontColor(0xFFFFFFFF);
+    pProject->SetCreditsFontColor(0xFFFFFFFF);
+    pProject->SetTitleDurationHns(50000000);       // 5 seconds
+    pProject->SetCreditsDurationHns(100000000);     // 10 seconds
+    pProject->SetTransitionDurationHns(10000000);   // 1 second
+    pProject->SetBackgroundColor(0xFF000000);        // black
+    pProject->SetIntroEnabled(true);
+    pProject->SetOutroEnabled(true);
+
+    return S_OK;
+}
+
 // ============================================================================
 // ThemeProject implementation
 // ============================================================================

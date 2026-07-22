@@ -267,6 +267,14 @@ HRESULT SerializationReader::SkipCurrentElement(IXmlReader* pReader)
 // Attribute reading helpers (static)
 // ============================================================================
 
+ATL::CString SerializationReader::ParseXmlString(LPCWSTR pszInput)
+{
+    if (!pszInput)
+        return ATL::CString();
+
+    return ATL::CString(pszInput);
+}
+
 HRESULT SerializationReader::ReadIntAttribute(IXmlReader* pReader, LPCWSTR pszName,
                                               int* pValue)
 {
@@ -563,6 +571,184 @@ SerializationElementHandler* SerializationReader::FindHandler(LPCWSTR pszElement
     }
 
     return nullptr;
+}
+
+// ============================================================================
+// Legacy project reading
+// ============================================================================
+
+HRESULT SerializationReader::LoadProject(LPCWSTR pszFilePath, MovieProject* pProject)
+{
+    return ReadFromFile(pszFilePath, pProject);
+}
+
+HRESULT SerializationReader::ReadProject(LPCWSTR pszFilePath, MovieProject* pProject)
+{
+    if (!pszFilePath || !pszFilePath[0])
+        return E_INVALIDARG;
+
+    if (!pProject)
+        return E_POINTER;
+
+    if (!::PathFileExistsW(pszFilePath))
+        return HRESULT_FROM_WIN32(ERROR_FILE_NOT_FOUND);
+
+    IStream* pStream = nullptr;
+    HRESULT hr = SHCreateStreamOnFileW(pszFilePath, STGM_READ, &pStream);
+    if (FAILED(hr))
+        return hr;
+
+    IXmlReader* pReader = nullptr;
+    hr = CreateXmlReader(__uuidof(IXmlReader), reinterpret_cast<void**>(&pReader), nullptr);
+    if (FAILED(hr))
+    {
+        pStream->Release();
+        return hr;
+    }
+
+    hr = pReader->SetInput(pStream);
+    if (SUCCEEDED(hr))
+    {
+        XmlNodeType nodeType;
+        while (pReader->Read(&nodeType) == S_OK)
+        {
+            if (nodeType == XmlNodeType_Element)
+            {
+                LPCWSTR pszLocalName = nullptr;
+                hr = pReader->GetLocalName(&pszLocalName, nullptr);
+                if (FAILED(hr) || !pszLocalName)
+                    continue;
+
+                if (wcscmp(pszLocalName, L"project") == 0)
+                {
+                    LPCWSTR pszValue = nullptr;
+
+                    hr = XmlReaderGetAttribute(pReader, L"name", &pszValue);
+                    if (SUCCEEDED(hr) && pszValue)
+                    {
+                        pProject->GetSettings().SetProjectName(pszValue);
+                    }
+                }
+                else if (wcscmp(pszLocalName, L"media") == 0)
+                {
+                    hr = ReadMediaItems(pReader, pProject);
+                }
+                else if (wcscmp(pszLocalName, L"settings") == 0)
+                {
+                    hr = ReadProperties(pReader, pProject);
+                }
+
+                if (FAILED(hr))
+                    break;
+            }
+        }
+    }
+
+    pReader->Release();
+    pStream->Release();
+    m_hrLast = hr;
+    return hr;
+}
+
+HRESULT SerializationReader::ReadMediaItems(IXmlReader* pReader, MovieProject* pProject)
+{
+    if (!pReader || !pProject)
+        return E_POINTER;
+
+    HRESULT hr = S_OK;
+    XmlNodeType nodeType;
+
+    while (pReader->Read(&nodeType) == S_OK)
+    {
+        if (nodeType == XmlNodeType_EndElement)
+            break;
+
+        if (nodeType == XmlNodeType_Element)
+        {
+            LPCWSTR pszLocalName = nullptr;
+            hr = pReader->GetLocalName(&pszLocalName, nullptr);
+            if (FAILED(hr) || !pszLocalName)
+                continue;
+
+            if (wcscmp(pszLocalName, L"mediaItem") == 0)
+            {
+                ProjectMediaItem item;
+
+                LPCWSTR pszValue = nullptr;
+
+                hr = XmlReaderGetAttribute(pReader, L"id", &pszValue);
+                if (SUCCEEDED(hr) && pszValue)
+                    item.SetMediaId(_wtol(pszValue));
+
+                hr = XmlReaderGetAttribute(pReader, L"path", &pszValue);
+                if (SUCCEEDED(hr) && pszValue)
+                    item.SetSourcePath(pszValue);
+
+                hr = XmlReaderGetAttribute(pReader, L"type", &pszValue);
+                if (SUCCEEDED(hr) && pszValue)
+                    item.SetMediaType(_wtol(pszValue));
+
+                hr = XmlReaderGetAttribute(pReader, L"duration", &pszValue);
+                if (SUCCEEDED(hr) && pszValue)
+                    item.SetDurationHns(_wtoi64(pszValue));
+
+                hr = XmlReaderGetAttribute(pReader, L"width", &pszValue);
+                if (SUCCEEDED(hr) && pszValue)
+                {
+                    UINT cx = _wtol(pszValue);
+                    hr = XmlReaderGetAttribute(pReader, L"height", &pszValue);
+                    if (SUCCEEDED(hr) && pszValue)
+                        item.SetDimensions(cx, _wtol(pszValue));
+                }
+
+                hr = XmlReaderGetAttribute(pReader, L"frameRate", &pszValue);
+                if (SUCCEEDED(hr) && pszValue)
+                    item.SetFrameRate(_wtol(pszValue));
+
+                pProject->AddMediaItem(item);
+            }
+        }
+    }
+
+    return S_OK;
+}
+
+HRESULT SerializationReader::ReadProperties(IXmlReader* pReader, MovieProject* pProject)
+{
+    if (!pReader || !pProject)
+        return E_POINTER;
+
+    HRESULT hr = S_OK;
+    MovieProjectSettings& settings = pProject->GetSettings();
+
+    LPCWSTR pszValue = nullptr;
+
+    hr = XmlReaderGetAttribute(pReader, L"outputWidth", &pszValue);
+    if (SUCCEEDED(hr) && pszValue)
+    {
+        UINT cx = _wtol(pszValue);
+        hr = XmlReaderGetAttribute(pReader, L"outputHeight", &pszValue);
+        if (SUCCEEDED(hr) && pszValue)
+            settings.SetOutputDimensions(cx, _wtol(pszValue));
+    }
+
+    hr = XmlReaderGetAttribute(pReader, L"aspectRatio", &pszValue);
+    if (SUCCEEDED(hr) && pszValue)
+        settings.SetAspectRatio(_wtof(pszValue));
+
+    hr = XmlReaderGetAttribute(pReader, L"audioBitRate", &pszValue);
+    if (SUCCEEDED(hr) && pszValue)
+        settings.SetAudioBitRate(_wtol(pszValue));
+
+    hr = XmlReaderGetAttribute(pReader, L"videoBitRate", &pszValue);
+    if (SUCCEEDED(hr) && pszValue)
+        settings.SetVideoBitRate(_wtol(pszValue));
+
+    hr = XmlReaderGetAttribute(pReader, L"frameRate", &pszValue);
+    if (SUCCEEDED(hr) && pszValue)
+        settings.SetFrameRate(_wtol(pszValue));
+
+    return S_OK;
 }
 
 } // namespace StoryboardManager

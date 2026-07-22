@@ -75,6 +75,9 @@ public:
     DWORD GetChannels() const throw();
     DWORD GetBitsPerSample() const throw();
 
+    // Processed sample access
+    HRESULT GetLastProcessedSample(IMFSample** ppSample);
+
 private:
     DWORD               m_dwStreamIndex;
     StreamSinkState     m_state;
@@ -86,6 +89,7 @@ private:
 
     CComPtr<IMFMediaType> m_spInputType;
     CComPtr<IMFMediaType> m_spOutputType;
+    CComPtr<IMFSample>    m_spLastProcessedSample;
 
     HRESULT ConvertAndScaleSample(IMFSample* pSample, IMFSample** ppConverted);
 };

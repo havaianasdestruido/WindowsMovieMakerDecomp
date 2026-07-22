@@ -22,6 +22,12 @@ public:
     size_t GetUndoCount() const throw();
     size_t GetRedoCount() const throw();
 
+    // Transaction grouping — groups multiple Push calls into a single undo entry
+    HRESULT BeginTransaction();
+    HRESULT EndTransaction();
+    void    CancelTransaction();
+    bool    InTransaction() const throw();
+
 private:
     UndoManager(const UndoManager&);
     UndoManager& operator=(const UndoManager&);
@@ -34,6 +40,10 @@ private:
 
     std::vector<UndoEntry> m_undoStack;
     std::vector<UndoEntry> m_redoStack;
+
+    // Transaction grouping state
+    bool                    m_bInTransaction;
+    std::vector<UndoEntry>  m_transactionStack;
 };
 
 #endif

@@ -114,3 +114,99 @@ HRESULT ProjectManager::AddMediaItemFromFile(LPCWSTR pszFilePath)
     m_bDirty = true;
     return S_OK;
 }
+
+// ============================================================================
+// ClearDirty
+//
+// Resets the dirty flag. Called after a successful save or when the
+// project state is known to be clean.
+// ============================================================================
+void ProjectManager::ClearDirty() throw()
+{
+    m_bDirty = false;
+}
+
+// ============================================================================
+// GetDirtyStatus
+//
+// Returns a human-readable string describing the current dirty state.
+// Used by the UI to display the unsaved-changes indicator in the
+// title bar and status bar.
+// ============================================================================
+ATL::CString ProjectManager::GetDirtyStatus() const throw()
+{
+    if (m_bDirty)
+        return ATL::CString(L"Unsaved changes");
+    else if (HasProject())
+        return ATL::CString(L"Saved");
+    else
+        return ATL::CString(L"No project");
+}
+
+// ============================================================================
+// SaveAuto
+//
+// Performs an automatic save to the current project path. Called by
+// CheckAutoSave when the auto-save interval has elapsed. If no path
+// has been set, saves to the recovery directory instead.
+// ============================================================================
+HRESULT ProjectManager::SaveAuto()
+{
+    if (!m_pActiveProject)
+        return E_UNEXPECTED;
+
+    if (m_strProjectPath.IsEmpty())
+    {
+        // No explicit path yet — save to the auto-save recovery location
+        WCHAR szLocalAppData[MAX_PATH] = { 0 };
+        HRESULT hr = ::SHGetFolderPathW(NULL, CSIDL_LOCAL_APPDATA, NULL, 0, szLocalAppData);
+        if (FAILED(hr))
+            return hr;
+
+        ATL::CString strAutoSavePath;
+        strAutoSavePath.Format(
+            L"%s\\Microsoft\\Windows Live\\Movie Maker\\AutoSave\\autosave.wlmp",
+            szLocalAppData);
+
+        // Ensure directory exists
+        ATL::CString strDir = strAutoSavePath.Left(strAutoSavePath.ReverseFind(L'\\'));
+        ::CreateDirectoryW(strDir, NULL);
+
+        hr = m_pActiveProject->SaveAs(strAutoSavePath);
+        if (SUCCEEDED(hr))
+        {
+            m_dwLastSaveTime = ::GetTickCount();
+        }
+        return hr;
+    }
+
+    // Save to the current project path
+    HRESULT hr = m_pActiveProject->Save();
+    if (SUCCEEDED(hr))
+    {
+        m_bDirty = false;
+        m_dwLastSaveTime = ::GetTickCount();
+    }
+    return hr;
+}
+
+// ============================================================================
+// CheckAutoSave
+//
+// Called periodically (e.g. from the auto-save timer) to determine
+// whether enough time has elapsed since the last save to warrant
+// another automatic save. If so, calls SaveAuto.
+// ============================================================================
+void ProjectManager::CheckAutoSave()
+{
+    if (m_strProjectPath.IsEmpty() && !m_pActiveProject)
+        return;
+
+    DWORD dwNow = ::GetTickCount();
+    DWORD dwElapsed = dwNow - m_dwLastSaveTime;
+
+    if (dwElapsed >= kAutoSaveIntervalMs)
+    {
+        SaveAuto();
+    }
+}

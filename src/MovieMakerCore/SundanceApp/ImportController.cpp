@@ -1,6 +1,7 @@
 #include "pch.h"
 #include "ImportController.h"
 #include "ProjectManager.h"
+#include "SundanceAppMain.h"
 
 ImportController::ImportController()
     : m_bImporting(false)
@@ -22,6 +23,12 @@ HRESULT ImportController::ImportFiles(int cFiles, LPCWSTR* ppszFiles)
     m_flProgress = 0.0f;
     m_cImported = 0;
 
+    // Obtain the active project via the application singleton so that
+    // validated files are actually added to the timeline.
+    SundanceAppMain* pApp = GetSundanceAppMain();
+    StoryboardManagerNamespace::MovieProject* pProject =
+        pApp ? pApp->GetProject() : NULL;
+
     for (int i = 0; i < cFiles; ++i)
     {
         if (ppszFiles[i] && ppszFiles[i][0])
@@ -30,7 +37,21 @@ HRESULT ImportController::ImportFiles(int cFiles, LPCWSTR* ppszFiles)
             if (dwAttr != INVALID_FILE_ATTRIBUTES &&
                 !(dwAttr & FILE_ATTRIBUTE_DIRECTORY))
             {
-                ++m_cImported;
+                // File exists and is not a directory — add it to the project
+                if (pProject)
+                {
+                    HRESULT hrAdd = pProject->ImportMedia(
+                        ppszFiles[i],
+                        static_cast<StoryboardManager::TimelineTrackType>(
+                            TimelineTrack_Video));
+                    if (SUCCEEDED(hrAdd))
+                        ++m_cImported;
+                }
+                else
+                {
+                    // No project open; just count the valid file
+                    ++m_cImported;
+                }
             }
         }
 
@@ -39,7 +60,7 @@ HRESULT ImportController::ImportFiles(int cFiles, LPCWSTR* ppszFiles)
 
     m_bImporting = false;
     m_flProgress = 1.0f;
-    return S_OK;
+    return (m_cImported > 0) ? S_OK : S_FALSE;
 }
 
 float ImportController::GetImportProgress() const throw()

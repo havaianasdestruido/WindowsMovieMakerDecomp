@@ -158,7 +158,12 @@ void MeshResourceDX::DrawIndexed(ID3D11DeviceContext* ctx) const
 // ComposedGeometryResourceDX
 // ============================================================================
 ComposedGeometryResourceDX::ComposedGeometryResourceDX() = default;
-ComposedGeometryResourceDX::~ComposedGeometryResourceDX() { ClearParts(); }
+ComposedGeometryResourceDX::~ComposedGeometryResourceDX() { Release(); }
+
+void ComposedGeometryResourceDX::Release()
+{
+    ClearParts();
+}
 
 HRESULT ComposedGeometryResourceDX::AddPart(MeshResourceDX* mesh)
 {

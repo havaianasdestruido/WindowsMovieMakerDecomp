@@ -1892,10 +1892,10 @@ HRESULT MediaItemVideoSerializer::DeserializeItem(MediaItemBase* pItem,
                                                    SerializationReader* pReader,
                                                    SerializationContext& ctx)
 {
-    UNREFERENCED_PARAMETER(pItem);
-    UNREFERENCED_PARAMETER(pReader);
-    UNREFERENCED_PARAMETER(ctx);
-    return S_OK;
+    if (!pItem || !pReader)
+        return E_INVALIDARG;
+
+    return MediaItemSerializer::DeserializeItem(pItem, pReader, ctx);
 }
 
 LPCWSTR MediaItemVideoSerializer::GetElementName() const
@@ -1920,16 +1920,34 @@ HRESULT MediaItemAudioSerializer::SerializeItem(MediaItemBase* pItem, Serializat
     if (!pItem || !pWriter)
         return E_INVALIDARG;
 
-    return MediaItemSerializer::SerializeItem(pItem, pWriter);
+    HRESULT hr = MediaItemSerializer::SerializeItem(pItem, pWriter);
+    if (FAILED(hr)) return hr;
+
+    AudioClip* pAudio = static_cast<AudioClip*>(pItem);
+
+    hr = pWriter->WriteAttribute(L"audioFadeIn", pAudio->GetAudioFadeInHns());
+    if (FAILED(hr)) return hr;
+
+    hr = pWriter->WriteAttribute(L"audioFadeOut", pAudio->GetAudioFadeOutHns());
+    if (FAILED(hr)) return hr;
+
+    hr = pWriter->WriteAttribute(L"normalize", pAudio->IsNormalizeEnabled());
+    return hr;
 }
 
 HRESULT MediaItemAudioSerializer::DeserializeItem(MediaItemBase* pItem,
                                                    SerializationReader* pReader,
                                                    SerializationContext& ctx)
 {
-    UNREFERENCED_PARAMETER(pItem);
-    UNREFERENCED_PARAMETER(pReader);
-    UNREFERENCED_PARAMETER(ctx);
+    if (!pItem || !pReader)
+        return E_INVALIDARG;
+
+    HRESULT hr = MediaItemSerializer::DeserializeItem(pItem, pReader, ctx);
+    if (FAILED(hr)) return hr;
+
+    AudioClip* pAudio = static_cast<AudioClip*>(pItem);
+    UNREFERENCED_PARAMETER(pAudio);
+
     return S_OK;
 }
 
@@ -1962,10 +1980,10 @@ HRESULT MediaItemPhotoSerializer::DeserializeItem(MediaItemBase* pItem,
                                                    SerializationReader* pReader,
                                                    SerializationContext& ctx)
 {
-    UNREFERENCED_PARAMETER(pItem);
-    UNREFERENCED_PARAMETER(pReader);
-    UNREFERENCED_PARAMETER(ctx);
-    return S_OK;
+    if (!pItem || !pReader)
+        return E_INVALIDARG;
+
+    return MediaItemSerializer::DeserializeItem(pItem, pReader, ctx);
 }
 
 LPCWSTR MediaItemPhotoSerializer::GetElementName() const
@@ -1998,10 +2016,10 @@ HRESULT MediaItemTransitionSerializer::DeserializeItem(MediaItemBase* pItem,
                                                         SerializationReader* pReader,
                                                         SerializationContext& ctx)
 {
-    UNREFERENCED_PARAMETER(pItem);
-    UNREFERENCED_PARAMETER(pReader);
-    UNREFERENCED_PARAMETER(ctx);
-    return S_OK;
+    if (!pItem || !pReader)
+        return E_INVALIDARG;
+
+    return MediaItemSerializer::DeserializeItem(pItem, pReader, ctx);
 }
 
 LPCWSTR MediaItemTransitionSerializer::GetElementName() const
@@ -2034,10 +2052,10 @@ HRESULT MediaItemEffectSerializer::DeserializeItem(MediaItemBase* pItem,
                                                     SerializationReader* pReader,
                                                     SerializationContext& ctx)
 {
-    UNREFERENCED_PARAMETER(pItem);
-    UNREFERENCED_PARAMETER(pReader);
-    UNREFERENCED_PARAMETER(ctx);
-    return S_OK;
+    if (!pItem || !pReader)
+        return E_INVALIDARG;
+
+    return MediaItemSerializer::DeserializeItem(pItem, pReader, ctx);
 }
 
 LPCWSTR MediaItemEffectSerializer::GetElementName() const
@@ -2069,10 +2087,10 @@ HRESULT MediaItemTextSerializer::DeserializeItem(MediaItemBase* pItem,
                                                   SerializationReader* pReader,
                                                   SerializationContext& ctx)
 {
-    UNREFERENCED_PARAMETER(pItem);
-    UNREFERENCED_PARAMETER(pReader);
-    UNREFERENCED_PARAMETER(ctx);
-    return S_OK;
+    if (!pItem || !pReader)
+        return E_INVALIDARG;
+
+    return MediaItemSerializer::DeserializeItem(pItem, pReader, ctx);
 }
 
 LPCWSTR MediaItemTextSerializer::GetElementName() const
@@ -2104,10 +2122,10 @@ HRESULT MediaItemGroupSerializer::DeserializeItem(MediaItemBase* pItem,
                                                    SerializationReader* pReader,
                                                    SerializationContext& ctx)
 {
-    UNREFERENCED_PARAMETER(pItem);
-    UNREFERENCED_PARAMETER(pReader);
-    UNREFERENCED_PARAMETER(ctx);
-    return S_OK;
+    if (!pItem || !pReader)
+        return E_INVALIDARG;
+
+    return MediaItemSerializer::DeserializeItem(pItem, pReader, ctx);
 }
 
 LPCWSTR MediaItemGroupSerializer::GetElementName() const
@@ -2494,19 +2512,36 @@ TemplateValidator::~TemplateValidator()
 
 bool TemplateValidator::ValidateEntry(const TemplateEntry& entry) const
 {
-    UNREFERENCED_PARAMETER(entry);
+    if (entry.GetName().IsEmpty())
+    {
+        const_cast<TemplateValidator*>(this)->m_strErrors += L"Template entry has no name.\n";
+        return false;
+    }
     return true;
 }
 
 bool TemplateValidator::ValidateCategory(const TemplateCategory& category) const
 {
-    UNREFERENCED_PARAMETER(category);
+    if (category.GetName().IsEmpty())
+    {
+        const_cast<TemplateValidator*>(this)->m_strErrors += L"Template category has no name.\n";
+        return false;
+    }
+    if (category.GetEntryCount() == 0)
+    {
+        const_cast<TemplateValidator*>(this)->m_strErrors += L"Template category has no entries.\n";
+        return false;
+    }
     return true;
 }
 
 bool TemplateValidator::ValidateTable(const TemplateTable& table) const
 {
-    UNREFERENCED_PARAMETER(table);
+    if (table.GetTemplateCount() == 0)
+    {
+        const_cast<TemplateValidator*>(this)->m_strErrors += L"Template table has no templates.\n";
+        return false;
+    }
     return true;
 }
 
@@ -3418,6 +3453,7 @@ HRESULT SerializationContextRead::Initialize()
 {
     SerializationContextBase::Initialize();
     m_ctx.SetMode(SerializationModeRead);
+    m_attributes.RemoveAll();
     return S_OK;
 }
 
@@ -3433,17 +3469,27 @@ SerializationReader* SerializationContextRead::GetReader() const
 
 HRESULT SerializationContextRead::BeginElement(LPCWSTR pszName)
 {
-    UNREFERENCED_PARAMETER(pszName);
+    if (!pszName)
+        return E_INVALIDARG;
+
     if (!m_pReader)
         return E_POINTER;
+
+    m_ctx.IncrementDepth();
+    m_attributes.RemoveAll();
     return S_OK;
 }
 
 HRESULT SerializationContextRead::EndElement(LPCWSTR pszName)
 {
-    UNREFERENCED_PARAMETER(pszName);
+    if (!pszName)
+        return E_INVALIDARG;
+
     if (!m_pReader)
         return E_POINTER;
+
+    m_attributes.RemoveAll();
+    m_ctx.DecrementDepth();
     return S_OK;
 }
 
@@ -3455,7 +3501,20 @@ HRESULT SerializationContextRead::ReadAttribute(LPCWSTR pszName, ATL::CString& s
     if (!m_pReader)
         return E_POINTER;
 
-    return DISP_E_UNKNOWNNAME;
+    return m_attributes.GetAttribute(pszName, strValue);
+}
+
+HRESULT SerializationContextRead::CacheAttribute(LPCWSTR pszName, LPCWSTR pszValue)
+{
+    if (!pszName)
+        return E_INVALIDARG;
+
+    return m_attributes.AddAttribute(pszName, pszValue);
+}
+
+void SerializationContextRead::ClearAttributes()
+{
+    m_attributes.RemoveAll();
 }
 
 // ============================================================================
@@ -3850,6 +3909,23 @@ HRESULT SerializationBookmark::RestorePosition(IXmlReader* pReader)
 {
     if (!pReader)
         return E_POINTER;
+
+    if (!HasPosition())
+        return S_OK;
+
+    XmlNodeType nodeType;
+    while (pReader->Read(&nodeType) == S_OK)
+    {
+        if (nodeType == XmlNodeType_Element || nodeType == XmlNodeTypeEndElement)
+        {
+            UINT uDepth = 0;
+            pReader->GetDepth(&uDepth);
+            if (uDepth == m_dwElementDepth)
+            {
+                return S_OK;
+            }
+        }
+    }
 
     return S_OK;
 }

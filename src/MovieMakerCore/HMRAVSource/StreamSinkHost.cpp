@@ -54,7 +54,10 @@ HRESULT AudioStreamSink::WriteSample(IMFSample* pSample)
     m_state = StreamSinkStateWriting;
 
     if (m_fMute)
+    {
+        m_spLastProcessedSample = nullptr;
         return S_FALSE;
+    }
 
     m_dwSamplesWritten++;
 
@@ -67,6 +70,18 @@ HRESULT AudioStreamSink::WriteSample(IMFSample* pSample)
     if (FAILED(hr))
         return hr;
 
+    m_spLastProcessedSample = spProcessed;
+    return S_OK;
+}
+
+HRESULT AudioStreamSink::GetLastProcessedSample(IMFSample** ppSample)
+{
+    if (!ppSample)
+        return E_POINTER;
+
+    *ppSample = m_spLastProcessedSample;
+    if (*ppSample)
+        (*ppSample)->AddRef();
     return S_OK;
 }
 

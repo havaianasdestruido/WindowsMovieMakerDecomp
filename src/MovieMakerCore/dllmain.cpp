@@ -241,6 +241,9 @@ static BOOL InitializeSubsystems(HINSTANCE hInstance)
                 &achievedLevel,
                 &g_pD3D11Context);
         }
+
+        if (FAILED(hr) || !g_pD3D11Device)
+            return FALSE;
     }
 
     // ------------------------------------------------------------------
@@ -252,6 +255,8 @@ static BOOL InitializeSubsystems(HINSTANCE hInstance)
             D2D1_FACTORY_TYPE_SINGLE_THREADED,
             __uuidof(ID2D1Factory),
             reinterpret_cast<void**>(&g_pD2DFactory));
+        if (FAILED(hr) || !g_pD2DFactory)
+            return FALSE;
     }
 
     // ------------------------------------------------------------------
@@ -263,6 +268,8 @@ static BOOL InitializeSubsystems(HINSTANCE hInstance)
             DWRITE_FACTORY_TYPE_SHARED,
             __uuidof(IDWriteFactory),
             reinterpret_cast<IUnknown**>(&g_pDWriteFactory));
+        if (FAILED(hr) || !g_pDWriteFactory)
+            return FALSE;
     }
 
     // ------------------------------------------------------------------
@@ -275,6 +282,8 @@ static BOOL InitializeSubsystems(HINSTANCE hInstance)
             NULL,
             CLSCTX_INPROC_SERVER,
             IID_PPV_ARGS(&g_pWICFactory));
+        if (FAILED(hr) || !g_pWICFactory)
+            return FALSE;
     }
 
     return TRUE;

@@ -334,9 +334,11 @@ public:
 
     STDMETHOD(OnElementAttached)(IDuiElement* pElement) override;
     STDMETHOD(OnElementDetached)(IDuiElement* pElement) override;
+    STDMETHOD(OnMessage)(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL* pbHandled) override;
 
 private:
     IDuiElement* m_pElement;
+    SundanceAppMain* m_pAppMain;
 };
 
 // RibbonEventHandler
@@ -359,9 +361,11 @@ public:
 
     STDMETHOD(OnElementAttached)(IDuiElement* pElement) override;
     STDMETHOD(OnElementDetached)(IDuiElement* pElement) override;
+    STDMETHOD(OnMessage)(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL* pbHandled) override;
 
 private:
     IDuiElement* m_pElement;
+    SundanceAppMain* m_pAppMain;
 };
 
 // RibbonSiteBehavior
@@ -384,9 +388,11 @@ public:
 
     STDMETHOD(OnElementAttached)(IDuiElement* pElement) override;
     STDMETHOD(OnElementDetached)(IDuiElement* pElement) override;
+    STDMETHOD(OnMessage)(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL* pbHandled) override;
 
 private:
     IDuiElement* m_pElement;
+    SundanceAppMain* m_pAppMain;
 };
 
 // RibbonContextualUIBehavior
@@ -409,9 +415,11 @@ public:
 
     STDMETHOD(OnElementAttached)(IDuiElement* pElement) override;
     STDMETHOD(OnElementDetached)(IDuiElement* pElement) override;
+    STDMETHOD(OnMessage)(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL* pbHandled) override;
 
 private:
     IDuiElement* m_pElement;
+    SundanceAppMain* m_pAppMain;
 };
 
 // RibbonQuickAccessBehavior
@@ -434,9 +442,11 @@ public:
 
     STDMETHOD(OnElementAttached)(IDuiElement* pElement) override;
     STDMETHOD(OnElementDetached)(IDuiElement* pElement) override;
+    STDMETHOD(OnMessage)(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL* pbHandled) override;
 
 private:
     IDuiElement* m_pElement;
+    SundanceAppMain* m_pAppMain;
 };
 
 // RibbonGalleryBehavior
@@ -459,9 +469,12 @@ public:
 
     STDMETHOD(OnElementAttached)(IDuiElement* pElement) override;
     STDMETHOD(OnElementDetached)(IDuiElement* pElement) override;
+    STDMETHOD(OnMessage)(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL* pbHandled) override;
 
 private:
     IDuiElement* m_pElement;
+    int          m_nScrollOffset;
+    int          m_nItemWidth;
 };
 
 // RibbonRecentItemsBehavior
@@ -484,9 +497,11 @@ public:
 
     STDMETHOD(OnElementAttached)(IDuiElement* pElement) override;
     STDMETHOD(OnElementDetached)(IDuiElement* pElement) override;
+    STDMETHOD(OnMessage)(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL* pbHandled) override;
 
 private:
-    IDuiElement* m_pElement;
+    IDuiElement*    m_pElement;
+    SundanceAppMain* m_pAppMain;
 };
 
 // ============================================================================
@@ -540,10 +555,12 @@ public:
 
     STDMETHOD(OnElementAttached)(IDuiElement* pElement) override;
     STDMETHOD(OnElementDetached)(IDuiElement* pElement) override;
+    STDMETHOD(OnMessage)(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL* pbHandled) override;
 
 private:
     IDuiElement*    m_pElement;
     SundanceAppMain* m_pAppMain;
+    BOOL            m_bMultiSelect;
 };
 
 // SelectionRange
@@ -592,9 +609,11 @@ public:
 
     STDMETHOD(OnElementAttached)(IDuiElement* pElement) override;
     STDMETHOD(OnElementDetached)(IDuiElement* pElement) override;
+    STDMETHOD(OnMessage)(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL* pbHandled) override;
 
 private:
-    IDuiElement* m_pElement;
+    IDuiElement*    m_pElement;
+    SundanceAppMain* m_pAppMain;
 };
 
 // SelectionUI
@@ -643,6 +662,7 @@ public:
 
     STDMETHOD(OnElementAttached)(IDuiElement* pElement) override;
     STDMETHOD(OnElementDetached)(IDuiElement* pElement) override;
+    STDMETHOD(OnMessage)(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL* pbHandled) override;
 
 private:
     IDuiElement*    m_pElement;
@@ -669,6 +689,7 @@ public:
 
     STDMETHOD(OnElementAttached)(IDuiElement* pElement) override;
     STDMETHOD(OnElementDetached)(IDuiElement* pElement) override;
+    STDMETHOD(OnMessage)(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL* pbHandled) override;
 
 private:
     IDuiElement*    m_pElement;
@@ -695,6 +716,7 @@ public:
 
     STDMETHOD(OnElementAttached)(IDuiElement* pElement) override;
     STDMETHOD(OnElementDetached)(IDuiElement* pElement) override;
+    STDMETHOD(OnMessage)(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL* pbHandled) override;
 
 private:
     IDuiElement*    m_pElement;
@@ -725,6 +747,7 @@ public:
 
     STDMETHOD(OnElementAttached)(IDuiElement* pElement) override;
     STDMETHOD(OnElementDetached)(IDuiElement* pElement) override;
+    STDMETHOD(OnMessage)(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL* pbHandled) override;
 
 private:
     IDuiElement*    m_pElement;
@@ -751,10 +774,13 @@ public:
 
     STDMETHOD(OnElementAttached)(IDuiElement* pElement) override;
     STDMETHOD(OnElementDetached)(IDuiElement* pElement) override;
+    STDMETHOD(OnMessage)(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL* pbHandled) override;
+    STDMETHOD(OnPaint)(HDC hdc, const RECT* prcBounds) override;
 
 private:
     IDuiElement*    m_pElement;
     SundanceAppMain* m_pAppMain;
+    ATL::CString    m_statusText;
 };
 
 // SundanceTimelineElementBehavior
@@ -777,6 +803,7 @@ public:
 
     STDMETHOD(OnElementAttached)(IDuiElement* pElement) override;
     STDMETHOD(OnElementDetached)(IDuiElement* pElement) override;
+    STDMETHOD(OnMessage)(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL* pbHandled) override;
 
 private:
     IDuiElement*    m_pElement;
@@ -803,6 +830,7 @@ public:
 
     STDMETHOD(OnElementAttached)(IDuiElement* pElement) override;
     STDMETHOD(OnElementDetached)(IDuiElement* pElement) override;
+    STDMETHOD(OnMessage)(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL* pbHandled) override;
 
 private:
     IDuiElement*    m_pElement;
@@ -829,6 +857,7 @@ public:
 
     STDMETHOD(OnElementAttached)(IDuiElement* pElement) override;
     STDMETHOD(OnElementDetached)(IDuiElement* pElement) override;
+    STDMETHOD(OnMessage)(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL* pbHandled) override;
 
 private:
     IDuiElement*    m_pElement;
@@ -859,6 +888,7 @@ public:
 
     STDMETHOD(OnElementAttached)(IDuiElement* pElement) override;
     STDMETHOD(OnElementDetached)(IDuiElement* pElement) override;
+    STDMETHOD(OnMessage)(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL* pbHandled) override;
 
 private:
     IDuiElement*    m_pElement;
@@ -911,6 +941,7 @@ public:
 
     STDMETHOD(OnElementAttached)(IDuiElement* pElement) override;
     STDMETHOD(OnElementDetached)(IDuiElement* pElement) override;
+    STDMETHOD(OnMessage)(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL* pbHandled) override;
 
 private:
     IDuiElement*    m_pElement;
@@ -937,6 +968,7 @@ public:
 
     STDMETHOD(OnElementAttached)(IDuiElement* pElement) override;
     STDMETHOD(OnElementDetached)(IDuiElement* pElement) override;
+    STDMETHOD(OnMessage)(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL* pbHandled) override;
 
 private:
     IDuiElement*    m_pElement;
@@ -963,6 +995,7 @@ public:
 
     STDMETHOD(OnElementAttached)(IDuiElement* pElement) override;
     STDMETHOD(OnElementDetached)(IDuiElement* pElement) override;
+    STDMETHOD(OnMessage)(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL* pbHandled) override;
 
 private:
     IDuiElement*    m_pElement;
@@ -989,6 +1022,7 @@ public:
 
     STDMETHOD(OnElementAttached)(IDuiElement* pElement) override;
     STDMETHOD(OnElementDetached)(IDuiElement* pElement) override;
+    STDMETHOD(OnMessage)(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL* pbHandled) override;
 
 private:
     IDuiElement*    m_pElement;
@@ -1019,6 +1053,7 @@ public:
 
     STDMETHOD(OnElementAttached)(IDuiElement* pElement) override;
     STDMETHOD(OnElementDetached)(IDuiElement* pElement) override;
+    STDMETHOD(OnMessage)(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL* pbHandled) override;
 
 private:
     IDuiElement*    m_pElement;
@@ -1045,6 +1080,7 @@ public:
 
     STDMETHOD(OnElementAttached)(IDuiElement* pElement) override;
     STDMETHOD(OnElementDetached)(IDuiElement* pElement) override;
+    STDMETHOD(OnMessage)(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL* pbHandled) override;
 
 private:
     IDuiElement* m_pElement;
@@ -1070,6 +1106,7 @@ public:
 
     STDMETHOD(OnElementAttached)(IDuiElement* pElement) override;
     STDMETHOD(OnElementDetached)(IDuiElement* pElement) override;
+    STDMETHOD(OnMessage)(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL* pbHandled) override;
 
 private:
     IDuiElement* m_pElement;
@@ -1095,6 +1132,7 @@ public:
 
     STDMETHOD(OnElementAttached)(IDuiElement* pElement) override;
     STDMETHOD(OnElementDetached)(IDuiElement* pElement) override;
+    STDMETHOD(OnMessage)(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL* pbHandled) override;
 
 private:
     IDuiElement* m_pElement;
@@ -1124,6 +1162,7 @@ public:
 
     STDMETHOD(OnElementAttached)(IDuiElement* pElement) override;
     STDMETHOD(OnElementDetached)(IDuiElement* pElement) override;
+    STDMETHOD(OnMessage)(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL* pbHandled) override;
 
 private:
     IDuiElement*    m_pElement;
@@ -1150,6 +1189,7 @@ public:
 
     STDMETHOD(OnElementAttached)(IDuiElement* pElement) override;
     STDMETHOD(OnElementDetached)(IDuiElement* pElement) override;
+    STDMETHOD(OnMessage)(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL* pbHandled) override;
 
 private:
     IDuiElement*    m_pElement;
@@ -1176,6 +1216,7 @@ public:
 
     STDMETHOD(OnElementAttached)(IDuiElement* pElement) override;
     STDMETHOD(OnElementDetached)(IDuiElement* pElement) override;
+    STDMETHOD(OnMessage)(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL* pbHandled) override;
 
 private:
     IDuiElement*    m_pElement;
@@ -1202,6 +1243,7 @@ public:
 
     STDMETHOD(OnElementAttached)(IDuiElement* pElement) override;
     STDMETHOD(OnElementDetached)(IDuiElement* pElement) override;
+    STDMETHOD(OnMessage)(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL* pbHandled) override;
 
 private:
     IDuiElement*    m_pElement;
@@ -1228,6 +1270,7 @@ public:
 
     STDMETHOD(OnElementAttached)(IDuiElement* pElement) override;
     STDMETHOD(OnElementDetached)(IDuiElement* pElement) override;
+    STDMETHOD(OnMessage)(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL* pbHandled) override;
 
 private:
     IDuiElement*    m_pElement;
@@ -1254,6 +1297,7 @@ public:
 
     STDMETHOD(OnElementAttached)(IDuiElement* pElement) override;
     STDMETHOD(OnElementDetached)(IDuiElement* pElement) override;
+    STDMETHOD(OnMessage)(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL* pbHandled) override;
 
 private:
     IDuiElement*    m_pElement;
@@ -1310,6 +1354,7 @@ public:
 
     STDMETHOD(OnElementAttached)(IDuiElement* pElement) override;
     STDMETHOD(OnElementDetached)(IDuiElement* pElement) override;
+    STDMETHOD(OnMessage)(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL* pbHandled) override;
 
 private:
     IDuiElement* m_pElement;
@@ -1335,6 +1380,7 @@ public:
 
     STDMETHOD(OnElementAttached)(IDuiElement* pElement) override;
     STDMETHOD(OnElementDetached)(IDuiElement* pElement) override;
+    STDMETHOD(OnMessage)(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL* pbHandled) override;
 
 private:
     IDuiElement* m_pElement;
@@ -1360,6 +1406,7 @@ public:
 
     STDMETHOD(OnElementAttached)(IDuiElement* pElement) override;
     STDMETHOD(OnElementDetached)(IDuiElement* pElement) override;
+    STDMETHOD(OnMessage)(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL* pbHandled) override;
 
 private:
     IDuiElement* m_pElement;
@@ -1385,6 +1432,7 @@ public:
 
     STDMETHOD(OnElementAttached)(IDuiElement* pElement) override;
     STDMETHOD(OnElementDetached)(IDuiElement* pElement) override;
+    STDMETHOD(OnMessage)(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL* pbHandled) override;
 
 private:
     IDuiElement* m_pElement;
@@ -1410,6 +1458,7 @@ public:
 
     STDMETHOD(OnElementAttached)(IDuiElement* pElement) override;
     STDMETHOD(OnElementDetached)(IDuiElement* pElement) override;
+    STDMETHOD(OnMessage)(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL* pbHandled) override;
 
 private:
     IDuiElement* m_pElement;
@@ -1435,6 +1484,7 @@ public:
 
     STDMETHOD(OnElementAttached)(IDuiElement* pElement) override;
     STDMETHOD(OnElementDetached)(IDuiElement* pElement) override;
+    STDMETHOD(OnMessage)(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL* pbHandled) override;
 
 private:
     IDuiElement* m_pElement;
@@ -1460,6 +1510,7 @@ public:
 
     STDMETHOD(OnElementAttached)(IDuiElement* pElement) override;
     STDMETHOD(OnElementDetached)(IDuiElement* pElement) override;
+    STDMETHOD(OnMessage)(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL* pbHandled) override;
 
 private:
     IDuiElement* m_pElement;
@@ -1485,6 +1536,7 @@ public:
 
     STDMETHOD(OnElementAttached)(IDuiElement* pElement) override;
     STDMETHOD(OnElementDetached)(IDuiElement* pElement) override;
+    STDMETHOD(OnMessage)(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL* pbHandled) override;
 
 private:
     IDuiElement* m_pElement;

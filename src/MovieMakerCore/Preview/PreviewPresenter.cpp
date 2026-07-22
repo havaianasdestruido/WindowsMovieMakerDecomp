@@ -162,6 +162,12 @@ HRESULT DefaultPreviewDX::BeginFrame()
 
 HRESULT DefaultPreviewDX::EndFrame()
 {
+    if (!m_fInitialized)
+        return E_UNEXPECTED;
+
+    if (m_pContext)
+        m_pContext->Flush();
+
     return S_OK;
 }
 

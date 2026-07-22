@@ -257,11 +257,41 @@ HRESULT BoundPlaceholder::ResolveFromElement(const ModBeginElement* pElement)
     if (!pElement)
         return E_POINTER;
 
-    for (size_t i = 0; i < pElement->GetAttributeCount(); ++i)
+    ATL::CString strValue;
+
+    static const LPCWSTR s_knownAttrs[] = {
+        L"template", L"selector", L"extentId", L"itemId",
+        L"name", L"type", L"value", nullptr
+    };
+
+    for (int i = 0; s_knownAttrs[i] != nullptr; ++i)
     {
-        ATL::CString strValue;
-        // Note: ModBeginElement doesn't expose iteration, so we copy known attributes
-        // based on the element type. This is a simplified implementation.
+        if (SUCCEEDED(pElement->GetAttribute(s_knownAttrs[i], strValue)))
+        {
+            SetAttribute(s_knownAttrs[i], strValue);
+        }
+    }
+
+    if (SUCCEEDED(pElement->GetAttribute(L"template", strValue)))
+    {
+        SetBoundTemplateName(strValue);
+    }
+
+    if (SUCCEEDED(pElement->GetAttribute(L"selector", strValue)))
+    {
+        SetTemplateSelector(strValue);
+    }
+
+    ATL::CString strExtentId;
+    if (SUCCEEDED(pElement->GetAttribute(L"extentId", strExtentId)))
+    {
+        SetBoundExtentId(static_cast<DWORD>(_wtol(strExtentId)));
+    }
+
+    ATL::CString strItemId;
+    if (SUCCEEDED(pElement->GetAttribute(L"itemId", strItemId)))
+    {
+        SetBoundItemId(static_cast<DWORD>(_wtol(strItemId)));
     }
 
     m_fResolved = true;

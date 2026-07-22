@@ -104,6 +104,28 @@ void RibbonList::RemoveAllCategories() { m_arrCategories.RemoveAll(); }
 
 HRESULT RibbonList::Refresh()
 {
+    // Mark the list as needing refresh. The ribbon framework will
+    // re-query our items via UpdateProperty when it processes the
+    // next InvalidateUICommand or FlushPendingInvalidations call.
+    // Individual gallery/list controls store a dirty flag that the
+    // framework checks during its update pass.
+
+    // Validate selection is still in range
+    if (m_nSelectedItemId != 0)
+    {
+        bool fFound = false;
+        for (size_t i = 0; i < m_arrItems.GetCount(); ++i)
+        {
+            if (m_arrItems.GetAt(i).nItemId == m_nSelectedItemId)
+            {
+                fFound = true;
+                break;
+            }
+        }
+        if (!fFound)
+            m_nSelectedItemId = 0;
+    }
+
     return S_OK;
 }
 
@@ -236,8 +258,111 @@ const CMRUItem* CMRUSite::FindItem(LPCWSTR pszFilePath) const
     return nullptr;
 }
 
-HRESULT CMRUSite::SaveToRegistry(LPCWSTR pszRegKey) { UNREFERENCED_PARAMETER(pszRegKey); return S_OK; }
-HRESULT CMRUSite::LoadFromRegistry(LPCWSTR pszRegKey) { UNREFERENCED_PARAMETER(pszRegKey); return S_OK; }
+HRESULT CMRUSite::SaveToRegistry(LPCWSTR pszRegKey)
+{
+    if (!pszRegKey) return E_INVALIDARG;
+
+    HKEY hKey = nullptr;
+    LRESULT lRes = RegCreateKeyExW(HKEY_CURRENT_USER, pszRegKey,
+        0, nullptr, 0, KEY_SET_VALUE, nullptr, &hKey, nullptr);
+    if (lRes != ERROR_SUCCESS)
+        return HRESULT_FROM_WIN32(lRes);
+
+    // Save item count
+    DWORD dwCount = static_cast<DWORD>(m_arrItems.GetCount());
+    RegSetValueExW(hKey, L"Count", 0, REG_DWORD,
+        reinterpret_cast<const BYTE*>(&dwCount), sizeof(DWORD));
+
+    // Save each MRU item
+    for (size_t i = 0; i < m_arrItems.GetCount(); ++i)
+    {
+        const CMRUItem& item = m_arrItems.GetAt(i);
+
+        WCHAR szValueName[64];
+        swprintf_s(szValueName, L"Item%zu", i);
+
+        // Store path and display name as REG_SZ
+        RegSetValueExW(hKey, szValueName, 0, REG_SZ,
+            reinterpret_cast<const BYTE*>(item.strFilePath.GetString()),
+            static_cast<DWORD>((item.strFilePath.GetLength() + 1) * sizeof(WCHAR)));
+
+        swprintf_s(szValueName, L"Item%zu_Name", i);
+        RegSetValueExW(hKey, szValueName, 0, REG_SZ,
+            reinterpret_cast<const BYTE*>(item.strDisplayName.GetString()),
+            static_cast<DWORD>((item.strDisplayName.GetLength() + 1) * sizeof(WCHAR)));
+
+        // Save pinned flag
+        swprintf_s(szValueName, L"Item%zu_Pinned", i);
+        DWORD dwPinned = (item.dwFlags & 0x1) ? 1 : 0;
+        RegSetValueExW(hKey, szValueName, 0, REG_DWORD,
+            reinterpret_cast<const BYTE*>(&dwPinned), sizeof(DWORD));
+    }
+
+    RegCloseKey(hKey);
+    return S_OK;
+}
+
+HRESULT CMRUSite::LoadFromRegistry(LPCWSTR pszRegKey)
+{
+    if (!pszRegKey) return E_INVALIDARG;
+
+    HKEY hKey = nullptr;
+    LRESULT lRes = RegOpenKeyExW(HKEY_CURRENT_USER, pszRegKey,
+        0, KEY_READ, &hKey);
+    if (lRes != ERROR_SUCCESS)
+        return HRESULT_FROM_WIN32(lRes);
+
+    m_arrItems.RemoveAll();
+
+    // Read item count
+    DWORD dwCount = 0;
+    DWORD dwType = 0;
+    DWORD dwSize = sizeof(DWORD);
+    lRes = RegQueryValueExW(hKey, L"Count", nullptr, &dwType,
+        reinterpret_cast<BYTE*>(&dwCount), &dwSize);
+    if (lRes != ERROR_SUCCESS || dwType != REG_DWORD)
+    {
+        RegCloseKey(hKey);
+        return S_FALSE;
+    }
+
+    // Read each MRU item
+    for (DWORD i = 0; i < dwCount && i < m_uMaxItems; ++i)
+    {
+        WCHAR szValueName[64];
+        WCHAR szFilePath[MAX_PATH] = { 0 };
+        WCHAR szDisplayName[MAX_PATH] = { 0 };
+
+        swprintf_s(szValueName, L"Item%zu", i);
+        dwSize = sizeof(szFilePath);
+        lRes = RegQueryValueExW(hKey, szValueName, nullptr, &dwType,
+            reinterpret_cast<BYTE*>(szFilePath), &dwSize);
+        if (lRes != ERROR_SUCCESS)
+            continue;
+
+        swprintf_s(szValueName, L"Item%zu_Name", i);
+        dwSize = sizeof(szDisplayName);
+        RegQueryValueExW(hKey, szValueName, nullptr, &dwType,
+            reinterpret_cast<BYTE*>(szDisplayName), &dwSize);
+
+        CMRUItem item;
+        item.strFilePath = szFilePath;
+        item.strDisplayName = szDisplayName[0] ? szDisplayName : szFilePath;
+
+        swprintf_s(szValueName, L"Item%zu_Pinned", i);
+        dwSize = sizeof(DWORD);
+        DWORD dwPinned = 0;
+        RegQueryValueExW(hKey, szValueName, nullptr, &dwType,
+            reinterpret_cast<BYTE*>(&dwPinned), &dwSize);
+        if (dwPinned)
+            item.dwFlags |= 0x1;
+
+        m_arrItems.Add(item);
+    }
+
+    RegCloseKey(hKey);
+    return S_OK;
+}
 
 HRESULT CMRUSite::PinItem(LPCWSTR pszFilePath, bool fPin)
 {

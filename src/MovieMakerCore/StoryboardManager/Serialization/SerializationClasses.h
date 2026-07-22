@@ -1394,6 +1394,31 @@ private:
 //       ?AVSerializationContextWrite@@ ?AVSerializationContextVersion@@
 //       ?AVSerializationContextRegistry@@
 //
+class STORYBOARD_API SerializationAttributeList
+{
+public:
+    SerializationAttributeList();
+    ~SerializationAttributeList();
+
+    HRESULT AddAttribute(LPCWSTR pszName, LPCWSTR pszValue);
+    HRESULT GetAttribute(LPCWSTR pszName, ATL::CString& strValue) const;
+    bool HasAttribute(LPCWSTR pszName) const;
+
+    size_t GetCount() const throw();
+    LPCWSTR GetNameAt(size_t nIndex) const;
+    LPCWSTR GetValueAt(size_t nIndex) const;
+
+    void RemoveAll();
+
+private:
+    struct AttrEntry
+    {
+        ATL::CString strName;
+        ATL::CString strValue;
+    };
+    ATL::CAtlArray<AttrEntry> m_arrEntries;
+};
+
 class STORYBOARD_API SerializationContextBase
 {
 public:
@@ -1428,8 +1453,12 @@ public:
     HRESULT EndElement(LPCWSTR pszName);
     HRESULT ReadAttribute(LPCWSTR pszName, ATL::CString& strValue);
 
+    HRESULT CacheAttribute(LPCWSTR pszName, LPCWSTR pszValue);
+    void ClearAttributes();
+
 private:
     SerializationReader* m_pReader;
+    SerializationAttributeList m_attributes;
 };
 
 class STORYBOARD_API SerializationContextWrite : public SerializationContextBase
@@ -1517,31 +1546,6 @@ private:
         DWORD        dwHandlerId;
     };
     ATL::CAtlArray<MapEntry> m_arrEntries;
-};
-
-class STORYBOARD_API SerializationAttributeList
-{
-public:
-    SerializationAttributeList();
-    ~SerializationAttributeList();
-
-    HRESULT AddAttribute(LPCWSTR pszName, LPCWSTR pszValue);
-    HRESULT GetAttribute(LPCWSTR pszName, ATL::CString& strValue) const;
-    bool HasAttribute(LPCWSTR pszName) const;
-
-    size_t GetCount() const throw();
-    LPCWSTR GetNameAt(size_t nIndex) const;
-    LPCWSTR GetValueAt(size_t nIndex) const;
-
-    void RemoveAll();
-
-private:
-    struct AttrEntry
-    {
-        ATL::CString strName;
-        ATL::CString strValue;
-    };
-    ATL::CAtlArray<AttrEntry> m_arrEntries;
 };
 
 class STORYBOARD_API SerializationElementState

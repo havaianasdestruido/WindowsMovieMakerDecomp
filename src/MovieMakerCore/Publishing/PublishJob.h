@@ -89,6 +89,16 @@ public:
     void SetProfileIndex(DWORD dwProfileIndex);
     DWORD GetProfileIndex() const throw();
 
+    // -- Encoding parameters --
+    void SetWidth(DWORD dwWidth);
+    DWORD GetWidth() const throw();
+
+    void SetHeight(DWORD dwHeight);
+    DWORD GetHeight() const throw();
+
+    void SetQuality(DWORD dwQuality);
+    DWORD GetQuality() const throw();
+
     // -- Execution --
     HRESULT Start(PublishProgressCallBack* pCallback);
     HRESULT Cancel();
@@ -121,6 +131,9 @@ private:
     ATL::CString       m_strOutputPath;
     ATL::CString       m_strServiceName;
     DWORD              m_dwProfileIndex;
+    DWORD              m_dwWidth;
+    DWORD              m_dwHeight;
+    DWORD              m_dwQuality;
     PublishJobStatus   m_status;
     HRESULT            m_hrResult;
     ATL::CString       m_strResultMessage;
@@ -155,11 +168,15 @@ public:
     PublishJob* GetJob() const throw();
     DWORD GetJobId() const throw();
 
+    // -- Worker integration --
+    void SetWorker(PublishBackgroundWorker* pWorker);
+
 private:
     static unsigned int __stdcall ThreadProc(void* pParam);
 
     PublishJob*             m_pJob;       // owned
     PublishProgressCallBack* m_pCallback; // not owned
+    PublishBackgroundWorker* m_pWorker;   // not owned
     std::thread*            m_pThread;
     bool                    m_bRunning;
 };
@@ -192,12 +209,16 @@ public:
     DWORD GetCompletedJobCount() const throw();
     float GetOverallProgress() const throw();
 
+    // -- Job lifecycle --
+    void OnJobCompleted(PublishBackgroundJob* pJob);
+
     // -- Singleton --
     static PublishBackgroundWorker* GetInstance();
 
 private:
     std::deque<PublishBackgroundJob*> m_pendingJobs;
     std::vector<PublishBackgroundJob*> m_activeJobs;
+    std::vector<PublishBackgroundJob*> m_completedJobs;
     mutable CRITICAL_SECTION            m_csQueue;
 
     DWORD  m_dwMaxJobs;

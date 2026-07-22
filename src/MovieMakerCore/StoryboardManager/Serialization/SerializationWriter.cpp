@@ -418,34 +418,98 @@ HRESULT SerializationWriter::WriteTimelineElement(MovieProject* pProject)
 
 HRESULT SerializationWriter::WriteTransitionsElement(MovieProject* pProject)
 {
-    UNREFERENCED_PARAMETER(pProject);
-
     HRESULT hr = BeginElement(L"transitions");
     if (FAILED(hr)) return hr;
 
-    hr = EndElement();
+    const ProjectTimeline* pTimeline = pProject->GetTimeline(TimelineTrackTypeTransition);
+    if (pTimeline)
+    {
+        for (size_t e = 0; e < pTimeline->GetExtentCount(); ++e)
+        {
+            hr = BeginElement(L"transition");
+            if (FAILED(hr)) break;
+
+            hr = WriteAttribute(L"extentId", static_cast<DWORD>(pTimeline->GetExtentIdAt(e)));
+            if (FAILED(hr)) break;
+
+            hr = EndElement();
+            if (FAILED(hr)) break;
+        }
+    }
+
+    if (SUCCEEDED(hr))
+        hr = EndElement();
+
     return hr;
 }
 
 HRESULT SerializationWriter::WriteEffectsElement(MovieProject* pProject)
 {
-    UNREFERENCED_PARAMETER(pProject);
-
     HRESULT hr = BeginElement(L"effects");
     if (FAILED(hr)) return hr;
 
-    hr = EndElement();
+    for (size_t m = 0; m < pProject->GetMediaItemCount(); ++m)
+    {
+        const ProjectMediaItem* pItem = pProject->GetMediaItem(m);
+        if (!pItem)
+            continue;
+
+        for (int t = 0; t < 6; ++t)
+        {
+            const ProjectTimeline* pTimeline = pProject->GetTimeline(
+                static_cast<TimelineTrackType>(t));
+            if (!pTimeline)
+                continue;
+
+            for (size_t e = 0; e < pTimeline->GetExtentCount(); ++e)
+            {
+                DWORD dwExtentId = pTimeline->GetExtentIdAt(e);
+
+                hr = BeginElement(L"effect");
+                if (FAILED(hr)) return hr;
+
+                hr = WriteAttribute(L"extentId", dwExtentId);
+                if (FAILED(hr)) return hr;
+
+                hr = WriteAttribute(L"mediaId", pItem->GetMediaId());
+                if (FAILED(hr)) return hr;
+
+                hr = EndElement();
+                if (FAILED(hr)) return hr;
+            }
+        }
+    }
+
+    if (SUCCEEDED(hr))
+        hr = EndElement();
+
     return hr;
 }
 
 HRESULT SerializationWriter::WriteTitlesElement(MovieProject* pProject)
 {
-    UNREFERENCED_PARAMETER(pProject);
-
     HRESULT hr = BeginElement(L"titles");
     if (FAILED(hr)) return hr;
 
-    hr = EndElement();
+    const ProjectTimeline* pTimeline = pProject->GetTimeline(TimelineTrackTypeTitle);
+    if (pTimeline)
+    {
+        for (size_t e = 0; e < pTimeline->GetExtentCount(); ++e)
+        {
+            hr = BeginElement(L"title");
+            if (FAILED(hr)) break;
+
+            hr = WriteAttribute(L"extentId", static_cast<DWORD>(pTimeline->GetExtentIdAt(e)));
+            if (FAILED(hr)) break;
+
+            hr = EndElement();
+            if (FAILED(hr)) break;
+        }
+    }
+
+    if (SUCCEEDED(hr))
+        hr = EndElement();
+
     return hr;
 }
 
@@ -472,6 +536,42 @@ HRESULT SerializationWriter::WriteSettingsElement(MovieProject* pProject)
         hr = EndElement();
 
     return hr;
+}
+
+// ============================================================================
+// Legacy project writing
+// ============================================================================
+
+HRESULT SerializationWriter::SaveProject(LPCWSTR pszFilePath, MovieProject* pProject)
+{
+    return WriteToFile(pszFilePath, pProject);
+}
+
+HRESULT SerializationWriter::WriteProject(LPCWSTR pszFilePath, MovieProject* pProject)
+{
+    return WriteToFile(pszFilePath, pProject);
+}
+
+HRESULT SerializationWriter::WriteMediaItems(IXmlWriter* pWriter, MovieProject* pProject)
+{
+    UNREFERENCED_PARAMETER(pWriter);
+    UNREFERENCED_PARAMETER(pProject);
+    return S_OK;
+}
+
+HRESULT SerializationWriter::WriteProperties(IXmlWriter* pWriter, MovieProject* pProject)
+{
+    UNREFERENCED_PARAMETER(pWriter);
+    UNREFERENCED_PARAMETER(pProject);
+    return S_OK;
+}
+
+ATL::CString SerializationWriter::EscapeXmlString(LPCWSTR pszInput)
+{
+    if (!pszInput)
+        return ATL::CString();
+
+    return ATL::CString(pszInput);
 }
 
 } // namespace StoryboardManager

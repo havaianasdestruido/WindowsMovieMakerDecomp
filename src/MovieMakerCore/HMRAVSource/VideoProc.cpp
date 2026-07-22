@@ -83,9 +83,47 @@ HRESULT XVideoProc::ProcessFrameToSurface(IMFSample* pInputSample, IDirect3DSurf
     if (!pInputSample || !pOutputSurface)
         return E_POINTER;
 
-    // Software processing to a D3D9 surface
     CComPtr<IMFSample> spOutput;
     HRESULT hr = ProcessFrame(pInputSample, &spOutput);
+    if (FAILED(hr))
+        return hr;
+
+    if (!spOutput)
+        return E_UNEXPECTED;
+
+    CComPtr<IMFMediaBuffer> spBuffer;
+    hr = spOutput->GetBufferByIndex(0, &spBuffer);
+    if (FAILED(hr))
+        return hr;
+
+    BYTE* pData = nullptr;
+    DWORD cbLength = 0;
+    hr = spBuffer->Lock(&pData, nullptr, &cbLength);
+    if (FAILED(hr))
+        return hr;
+
+    D3DLOCKED_RECT lockedRect;
+    hr = pOutputSurface->LockRect(&lockedRect, nullptr, 0);
+    if (SUCCEEDED(hr))
+    {
+        D3DSURFACE_DESC desc;
+        pOutputSurface->GetDesc(&desc);
+
+        UINT srcWidth = m_desc.uOutputWidth;
+        UINT srcHeight = m_desc.uOutputHeight;
+        UINT srcPitch = srcWidth * 4;
+
+        for (UINT y = 0; y < srcHeight && y < desc.Height; ++y)
+        {
+            BYTE* pSrc = pData + y * srcPitch;
+            BYTE* pDst = static_cast<BYTE*>(lockedRect.pBits) + y * lockedRect.Pitch;
+            memcpy(pDst, pSrc, min(srcPitch, static_cast<UINT>(lockedRect.Pitch)));
+        }
+
+        pOutputSurface->UnlockRect();
+    }
+
+    spBuffer->Unlock();
     return hr;
 }
 
@@ -458,8 +496,22 @@ HRESULT DXVA2VideoProc::CreateDXVA2Processor()
     if (!m_pDevice)
         return E_UNEXPECTED;
 
+    DXVA2_VideoProcessorDesc vpDesc = {};
+    vpDesc.DeviceFrameWidth = m_desc.uInputWidth;
+    vpDesc.DeviceFrameHeight = m_desc.uInputHeight;
+    vpDesc.TargetFrameWidth = m_desc.uOutputWidth;
+    vpDesc.TargetFrameHeight = m_desc.uOutputHeight;
+    vpDesc.TargetMinWidth = 0;
+    vpDesc.TargetMinHeight = 0;
+    vpDesc.TargetMaxWidth = m_desc.uOutputWidth;
+    vpDesc.TargetMaxHeight = m_desc.uOutputHeight;
+    vpDesc.Usage = DXVA2_VPDev_HardwareDeinterlaceOrScaling;
+    vpDesc.FrameRate.Numerator = 30;
+    vpDesc.FrameRate.Denominator = 1;
+    vpDesc.Uid = 0;
+
     HRESULT hr = DXVA2CreateVideoProcessorEnumerator(
-        nullptr,  // TODO: fill DXVA2_VideoProcessorDesc
+        &vpDesc,
         &m_spEnumerator);
 
     if (FAILED(hr))
@@ -523,28 +575,83 @@ HRESULT DXVA2VideoProc::ProcessSampleDXVA2(IMFSample* pInput, IMFSample** ppOutp
     if (FAILED(hr))
         return hr;
 
+    // Copy input data to the temp surface
+    if (m_spTempSurface && pInputData && cbInputLength > 0)
+    {
+        D3DLOCKED_RECT lockedRect = {};
+        if (SUCCEEDED(m_spTempSurface->LockRect(&lockedRect, nullptr, 0)))
+        {
+            UINT srcWidth = m_desc.uInputWidth;
+            UINT srcHeight = m_desc.uInputHeight;
+            UINT srcPitch = srcWidth * 2;
+
+            for (UINT y = 0; y < srcHeight; ++y)
+            {
+                BYTE* pSrc = pInputData + y * srcPitch;
+                BYTE* pDst = static_cast<BYTE*>(lockedRect.pBits) + y * lockedRect.Pitch;
+                memcpy(pDst, pSrc, min(srcPitch, static_cast<UINT>(lockedRect.Pitch)));
+            }
+
+            m_spTempSurface->UnlockRect();
+        }
+    }
+
+    spInputBuffer->Unlock();
+
+    // Use DXVA2 processor to blit from temp surface to render target
+    IDirect3DSurface9* pRenderTarget = m_spRenderTarget ? m_spRenderTarget.p : m_spTempSurface.p;
+    if (pRenderTarget && m_spTempSurface)
+    {
+        DXVA2_VideoProcessBltParameters blt = {};
+        blt.TargetRect = { 0, 0, static_cast<LONG>(m_desc.uOutputWidth), static_cast<LONG>(m_desc.uOutputHeight) };
+        blt.SourceRect = { 0, 0, static_cast<LONG>(m_desc.uInputWidth), static_cast<LONG>(m_desc.uInputHeight) };
+        blt.TargetFrame = 0;
+        blt.BackgroundColor = 0;
+        blt.StreamRect = blt.TargetRect;
+        blt.Alpha = DXVA2_Fixed32Opaque();
+
+        m_pVideoProcessor->ProcessBlt(pRenderTarget, &blt, nullptr, nullptr, nullptr, nullptr);
+    }
+
+    // Create output sample from the processed surface
     DWORD cbOutputSize = m_desc.uOutputWidth * m_desc.uOutputHeight * 4;
     CComPtr<IMFSample> spOutputSample;
     hr = MFCreateSample(&spOutputSample);
     if (FAILED(hr))
-    {
-        spInputBuffer->Unlock();
         return hr;
-    }
 
     CComPtr<IMFMediaBuffer> spOutputBuffer;
     hr = MFCreateMemoryBuffer(cbOutputSize, &spOutputBuffer);
     if (FAILED(hr))
-    {
-        spInputBuffer->Unlock();
         return hr;
-    }
 
     hr = spOutputSample->AddBuffer(spOutputBuffer);
     if (FAILED(hr))
-    {
-        spInputBuffer->Unlock();
         return hr;
+
+    // Copy processed surface data to output sample
+    if (pRenderTarget)
+    {
+        D3DLOCKED_RECT lockedRect = {};
+        if (SUCCEEDED(pRenderTarget->LockRect(&lockedRect, nullptr, D3DLOCK_READONLY)))
+        {
+            BYTE* pDstData = nullptr;
+            DWORD cbDstMax = 0;
+            spOutputBuffer->Lock(&pDstData, &cbDstMax, nullptr);
+            if (pDstData)
+            {
+                UINT copyH = m_desc.uOutputHeight;
+                for (UINT y = 0; y < copyH; ++y)
+                {
+                    memcpy(pDstData + y * m_desc.uOutputWidth * 4,
+                           static_cast<BYTE*>(lockedRect.pBits) + y * lockedRect.Pitch,
+                           min(static_cast<UINT>(m_desc.uOutputWidth * 4), static_cast<UINT>(lockedRect.Pitch)));
+                }
+                spOutputBuffer->Unlock();
+            }
+            spOutputBuffer->SetCurrentLength(m_desc.uOutputWidth * m_desc.uOutputHeight * 4);
+            pRenderTarget->UnlockRect();
+        }
     }
 
     LONGLONG llTimestamp = 0;
@@ -555,8 +662,6 @@ HRESULT DXVA2VideoProc::ProcessSampleDXVA2(IMFSample* pInput, IMFSample** ppOutp
     pInput->GetSampleDuration(&llDuration);
     if (llDuration > 0)
         spOutputSample->SetSampleDuration(llDuration);
-
-    spInputBuffer->Unlock();
 
     m_dwFramesProcessed++;
     *ppOutput = spOutputSample.Detach();
@@ -631,6 +736,27 @@ HRESULT DXVA2VideoProc::ConvertSurfaceToSample(IDirect3DSurface9* pSurface, IMFS
     hr = spSample->AddBuffer(spBuffer);
     if (FAILED(hr))
         return hr;
+
+    D3DLOCKED_RECT lockedRect = {};
+    hr = pSurface->LockRect(&lockedRect, nullptr, D3DLOCK_READONLY);
+    if (SUCCEEDED(hr))
+    {
+        BYTE* pDstData = nullptr;
+        DWORD cbDstMax = 0;
+        hr = spBuffer->Lock(&pDstData, &cbDstMax, nullptr);
+        if (SUCCEEDED(hr) && pDstData)
+        {
+            for (UINT y = 0; y < desc.Height; ++y)
+            {
+                memcpy(pDstData + y * desc.Width * 4,
+                       static_cast<BYTE*>(lockedRect.pBits) + y * lockedRect.Pitch,
+                       min(static_cast<UINT>(desc.Width * 4), static_cast<UINT>(lockedRect.Pitch)));
+            }
+            spBuffer->Unlock();
+        }
+        spBuffer->SetCurrentLength(cbSize);
+        pSurface->UnlockRect();
+    }
 
     *ppSample = spSample.Detach();
     return S_OK;

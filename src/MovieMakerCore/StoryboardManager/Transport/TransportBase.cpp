@@ -315,7 +315,7 @@ HRESULT MovieTransport::OpenMedia(LPCWSTR pszFilePath)
 
     CloseMedia();
 
-    HRESULT hr = MFStartup(MF_VERSION);
+    HRESULT hr = MFStartup(MF_VERSION, MFSTARTUP_LITE);
     if (FAILED(hr))
         return hr;
 
@@ -502,7 +502,7 @@ UINT RenderTransport::GetOutputHeight() const throw()
 void RenderTransport::SetFrameRate(DWORD dwFrameRateNumerator, DWORD dwFrameRateDenominator)
 {
     m_dwFrameRateNumerator = dwFrameRateNumerator;
-    m_dwFrameRateDenominator = dwFrameRateDenominator;
+    m_dwFrameRateDenominator = dwFrameRateDenominator > 0 ? dwFrameRateDenominator : 1;
 }
 
 DWORD RenderTransport::GetFrameRateNumerator() const throw()

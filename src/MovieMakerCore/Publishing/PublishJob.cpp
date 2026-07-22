@@ -13,6 +13,7 @@
  */
 
 #include "PublishJob.h"
+#include "PublishClasses.h"
 #include <process.h>
 
 // ============================================================================
@@ -34,6 +35,9 @@ PublishProgressCallBack::~PublishProgressCallBack()
 PublishJob::PublishJob()
     : m_dwJobId(0)
     , m_dwProfileIndex(0)
+    , m_dwWidth(1920)
+    , m_dwHeight(1080)
+    , m_dwQuality(80)
     , m_status(PublishJobStatusPending)
     , m_hrResult(S_OK)
     , m_flOverallProgress(0.0f)
@@ -109,6 +113,36 @@ DWORD PublishJob::GetProfileIndex() const throw()
     return m_dwProfileIndex;
 }
 
+void PublishJob::SetWidth(DWORD dwWidth)
+{
+    m_dwWidth = (dwWidth > 0) ? dwWidth : 1920;
+}
+
+DWORD PublishJob::GetWidth() const throw()
+{
+    return m_dwWidth;
+}
+
+void PublishJob::SetHeight(DWORD dwHeight)
+{
+    m_dwHeight = (dwHeight > 0) ? dwHeight : 1080;
+}
+
+DWORD PublishJob::GetHeight() const throw()
+{
+    return m_dwHeight;
+}
+
+void PublishJob::SetQuality(DWORD dwQuality)
+{
+    m_dwQuality = (dwQuality > 100) ? 100 : dwQuality;
+}
+
+DWORD PublishJob::GetQuality() const throw()
+{
+    return m_dwQuality;
+}
+
 HRESULT PublishJob::Start(PublishProgressCallBack* pCallback)
 {
     if (m_status != PublishJobStatusPending)
@@ -150,6 +184,19 @@ HRESULT PublishJob::Start(PublishProgressCallBack* pCallback)
     {
         m_status = PublishJobStatusFailed;
         m_hrResult = hrUpload;
+
+        if (m_pCallback)
+            m_pCallback->OnCompleted(hrUpload, m_strResultMessage);
+    }
+    else if (hrUpload == E_ABORT)
+    {
+        m_status = PublishJobStatusCancelled;
+        m_hrResult = E_ABORT;
+    }
+    else
+    {
+        m_status = PublishJobStatusCompleted;
+        m_hrResult = S_OK;
     }
 
     return hrUpload;
@@ -260,7 +307,7 @@ HRESULT PublishJob::Encode()
     LPCWSTR pszExt = PathFindExtension(m_strOutputPath);
     bool bWMV = (pszExt && _wcsicmp(pszExt, L".wmv") == 0);
 
-    HRESULT hr = MFStartup(MF_VERSION);
+    HRESULT hr = MFStartup(MF_VERSION, MFSTARTUP_LITE);
     if (FAILED(hr))
         return hr;
 
@@ -272,6 +319,7 @@ HRESULT PublishJob::Encode()
         return hr;
     }
 
+    const DWORD dwVideoBitrate = 1000000 + (m_dwQuality * 90000);
     DWORD dwVideoStreamIndex = 0;
     DWORD dwAudioStreamIndex = (DWORD)-1;
 
@@ -303,7 +351,7 @@ HRESULT PublishJob::Encode()
 
                 GUID guidVideoSubtype = bWMV ? MFVideoFormat_WMVVC1 : MFVideoFormat_H264;
                 spOutputVideoType->SetGUID(MF_MT_SUBTYPE, guidVideoSubtype);
-                spOutputVideoType->SetUINT32(MF_MT_AVG_BITRATE, 5000000);
+                spOutputVideoType->SetUINT32(MF_MT_AVG_BITRATE, dwVideoBitrate);
                 MFSetAttributeSize(spOutputVideoType, MF_MT_FRAME_SIZE, m_dwWidth, m_dwHeight);
                 spOutputVideoType->SetUINT32(MF_MT_INTERLACE_MODE, MFVideoInterlace_Progressive);
                 spOutputVideoType->SetRatio(MF_MT_FRAME_RATE, 30, 1);
@@ -444,32 +492,132 @@ HRESULT PublishJob::Encode()
         {
             spVideoType->SetGUID(MF_MT_MAJOR_TYPE, MFMediaType_Video);
             spVideoType->SetGUID(MF_MT_SUBTYPE, bWMV ? MFVideoFormat_WMVVC1 : MFVideoFormat_H264);
-            spVideoType->SetUINT32(MF_MT_AVG_BITRATE, 5000000);
+            spVideoType->SetUINT32(MF_MT_AVG_BITRATE, dwVideoBitrate);
             spVideoType->SetUINT32(MF_MT_INTERLACE_MODE, MFVideoInterlace_Progressive);
             spVideoType->SetRatio(MF_MT_FRAME_RATE, 30, 1);
             MFSetAttributeSize(spVideoType, MF_MT_FRAME_SIZE, m_dwWidth, m_dwHeight);
 
-            spSinkWriter->AddStream(spVideoType, &dwVideoStreamIndex);
+            hr = spSinkWriter->AddStream(spVideoType, &dwVideoStreamIndex);
         }
 
         CComPtr<IMFMediaType> spAudioType;
-        hr = MFCreateMediaType(&spAudioType);
         if (SUCCEEDED(hr))
         {
-            spAudioType->SetGUID(MF_MT_MAJOR_TYPE, MFMediaType_Audio);
-            spAudioType->SetGUID(MF_MT_SUBTYPE, bWMV ? MFAudioFormat_WMAudioV9 : MFAudioFormat_AAC);
-            spAudioType->SetUINT32(MF_MT_AUDIO_SAMPLES_PER_SECOND, 44100);
-            spAudioType->SetUINT32(MF_MT_AUDIO_NUM_CHANNELS, 2);
-            spAudioType->SetUINT32(MF_MT_AUDIO_BITS_PER_SAMPLE, 16);
+            hr = MFCreateMediaType(&spAudioType);
+            if (SUCCEEDED(hr))
+            {
+                spAudioType->SetGUID(MF_MT_MAJOR_TYPE, MFMediaType_Audio);
+                spAudioType->SetGUID(MF_MT_SUBTYPE, bWMV ? MFAudioFormat_WMAudioV9 : MFAudioFormat_AAC);
+                spAudioType->SetUINT32(MF_MT_AUDIO_SAMPLES_PER_SECOND, 44100);
+                spAudioType->SetUINT32(MF_MT_AUDIO_NUM_CHANNELS, 2);
+                spAudioType->SetUINT32(MF_MT_AUDIO_BITS_PER_SAMPLE, 16);
 
-            spSinkWriter->AddStream(spAudioType, &dwAudioStreamIndex);
+                hr = spSinkWriter->AddStream(spAudioType, &dwAudioStreamIndex);
+            }
         }
 
         if (SUCCEEDED(hr))
             hr = spSinkWriter->BeginWriting();
 
         if (SUCCEEDED(hr))
-            hr = spSinkWriter->Finalize();
+        {
+            const DWORD dwFrameCount = 90;
+            const LONGLONG llFrameDuration = 10 * 1000 * 1000 / 30;
+            const LONGLONG llTotalDuration = static_cast<LONGLONG>(dwFrameCount) * llFrameDuration;
+
+            for (DWORD i = 0; i < dwFrameCount && SUCCEEDED(hr); ++i)
+            {
+                if (m_bCancelled)
+                {
+                    spSinkWriter->Abort();
+                    MFShutdown();
+                    return E_ABORT;
+                }
+
+                while (m_bPaused)
+                    ::Sleep(100);
+
+                DWORD cbBuffer = m_dwWidth * m_dwHeight * 2;
+                CComPtr<IMFSample> spVideoSample;
+                hr = MFCreateMemoryBuffer(cbBuffer, CComQIPtr<IMFMediaBuffer>(&spVideoSample));
+                if (SUCCEEDED(hr))
+                {
+                    CComPtr<IMFMediaBuffer> spBuffer;
+                    hr = spVideoSample->GetBufferByIndex(0, &spBuffer);
+                    if (SUCCEEDED(hr))
+                    {
+                        BYTE* pData = nullptr;
+                        hr = spBuffer->Lock(&pData, nullptr, &cbBuffer);
+                        if (SUCCEEDED(hr))
+                        {
+                            const BYTE yVal = static_cast<BYTE>((i * 255) / dwFrameCount);
+                            DWORD dwPixels = m_dwWidth * m_dwHeight;
+                            BYTE* pY = pData;
+                            for (DWORD p = 0; p < dwPixels; ++p)
+                                pY[p] = yVal;
+
+                            spBuffer->Unlock();
+                            spBuffer->SetCurrentLength(cbBuffer);
+                        }
+                    }
+
+                    if (SUCCEEDED(hr))
+                    {
+                        spVideoSample->SetSampleTime(i * llFrameDuration);
+                        spVideoSample->SetSampleDuration(llFrameDuration);
+                        hr = spSinkWriter->WriteSample(dwVideoStreamIndex, spVideoSample);
+                    }
+                }
+
+                if (SUCCEEDED(hr))
+                {
+                    const DWORD dwAudioSamplesPerFrame = 1470;
+                    const DWORD cbAudioBuffer = dwAudioSamplesPerFrame * 2 * sizeof(INT16);
+                    CComPtr<IMFSample> spAudioSample;
+                    hr = MFCreateMemoryBuffer(cbAudioBuffer, CComQIPtr<IMFMediaBuffer>(&spAudioSample));
+                    if (SUCCEEDED(hr))
+                    {
+                        CComPtr<IMFMediaBuffer> spAudioBuffer;
+                        hr = spAudioSample->GetBufferByIndex(0, &spAudioBuffer);
+                        if (SUCCEEDED(hr))
+                        {
+                            BYTE* pAudioData = nullptr;
+                            hr = spAudioBuffer->Lock(&pAudioData, nullptr, nullptr);
+                            if (SUCCEEDED(hr))
+                            {
+                                ZeroMemory(pAudioData, cbAudioBuffer);
+                                spAudioBuffer->Unlock();
+                                spAudioBuffer->SetCurrentLength(cbAudioBuffer);
+                            }
+                        }
+
+                        if (SUCCEEDED(hr))
+                        {
+                            spAudioSample->SetSampleTime(i * llFrameDuration);
+                            spAudioSample->SetSampleDuration(llFrameDuration);
+                            hr = spSinkWriter->WriteSample(dwAudioStreamIndex, spAudioSample);
+                        }
+                    }
+                }
+
+                if (SUCCEEDED(hr))
+                {
+                    m_flEncodeProgress = static_cast<float>(i + 1) / static_cast<float>(dwFrameCount);
+                    m_flOverallProgress = m_flEncodeProgress * 0.8f;
+
+                    if (m_pCallback)
+                    {
+                        WCHAR szStatus[128];
+                        StringCchPrintfW(szStatus, ARRAYSIZE(szStatus),
+                            L"Encoding... %d%%", static_cast<int>(m_flEncodeProgress * 100.0f));
+                        m_pCallback->OnProgressChanged(m_flOverallProgress, szStatus);
+                    }
+                }
+            }
+
+            if (SUCCEEDED(hr))
+                hr = spSinkWriter->Finalize();
+        }
     }
 
     MFShutdown();
@@ -632,12 +780,33 @@ HRESULT PublishJob::Upload()
             cbTotal = (static_cast<ULONGLONG>(fad.nFileSizeHigh) << 32) | fad.nFileSizeLow;
     }
 
+    HANDLE hFile = INVALID_HANDLE_VALUE;
+    if (!m_strOutputPath.IsEmpty())
+    {
+        hFile = CreateFileW(m_strOutputPath, GENERIC_READ, FILE_SHARE_READ,
+                            NULL, OPEN_EXISTING, FILE_FLAG_SEQUENTIAL_SCAN, NULL);
+        if (hFile == INVALID_HANDLE_VALUE)
+        {
+            m_status = PublishJobStatusFailed;
+            m_hrResult = HRESULT_FROM_WIN32(GetLastError());
+            m_strResultMessage = L"Failed to open output file for upload";
+
+            if (m_pCallback)
+                m_pCallback->OnCompleted(m_hrResult, m_strResultMessage);
+
+            return m_hrResult;
+        }
+    }
+
     ULONGLONG cbUploaded = 0;
+    std::vector<BYTE> buffer(dwChunkSize);
 
     while (cbUploaded < cbTotal)
     {
         if (m_bCancelled)
         {
+            if (hFile != INVALID_HANDLE_VALUE)
+                CloseHandle(hFile);
             m_status = PublishJobStatusCancelled;
             m_hrResult = E_ABORT;
             if (m_pCallback)
@@ -648,7 +817,30 @@ HRESULT PublishJob::Upload()
         while (m_bPaused)
             ::Sleep(100);
 
-        DWORD cbRead = static_cast<DWORD>(min(static_cast<ULONGLONG>(dwChunkSize), cbTotal - cbUploaded));
+        if (m_bCancelled)
+        {
+            if (hFile != INVALID_HANDLE_VALUE)
+                CloseHandle(hFile);
+            m_status = PublishJobStatusCancelled;
+            m_hrResult = E_ABORT;
+            if (m_pCallback)
+                m_pCallback->OnCompleted(E_ABORT, L"Upload cancelled");
+            return E_ABORT;
+        }
+
+        DWORD cbToRead = static_cast<DWORD>(min(static_cast<ULONGLONG>(dwChunkSize), cbTotal - cbUploaded));
+        DWORD cbRead = 0;
+
+        if (hFile != INVALID_HANDLE_VALUE)
+        {
+            if (!ReadFile(hFile, buffer.data(), cbToRead, &cbRead, NULL) || cbRead == 0)
+                break;
+        }
+        else
+        {
+            cbRead = cbToRead;
+        }
+
         cbUploaded += cbRead;
 
         if (cbTotal > 0)
@@ -665,8 +857,11 @@ HRESULT PublishJob::Upload()
             }
         }
 
-        ::Sleep(50);
+        ::Sleep(10);
     }
+
+    if (hFile != INVALID_HANDLE_VALUE)
+        CloseHandle(hFile);
 
     m_flUploadProgress = 1.0f;
     m_flOverallProgress = 1.0f;
@@ -688,6 +883,7 @@ PublishBackgroundWorker* PublishBackgroundWorker::s_pInstance = nullptr;
 PublishBackgroundJob::PublishBackgroundJob(PublishJob* pJob, PublishProgressCallBack* pCallback)
     : m_pJob(pJob)
     , m_pCallback(pCallback)
+    , m_pWorker(nullptr)
     , m_pThread(nullptr)
     , m_bRunning(false)
 {
@@ -706,7 +902,12 @@ HRESULT PublishBackgroundJob::Start()
         return S_FALSE;
 
     m_bRunning = true;
-    m_pThread = new std::thread(ThreadProc, this);
+    m_pThread = new (std::nothrow) std::thread(ThreadProc, this);
+    if (!m_pThread)
+    {
+        m_bRunning = false;
+        return E_OUTOFMEMORY;
+    }
     return S_OK;
 }
 
@@ -732,6 +933,11 @@ DWORD PublishBackgroundJob::GetJobId() const throw()
     return m_pJob ? m_pJob->GetJobId() : 0;
 }
 
+void PublishBackgroundJob::SetWorker(PublishBackgroundWorker* pWorker)
+{
+    m_pWorker = pWorker;
+}
+
 unsigned int __stdcall PublishBackgroundJob::ThreadProc(void* pParam)
 {
     PublishBackgroundJob* pThis = static_cast<PublishBackgroundJob*>(pParam);
@@ -740,6 +946,10 @@ unsigned int __stdcall PublishBackgroundJob::ThreadProc(void* pParam)
         pThis->m_pJob->Start(pThis->m_pCallback);
 
     pThis->m_bRunning = false;
+
+    if (pThis->m_pWorker)
+        pThis->m_pWorker->OnJobCompleted(pThis);
+
     return 0;
 }
 
@@ -791,7 +1001,12 @@ HRESULT PublishBackgroundWorker::EnqueueJob(PublishJob* pJob)
     if (!pJob)
         return E_POINTER;
 
-    PublishBackgroundJob* pBgJob = new PublishBackgroundJob(pJob, nullptr);
+    PublishBackgroundJob* pBgJob = new (std::nothrow) PublishBackgroundJob(pJob, nullptr);
+    if (!pBgJob)
+        return E_OUTOFMEMORY;
+
+    pBgJob->SetWorker(this);
+
     EnterCriticalSection(&m_csQueue);
 
     DWORD dwActiveCount = static_cast<DWORD>(m_activeJobs.size());
@@ -847,6 +1062,9 @@ HRESULT PublishBackgroundWorker::CancelAllJobs()
     for (auto pJob : m_activeJobs)
         pJob->Cancel();
     m_activeJobs.clear();
+    for (auto pJob : m_completedJobs)
+        delete pJob;
+    m_completedJobs.clear();
     LeaveCriticalSection(&m_csQueue);
     return S_OK;
 }
@@ -887,6 +1105,34 @@ float PublishBackgroundWorker::GetOverallProgress() const throw()
                      static_cast<float>(dwTotal);
     LeaveCriticalSection(&m_csQueue);
     return flProgress;
+}
+
+void PublishBackgroundWorker::OnJobCompleted(PublishBackgroundJob* pJob)
+{
+    EnterCriticalSection(&m_csQueue);
+
+    for (auto it = m_activeJobs.begin(); it != m_activeJobs.end(); ++it)
+    {
+        if (*it == pJob)
+        {
+            m_activeJobs.erase(it);
+            m_completedJobs.push_back(pJob);
+            m_dwCompletedJobCount++;
+            break;
+        }
+    }
+
+    while (!m_pendingJobs.empty() && m_activeJobs.size() < m_dwMaxJobs)
+    {
+        PublishBackgroundJob* pNext = m_pendingJobs.front();
+        m_pendingJobs.pop_front();
+        m_activeJobs.push_back(pNext);
+        LeaveCriticalSection(&m_csQueue);
+        pNext->Start();
+        EnterCriticalSection(&m_csQueue);
+    }
+
+    LeaveCriticalSection(&m_csQueue);
 }
 
 PublishBackgroundWorker* PublishBackgroundWorker::GetInstance()

@@ -13,6 +13,7 @@ namespace HMRAVSource
 
 TextureInterOp::TextureInterOp()
     : m_fInitialized(false)
+    , m_hSharedHandle(nullptr)
 {
 }
 
@@ -195,8 +196,8 @@ HRESULT TextureInterOp::GetSharedHandle(HANDLE* phShared)
 {
     if (!phShared)
         return E_POINTER;
-    *phShared = nullptr;
-    return E_NOTIMPL;
+    *phShared = m_hSharedHandle;
+    return m_hSharedHandle ? S_OK : E_NOTIMPL;
 }
 
 HRESULT TextureInterOp::CreateTextureInternal()
@@ -314,7 +315,10 @@ HRESULT TextureInterOpDX9::CreateSharedTexture(IDirect3DDevice9* pDevice, HANDLE
         phShared);
 
     if (SUCCEEDED(hr) && m_spTexture)
+    {
         m_spTexture->GetSurfaceLevel(0, &m_spSurface);
+        m_hSharedHandle = *phShared;
+    }
 
     return hr;
 }
@@ -476,6 +480,7 @@ HRESULT TextureInterOpDX11::CreateSharedTexture(ID3D11Device* pDevice, HANDLE* p
     if (SUCCEEDED(hr))
     {
         m_hSharedTexture = *phShared;
+        m_hSharedHandle = *phShared;
         m_spDX11Texture = spTexture;
     }
 

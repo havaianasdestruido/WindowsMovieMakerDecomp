@@ -168,8 +168,14 @@ public:
     float GetFontSize() const throw();
     void SetFontSize(float flSize) throw();
 
-    // Apply theme properties to a theme element (stub)
+    // Apply theme properties to a theme element
     HRESULT ApplyToElement(class ThemeComplexType* pElement);
+
+    // Apply this theme's visual properties to a ThemeProject
+    HRESULT Apply(class ThemeProject* pProject);
+
+    // Clear this theme's influence from a ThemeProject (reset to defaults)
+    HRESULT Remove(class ThemeProject* pProject);
 
 private:
     ATL::CString        m_strName;

@@ -103,12 +103,23 @@ HRESULT ExportController::Export(HWND hWndOwner)
     else
         m_strFormat = L"mp4";
 
-    PublishJob* pJob = new PublishJob();
+    PublishJob* pJob = new (std::nothrow) PublishJob();
+    if (!pJob)
+        return E_OUTOFMEMORY;
+
     pJob->SetJobId(1);
     pJob->SetJobName(L"Export");
     pJob->SetOutputPath(szFile);
+    pJob->SetWidth(m_dwWidth);
+    pJob->SetHeight(m_dwHeight);
+    pJob->SetQuality(m_dwQuality);
 
-    m_pBackgroundJob = new PublishBackgroundJob(pJob, &m_progressHandler);
+    m_pBackgroundJob = new (std::nothrow) PublishBackgroundJob(pJob, &m_progressHandler);
+    if (!m_pBackgroundJob)
+    {
+        delete pJob;
+        return E_OUTOFMEMORY;
+    }
 
     m_bExporting = true;
     m_flProgress = 0.0f;
@@ -167,16 +178,25 @@ HRESULT ExportController::Publish(LPCWSTR pszOutputPath, DWORD dwProfileIndex)
     if (m_bExporting)
         return E_UNEXPECTED;
 
-    PublishJob* pJob = new PublishJob();
+    PublishJob* pJob = new (std::nothrow) PublishJob();
     if (!pJob)
         return E_OUTOFMEMORY;
 
     pJob->SetJobName(L"Publish");
     pJob->SetOutputPath(pszOutputPath);
     pJob->SetProfileIndex(dwProfileIndex);
+    pJob->SetWidth(m_dwWidth);
+    pJob->SetHeight(m_dwHeight);
+    pJob->SetQuality(m_dwQuality);
+
+    LPCWSTR pszExt = PathFindExtension(pszOutputPath);
+    if (pszExt && _wcsicmp(pszExt, L".wmv") == 0)
+        m_strFormat = L"wmv";
+    else
+        m_strFormat = L"mp4";
 
     delete m_pBackgroundJob;
-    m_pBackgroundJob = new PublishBackgroundJob(pJob, &m_progressHandler);
+    m_pBackgroundJob = new (std::nothrow) PublishBackgroundJob(pJob, &m_progressHandler);
     if (!m_pBackgroundJob)
     {
         delete pJob;
@@ -205,15 +225,18 @@ HRESULT ExportController::PublishToService(LPCWSTR pszServiceName)
     if (m_bExporting)
         return E_UNEXPECTED;
 
-    PublishJob* pJob = new PublishJob();
+    PublishJob* pJob = new (std::nothrow) PublishJob();
     if (!pJob)
         return E_OUTOFMEMORY;
 
     pJob->SetJobName(pszServiceName);
     pJob->SetServiceName(pszServiceName);
+    pJob->SetWidth(m_dwWidth);
+    pJob->SetHeight(m_dwHeight);
+    pJob->SetQuality(m_dwQuality);
 
     delete m_pBackgroundJob;
-    m_pBackgroundJob = new PublishBackgroundJob(pJob, &m_progressHandler);
+    m_pBackgroundJob = new (std::nothrow) PublishBackgroundJob(pJob, &m_progressHandler);
     if (!m_pBackgroundJob)
     {
         delete pJob;
@@ -255,15 +278,18 @@ HRESULT ExportController::StartExport()
     if (m_bExporting)
         return E_UNEXPECTED;
 
-    PublishJob* pJob = new PublishJob();
+    PublishJob* pJob = new (std::nothrow) PublishJob();
     if (!pJob)
         return E_OUTOFMEMORY;
 
     pJob->SetJobName(L"Export");
     pJob->SetOutputPath(L"");
+    pJob->SetWidth(m_dwWidth);
+    pJob->SetHeight(m_dwHeight);
+    pJob->SetQuality(m_dwQuality);
 
     delete m_pBackgroundJob;
-    m_pBackgroundJob = new PublishBackgroundJob(pJob, &m_progressHandler);
+    m_pBackgroundJob = new (std::nothrow) PublishBackgroundJob(pJob, &m_progressHandler);
     if (!m_pBackgroundJob)
     {
         delete pJob;

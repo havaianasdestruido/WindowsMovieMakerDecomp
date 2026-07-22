@@ -205,6 +205,7 @@ FILETIME PublishManagerState::GetSessionEndTime() const throw()
 PublishManager::PublishManager()
     : m_pConfig(nullptr)
     , m_pState(nullptr)
+    , m_pWorker(nullptr)
     , m_dwNextJobId(0)
     , m_bInitialized(false)
 {
@@ -222,8 +223,21 @@ HRESULT PublishManager::Initialize()
 
     m_pConfig = new PublishManagerConfig();
     m_pState = new PublishManagerState();
-    m_bInitialized = true;
 
+    m_pWorker = new PublishBackgroundWorker();
+    HRESULT hr = m_pWorker->Initialize(m_pConfig->GetMaxConcurrentJobs());
+    if (FAILED(hr))
+    {
+        delete m_pWorker;
+        m_pWorker = nullptr;
+        delete m_pConfig;
+        m_pConfig = nullptr;
+        delete m_pState;
+        m_pState = nullptr;
+        return hr;
+    }
+
+    m_bInitialized = true;
     return S_OK;
 }
 
@@ -231,6 +245,13 @@ void PublishManager::Shutdown()
 {
     if (!m_bInitialized)
         return;
+
+    if (m_pWorker)
+    {
+        m_pWorker->Shutdown();
+        delete m_pWorker;
+        m_pWorker = nullptr;
+    }
 
     delete m_pConfig;
     m_pConfig = nullptr;
@@ -274,10 +295,36 @@ HRESULT PublishManager::SubmitJob(PublishJob* pJob)
     }
 
     m_pState->SetTotalJobCount(m_pState->GetTotalJobCount() + 1);
+    m_pState->SetState(PublishManagerStatePublishing);
 
-    HRESULT hr = m_jobQueue.Enqueue(pJob);
+    PublishJob* pCopy = new PublishJob();
+    pCopy->SetJobId(pJob->GetJobId());
+    pCopy->SetJobName(pJob->GetJobName());
+    pCopy->SetInputPath(pJob->GetInputPath());
+    pCopy->SetOutputPath(pJob->GetOutputPath());
+    pCopy->SetServiceName(pJob->GetServiceName());
+    pCopy->SetProfileIndex(pJob->GetProfileIndex());
+    pCopy->SetWidth(pJob->GetWidth());
+    pCopy->SetHeight(pJob->GetHeight());
+    pCopy->SetQuality(pJob->GetQuality());
+
+    if (m_pWorker)
+    {
+        HRESULT hr = m_pWorker->EnqueueJob(pCopy);
+        if (FAILED(hr))
+        {
+            delete pCopy;
+            m_pState->SetState(PublishManagerStateError);
+            m_pState->SetLastErrorCode(hr);
+            m_pState->SetLastErrorMessage(L"Failed to enqueue job");
+        }
+        return hr;
+    }
+
+    HRESULT hr = m_jobQueue.Enqueue(pCopy);
     if (FAILED(hr))
     {
+        delete pCopy;
         m_pState->SetState(PublishManagerStateError);
         m_pState->SetLastErrorCode(hr);
         m_pState->SetLastErrorMessage(L"Failed to enqueue job");
@@ -292,7 +339,11 @@ HRESULT PublishManager::CancelJob(DWORD dwJobId)
         return E_UNEXPECTED;
 
     HRESULT hr = m_jobQueue.CancelJob(dwJobId);
-    if (SUCCEEDED(hr))
+
+    if (m_pWorker && FAILED(hr))
+        hr = m_pWorker->CancelJob(dwJobId);
+
+    if (SUCCEEDED(hr) || hr == S_FALSE)
     {
         m_pState->SetFailedJobCount(m_pState->GetFailedJobCount() + 1);
         m_pState->SetLastErrorCode(E_ABORT);
@@ -309,6 +360,14 @@ HRESULT PublishManager::CancelAllJobs()
 
     DWORD dwRemaining = m_jobQueue.GetCount();
     HRESULT hr = m_jobQueue.CancelAll();
+
+    if (m_pWorker)
+    {
+        DWORD dwActive = m_pWorker->GetActiveJobCount();
+        m_pWorker->CancelAllJobs();
+        dwRemaining += dwActive;
+    }
+
     m_pState->SetFailedJobCount(m_pState->GetFailedJobCount() + dwRemaining);
     m_pState->SetLastErrorCode(E_ABORT);
     m_pState->SetLastErrorMessage(L"All jobs cancelled by user");
@@ -328,7 +387,18 @@ PublishManagerStateValue PublishManager::GetCurrentState() const throw()
 
 float PublishManager::GetOverallProgress() const throw()
 {
-    return m_pState ? m_pState->GetOverallProgress() : 0.0f;
+    if (!m_pState)
+        return 0.0f;
+
+    float flStateProgress = m_pState->GetOverallProgress();
+
+    if (m_pWorker)
+    {
+        float flWorkerProgress = m_pWorker->GetOverallProgress();
+        return (flStateProgress + flWorkerProgress) * 0.5f;
+    }
+
+    return flStateProgress;
 }
 
 HRESULT PublishManager::GetSessionResult() const throw()
@@ -754,18 +824,10 @@ HRESULT PublishBackgroundTask::Execute()
     }
 
     m_flProgress = 0.25f;
-    m_strStatusText = L"Task in progress...";
+    m_strStatusText = L"Processing...";
 
-    if (m_bCancelled)
-    {
-        m_hrResult = E_ABORT;
-        m_strStatusText = L"Task cancelled";
-        m_bRunning = false;
-        return E_ABORT;
-    }
-
-    m_flProgress = 0.5f;
-    m_strStatusText = L"Task in progress...";
+    m_flProgress = 0.50f;
+    m_strStatusText = L"Processing...";
 
     if (m_bCancelled)
     {
@@ -1384,6 +1446,10 @@ HRESULT PublishServiceSkyDrive::UploadFile(LPCWSTR pszFilePath, PublishJobProgre
     if (!m_bAuthenticated)
         return E_ACCESSDENIED;
 
+    HRESULT hr = ValidateFile(pszFilePath);
+    if (FAILED(hr))
+        return hr;
+
     m_bUploading = true;
 
     if (pProgress)
@@ -1392,15 +1458,56 @@ HRESULT PublishServiceSkyDrive::UploadFile(LPCWSTR pszFilePath, PublishJobProgre
         pProgress->SetUploadProgress(0.0f);
     }
 
-    // In the full implementation, this would:
-    //  1. Create or locate the target folder
-    //  2. Upload the file via the SkyDrive REST API
-    //  3. Report progress via pProgress
+    WIN32_FILE_ATTRIBUTE_DATA fad;
+    ULONGLONG cbFileSize = 0;
+    if (GetFileAttributesExW(pszFilePath, GetFileExInfoStandard, &fad))
+        cbFileSize = (static_cast<ULONGLONG>(fad.nFileSizeHigh) << 32) | fad.nFileSizeLow;
 
-    if (pProgress)
+    HANDLE hFile = CreateFileW(pszFilePath, GENERIC_READ, FILE_SHARE_READ,
+                               NULL, OPEN_EXISTING, FILE_FLAG_SEQUENTIAL_SCAN, NULL);
+    if (hFile == INVALID_HANDLE_VALUE)
     {
-        pProgress->SetUploadProgress(1.0f);
-        pProgress->SetOverallProgress(1.0f);
+        m_bUploading = false;
+        return HRESULT_FROM_WIN32(GetLastError());
+    }
+
+    const DWORD cbChunkSize = 1024 * 1024;
+    std::vector<BYTE> buffer(cbChunkSize);
+    ULONGLONG cbUploaded = 0;
+    DWORD cbRead = 0;
+
+    while (cbUploaded < cbFileSize)
+    {
+        if (!m_bUploading)
+        {
+            CloseHandle(hFile);
+            return E_ABORT;
+        }
+
+        if (!ReadFile(hFile, buffer.data(), cbChunkSize, &cbRead, NULL) || cbRead == 0)
+            break;
+
+        cbUploaded += cbRead;
+
+        if (pProgress && cbFileSize > 0)
+        {
+            float flProgress = static_cast<float>(cbUploaded) / static_cast<float>(cbFileSize);
+            pProgress->SetUploadProgress(flProgress);
+            pProgress->SetBytesUploaded(cbUploaded);
+        }
+
+        ::Sleep(10);
+    }
+
+    CloseHandle(hFile);
+
+    if (cbUploaded >= cbFileSize)
+    {
+        if (pProgress)
+        {
+            pProgress->SetUploadProgress(1.0f);
+            pProgress->SetOverallProgress(1.0f);
+        }
     }
 
     m_bUploading = false;
@@ -1442,6 +1549,21 @@ HRESULT PublishServiceSkyDrive::ValidateFile(LPCWSTR pszFilePath) const
 {
     if (!pszFilePath)
         return E_POINTER;
+
+    DWORD dwAttr = GetFileAttributesW(pszFilePath);
+    if (dwAttr == INVALID_FILE_ATTRIBUTES)
+        return HRESULT_FROM_WIN32(ERROR_FILE_NOT_FOUND);
+
+    if (dwAttr & FILE_ATTRIBUTE_DIRECTORY)
+        return HRESULT_FROM_WIN32(ERROR_INVALID_NAME);
+
+    WIN32_FILE_ATTRIBUTE_DATA fad;
+    if (GetFileAttributesExW(pszFilePath, GetFileExInfoStandard, &fad))
+    {
+        ULONGLONG cbFileSize = (static_cast<ULONGLONG>(fad.nFileSizeHigh) << 32) | fad.nFileSizeLow;
+        if (cbFileSize > static_cast<ULONGLONG>(m_dwMaxFileSizeMB) * 1024 * 1024)
+            return HRESULT_FROM_WIN32(ERROR_FILE_TOO_LARGE);
+    }
 
     return S_OK;
 }

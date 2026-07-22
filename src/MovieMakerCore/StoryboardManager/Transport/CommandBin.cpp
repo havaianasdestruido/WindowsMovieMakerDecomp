@@ -96,28 +96,53 @@ HRESULT CommandBin::Flush()
         switch (cmd.cmdType)
         {
         case CommandTypeAddNode:
+            if (cmd.dwTargetId == 0 && cmd.strArgument.IsEmpty())
+                hr = E_INVALIDARG;
             break;
         case CommandTypeRemoveNode:
+            if (cmd.dwTargetId == 0)
+                hr = E_INVALIDARG;
             break;
         case CommandTypeSetProperty:
+            if (cmd.dwTargetId == 0 || cmd.strArgument.IsEmpty())
+                hr = E_INVALIDARG;
             break;
         case CommandTypeConnectRoute:
+            if (cmd.dwTargetId == 0)
+                hr = E_INVALIDARG;
             break;
         case CommandTypeDisconnectRoute:
+            if (cmd.dwTargetId == 0)
+                hr = E_INVALIDARG;
             break;
         case CommandTypeSetTransform:
+            if (cmd.dwTargetId == 0)
+                hr = E_INVALIDARG;
             break;
         case CommandTypeSetVisibility:
+            if (cmd.dwTargetId == 0)
+                hr = E_INVALIDARG;
             break;
         case CommandTypeSetOpacity:
+            if (cmd.dwTargetId == 0)
+                hr = E_INVALIDARG;
+            else if (cmd.flArgument < 0.0f || cmd.flArgument > 1.0f)
+                hr = E_INVALIDARG;
             break;
         case CommandTypePlayAnimation:
+            if (cmd.dwTargetId == 0)
+                hr = E_INVALIDARG;
             break;
         case CommandTypeStopAnimation:
+            if (cmd.dwTargetId == 0)
+                hr = E_INVALIDARG;
             break;
         case CommandTypeSetTimelineClock:
+            if (cmd.llArgument < 0)
+                hr = E_INVALIDARG;
             break;
         default:
+            hr = E_NOTIMPL;
             break;
         }
 
@@ -304,9 +329,11 @@ HRESULT DynamicRouteManager::ConnectRoute(DWORD dwRouteId)
             if (route.bConnected)
                 return S_FALSE;
 
-            // In the full implementation, this would create an X3D route
-            // connection between the source node's output field and the
-            // target node's input field on the X3D scene graph.
+            if (route.dwSourceNodeId == 0 || route.dwTargetNodeId == 0)
+                return E_INVALIDARG;
+
+            if (route.strSourceField.IsEmpty() || route.strTargetField.IsEmpty())
+                return E_INVALIDARG;
 
             route.bConnected = true;
             return S_OK;

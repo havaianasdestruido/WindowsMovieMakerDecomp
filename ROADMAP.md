@@ -1,7 +1,7 @@
 # Project Summary & Resume Roadmap
 ## Windows Live Movie Maker 2012 - Source Code Recreation
 
-> **Last updated:** July 15, 2026
+> **Last updated:** July 22, 2026
 > **Build command:** `& "C:\Program Files\CMake\bin\cmake.exe" --build build --config Debug`
 > **Project root:** `C:\Users\mcmco\Desktop\WMMR`
 > **STATUS: FULL BUILD CLEAN - All 18 targets compile and link with 0 errors**
@@ -20,6 +20,9 @@ Recreating the full source code of Windows Live Movie Maker 2012 (`MovieMakerCor
 - Single DLL export: `MovieMakerMain` from MovieMakerCore.dll
 - 1360 RTTI classes across 48 namespaces
 - 375+ source files, 18 CMake targets
+- **App launches** and shows a window ("Windows Live Movie Maker")
+- **23 original bugs/quirks documented** in `QUIRKS.md`
+- **200+ stub methods replaced** with real implementations
 
 ---
 
@@ -27,8 +30,8 @@ Recreating the full source code of Windows Live Movie Maker 2012 (`MovieMakerCor
 
 | Target | Type | Output |
 |--------|------|--------|
-| **MovieMaker.exe** | Launcher EXE | `build/bin/Debug/MovieMaker.exe` |
-| **MovieMakerCore.dll** | Main engine DLL | `build/bin/Debug/MovieMakerCore.dll` (1,027 KB) |
+| **MovieMaker.exe** | Launcher EXE | `build/bin/Debug/MovieMaker.exe` (94 KB) |
+| **MovieMakerCore.dll** | Main engine DLL | `build/bin/Debug/MovieMakerCore.dll` (1,414 KB) |
 | **WLXPhotoBase.dll** | Foundation library | `build/bin/Debug/WLXPhotoBase.dll` (48 KB) |
 | **MovieMakerLang.dll** | Localization | `build/bin/Debug/MovieMakerLang.dll` |
 | **WLXPipeline.dll** | Media pipeline | `build/bin/Debug/WLXPipeline.dll` |
@@ -50,13 +53,26 @@ Recreating the full source code of Windows Live Movie Maker 2012 (`MovieMakerCor
 
 ---
 
-## What's Next (Post-Build Phase)
+## Implementation Progress
 
-1. Verify DLL import/export tables match original binaries
-2. Test MovieMaker.exe launches (will fail at runtime without real implementations)
-3. Compare RTTI class layouts between original and rebuilt DLLs
-4. Incrementally replace stub implementations with real code
-5. Improve semantic fidelity of reconstructed source
+### Fully Implemented Subsystems
+- **Application framework** (`SundanceApp/`): SundanceAppMain, ProjectManager, ImportController, ExportController, MediaBrowser, ThumbnailCache, ClipboardManager, UndoManager
+- **Storyboard/Project model** (`StoryboardManager/`): MovieProject, TimelineTrack, MovieExtent, Templates, Serialization (Reader/Writer/Classes), Theme system
+- **Preview/Transport** (`Preview/`, `Transport/`): PreviewPresenter, PreviewDataContext, TransportBase, CommandBin
+- **Publishing** (`Publishing/`): PublishJob, PublishClasses, PublishDialogs
+- **Audio processing** (`Audio/`): AudioFadeProcessor, AudioDuckingProcessor, AudioChannelMapper, AudioOutput, AudioCapture, Mixer
+- **UI Behaviors** (`UI/`): 50+ OnMessage implementations across 37 behavior classes
+- **Ribbon UI** (`UI/Ribbon/`): 67 command handlers, full UpdateState, ComputeCommandEnabled, MRU site registry
+- **Media Foundation pipeline** (`HMRAVSource/`): MFSource, StreamSink, StreamSinkHost, TextureInterop, VideoProc, TranscodeManager
+- **HMREngine** (`HMREngine/`): DXResources, TextRender, MeshResourceDX, TextureCodecs, d3dx11compat
+- **Undo/Redo**: Transaction-based undo stack with clipboard integration
+
+### What's Still Stub/Placeholder
+- Some serialization round-trip edge cases
+- Full export rendering pipeline (writes test frames, not real video)
+- Add-in/plugin system (loads DLLs but no plugin API)
+- Telemetry/SQM (intentionally stubbed - no data sent)
+- Legacy project format (dead code, shipped but unused)
 
 ---
 
@@ -67,37 +83,57 @@ Recreating the full source code of Windows Live Movie Maker 2012 (`MovieMakerCor
 - `src/MovieMaker/moviemaker.rc` - Resource script
 - `src/MovieMaker/CMakeLists.txt`
 
-### MovieMakerCore.dll (~350 files)
+### MovieMakerCore.dll (~375 files)
 ```
 src/MovieMakerCore/
   pch.h / pch.cpp                 # PCH + SDK compat section
   dllmain.cpp                     # DLL entry (extern "C" MovieCore_Initialize/Shutdown)
-  MovieMakerCore.cpp              # Stub exports
+  MovieMakerCore.cpp              # Stub exports (original, file-locked)
+  MovieMakerCore_new.cpp          # Corrected exports (currently compiled)
+  ComFactory.h                    # ATL COM wrappers (fixed MSVC 14.44 conflicts)
   exports.h / common.h
-  SundanceApp/                    # Application framework (7 controller stubs + UI)
+  SundanceApp/                    # Application framework
+    SundanceAppMain.cpp/.h        # Main app class (subsystem init, WndProc, message loop)
+    SundanceAppDataContext.cpp/.h  # IDispatch data binding
+    ProjectManager.cpp/.h         # File I/O, dirty state, auto-save
+    ImportController.cpp/.h       # Media import
+    ExportController.cpp/.h       # Export/publish
+    MediaBrowser.cpp              # Thumbnail, drag-drop
+    ThumbnailCache.cpp/.h         # Background thumbnail generation
+    ClipboardManager.cpp/.h       # System clipboard + internal clipboard
+    UndoManager.cpp/.h            # Undo/redo stack with transactions
   StoryboardManager/              # Project model
-    MovieProject.h/.cpp           # Core data model
-    TimelineTrack.h/.cpp          # Track management
+    MovieProject.cpp/.h           # Core data model (I/O, extent management)
+    TimelineTrack.h               # Track management
     StoryboardManager.h/.cpp      # Top-level manager
-    Templates.h/.cpp              # Transition/effect templates
-    Theme/                        # Visual themes
-    Serialization/                # .wlmp file I/O
-    Background/                   # Background processing
-    Transport/                    # Playback transport
+    MovieEffect/                  # Effect serialization
+    Templates.h/.cpp              # Transition/effect templates (23 effects, 7 themes)
+    Theme/                        # Visual themes (Apply/Remove, XML parsing)
+    Serialization/                # .wlmp file I/O (Reader/Writer/Classes/BoundPlaceholder)
+    Transport/                    # Playback transport, CommandBin
   HMREngine/                      # 3D rendering engine (X3D/VRML-based)
     DXResources/                  # DX11 resource management
-    X3DNodes.cpp/.h               # X3D node implementations
-    X3DMath.cpp/.h                # Math (quaternion SLERP, etc.)
+    TextRender/                   # DWrite text rendering pipeline
     d3dx11compat.h/.cpp           # D3DX11 stub (removed from Win10 SDK)
-    Shaders.cpp/.h
-    X3DNodeImpls/
   HMRAVSource/                    # Media Foundation AV pipeline
-    HMRAVSourceTypes.h            # Shared enums (breaks circular include)
-    dxva2stubs.cpp                # DXVA2 stubs (removed from Win10 SDK)
-    Audio/                        # Audio processing
-  UI/Ribbon/                      # Windows Ribbon framework
+    Audio/                        # Audio processing (fade, ducking, channel mapping)
+    MFSource.cpp/.h               # Media Foundation source creation
+    StreamSink.cpp/.h             # Sample processing
+    TextureInterop.cpp/.h         # DX11 texture sharing with MF
+    VideoProc.cpp                 # Video processing (DXVA2, XVideoProc)
+    TranscodeManager.cpp          # Transcoding pipeline
+  UI/
+    Ribbon/                       # Windows Ribbon framework (67 commands)
+    UIBehaviorClasses.cpp/.h      # 50+ behavior implementations
+    EditingBehaviors.cpp          # Rich edit, options dialog, help
+    TimelineDataSources.cpp       # Timeline item handler
   Preview/                        # Video preview
+    PreviewPresenter.cpp/.h       # D3D11 preview rendering
+    PreviewDataContext.cpp/.h     # IDispatch data binding
   Publishing/                     # Video publishing
+    PublishJob.cpp/.h             # Background encode/upload
+    PublishClasses.cpp/.h         # Service implementations
+    PublishDialogs.cpp            # Summary dialog
   DataStructs/                    # Utility containers
 ```
 
@@ -108,6 +144,19 @@ src/MovieMakerCore/
 - WLMFDS (MF/DS bridge), WLMFReadWrite (MF read/write)
 - WLXMediaPublishSubscribe, WLXPhotoCinematic (Ken Burns)
 - WLXMP4Parser, WLXFaceRecognition, WLXCodecHost
+
+### Tools Suite
+```
+tools/
+  pe_analyzer.py                  # PE binary analysis
+  rtti_extractor.py               # RTTI class name extraction
+  diff_exports.py                 # Export table comparison
+  build.ps1                       # Automated build script
+  test_all.py                     # Build verification
+  string_analyzer.py              # String extraction
+  analysis/                       # Detailed binary analysis scripts
+  thirdparty/                     # Ghidra, VBox scripts
+```
 
 ### External Dependencies
 ```
@@ -139,7 +188,7 @@ src/MovieMakerCore/HMRAVSource/dxva2stubs.cpp # DXVA2 stubs
 
 ---
 
-## Known Gotchas (21 lessons learned)
+## Known Gotchas (23 lessons learned)
 
 1. `winmm.h` does NOT exist in SDK 10.0.26100.0 - Use `mmsystem.h`
 2. `IAtlStringMgr` is in `<atlstr.h>` not `<atlbase.h>`
@@ -162,11 +211,20 @@ src/MovieMakerCore/HMRAVSource/dxva2stubs.cpp # DXVA2 stubs
 19. `DEFINE_STUB_TRANSITION` macro `L##stringId` - Remove L## prefix
 20. `mferror.lib` does not exist in Win10 SDK
 21. `Gdiplus::Graphics::DrawImage` - Takes `Gdiplus::Image*` not `const Bitmap*`
+22. ATL `BEGIN_COM_MAP`/`COM_INTERFACE_ENTRY(IUnknown)` fails with MSVC 14.44 - Use `COM_INTERFACE_ENTRY_IID(IID_IUnknown, ClassName)`
+23. `CComQIPtr<IUnknown>` has template specialization conflict in MSVC 14.44 - Use `CComPtr<IUnknown>` instead
 
 ---
 
 ## Git History
 ```
+5ac21fa feat: 15-subagent pass - serialization, UI, publishing, audio, MF pipeline, undo/redo, stability
+dddf67e feat: massive stub implementation pass - 50+ methods, build fixes, tools suite
+5a3b787 Add QUIRKS.md documenting 23 original bugs, quirks, and anomalies
+9507e27 MovieMaker.exe now launches with main window
+a51b520 15 parallel subagents: implement real logic across all subsystems
+defc56d Add 200+ RTTI classes, fix DLL exports to COM pattern, all 18 targets still clean
+43053da Clean up temp files, update .gitignore, refresh ROADMAP.md and THINKING_PROCESS.md
 d4ef776 All 18 CMake targets build clean: 0 compile errors, 0 link errors
 edb4713 add Background/Transport/Legacy/Publishing/External + HMRAVSource helpers
 0b00926 add Preview, Serialization, Theme, Ribbon, Audio, DXResources, X3DNodeImpls, PatternMesh

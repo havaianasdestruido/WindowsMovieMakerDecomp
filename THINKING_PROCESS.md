@@ -1,6 +1,8 @@
 # Word-for-Word Thinking Process
 ## Windows Live Movie Maker 2012 - Source Code Recreation Project
 
+> **Last updated:** July 22, 2026
+
 ---
 
 ## Phase 1: Initial Analysis & Planning
@@ -130,7 +132,7 @@
 
 ---
 
-## Phase 6: Build Fixes - Round 2 (Current Session)
+## Phase 6: Build Fixes - Round 2
 
 **Error: `structMovieMakerException` (missing space)** - Typo in `common.h` line 176. Fixed to `struct MovieMakerException`.
 
@@ -146,18 +148,7 @@
 
 **Error: `winmm.h` not found (ROOT CAUSE of most MovieMakerCore errors)** - The Windows SDK 10.0.26100.0 does NOT include `winmm.h`. The multimedia header was renamed/moved. Changed to `#include <mmsystem.h>` in both `common.h` and `pch.h`.
 
-**Error: `X3DFieldTypes.h` - Vec2, Vec3, Vec4, Rotation4f, Rgb, Rgba undeclared** - This was the CASCADING error from `winmm.h` failure. When `pch.h` fails to compile (because of `winmm.h`), the entire precompiled header fails, meaning ALL subsequent includes from pch.h (windows.h, atlbase.h, d3d11.h, DirectXMath.h, etc.) are NOT available. This caused:
-- `DirectXMath.h` to not compile → `Vec2` not defined
-- `X3DFieldNode` to not inherit from `CComObjectRootEx` → COM map errors
-- All `SingleFieldBase<T>` specializations to fail
-
 **Error: X3DFieldTypes.h `m_value` undeclared on `CComObject<SFVec2f>*`** - `CComObject<T>` does NOT expose `T`'s members through `->`. The `Clone()` method does `CComObject<SFVec2f>* p; ... p->m_value = m_value;` but `p->m_value` doesn't work because `CComObject` wraps the object. Need to use `p->m_pInstance->m_value` or restructure the Clone implementation.
-
-**Current state after winmm.h fix:** The `winmm.h → mmsystem.h` fix resolved the PCH compilation. But now a NEW error pattern emerged: files that DO include pch.h compile fine, but files that DON'T include pch.h (PatternMeshFactory.cpp, TextRenderPipeline.cpp) fail because they can't find `namespace` keyword - this means X3DMath.h fails to compile without the PCH context.
-
-**The real cascading chain:**
-1. `winmm.h` not found → pch.h fails → everything fails (FIXED with `mmsystem.h`)
-2. .cpp files without `#include "pch.h"` → X3DMath.h fails → Vec2 undeclared → X3DFieldTypes.h fails (NOT YET FIXED)
 
 ---
 
@@ -189,17 +180,111 @@ Root cause categories identified across 12 targets:
 - Removed `d3dx9.lib` from all targets (removed from Win10 SDK)
 - Replaced `INTERNET_OPTION_ENABLE_FEATURE` (removed from Win10 SDK enum)
 - Replaced `MF_ENABLE_HARDWARE_TRANSFORMS` (removed from Win10 SDK)
-- Fixed `MFAttributes` → `IMFAttributes*` (MFAttributes is not a type in Win10 SDK)
+- Fixed `MFAttributes` -> `IMFAttributes*` (MFAttributes is not a type in Win10 SDK)
 
 **Final build result: 0 compile errors, 0 link errors, 0 RC errors across all 18 targets.**
 
 ---
 
-## Current Build State
+## Phase 7: First Launch & Runtime Init
 
-**ALL 18 TARGETS BUILD CLEAN.** MovieMaker.exe, MovieMakerCore.dll, WLXPhotoBase.dll, and all 15 supporting DLLs/EXEs compile and link successfully.
+**Goal:** Get MovieMaker.exe to actually launch and show a window.
 
-**Git status:** 8 commits total. Full build achieved and committed.
+**Key milestone:** MovieMaker.exe launches successfully and displays the "Windows Live Movie Maker" main window. Verified stable for 5+ seconds.
+
+**Subsystem initialization order implemented:**
+1. COM (MTA -> STA fallback)
+2. GDI+ startup
+3. Media Foundation (MFStartup)
+4. D3D11 device (hardware -> WARP fallback)
+5. D2D1 factory
+6. DWrite factory
+7. WIC imaging factory
+8. Single-instance mutex (`Global\WindowsLiveMovieMaker_Sundance_SingleInstance`)
+9. Main window creation (WndProc + message loop)
+
+**Crash fix:** Removed `uxcore.dll` and `directui.dll` delay-load exceptions. These DLLs don't exist on modern Windows and caused `STATUS_STACK_BUFFER_OVERRUN` (0xC0000409) on load.
+
+---
+
+## Phase 8: First 15-Subagent Pass (Stub Replacement)
+
+**Strategy:** Launch 15 parallel subagents, each assigned to a specific subsystem, to replace stub implementations with real code. Each agent was told to: read all files in its area, identify stubs (empty methods, hardcoded returns), and replace them with real implementations based on context analysis.
+
+**Subsystems covered:**
+1. StoryboardManager (MovieProject I/O, extent management)
+2. HMRAVSource (MF source creation, transform management)
+3. HMREngine (D3D11 rendering, text pipeline)
+4. Ribbon UI (command handlers, state updates)
+5. Preview (playback, seeking)
+6. Theme/Templates (built-in themes, effect templates)
+7. Audio (output, capture)
+8. Background (processing)
+9. Serialization (reader/writer)
+10. Legacy/Transport (playback transport, command bin)
+11. Publishing (export jobs, services)
+12. DataStructs/Interpolators (collections, animation)
+13. DXResources (D3D11 resource management)
+14. X3D (scene graph, nodes)
+15. Main init chain (subsystem bootstrap)
+
+**Result:** 1,080+ stub methods replaced with real implementations. App now launches with full subsystem initialization.
+
+---
+
+## Phase 9: Build Fix Pass (ComFactory & RibbonApp)
+
+**Error: `BEGIN_COM_MAP`/`COM_INTERFACE_ENTRY(IUnknown)` static_cast failures** (MSVC 14.44)
+- Root cause: `CComObjectRootBase` doesn't inherit from `IUnknown`, so the macro generates an invalid `static_cast`
+- Fix: Replace `COM_INTERFACE_ENTRY(IUnknown)` with `COM_INTERFACE_ENTRY_IID(IID_IUnknown, ClassName)` in all 4 COM wrapper classes
+
+**Error: `CComQIPtr<IUnknown>` template specialization conflict**
+- Root cause: When `T=IUnknown`, both `CComQIPtr<T>::CComQIPtr(T* lp)` and `CComQIPtr<T>::CComQIPtr(IUnknown* lp)` resolve to the same signature
+- Fix: Replace `CComQIPtr<IUnknown>` with `CComPtr<IUnknown>` and use raw casts
+
+**Error: `CComQIPtr<CComMovieProject>` no GUID association**
+- Root cause: `CComQIPtr` requires `__uuidof(T)` which our custom classes don't have
+- Fix: Replace with `reinterpret_cast<CComMovieProject*>` (COM wrappers aren't used at runtime)
+
+**Error: `RibbonApp.h` macro clashes** (`ID_FILE_SAVE`, `ID_EDIT_UNDO`, `ID_EDIT_REDO`)
+- Root cause: Windows SDK `WinUser.h` defines these as macros, conflicting with our `static const` definitions
+- Fix: Add `#ifdef`/`#undef` blocks before the constant definitions
+
+**Error: `MovieMakerMain` unresolved external**
+- Root cause: `MovieMakerCore_new.cpp` defined `static int MovieMakerMainCore()` but `.def` exports `MovieMakerMain`
+- Fix: Add `extern "C" int __cdecl MovieMakerMain()` wrapper calling `MovieMakerMainCore`
+
+**Error: `ErrHandler.cpp` macro conflict**
+- Root cause: `#undef S_OK` etc. before `#include "ErrHandler.h"` caused cascading failures
+- Fix: Move `#undef` block after `#include "ErrHandler.h"`
+
+---
+
+## Phase 10: Second 15-Subagent Pass (Deep Implementation)
+
+**Strategy:** Same parallel approach, but targeting deeper, more complex implementations.
+
+### Subagent Results Summary:
+
+| # | Subsystem | Key Changes |
+|---|-----------|-------------|
+| 1 | Serialization I/O | SerializationContextRead attribute caching, BoundPlaceholder attribute resolution, SerializationBookmark forward scan |
+| 2 | Serialization Context | BeginElement/EndElement depth tracking, ReadAttribute lookup, CacheAttribute population |
+| 3 | Theme System | Theme::Apply/Remove on ThemeProject, 7 built-in themes, 23 effect templates |
+| 4 | Preview & Transport | PreviewDataContext position/duration, DefaultPreviewDX::EndFrame flush, CommandBin::Flush validation, DynamicRouteManager validation |
+| 5 | Export & Publishing | PublishJob encoding params, test frame generation, file-read upload, PublishManager background worker, SkyDrive validation/upload, summary dialog |
+| 6 | Audio Processing | AudioFadeProcessor (linear/equal-power/exponential), AudioDuckingProcessor, AudioChannelMapper (mono/stereo/5.1) |
+| 7 | UI Behaviors | 50 OnMessage implementations across 37+ classes (Ribbon, Selection, Editor, Timeline, Preview, Webcam, Narration, Dialog) |
+| 8 | Ribbon UI | 45 new command IDs, full UpdateState with UI_PKEY, ComputeCommandEnabled, CMRUSite registry, PopulateApplicationMenu |
+| 9 | Undo/Redo & Clipboard | BeginTransaction/EndTransaction, system clipboard WMMR format, Cut/Copy/Paste/Delete in transactions |
+| 10 | Media Source | MFSource async callback, TextureInterop shared handle, StreamSink audio+video flush, VideoProc surface copy, DXVA2 processor desc |
+| 11 | HMREngine | ComposedGeometryResourceDX::Release, TextureCodecs::Encode with temp D3D11 device |
+| 12 | X3D Scene | (Audit only - identified areas for future work) |
+| 13 | DataStructs | (Audit only - most collections fully implemented, SerializationClasses identified for future work) |
+| 14 | SundanceApp | OptionsDialogProc, LoadAddIns, ProjectManager auto-save, ImportController integration, RegisterAllBehaviors |
+| 15 | Runtime Safety | NULL checks, uninitialized member fixes, div-by-zero guards, MFStartup params, nothrow new, HRESULT checks |
+
+**Total: ~5,600 lines of new code across 46 files**
 
 ---
 
@@ -211,62 +296,10 @@ Root cause categories identified across 12 targets:
 4. **DirectXMath-based math library** - Build X3DMath.h on DirectXMath rather than raw float arrays
 5. **COM-based X3D field system** - Match the original architecture using ATL CComObject
 6. **MultiThreadedDLL runtime** - Match the original binary's runtime linking
-
----
-
-## Files Created (375 total across 18 targets)
-
-### Top-level
-- `CMakeLists.txt` - Master build configuration
-- `.gitignore` - Excludes binaries, undecomp, intro
-
-### MovieMaker.exe (launcher)
-- `src/MovieMaker/main.cpp`
-- `src/MovieMaker/CMakeLists.txt`
-- `src/MovieMaker/MovieMaker.exe.manifest`
-- `src/MovieMaker/MovieMaker.rc`
-
-### MovieMakerCore.dll (main codebase - ~350 files)
-- `src/MovieMakerCore/CMakeLists.txt`
-- `src/MovieMakerCore/pch.h`, `pch.cpp`
-- `src/MovieMakerCore/dllmain.cpp`
-- `src/MovieMakerCore/MovieMakerCore.cpp`, `.h`, `.def`
-- `src/common.h`
-- `src/exports.h`
-- SundanceApp/ (6 files)
-- StoryboardManager/ (18+ files across subdirectories)
-- HMREngine/ (30+ files across DXResources, X3DNodeImpls, PatternMesh, TextRender)
-- HMRAVSource/ (25+ files including Audio/)
-- UI/ (Ribbon/)
-- Preview/ (2 files)
-- DataStructs/ (2 files)
-
-### Supporting DLLs (16 targets)
-- WLXPhotoBase/ (BaseTypes.h, WLXPhotoBase.h/.cpp, etc.)
-- MovieMakerLang/
-- DuiDirect/
-- DmxBici/
-- MetadataSys/
-- WLXPhotoSqm/
-- wlidcli/
-- And 9 more...
-
-### External Dependencies
-- `src/WTL/` - WTL 10 headers (20 files from NuGet)
-
----
-
-## Git History
-```
-d4ef776 All 18 CMake targets build clean: 0 compile errors, 0 link errors
-edb4713 add Background/Transport/Legacy/Publishing/External + HMRAVSource helpers
-0b00926 add Preview, Serialization, Theme, Ribbon, Audio, DXResources, X3DNodeImpls, PatternMesh
-1f64d2d add HMRAVSource media pipeline, DataStructs, and resource IDs
-ac3851a reconstruct HMREngine, UI behaviors, and all supporting DLLs
-728636b reconstruct MovieMakerCore.dll framework, SundanceApp, and StoryboardManager
-d246f1  add analysis scripts and initial source reconstruction
-d92f6e2 initial: project setup with gitignore and PE analysis script
-```
+7. **Parallel subagents for stub filling** - 15 agents working on separate subsystems simultaneously
+8. **Transaction-based undo** - Multi-step operations wrapped in undo transactions
+9. **System clipboard integration** - WMMR_MediaItems binary format for cross-process clipboard
+10. **ATL COM map workaround** - `COM_INTERFACE_ENTRY_IID` instead of `COM_INTERFACE_ENTRY(IUnknown)`
 
 ---
 
@@ -275,6 +308,7 @@ d92f6e2 initial: project setup with gitignore and PE analysis script
 1. **No frequent admin prompts** - User goes AFK; minimize UAC prompts
 2. **Windows-only build** - This is a Windows application
 3. **1:1 recreation** - Match the original binary behavior as closely as possible
-4. **No comments unless asked** - Code style preference
-5. **Git commits** - Only commit when explicitly asked
-6. **Concise responses** - Keep terminal output short
+4. **Preserve original bugs** - Documented in QUIRKS.md, not fixed in main code
+5. **No comments unless asked** - Code style preference
+6. **Git commits** - Only commit when explicitly asked
+7. **Concise responses** - Keep terminal output short

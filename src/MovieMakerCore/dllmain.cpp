@@ -21,6 +21,7 @@
  */
 
 #include "pch.h"
+#include "ComFactory.h"
 
 // ============================================================================
 // UXCore forward declarations (delay-loaded or private API)
@@ -146,10 +147,17 @@ static BOOL InitializeSubsystems(HINSTANCE hInstance)
     }
 
     // ------------------------------------------------------------------
-    // 2. ATL module initialization
+    // 2. ATL module initialization (with COM object map)
     // ------------------------------------------------------------------
     {
-        _Module.Init(NULL, hInstance);
+        _Module.Init(MovieCoreObjectMap, hInstance);
+
+        // Register class factories so objects can be created via CoCreateInstance
+        HRESULT hrClassReg = _Module.RegisterClassObjects(
+            CLSCTX_INPROC_SERVER | CLSCTX_LOCAL_SERVER,
+            REGCLS_MULTIPLEUSE);
+        // Non-fatal: registration failure logged but does not abort init
+        UNREFERENCED_PARAMETER(hrClassReg);
     }
 
     // ------------------------------------------------------------------
@@ -377,8 +385,9 @@ static void ShutdownSubsystems(void)
     }
 
     // ------------------------------------------------------------------
-    // 2. ATL module term
+    // 2. ATL module term (revoke class factories first)
     // ------------------------------------------------------------------
+    _Module.RevokeClassObjects();
     _Module.Term();
 
     // ------------------------------------------------------------------

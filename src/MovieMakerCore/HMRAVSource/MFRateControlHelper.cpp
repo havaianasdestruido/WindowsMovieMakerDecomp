@@ -245,11 +245,18 @@ HRESULT MFRateControlHelper::ApplyRateViaSourceReader(double dblRate, bool fThin
         nullptr,
         nullptr);
 
-    // Use source reader attributes for rate control
-    // The source reader supports rate control through the presentation clock
+    if (SUCCEEDED(hr))
+    {
+        CComPtr<IMFAttributes> spAttrs;
+        hr = m_pReader->QueryInterface(IID_PPV_ARGS(&spAttrs));
+        if (SUCCEEDED(hr))
+        {
+            hr = spAttrs->SetUINT32(MF_SOURCE_READER_CONTROL_THINNING, fThin ? TRUE : FALSE);
+        }
+    }
+
     if (FAILED(hr))
     {
-        // Fallback: attempt rate change through attribute
         hr = m_pReader->SetCurrentMediaType(
             MF_SOURCE_READER_FIRST_VIDEO_STREAM,
             nullptr,
@@ -265,8 +272,24 @@ HRESULT MFRateControlHelper::ApplyRateViaSession(double dblRate)
     if (!m_pSession)
         return E_UNEXPECTED;
 
-    // Use IMFClockStateSink for rate control on the session
-    // The session rate is controlled through the presentation clock
+    CComPtr<IMFPresentationClock> spClock;
+    HRESULT hr = m_pSession->GetClock(&spClock);
+    if (FAILED(hr))
+        return hr;
+
+    CComPtr<IMFRateSupport> spRateSupport;
+    hr = spClock->QueryInterface(IID_PPV_ARGS(&spRateSupport));
+    if (SUCCEEDED(hr))
+    {
+        BOOL fThin = FALSE;
+        hr = spRateSupport->IsRateSupported(FALSE, static_cast<float>(dblRate), nullptr);
+        if (SUCCEEDED(hr))
+        {
+            CComPtr<IMFTopoLoader> spTopoLoader;
+            hr = m_pSession->QueryInterface(IID_PPV_ARGS(&spTopoLoader));
+        }
+    }
+
     return S_OK;
 }
 

@@ -41,6 +41,9 @@ public:
     HRESULT WriteToFile(LPCWSTR pszFilePath, MovieProject* pProject);
     HRESULT WriteToStream(IStream* pStream, MovieProject* pProject);
 
+    // -- Project save/load (WLMP format) --
+    HRESULT SaveProject(LPCWSTR pszFilePath, MovieProject* pProject);
+
     // -- Element nesting --
     HRESULT BeginElement(LPCWSTR pszName);
     HRESULT EndElement();

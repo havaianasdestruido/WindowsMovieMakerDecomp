@@ -49,6 +49,10 @@ namespace HMREngine
         // D3D error helper
         static std::string HResultToString(HRESULT hr);
 
+        // User-friendly error descriptions
+        static std::string GetErrorDescription(HMRError code);
+        static bool IsCriticalError(HMRError code);
+
     private:
         std::vector<ErrorInfo> m_errors;
         mutable std::mutex m_mutex;

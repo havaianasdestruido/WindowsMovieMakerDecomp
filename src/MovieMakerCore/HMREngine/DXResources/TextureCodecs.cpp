@@ -22,9 +22,32 @@ HRESULT STDMETHODCALLTYPE CTextureCodecBase::Encode(
     UINT width, UINT height, DXGI_FORMAT format,
     ID3D11Texture2D** ppTexture)
 {
-    (void)pData; (void)cbData; (void)width; (void)height;
-    (void)format; (void)ppTexture;
-    return E_NOTIMPL;
+    if (!pData || !ppTexture || width == 0 || height == 0) return E_INVALIDARG;
+    if (format == DXGI_FORMAT_UNKNOWN) return E_INVALIDARG;
+
+    D3D11_TEXTURE2D_DESC td = {};
+    td.Width = width;
+    td.Height = height;
+    td.MipLevels = 1;
+    td.ArraySize = 1;
+    td.Format = format;
+    td.SampleDesc.Count = 1;
+    td.Usage = D3D11_USAGE_DEFAULT;
+    td.BindFlags = D3D11_BIND_SHADER_RESOURCE;
+
+    UINT rowPitch = (width * m_bitsPerPixel) / 8;
+    if (m_compressed)
+    {
+        UINT blockSize = (format == DXGI_FORMAT_BC1_UNORM || format == DXGI_FORMAT_BC1_UNORM_SRGB ||
+                          format == DXGI_FORMAT_BC4_UNORM || format == DXGI_FORMAT_BC4_SNORM) ? 8 : 16;
+        rowPitch = ((width + 3) / 4) * blockSize;
+    }
+
+    D3D11_SUBRESOURCE_DATA initData = {};
+    initData.pSysMem = pData;
+    initData.SysMemPitch = rowPitch;
+
+    return D3D11CreateTexture2D(ppTexture, &td, &initData, nullptr);
 }
 
 HRESULT STDMETHODCALLTYPE CTextureCodecBase::Decode(
@@ -32,9 +55,77 @@ HRESULT STDMETHODCALLTYPE CTextureCodecBase::Decode(
     BYTE** ppData, UINT* pcbData,
     UINT* pWidth, UINT* pHeight, DXGI_FORMAT* pFormat)
 {
-    (void)pTexture; (void)ppData; (void)pcbData;
-    (void)pWidth; (void)pHeight; (void)pFormat;
-    return E_NOTIMPL;
+    if (!pTexture || !ppData || !pcbData) return E_INVALIDARG;
+
+    D3D11_TEXTURE2D_DESC td;
+    pTexture->GetDesc(&td);
+
+    if (pWidth) *pWidth = td.Width;
+    if (pHeight) *pHeight = td.Height;
+    if (pFormat) *pFormat = td.Format;
+
+    UINT rowPitch = (td.Width * m_bitsPerPixel) / 8;
+    if (m_compressed)
+    {
+        UINT blockSize = (td.Format == DXGI_FORMAT_BC1_UNORM || td.Format == DXGI_FORMAT_BC1_UNORM_SRGB ||
+                          td.Format == DXGI_FORMAT_BC4_UNORM || td.Format == DXGI_FORMAT_BC4_SNORM) ? 8 : 16;
+        rowPitch = ((td.Width + 3) / 4) * blockSize;
+    }
+
+    UINT totalSize = rowPitch * td.Height;
+    *ppData = static_cast<BYTE*>(CoTaskMemAlloc(totalSize));
+    if (!*ppData) return E_OUTOFMEMORY;
+    *pcbData = totalSize;
+
+    // Create a staging texture to read back
+    ID3D11Device* dev = nullptr;
+    ID3D11DeviceContext* ctx = nullptr;
+    pTexture->GetDevice(&dev);
+    if (dev) dev->GetImmediateContext(&ctx);
+
+    if (!dev || !ctx)
+    {
+        CoTaskMemFree(*ppData);
+        *ppData = nullptr;
+        return E_FAIL;
+    }
+
+    D3D11_TEXTURE2D_DESC stagingDesc = td;
+    stagingDesc.Usage = D3D11_USAGE_STAGING;
+    stagingDesc.BindFlags = 0;
+    stagingDesc.CPUAccessFlags = D3D11_CPU_ACCESS_READ;
+    stagingDesc.MiscFlags = 0;
+
+    CComPtr<ID3D11Texture2D> staging;
+    HRESULT hr = dev->CreateTexture2D(&stagingDesc, nullptr, &staging);
+    if (FAILED(hr))
+    {
+        CoTaskMemFree(*ppData);
+        *ppData = nullptr;
+        ctx->Release();
+        dev->Release();
+        return hr;
+    }
+
+    ctx->CopyResource(staging, pTexture);
+
+    D3D11_MAPPED_SUBRESOURCE mapped;
+    hr = ctx->Map(staging, 0, D3D11_MAP_READ, 0, &mapped);
+    if (SUCCEEDED(hr))
+    {
+        for (UINT y = 0; y < td.Height; ++y)
+            memcpy((*ppData) + y * rowPitch, (BYTE*)mapped.pData + y * mapped.RowPitch, rowPitch);
+        ctx->Unmap(staging, 0);
+    }
+    else
+    {
+        CoTaskMemFree(*ppData);
+        *ppData = nullptr;
+    }
+
+    ctx->Release();
+    dev->Release();
+    return hr;
 }
 
 UINT STDMETHODCALLTYPE CTextureCodecBase::GetBitsPerPixel() const

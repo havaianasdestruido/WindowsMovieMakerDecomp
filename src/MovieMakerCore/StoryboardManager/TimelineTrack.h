@@ -25,6 +25,7 @@
 
 #include "StoryboardManager.h"
 #include "MovieProject.h"
+#include <vector>
 
 namespace StoryboardManager
 {
@@ -81,6 +82,13 @@ public:
     void MoveExtent(size_t nIndexFrom, size_t nIndexTo);
     int FindExtent(DWORD dwExtentId) const;
 
+    // Extent object management (stores MovieExtent objects directly)
+    size_t AddExtentObject(MovieExtent* pExtent);
+    void RemoveExtentObject(MovieExtent* pExtent);
+    MovieExtent* GetExtentObjectAt(size_t nIndex);
+    size_t GetExtentObjectCount() const throw();
+    MovieExtent* FindExtentObjectAtTime(LONGLONG llTimeHns);
+
     // Total duration (computed from extents)
     LONGLONG GetTotalDurationHns() const throw();
 
@@ -106,6 +114,7 @@ private:
     UINT                m_uTrackHeight;
     DWORD               m_dwTrackColor;
     ProjectTimeline*    m_timeline;
+    std::vector<MovieExtent*> m_arrExtentObjects;
 };
 
 // ============================================================================

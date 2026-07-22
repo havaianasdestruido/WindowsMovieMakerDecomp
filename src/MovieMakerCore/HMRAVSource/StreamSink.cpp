@@ -168,7 +168,7 @@ HRESULT StreamSink::SetInputVideoType(IMFMediaType* pType)
 {
     if (!pType)
         return E_POINTER;
-    // Store for use during BeginWriting
+    m_spInputVideoType = pType;
     return S_OK;
 }
 
@@ -176,7 +176,7 @@ HRESULT StreamSink::SetInputAudioType(IMFMediaType* pType)
 {
     if (!pType)
         return E_POINTER;
-    // Store for use during BeginWriting
+    m_spInputAudioType = pType;
     return S_OK;
 }
 
@@ -184,7 +184,7 @@ HRESULT StreamSink::SetOutputVideoType(IMFMediaType* pType)
 {
     if (!pType)
         return E_POINTER;
-    // Store for use during BeginWriting
+    m_spOutputVideoType = pType;
     return S_OK;
 }
 
@@ -192,7 +192,7 @@ HRESULT StreamSink::SetOutputAudioType(IMFMediaType* pType)
 {
     if (!pType)
         return E_POINTER;
-    // Store for use during BeginWriting
+    m_spOutputAudioType = pType;
     return S_OK;
 }
 

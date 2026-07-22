@@ -351,23 +351,52 @@ HRESULT AVSink::ProcessAudioBufferInternal(IMFSample* pSample)
     if (!pSample)
         return E_POINTER;
 
-    // Extract audio data from sample buffers and render
-    DWORD cBuffers = 0;
-    pSample->GetBufferCount(&cBuffers);
-    for (DWORD i = 0; i < cBuffers; ++i)
+    // Apply volume scaling to audio sample buffers
+    if (m_flVolume < 1.0f)
     {
-        CComPtr<IMFMediaBuffer> spBuffer;
-        HRESULT hr = pSample->GetBufferByIndex(i, &spBuffer);
-        if (FAILED(hr))
-            continue;
+        DWORD cBuffers = 0;
+        pSample->GetBufferCount(&cBuffers);
+        for (DWORD i = 0; i < cBuffers; ++i)
+        {
+            CComPtr<IMFMediaBuffer> spBuffer;
+            HRESULT hr = pSample->GetBufferByIndex(i, &spBuffer);
+            if (FAILED(hr)) continue;
 
-        BYTE* pData = nullptr;
-        DWORD cbLength = 0;
-        hr = spBuffer->Lock(&pData, nullptr, &cbLength);
+            BYTE* pData = nullptr;
+            DWORD cbLength = 0;
+            hr = spBuffer->Lock(&pData, nullptr, &cbLength);
+            if (SUCCEEDED(hr))
+            {
+                if (m_dwAudioBitsPerSample == 16)
+                {
+                    short* pSamples = reinterpret_cast<short*>(pData);
+                    DWORD dwSampleCount = cbLength / sizeof(short);
+                    for (DWORD s = 0; s < dwSampleCount; ++s)
+                        pSamples[s] = static_cast<short>(pSamples[s] * m_flVolume);
+                }
+                else if (m_dwAudioBitsPerSample == 32)
+                {
+                    float* pSamples = reinterpret_cast<float*>(pData);
+                    DWORD dwSampleCount = cbLength / sizeof(float);
+                    for (DWORD s = 0; s < dwSampleCount; ++s)
+                        pSamples[s] *= m_flVolume;
+                }
+                spBuffer->Unlock();
+            }
+        }
+    }
+
+    // Route audio to the renderer via IMFStreamSink
+    if (m_spAudioRenderer)
+    {
+        CComPtr<IMFMediaSink> spSink;
+        HRESULT hr = m_spAudioRenderer->QueryInterface(IID_PPV_ARGS(&spSink));
         if (SUCCEEDED(hr))
         {
-            // Audio data is ready for rendering
-            spBuffer->Unlock();
+            CComPtr<IMFStreamSink> spStreamSink;
+            hr = spSink->GetStreamSinkByIndex(0, &spStreamSink);
+            if (SUCCEEDED(hr))
+                hr = spStreamSink->ProcessSample(pSample);
         }
     }
 

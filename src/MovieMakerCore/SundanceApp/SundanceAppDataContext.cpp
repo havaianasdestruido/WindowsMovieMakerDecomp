@@ -363,9 +363,49 @@ void SundanceAppDataContext::RefreshPlaybackProperties()
 // ============================================================================
 void SundanceAppDataContext::FirePropertyChanged(LPCWSTR pszPropertyName)
 {
-    UNREFERENCED_PARAMETER(pszPropertyName);
-    // DirectUI property change notification is handled by the binding
-    // engine. The binding system polls property values on invalidation.
+    if (!pszPropertyName)
+        return;
+
+    DISPID dispid = DISPID_UNKNOWN;
+    for (int i = 0; i < _countof(g_propertyMap); ++i)
+    {
+        if (_wcsicmp(g_propertyMap[i].pwszName, pszPropertyName) == 0)
+        {
+            dispid = g_propertyMap[i].dispid;
+            break;
+        }
+    }
+
+    if (dispid == DISPID_UNKNOWN)
+        return;
+
+    IConnectionPointContainer* pCPC = NULL;
+    if (SUCCEEDED(QueryInterface(IID_IConnectionPointContainer, (void**)&pCPC)))
+    {
+        IConnectionPoint* pCP = NULL;
+        if (SUCCEEDED(pCPC->FindConnectionPoint(IID_IDispatch, &pCP)))
+        {
+            IEnumConnections* pEnum = NULL;
+            if (SUCCEEDED(pCP->EnumConnections(&pEnum)))
+            {
+                CONNECTDATA cd;
+                while (pEnum->Next(1, &cd, NULL) == S_OK)
+                {
+                    IDispatch* pSink = NULL;
+                    if (SUCCEEDED(cd.punk->QueryInterface(IID_IDispatch, (void**)&pSink)))
+                    {
+                        DISPPARAMS dp = { NULL, NULL, 0, 0 };
+                        pSink->Invoke(dispid, IID_NULL, LOCALE_USER_DEFAULT, DISPATCH_PROPERTYPUT, &dp, NULL, NULL, NULL);
+                        pSink->Release();
+                    }
+                    if (cd.punk) cd.punk->Release();
+                }
+                pEnum->Release();
+            }
+            pCP->Release();
+        }
+        pCPC->Release();
+    }
 }
 
 // ============================================================================

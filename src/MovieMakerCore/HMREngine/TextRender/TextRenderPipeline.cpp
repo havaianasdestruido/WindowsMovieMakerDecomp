@@ -44,6 +44,52 @@ static IWICImagingFactory* GetWICFactory()
 }
 
 // ============================================================================
+// Helper: Create D3D11 texture + SRV from WIC bitmap pixel data
+// ============================================================================
+HRESULT TextRenderTask::CreateTextureFromWICBitmap(IWICBitmap* pWicBitmap, UINT texW, UINT texH)
+{
+    if (!pWicBitmap || !m_device || !m_context)
+        return E_INVALIDARG;
+
+    m_resultTexture.Release();
+    m_resultSRV.Release();
+
+    D3D11_TEXTURE2D_DESC td = {};
+    td.Width = texW;
+    td.Height = texH;
+    td.MipLevels = 1;
+    td.ArraySize = 1;
+    td.Format = DXGI_FORMAT_B8G8R8A8_UNORM;
+    td.SampleDesc.Count = 1;
+    td.Usage = D3D11_USAGE_DEFAULT;
+    td.BindFlags = D3D11_BIND_SHADER_RESOURCE;
+
+    HRESULT hr = m_device->CreateTexture2D(&td, nullptr, &m_resultTexture);
+    if (FAILED(hr))
+        return hr;
+
+    CComPtr<IWICBitmapLock> lock;
+    WICRect wicRect = { 0, 0, static_cast<INT>(texW), static_cast<INT>(texH) };
+    hr = pWicBitmap->Lock(&wicRect, WICBitmapLockRead, &lock);
+    if (FAILED(hr))
+        return hr;
+
+    BYTE* data = nullptr;
+    UINT bufferSize = 0;
+    UINT stride = 0;
+    lock->GetDataPointer(&bufferSize, &data);
+    lock->GetStride(&stride);
+
+    if (data && bufferSize > 0)
+        m_context->UpdateSubresource(m_resultTexture, 0, nullptr, data, stride, 0);
+
+    lock.Release();
+
+    hr = m_device->CreateShaderResourceView(m_resultTexture, nullptr, &m_resultSRV);
+    return hr;
+}
+
+// ============================================================================
 // Helper: Create DWrite factory (singleton)
 // ============================================================================
 static IDWriteFactory* GetDWriteFactory()
@@ -147,6 +193,8 @@ HRESULT PartialTextRenderTask::Execute()
     lock->GetDataPointer(&bufferSize, &data);
     lock->GetStride(&stride);
 
+    if (!m_device) { m_state = TaskState::Failed; return E_POINTER; }
+
     D3D11_TEXTURE2D_DESC td = {};
     td.Width = texW;
     td.Height = texH;
@@ -157,10 +205,23 @@ HRESULT PartialTextRenderTask::Execute()
     td.Usage = D3D11_USAGE_DEFAULT;
     td.BindFlags = D3D11_BIND_SHADER_RESOURCE;
 
+    std::vector<BYTE> pixelData(texW * texH * 4);
+    hr = wicBitmap->CopyPixels(nullptr, texW * 4, texW * texH * 4, pixelData.data());
+    if (FAILED(hr)) { m_state = TaskState::Failed; return hr; }
+
+    D3D11_SUBRESOURCE_DATA initData = {};
+    initData.pSysMem = pixelData.data();
+    initData.SysMemPitch = texW * 4;
+
     m_resultTexture.Release();
     m_resultSRV.Release();
 
-    hr = E_FAIL;
+    hr = m_device->CreateTexture2D(&td, &initData, &m_resultTexture);
+    if (FAILED(hr)) { m_state = TaskState::Failed; return hr; }
+
+    hr = m_device->CreateShaderResourceView(m_resultTexture, nullptr, &m_resultSRV);
+    if (FAILED(hr)) { m_state = TaskState::Failed; return hr; }
+
     m_state = TaskState::Completed;
     if (m_callback) m_callback->OnTaskFinished(this);
 
@@ -367,6 +428,8 @@ HRESULT FullTextRenderTask::Execute()
     lock->GetDataPointer(&bufferSize, &data);
     lock->GetStride(&stride);
 
+    if (!m_device) { m_state = TaskState::Failed; return E_POINTER; }
+
     D3D11_TEXTURE2D_DESC td = {};
     td.Width = m_width;
     td.Height = m_height;
@@ -376,6 +439,23 @@ HRESULT FullTextRenderTask::Execute()
     td.SampleDesc.Count = 1;
     td.Usage = D3D11_USAGE_DEFAULT;
     td.BindFlags = D3D11_BIND_SHADER_RESOURCE;
+
+    std::vector<BYTE> pixelData(m_width * m_height * 4);
+    hr = wicBitmap->CopyPixels(nullptr, m_width * 4, m_width * m_height * 4, pixelData.data());
+    if (FAILED(hr)) { m_state = TaskState::Failed; return hr; }
+
+    D3D11_SUBRESOURCE_DATA initData = {};
+    initData.pSysMem = pixelData.data();
+    initData.SysMemPitch = m_width * 4;
+
+    m_resultTexture.Release();
+    m_resultSRV.Release();
+
+    hr = m_device->CreateTexture2D(&td, &initData, &m_resultTexture);
+    if (FAILED(hr)) { m_state = TaskState::Failed; return hr; }
+
+    hr = m_device->CreateShaderResourceView(m_resultTexture, nullptr, &m_resultSRV);
+    if (FAILED(hr)) { m_state = TaskState::Failed; return hr; }
 
     m_state = TaskState::Completed;
     if (m_callback) m_callback->OnTaskFinished(this);

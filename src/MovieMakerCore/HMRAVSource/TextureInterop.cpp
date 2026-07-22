@@ -2,6 +2,7 @@
 
 #include "pch.h"
 #include "TextureInterop.h"
+#include <d3d11.h>
 
 namespace HMRAVSource
 {
@@ -104,21 +105,35 @@ HRESULT TextureInterOp::CopyFromSample(IMFSample* pSample)
     if (!pSample)
         return E_POINTER;
 
-    // Extract buffer from sample and copy to texture
     CComPtr<IMFMediaBuffer> spBuffer;
     HRESULT hr = pSample->GetBufferByIndex(0, &spBuffer);
     if (FAILED(hr))
         return hr;
 
-    BYTE* pData = nullptr;
-    DWORD cbLength = 0;
-    hr = spBuffer->Lock(&pData, nullptr, &cbLength);
+    BYTE* pSrcData = nullptr;
+    DWORD cbMaxLength = 0;
+    DWORD cbCurrentLength = 0;
+    hr = spBuffer->Lock(&pSrcData, &cbMaxLength, &cbCurrentLength);
     if (FAILED(hr))
         return hr;
 
-    // Copy data to texture surface
+    // Copy from sample buffer to texture
+    if (m_spTexture && pSrcData && cbCurrentLength > 0)
+    {
+        D3DLOCKED_RECT lockedRect = {};
+        if (SUCCEEDED(m_spTexture->LockRect(0, &lockedRect, nullptr, 0)))
+        {
+            UINT copyH = min(m_desc.uHeight, cbCurrentLength / lockedRect.Pitch);
+            for (UINT y = 0; y < copyH; ++y)
+                memcpy((BYTE*)lockedRect.pBits + y * lockedRect.Pitch,
+                       pSrcData + y * (cbCurrentLength / m_desc.uHeight),
+                       min(lockedRect.Pitch, cbCurrentLength / m_desc.uHeight));
+            m_spTexture->UnlockRect(0);
+        }
+    }
+
     spBuffer->Unlock();
-    return S_OK;
+    return hr;
 }
 
 HRESULT TextureInterOp::CopyToSample(IMFSample* pSample)
@@ -131,15 +146,29 @@ HRESULT TextureInterOp::CopyToSample(IMFSample* pSample)
     if (FAILED(hr))
         return hr;
 
-    BYTE* pData = nullptr;
-    DWORD cbLength = 0;
-    hr = spBuffer->Lock(&pData, nullptr, &cbLength);
+    BYTE* pDestData = nullptr;
+    DWORD cbMaxLength = 0;
+    hr = spBuffer->Lock(&pDestData, &cbMaxLength, nullptr);
     if (FAILED(hr))
         return hr;
 
-    // Copy from texture to buffer
+    // Copy from texture to sample buffer
+    if (m_spTexture && pDestData && cbMaxLength > 0)
+    {
+        D3DLOCKED_RECT lockedRect = {};
+        if (SUCCEEDED(m_spTexture->LockRect(0, &lockedRect, nullptr, D3DLOCK_READONLY)))
+        {
+            UINT copyH = min(m_desc.uHeight, cbMaxLength / lockedRect.Pitch);
+            for (UINT y = 0; y < copyH; ++y)
+                memcpy(pDestData + y * (cbMaxLength / m_desc.uHeight),
+                       (BYTE*)lockedRect.pBits + y * lockedRect.Pitch,
+                       min(lockedRect.Pitch, cbMaxLength / m_desc.uHeight));
+            m_spTexture->UnlockRect(0);
+        }
+    }
+
     spBuffer->Unlock();
-    return S_OK;
+    return hr;
 }
 
 bool TextureInterOp::IsInitialized() const throw()
@@ -242,19 +271,20 @@ HRESULT TextureInterOpDX9::CreateTextureFromDevice(IDirect3DDevice9* pDevice)
 
 HRESULT TextureInterOpDX9::CopyFromSurface(IDirect3DSurface9* pSource)
 {
-    if (!pSource || !m_spSurface)
+    if (!pSource || !m_spSurface || !m_pDevice)
         return E_POINTER;
 
-    // Would use StretchRect for GPU-accelerated copy
-    return S_OK;
+    HRESULT hr = m_pDevice->StretchRect(pSource, nullptr, m_spSurface, nullptr, D3DTEXF_NONE);
+    return hr;
 }
 
 HRESULT TextureInterOpDX9::CopyToSurface(IDirect3DSurface9* pDest)
 {
-    if (!pDest || !m_spSurface)
+    if (!pDest || !m_spSurface || !m_pDevice)
         return E_POINTER;
 
-    return S_OK;
+    HRESULT hr = m_pDevice->StretchRect(m_spSurface, nullptr, pDest, nullptr, D3DTEXF_NONE);
+    return hr;
 }
 
 IDirect3DDevice9* TextureInterOpDX9::GetDevice() const
@@ -268,16 +298,44 @@ HRESULT TextureInterOpDX9::SetDevice(IDirect3DDevice9* pDevice)
     return S_OK;
 }
 
-HRESULT TextureInterOpDX9::CreateSharedTexture(IDirect3DDevice9* /*pDevice*/, HANDLE* phShared)
+HRESULT TextureInterOpDX9::CreateSharedTexture(IDirect3DDevice9* pDevice, HANDLE* phShared)
 {
-    if (phShared)
-        *phShared = nullptr;
-    return E_NOTIMPL;
+    if (!pDevice || !phShared)
+        return E_POINTER;
+
+    *phShared = nullptr;
+
+    HRESULT hr = pDevice->CreateTexture(
+        m_desc.uWidth, m_desc.uHeight, 1,
+        D3DUSAGE_RENDERTARGET,
+        m_desc.d3dFormat,
+        D3DPOOL_DEFAULT,
+        &m_spTexture,
+        phShared);
+
+    if (SUCCEEDED(hr) && m_spTexture)
+        m_spTexture->GetSurfaceLevel(0, &m_spSurface);
+
+    return hr;
 }
 
-HRESULT TextureInterOpDX9::OpenSharedTexture(IDirect3DDevice9* /*pDevice*/, HANDLE /*hShared*/)
+HRESULT TextureInterOpDX9::OpenSharedTexture(IDirect3DDevice9* pDevice, HANDLE hShared)
 {
-    return E_NOTIMPL;
+    if (!pDevice || !hShared)
+        return E_POINTER;
+
+    HRESULT hr = pDevice->CreateTexture(
+        m_desc.uWidth, m_desc.uHeight, 1,
+        D3DUSAGE_RENDERTARGET,
+        m_desc.d3dFormat,
+        D3DPOOL_DEFAULT,
+        &m_spTexture,
+        &hShared);
+
+    if (SUCCEEDED(hr) && m_spTexture)
+        m_spTexture->GetSurfaceLevel(0, &m_spSurface);
+
+    return hr;
 }
 
 HRESULT TextureInterOpDX9::CreateTextureInternal()

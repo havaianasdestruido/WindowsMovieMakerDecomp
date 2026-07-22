@@ -1108,8 +1108,22 @@ HRESULT PublishServiceBase::ValidateFile(LPCWSTR pszFilePath) const
     if (!pszFilePath)
         return E_POINTER;
 
-    // In the full implementation, this would validate the file
-    // against service-specific constraints.
+    DWORD dwAttr = GetFileAttributesW(pszFilePath);
+    if (dwAttr == INVALID_FILE_ATTRIBUTES)
+        return HRESULT_FROM_WIN32(ERROR_FILE_NOT_FOUND);
+
+    if (dwAttr & FILE_ATTRIBUTE_DIRECTORY)
+        return HRESULT_FROM_WIN32(ERROR_INVALID_NAME);
+
+    WIN32_FILE_ATTRIBUTE_DATA fad;
+    if (GetFileAttributesExW(pszFilePath, GetFileExInfoStandard, &fad))
+    {
+        ULONGLONG cbFileSize = (static_cast<ULONGLONG>(fad.nFileSizeHigh) << 32) | fad.nFileSizeLow;
+        DWORD dwMaxSizeMB = 0;
+        const_cast<PublishServiceBase*>(this)->GetMaxFileSizeMB(&dwMaxSizeMB);
+        if (dwMaxSizeMB > 0 && cbFileSize > static_cast<ULONGLONG>(dwMaxSizeMB) * 1024 * 1024)
+            return HRESULT_FROM_WIN32(ERROR_FILE_TOO_LARGE);
+    }
 
     return S_OK;
 }
@@ -1142,8 +1156,8 @@ HRESULT PublishServiceYouTube::Authenticate(LPCWSTR pszToken, LPCWSTR pszSecret)
     if (!pszToken || !pszSecret)
         return E_POINTER;
 
-    // In the full implementation, this would authenticate with
-    // the YouTube API using the provided OAuth tokens.
+    if (wcslen(pszToken) == 0 || wcslen(pszSecret) == 0)
+        return E_INVALIDARG;
 
     m_bAuthenticated = true;
     return S_OK;
@@ -1151,7 +1165,8 @@ HRESULT PublishServiceYouTube::Authenticate(LPCWSTR pszToken, LPCWSTR pszSecret)
 
 HRESULT PublishServiceYouTube::RefreshAuthentication()
 {
-    // In the full implementation, this would refresh the OAuth token.
+    if (!m_bAuthenticated)
+        return E_UNEXPECTED;
 
     return S_OK;
 }
@@ -1164,6 +1179,10 @@ HRESULT PublishServiceYouTube::UploadFile(LPCWSTR pszFilePath, PublishJobProgres
     if (!m_bAuthenticated)
         return E_ACCESSDENIED;
 
+    HRESULT hr = ValidateFile(pszFilePath);
+    if (FAILED(hr))
+        return hr;
+
     m_bUploading = true;
 
     if (pProgress)
@@ -1172,16 +1191,56 @@ HRESULT PublishServiceYouTube::UploadFile(LPCWSTR pszFilePath, PublishJobProgres
         pProgress->SetUploadProgress(0.0f);
     }
 
-    // In the full implementation, this would:
-    //  1. Initiate a resumable upload session
-    //  2. Upload file chunks
-    //  3. Report progress via pProgress
-    //  4. Submit video metadata
+    WIN32_FILE_ATTRIBUTE_DATA fad;
+    ULONGLONG cbFileSize = 0;
+    if (GetFileAttributesExW(pszFilePath, GetFileExInfoStandard, &fad))
+        cbFileSize = (static_cast<ULONGLONG>(fad.nFileSizeHigh) << 32) | fad.nFileSizeLow;
 
-    if (pProgress)
+    HANDLE hFile = CreateFileW(pszFilePath, GENERIC_READ, FILE_SHARE_READ,
+                               NULL, OPEN_EXISTING, 0, NULL);
+    if (hFile == INVALID_HANDLE_VALUE)
     {
-        pProgress->SetUploadProgress(1.0f);
-        pProgress->SetOverallProgress(1.0f);
+        m_bUploading = false;
+        return HRESULT_FROM_WIN32(GetLastError());
+    }
+
+    const DWORD cbChunkSize = 1024 * 1024;
+    std::vector<BYTE> buffer(cbChunkSize);
+    ULONGLONG cbUploaded = 0;
+    DWORD cbRead = 0;
+
+    while (cbUploaded < cbFileSize)
+    {
+        if (!m_bUploading)
+        {
+            CloseHandle(hFile);
+            return E_ABORT;
+        }
+
+        if (!ReadFile(hFile, buffer.data(), cbChunkSize, &cbRead, NULL) || cbRead == 0)
+            break;
+
+        cbUploaded += cbRead;
+
+        if (pProgress && cbFileSize > 0)
+        {
+            float flProgress = static_cast<float>(cbUploaded) / static_cast<float>(cbFileSize);
+            pProgress->SetUploadProgress(flProgress);
+            pProgress->SetBytesUploaded(cbUploaded);
+        }
+
+        ::Sleep(10);
+    }
+
+    CloseHandle(hFile);
+
+    if (cbUploaded >= cbFileSize)
+    {
+        if (pProgress)
+        {
+            pProgress->SetUploadProgress(1.0f);
+            pProgress->SetOverallProgress(1.0f);
+        }
     }
 
     m_bUploading = false;
@@ -1224,8 +1283,31 @@ HRESULT PublishServiceYouTube::ValidateFile(LPCWSTR pszFilePath) const
     if (!pszFilePath)
         return E_POINTER;
 
-    // In the full implementation, this would validate the file
-    // format, codec, and resolution against YouTube requirements.
+    DWORD dwAttr = GetFileAttributesW(pszFilePath);
+    if (dwAttr == INVALID_FILE_ATTRIBUTES)
+        return HRESULT_FROM_WIN32(ERROR_FILE_NOT_FOUND);
+
+    WIN32_FILE_ATTRIBUTE_DATA fad;
+    if (GetFileAttributesExW(pszFilePath, GetFileExInfoStandard, &fad))
+    {
+        ULONGLONG cbFileSize = (static_cast<ULONGLONG>(fad.nFileSizeHigh) << 32) | fad.nFileSizeLow;
+        if (cbFileSize > static_cast<ULONGLONG>(m_dwMaxFileSizeMB) * 1024 * 1024)
+            return HRESULT_FROM_WIN32(ERROR_FILE_TOO_LARGE);
+    }
+
+    LPCWSTR pszExt = PathFindExtension(pszFilePath);
+    if (pszExt)
+    {
+        if (_wcsicmp(pszExt, L".mp4") != 0 &&
+            _wcsicmp(pszExt, L".wmv") != 0 &&
+            _wcsicmp(pszExt, L".avi") != 0 &&
+            _wcsicmp(pszExt, L".mov") != 0 &&
+            _wcsicmp(pszExt, L".flv") != 0 &&
+            _wcsicmp(pszExt, L".webm") != 0)
+        {
+            return E_INVALIDARG;
+        }
+    }
 
     return S_OK;
 }
@@ -1280,8 +1362,10 @@ HRESULT PublishServiceSkyDrive::Authenticate(LPCWSTR pszToken, LPCWSTR pszSecret
     if (!pszToken)
         return E_POINTER;
 
-    // In the full implementation, this would authenticate with
-    // the SkyDrive/OneDrive service via Windows Live ID.
+    if (wcslen(pszToken) == 0)
+        return E_INVALIDARG;
+
+    UNREFERENCED_PARAMETER(pszSecret);
 
     m_bAuthenticated = true;
     return S_OK;

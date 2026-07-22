@@ -3,6 +3,9 @@ undecomp/
 intro/
 readme.txt
 
+tools/thirdparty/
+cool/
+
 # binaries
 *.exe
 *.dll

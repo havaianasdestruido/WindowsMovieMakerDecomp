@@ -282,11 +282,15 @@ public:
     // Undo support (extent-level)
     bool CanUndo() const throw();
     bool CanRedo() const throw();
+    void SetUndoAvailable(bool bAvailable) throw();
+    void SetRedoAvailable(bool bAvailable) throw();
 
 private:
     DWORD       m_dwDirtyFlags;
     bool        m_fSaving;
     bool        m_fLoading;
+    bool        m_bCanUndo;
+    bool        m_bCanRedo;
     FILETIME    m_ftLastModified;
 };
 
@@ -402,6 +406,9 @@ private:
 
     DWORD   GenerateNextMediaId();
     DWORD   GenerateNextExtentId();
+
+    void    PushUndoSnapshot();
+    void    UpdateUndoState();
 
     ATL::CString        m_strProjectPath;
     MovieProjectSettings m_settings;

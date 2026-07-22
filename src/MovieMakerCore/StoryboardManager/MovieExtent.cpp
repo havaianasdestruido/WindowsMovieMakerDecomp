@@ -366,6 +366,20 @@ bool MovieExtent::IsValid() const throw()
 }
 
 // ============================================================================
+// Source path
+// ============================================================================
+
+ATL::CString MovieExtent::GetSourcePath() const
+{
+    return m_strSourcePath;
+}
+
+void MovieExtent::SetSourcePath(LPCWSTR pszPath)
+{
+    m_strSourcePath = pszPath ? pszPath : L"";
+}
+
+// ============================================================================
 // Clone
 // ============================================================================
 
@@ -375,6 +389,7 @@ MovieExtent* MovieExtent::Clone() const
 
     pClone->m_llStartTimeHns = m_llStartTimeHns;
     pClone->m_llEndTimeHns = m_llEndTimeHns;
+    pClone->m_strSourcePath = m_strSourcePath;
     pClone->m_dblSpeedFactor = m_dblSpeedFactor;
     pClone->m_dblVolume = m_dblVolume;
     pClone->m_llFadeInDurationHns = m_llFadeInDurationHns;

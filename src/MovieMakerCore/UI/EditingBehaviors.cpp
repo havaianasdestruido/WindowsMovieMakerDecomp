@@ -256,13 +256,92 @@ HRESULT RichEditControlBehavior::OnElementDetached(IDuiElement*) { DestroyRichEd
 
 void RichEditControlBehavior::SetRichText(LPCWSTR pszRichText) { m_strRichText = pszRichText ? pszRichText : L""; }
 HRESULT RichEditControlBehavior::GetRichText(ATL::CString& strRichText) { strRichText = m_strRichText; return S_OK; }
-void RichEditControlBehavior::SetSelectionBold(bool) {}
-void RichEditControlBehavior::SetSelectionItalic(bool) {}
-void RichEditControlBehavior::SetSelectionUnderline(bool) {}
-void RichEditControlBehavior::SetSelectionFontSize(int) {}
-void RichEditControlBehavior::SetSelectionFontFamily(LPCWSTR) {}
-void RichEditControlBehavior::SetSelectionTextColor(COLORREF) {}
-void RichEditControlBehavior::CreateRichEditControl(HWND) {}
+void RichEditControlBehavior::SetSelectionBold(bool bBold)
+{
+    if (!m_hWndRichEdit) return;
+    CHARFORMAT2W cf = {};
+    cf.cbSize = sizeof(cf);
+    cf.dwMask = CFM_BOLD;
+    cf.dwEffects = bBold ? CFE_BOLD : 0;
+    SendMessage(m_hWndRichEdit, EM_SETCHARFORMAT, SCF_SELECTION, (LPARAM)&cf);
+}
+
+void RichEditControlBehavior::SetSelectionItalic(bool bItalic)
+{
+    if (!m_hWndRichEdit) return;
+    CHARFORMAT2W cf = {};
+    cf.cbSize = sizeof(cf);
+    cf.dwMask = CFM_ITALIC;
+    cf.dwEffects = bItalic ? CFE_ITALIC : 0;
+    SendMessage(m_hWndRichEdit, EM_SETCHARFORMAT, SCF_SELECTION, (LPARAM)&cf);
+}
+
+void RichEditControlBehavior::SetSelectionUnderline(bool bUnderline)
+{
+    if (!m_hWndRichEdit) return;
+    CHARFORMAT2W cf = {};
+    cf.cbSize = sizeof(cf);
+    cf.dwMask = CFM_UNDERLINE;
+    cf.dwEffects = bUnderline ? CFE_UNDERLINE : 0;
+    SendMessage(m_hWndRichEdit, EM_SETCHARFORMAT, SCF_SELECTION, (LPARAM)&cf);
+}
+
+void RichEditControlBehavior::SetSelectionFontSize(int nSizePt10)
+{
+    if (!m_hWndRichEdit) return;
+    CHARFORMAT2W cf = {};
+    cf.cbSize = sizeof(cf);
+    cf.dwMask = CFM_SIZE;
+    cf.yHeight = nSizePt10 * 20;
+    SendMessage(m_hWndRichEdit, EM_SETCHARFORMAT, SCF_SELECTION, (LPARAM)&cf);
+}
+
+void RichEditControlBehavior::SetSelectionFontFamily(LPCWSTR pszFontName)
+{
+    if (!m_hWndRichEdit || !pszFontName) return;
+    CHARFORMAT2W cf = {};
+    cf.cbSize = sizeof(cf);
+    cf.dwMask = CFM_FACE;
+    StringCchCopyW(cf.szFaceName, _countof(cf.szFaceName), pszFontName);
+    SendMessage(m_hWndRichEdit, EM_SETCHARFORMAT, SCF_SELECTION, (LPARAM)&cf);
+}
+
+void RichEditControlBehavior::SetSelectionTextColor(COLORREF clrText)
+{
+    if (!m_hWndRichEdit) return;
+    CHARFORMAT2W cf = {};
+    cf.cbSize = sizeof(cf);
+    cf.dwMask = CFM_COLOR;
+    cf.crTextColor = clrText;
+    SendMessage(m_hWndRichEdit, EM_SETCHARFORMAT, SCF_SELECTION, (LPARAM)&cf);
+}
+
+void RichEditControlBehavior::CreateRichEditControl(HWND hWndParent)
+{
+    if (m_hWndRichEdit) return;
+    if (!hWndParent) return;
+
+    RECT rcClient;
+    GetClientRect(hWndParent, &rcClient);
+
+    m_hWndRichEdit = CreateWindowExW(
+        WS_EX_LEFT | WS_EX_CLIENTEDGE,
+        RICHEDIT_CLASS,
+        L"",
+        WS_CHILD | WS_VISIBLE | WS_VSCROLL | ES_MULTILINE | ES_AUTOVSCROLL,
+        0, 0, rcClient.right - rcClient.left, rcClient.bottom - rcClient.top,
+        hWndParent,
+        NULL,
+        GetModuleHandle(NULL),
+        NULL);
+
+    if (m_hWndRichEdit)
+    {
+        SendMessage(m_hWndRichEdit, EM_SETTEXTMODE, TM_PLAINTEXT, 0);
+        if (!m_strRichText.IsEmpty())
+            SetWindowTextW(m_hWndRichEdit, m_strRichText);
+    }
+}
 void RichEditControlBehavior::DestroyRichEditControl() { m_hWndRichEdit = NULL; }
 
 // ============================================================================
@@ -374,7 +453,13 @@ HRESULT OptionsDialogBehavior::OnElementAttached(IDuiElement* pElement)
 HRESULT OptionsDialogBehavior::OnElementDetached(IDuiElement*) { m_pElement = NULL; return S_OK; }
 
 void OptionsDialogBehavior::ShowOptionsPage(LPCWSTR pszPageName) { m_strCurrentPage = pszPageName ? pszPageName : L""; }
-void OptionsDialogBehavior::SaveOptions() {}
+void OptionsDialogBehavior::SaveOptions()
+{
+    if (m_pAppMain)
+    {
+        m_pAppMain->SaveUserPreferences();
+    }
+}
 void OptionsDialogBehavior::CancelOptions() { m_strCurrentPage.Empty(); }
 
 // ============================================================================
@@ -394,15 +479,59 @@ HRESULT HelpBehavior::OnElementDetached(IDuiElement*) { m_pElement = NULL; retur
 
 void HelpBehavior::ShowHelpTopic(LPCWSTR pszTopicId)
 {
-    UNREFERENCED_PARAMETER(pszTopicId);
-    // Launch help viewer with the specified topic
+    if (!pszTopicId || !*pszTopicId) return;
+
+    WCHAR szHelpPath[MAX_PATH];
+    if (GetModuleFileNameW(NULL, szHelpPath, MAX_PATH))
+    {
+        WCHAR* pSlash = wcsrchr(szHelpPath, L'\\');
+        if (pSlash) { pSlash++; *pSlash = L'\0'; }
+        StringCchCatW(szHelpPath, MAX_PATH, L"Help\\");
+        StringCchCatW(szHelpPath, MAX_PATH, pszTopicId);
+        StringCchCatW(szHelpPath, MAX_PATH, L".html");
+
+        SHELLEXECUTEINFOW sei = { sizeof(sei) };
+        sei.fMask = SEE_MASK_NOCLOSEPROCESS;
+        sei.lpVerb = L"open";
+        sei.lpFile = L"hh.exe";
+        WCHAR szParams[MAX_PATH + 10];
+        StringCchPrintfW(szParams, _countof(szParams), L"%s", szHelpPath);
+        sei.lpParameters = szParams;
+        sei.nShow = SW_SHOWNORMAL;
+        ShellExecuteExW(&sei);
+    }
 }
 
 void HelpBehavior::ShowInlineHelp(LPCWSTR pszHelpText, POINT ptPosition)
 {
-    UNREFERENCED_PARAMETER(pszHelpText);
-    UNREFERENCED_PARAMETER(ptPosition);
-    // Show inline help popup at the specified position
+    if (!pszHelpText || !*pszHelpText) return;
+    if (!m_pElement) return;
+
+    RECT rcElement;
+    m_pElement->GetBounds(&rcElement);
+
+    HWND hWndToolTip = CreateWindowExW(
+        WS_EX_TOPMOST,
+        TOOLTIPS_CLASS,
+        NULL,
+        WS_POPUP | TTS_NOPREFIX | TTS_ALWAYSTIP,
+        ptPosition.x, ptPosition.y,
+        0, 0,
+        NULL,
+        NULL,
+        GetModuleHandle(NULL),
+        NULL);
+
+    if (hWndToolTip)
+    {
+        TOOLINFOW ti = { sizeof(ti) };
+        ti.uFlags = TTF_SUBCLASS;
+        ti.hwnd = NULL;
+        ti.lpszText = (LPWSTR)pszHelpText;
+        ti.rect = rcElement;
+        SendMessage(hWndToolTip, TTM_ADDTOOL, 0, (LPARAM)&ti);
+        SendMessage(hWndToolTip, TTM_POPUP, 0, 0);
+    }
 }
 
 // ============================================================================
@@ -433,9 +562,34 @@ HRESULT CaptureUIBehavior::OnElementDetached(IDuiElement*)
 HRESULT CaptureUIBehavior::OnMessage(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL* pbHandled)
 {
     if (pbHandled) *pbHandled = FALSE;
-    UNREFERENCED_PARAMETER(uMsg);
-    UNREFERENCED_PARAMETER(wParam);
-    UNREFERENCED_PARAMETER(lParam);
+
+    switch (uMsg)
+    {
+    case WM_PAINT:
+    {
+        if (m_hWndPreview && m_bPreviewing)
+        {
+            PAINTSTRUCT ps;
+            HDC hdc = BeginPaint(m_hWndPreview, &ps);
+            if (hdc)
+            {
+                RECT rcClient;
+                GetClientRect(m_hWndPreview, &rcClient);
+                FillRect(hdc, &rcClient, (HBRUSH)GetStockObject(BLACK_BRUSH));
+                EndPaint(m_hWndPreview, &ps);
+                if (pbHandled) *pbHandled = TRUE;
+            }
+        }
+        break;
+    }
+    case WM_CLOSE:
+    {
+        StopPreview();
+        if (pbHandled) *pbHandled = TRUE;
+        break;
+    }
+    }
+
     return S_OK;
 }
 

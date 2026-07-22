@@ -805,7 +805,69 @@ HRESULT PreprocessMesh::OptimizeIndices(
     std::vector<WORD>& indices,
     UINT vertexCount)
 {
-    (void)vertexCount;
+    if (indices.empty() || vertexCount == 0) return S_OK;
+
+    // Simple vertex cache optimizer: reorder triangles for better cache locality
+    // using a FIFO cache model.
+    const UINT CACHE_SIZE = 32;
+    std::vector<WORD> optimized;
+    optimized.reserve(indices.size());
+
+    std::vector<bool> visited(vertexCount, false);
+    std::vector<WORD> cache(CACHE_SIZE, 0xFFFF);
+    UINT cachePos = 0;
+
+    for (size_t i = 0; i + 2 < indices.size(); i += 3)
+    {
+        // Find the best triangle among remaining triangles
+        size_t bestTri = i;
+        int bestScore = INT_MIN;
+
+        for (size_t j = i; j + 2 < indices.size() && j < i + 30; j += 3)
+        {
+            int score = 0;
+            for (UINT k = 0; k < 3; ++k)
+            {
+                WORD idx = indices[j + k];
+                if (visited[idx]) continue;
+
+                for (UINT c = 0; c < CACHE_SIZE; ++c)
+                {
+                    if (cache[c] == idx)
+                    {
+                        score += (CACHE_SIZE - c) * 2;
+                        break;
+                    }
+                }
+            }
+
+            if (score > bestScore)
+            {
+                bestScore = score;
+                bestTri = j;
+            }
+        }
+
+        // Swap the best triangle to current position
+        if (bestTri != i)
+        {
+            for (UINT k = 0; k < 3; ++k)
+                std::swap(indices[i + k], indices[bestTri + k]);
+        }
+
+        // Emit triangle and update cache
+        for (UINT k = 0; k < 3; ++k)
+        {
+            WORD idx = indices[i + k];
+            optimized.push_back(idx);
+            visited[idx] = true;
+
+            cache[cachePos] = idx;
+            cachePos = (cachePos + 1) % CACHE_SIZE;
+        }
+    }
+
+    indices = std::move(optimized);
     return S_OK;
 }
 

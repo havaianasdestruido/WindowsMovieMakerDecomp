@@ -62,6 +62,11 @@ HRESULT AudioStreamSink::WriteSample(IMFSample* pSample)
     if (SUCCEEDED(pSample->GetSampleTime(&llTimestamp)))
         m_llDurationWrittenHns = llTimestamp;
 
+    CComPtr<IMFSample> spProcessed;
+    HRESULT hr = ConvertAndScaleSample(pSample, &spProcessed);
+    if (FAILED(hr))
+        return hr;
+
     return S_OK;
 }
 
@@ -167,8 +172,76 @@ HRESULT AudioStreamSink::ConvertAndScaleSample(IMFSample* pSample, IMFSample** p
 
     *ppConverted = nullptr;
 
-    // Volume scaling would be applied here if needed
-    // For now, pass through unchanged
+    if (m_fMute || m_flVolume < 1.0f)
+    {
+        HRESULT hr = MFCreateSample(ppConverted);
+        if (FAILED(hr)) return hr;
+
+        LONGLONG llTimestamp = 0;
+        pSample->GetSampleTime(&llTimestamp);
+        (*ppConverted)->SetSampleTime(llTimestamp);
+
+        LONGLONG llDuration = 0;
+        pSample->GetSampleDuration(&llDuration);
+        if (llDuration > 0)
+            (*ppConverted)->SetSampleDuration(llDuration);
+
+        DWORD cBuffers = 0;
+        pSample->GetBufferCount(&cBuffers);
+
+        for (DWORD i = 0; i < cBuffers; ++i)
+        {
+            CComPtr<IMFMediaBuffer> spSrcBuffer;
+            hr = pSample->GetBufferByIndex(i, &spSrcBuffer);
+            if (FAILED(hr)) continue;
+
+            BYTE* pSrcData = nullptr;
+            DWORD cbSrcData = 0;
+            hr = spSrcBuffer->Lock(&pSrcData, nullptr, &cbSrcData);
+            if (FAILED(hr)) continue;
+
+            CComPtr<IMFMediaBuffer> spDstBuffer;
+            hr = MFCreateMemoryBuffer(cbSrcData, &spDstBuffer);
+            if (SUCCEEDED(hr))
+            {
+                BYTE* pDstData = nullptr;
+                hr = spDstBuffer->Lock(&pDstData, nullptr, nullptr);
+                if (SUCCEEDED(hr))
+                {
+                    if (m_fMute)
+                    {
+                        memset(pDstData, 0, cbSrcData);
+                    }
+                    else
+                    {
+                        memcpy(pDstData, pSrcData, cbSrcData);
+                        DWORD dwBps = m_audioParams.dwBitsPerSample;
+                        if (dwBps == 16)
+                        {
+                            short* pSamples = reinterpret_cast<short*>(pDstData);
+                            DWORD dwSampleCount = cbSrcData / sizeof(short);
+                            for (DWORD s = 0; s < dwSampleCount; ++s)
+                                pSamples[s] = static_cast<short>(pSamples[s] * m_flVolume);
+                        }
+                        else if (dwBps == 32)
+                        {
+                            float* pSamples = reinterpret_cast<float*>(pDstData);
+                            DWORD dwSampleCount = cbSrcData / sizeof(float);
+                            for (DWORD s = 0; s < dwSampleCount; ++s)
+                                pSamples[s] *= m_flVolume;
+                        }
+                    }
+                    spDstBuffer->Unlock();
+                }
+                spDstBuffer->SetCurrentLength(cbSrcData);
+                (*ppConverted)->AddBuffer(spDstBuffer);
+            }
+            spSrcBuffer->Unlock();
+        }
+
+        return S_OK;
+    }
+
     *ppConverted = pSample;
     (*ppConverted)->AddRef();
     return S_OK;
@@ -504,9 +577,35 @@ HRESULT StreamSinkHost::SetInputAudioType(DWORD dwStreamIndex, IMFMediaType* pTy
     return pSink->SetInputMediaType(pType);
 }
 
-HRESULT StreamSinkHost::SetOutputVideoType(IMFMediaType* /*pType*/)
+HRESULT StreamSinkHost::SetOutputVideoType(IMFMediaType* pType)
 {
-    return S_OK;
+    if (!pType)
+        return E_POINTER;
+
+    if (!m_spSinkWriter)
+        return E_UNEXPECTED;
+
+    CComPtr<IMFMediaType> spOutputType;
+    HRESULT hr = MFCreateMediaType(&spOutputType);
+    if (FAILED(hr))
+        return hr;
+
+    UINT32 cAttrs = 0;
+    pType->GetCount(&cAttrs);
+    for (UINT32 i = 0; i < cAttrs; ++i)
+    {
+        GUID guidKey;
+        PROPVARIANT var;
+        hr = pType->GetItemByIndex(i, &guidKey, &var);
+        if (SUCCEEDED(hr))
+        {
+            spOutputType->SetItem(guidKey, var);
+            PropVariantClear(&var);
+        }
+    }
+
+    hr = m_spSinkWriter->SetInputMediaType(m_dwVideoStreamIndex, spOutputType, nullptr);
+    return hr;
 }
 
 HRESULT StreamSinkHost::SetOutputAudioType(DWORD dwStreamIndex, IMFMediaType* pType)

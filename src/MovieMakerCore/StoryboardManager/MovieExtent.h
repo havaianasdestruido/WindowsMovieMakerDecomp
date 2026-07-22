@@ -48,6 +48,10 @@ public:
     DWORD GetMediaId() const throw();
     void SetMediaId(DWORD dwMediaId) throw();
 
+    // Source file path
+    ATL::CString GetSourcePath() const;
+    void SetSourcePath(LPCWSTR pszPath);
+
     // Trim points (in hundred-nanosecond units)
     LONGLONG GetStartTimeHns() const throw();
     void SetStartTimeHns(LONGLONG llStart) throw();
@@ -135,6 +139,7 @@ public:
 private:
     DWORD               m_dwExtentId;
     DWORD               m_dwMediaId;
+    ATL::CString        m_strSourcePath;
     LONGLONG            m_llStartTimeHns;
     LONGLONG            m_llEndTimeHns;
     double              m_dblSpeedFactor;

@@ -73,6 +73,7 @@ namespace HMREngine
         float m_size = 1.0f;
         Rgba m_color = Rgba(1, 1, 1, 1);
 
+        ID3D11Device* m_device = nullptr;
         CComPtr<ID3D11Buffer> m_vertexBuffer;
         UINT m_vertexCount = 0;
 

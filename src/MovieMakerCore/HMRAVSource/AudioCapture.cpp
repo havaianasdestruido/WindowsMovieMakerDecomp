@@ -244,7 +244,46 @@ HRESULT AudioCapture::ReadSample(IMFSample** ppSample)
         return MF_E_END_OFSTREAM;
 
     if (spSample)
+    {
+        // Apply volume and mute to captured audio data
+        if (m_fMuted || m_flVolume < 1.0f)
+        {
+            CComPtr<IMFMediaBuffer> spBuffer;
+            if (SUCCEEDED(spSample->ConvertToContiguousBuffer(&spBuffer)))
+            {
+                BYTE* pData = nullptr;
+                DWORD cbData = 0;
+                if (SUCCEEDED(spBuffer->Lock(&pData, nullptr, &cbData)))
+                {
+                    if (m_fMuted)
+                    {
+                        memset(pData, 0, cbData);
+                    }
+                    else if (m_flVolume < 1.0f)
+                    {
+                        DWORD dwBitsPerSample = m_config.dwBitsPerSample;
+                        if (dwBitsPerSample == 16)
+                        {
+                            short* pSamples = reinterpret_cast<short*>(pData);
+                            DWORD dwSampleCount = cbData / sizeof(short);
+                            for (DWORD i = 0; i < dwSampleCount; ++i)
+                                pSamples[i] = static_cast<short>(pSamples[i] * m_flVolume);
+                        }
+                        else if (dwBitsPerSample == 32)
+                        {
+                            float* pSamples = reinterpret_cast<float*>(pData);
+                            DWORD dwSampleCount = cbData / sizeof(float);
+                            for (DWORD i = 0; i < dwSampleCount; ++i)
+                                pSamples[i] *= m_flVolume;
+                        }
+                    }
+                    spBuffer->Unlock();
+                }
+            }
+        }
+
         *ppSample = spSample.Detach();
+    }
 
     return S_OK;
 }

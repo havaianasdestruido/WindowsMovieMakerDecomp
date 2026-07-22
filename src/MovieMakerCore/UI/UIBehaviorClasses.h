@@ -81,6 +81,8 @@ public:
 private:
     IDuiElement*    m_pElement;
     SundanceAppMain* m_pAppMain;
+    BOOL            m_bDragging;
+    POINT           m_ptDragStart;
 };
 
 // TimelineBehaviorResize
@@ -108,6 +110,11 @@ public:
 private:
     IDuiElement*    m_pElement;
     SundanceAppMain* m_pAppMain;
+    BOOL            m_bResizing;
+    RECT            m_rcOriginal;
+    int             m_minWidth;
+    IDuiElement*    m_pTimelineElement;
+    HWND            m_hWnd;
 };
 
 // TimelineBehaviorTrim
@@ -135,6 +142,13 @@ public:
 private:
     IDuiElement*    m_pElement;
     SundanceAppMain* m_pAppMain;
+    BOOL            m_bTrimming;
+    BOOL            m_bTrimmingStart;
+    POINT           m_ptTrimStart;
+    RECT            m_rcOriginal;
+    RECT            m_rcTrimmed;
+    int             m_minTrimWidth;
+    HWND            m_hWnd;
 };
 
 // TimelineBehaviorSplit
@@ -162,6 +176,8 @@ public:
 private:
     IDuiElement*    m_pElement;
     SundanceAppMain* m_pAppMain;
+    POINT           m_ptSplitPoint;
+    IDuiElement*    m_pTimelineElement;
 };
 
 // TimelineBehaviorReorder
@@ -189,6 +205,12 @@ public:
 private:
     IDuiElement*    m_pElement;
     SundanceAppMain* m_pAppMain;
+    BOOL            m_bReordering;
+    POINT           m_ptDragStart;
+    RECT            m_rcOriginal;
+    int             m_nStartIndex;
+    int             m_nOriginalIndex;
+    IDuiElement*    m_pTimelineElement;
 };
 
 // TimelineBehaviorZoom
@@ -216,6 +238,14 @@ public:
 private:
     IDuiElement*    m_pElement;
     SundanceAppMain* m_pAppMain;
+    BOOL            m_bZooming;
+    POINT           m_ptZoomStart;
+    double          m_dStartZoomLevel;
+    double          m_dCurrentZoomLevel;
+    double          m_dMinZoom;
+    double          m_dMaxZoom;
+    HWND            m_hWnd;
+    IDuiElement*    m_pTimelineElement;
 };
 
 // TimelineBehaviorScroll
@@ -243,6 +273,11 @@ public:
 private:
     IDuiElement*    m_pElement;
     SundanceAppMain* m_pAppMain;
+    BOOL            m_bScrolling;
+    POINT           m_ptScrollStart;
+    int             m_nScrollStep;
+    HWND            m_hWnd;
+    IDuiElement*    m_pTimelineElement;
 };
 
 // TimelineBehaviorSnap
@@ -270,6 +305,9 @@ public:
 private:
     IDuiElement*    m_pElement;
     SundanceAppMain* m_pAppMain;
+    BOOL            m_bSnapping;
+    LONGLONG        m_llSnapPosition;
+    IDuiElement*    m_pTimelineElement;
 };
 
 // ============================================================================

@@ -150,6 +150,16 @@ HRESULT MovieTransport::Play()
     if (!m_bMediaOpen)
         return E_UNEXPECTED;
 
+    if (m_spSession)
+    {
+        HRESULT hr = m_spSession->Start(nullptr, nullptr);
+        if (FAILED(hr))
+        {
+            FireError(hr);
+            return hr;
+        }
+    }
+
     SetState(TransportStatePlaying);
     return S_OK;
 }
@@ -159,14 +169,32 @@ HRESULT MovieTransport::Pause()
     if (!m_bMediaOpen)
         return E_UNEXPECTED;
 
+    if (m_spSession)
+    {
+        HRESULT hr = m_spSession->Pause();
+        if (FAILED(hr))
+        {
+            FireError(hr);
+            return hr;
+        }
+    }
+
     SetState(TransportStatePaused);
     return S_OK;
 }
 
 HRESULT MovieTransport::Stop()
 {
+    if (m_spSession)
+    {
+        HRESULT hr = m_spSession->Stop();
+        if (FAILED(hr))
+            FireError(hr);
+    }
+
     SetState(TransportStateStopped);
     m_llCurrentPositionHns = 0;
+    FirePositionChange(m_llCurrentPositionHns);
     return S_OK;
 }
 
@@ -175,19 +203,57 @@ HRESULT MovieTransport::Seek(LONGLONG llPositionHns, DWORD dwFlags)
     if (!m_bMediaOpen)
         return E_UNEXPECTED;
 
+    TransportState prevState = m_state;
+    if (m_state == TransportStatePlaying)
+        SetState(TransportStateSeeking);
+
     if (dwFlags & TransportSeekFlagRelative)
         m_llCurrentPositionHns += llPositionHns;
     else
         m_llCurrentPositionHns = llPositionHns;
 
     m_llCurrentPositionHns = std::max<LONGLONG>(0, std::min(m_llCurrentPositionHns, m_llDurationHns));
+
+    if (m_spSession && (dwFlags & TransportSeekFlagKeyFrame))
+    {
+        PROPVARIANT varStart;
+        PropVariantInit(&varStart);
+        varStart.vt = VT_I8;
+        varStart.hVal.QuadPart = m_llCurrentPositionHns;
+
+        IMFPresentationClock* pClock = nullptr;
+        if (SUCCEEDED(m_spSession->GetPresentationClock(&pClock)))
+        {
+            IMFPresentationTimeSource* pTimeSource = nullptr;
+            if (SUCCEEDED(pClock->GetTimeSource(&pTimeSource)))
+            {
+                IMFMediaEventGenerator* pEventGen = nullptr;
+                if (SUCCEEDED(pTimeSource->QueryInterface(IID_IMFMediaEventGenerator, (void**)&pEventGen)))
+                {
+                    pEventGen->QueueEvent(MEPosition, GUID_NULL, S_OK, &varStart);
+                    pEventGen->Release();
+                }
+                pTimeSource->Release();
+            }
+            pClock->Release();
+        }
+
+        PropVariantClear(&varStart);
+    }
+
     FirePositionChange(m_llCurrentPositionHns);
+
+    if (m_state == TransportStateSeeking)
+        SetState(prevState);
 
     return S_OK;
 }
 
 HRESULT MovieTransport::SetRate(double dblRate)
 {
+    if (dblRate <= 0.0 || dblRate > 8.0)
+        return E_INVALIDARG;
+
     return TransportBase::SetRate(dblRate);
 }
 
@@ -249,11 +315,50 @@ HRESULT MovieTransport::OpenMedia(LPCWSTR pszFilePath)
 
     CloseMedia();
 
-    // In the full implementation, this would:
-    //  1. Create an IMFMediaSession
-    //  2. Create an IMFSourceResolver to open the file
-    //  3. Build a playback topology
-    //  4. Set the topology on the session
+    HRESULT hr = MFStartup(MF_VERSION);
+    if (FAILED(hr))
+        return hr;
+
+    IMFMediaSession* pSession = nullptr;
+    hr = MFCreateMediaSession(nullptr, &pSession);
+    if (FAILED(hr))
+        return hr;
+
+    m_spSession = pSession;
+    pSession->Release();
+
+    IMFSourceResolver* pSourceResolver = nullptr;
+    hr = MFCreateSourceResolver(&pSourceResolver);
+    if (FAILED(hr))
+        return hr;
+
+    MF_OBJECT_TYPE objectType = MF_OBJECT_TYPE_UNKNOWN;
+    IUnknown* pSourceUnk = nullptr;
+    hr = pSourceResolver->CreateObjectFromURL(
+        pszFilePath, nullptr, MF_RESOLUTION_MEDIASOURCE, nullptr,
+        &objectType, &pSourceUnk);
+    pSourceResolver->Release();
+
+    if (FAILED(hr))
+        return hr;
+
+    IMFMediaSource* pSource = nullptr;
+    hr = pSourceUnk->QueryInterface(IID_IMFMediaSource, (void**)&pSource);
+    pSourceUnk->Release();
+
+    if (FAILED(hr))
+        return hr;
+
+    m_spSource = pSource;
+    pSource->Release();
+
+    IMFTopology* pTopology = nullptr;
+    hr = MFCreateTopology(&pTopology);
+    if (FAILED(hr))
+        return hr;
+
+    m_spTopology = pTopology;
+    pTopology->Release();
 
     m_bMediaOpen = true;
     return S_OK;
@@ -266,10 +371,11 @@ HRESULT MovieTransport::CloseMedia()
         m_spSession->Close();
         m_spSession.Release();
     }
-    m_spSource.Release();
     m_spTopology.Release();
+    m_spSource.Release();
     m_bMediaOpen = false;
     m_llCurrentPositionHns = 0;
+    MFShutdown();
     return S_OK;
 }
 

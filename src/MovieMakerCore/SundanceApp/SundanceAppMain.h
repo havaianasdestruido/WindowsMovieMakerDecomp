@@ -53,6 +53,8 @@ namespace SundanceErrorReporting {
     class ExceptionWithString;
 }
 
+class SundanceAppDataContext;
+
 // ============================================================================
 // TimelineTrack enum (RTTI: W4TimelineTrack)
 // ============================================================================
@@ -144,6 +146,7 @@ public:
     HWND    GetMainWindow() const throw();
     void    UpdateCommandState();
     void    NotifyUIRefresh();
+    void    ClearSelection();
 
     // -- Ribbon integration --
     HRESULT InitializeRibbon(HINSTANCE hInstance, HWND hWnd);
@@ -183,6 +186,36 @@ protected:
     void OnProjectChanged();
     void OnProjectDirtyStateChanged(bool bDirty);
 
+    // -- Recent files --
+    HRESULT LoadRecentFiles();
+    void    SaveRecentFiles();
+    void    AddToRecentFiles(LPCWSTR pszFilePath);
+
+    // -- User preferences (registry) --
+    HRESULT LoadUserPreferences();
+    void    SaveUserPreferences();
+
+    // -- Single-instance mutex --
+    HRESULT AcquireSingleInstanceMutex();
+    void    ReleaseSingleInstanceMutex();
+
+    // -- File association --
+    HRESULT RegisterFileAssociations();
+
+    // -- SQM / Telemetry (stubbed — no data sent) --
+    HRESULT InitializeSqmSession();
+    void    ShutdownSqmSession();
+    void    ReportTelemetryEvent(LPCWSTR pszEvent);
+
+    // -- Add-in / Plugin loading --
+    HRESULT LoadAddIns();
+
+    // -- Error reporting --
+    void    ReportError(HRESULT hr, LPCWSTR pszContext);
+
+    // -- Help system --
+    void    ShowHelp();
+
 private:
     // State flags
     bool                    m_bInitialized;
@@ -218,6 +251,15 @@ private:
 
     // DontShow prompt map
     std::map<ATL::CString, bool> m_dontShowPrompts;
+
+    // Data context for DirectUI binding
+    SundanceAppDataContext* m_pDataContext;
+
+    // Single-instance mutex
+    HANDLE              m_hSingleInstanceMutex;
+
+    // Recent files list
+    std::vector<ATL::CString> m_recentFiles;
 
     // Prevent copy
     SundanceAppMain(const SundanceAppMain&);

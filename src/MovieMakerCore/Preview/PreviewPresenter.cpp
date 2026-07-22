@@ -401,6 +401,7 @@ PreviewPresenterWrapper::PreviewPresenterWrapper()
     , m_dblVolume(1.0)
     , m_dblPlaybackSpeed(1.0)
     , m_pCurrentFrame(nullptr)
+    , m_hCurrentFrameBitmap(nullptr)
     , m_hdcBackBuffer(nullptr)
     , m_hbmpBackBuffer(nullptr)
     , m_hbmpOld(nullptr)
@@ -426,6 +427,12 @@ PreviewPresenterWrapper::~PreviewPresenterWrapper()
     {
         delete m_pCurrentFrame;
         m_pCurrentFrame = nullptr;
+    }
+
+    if (m_hCurrentFrameBitmap)
+    {
+        DeleteObject(m_hCurrentFrameBitmap);
+        m_hCurrentFrameBitmap = nullptr;
     }
 
     if (m_hStopEvent)
@@ -481,6 +488,9 @@ HRESULT PreviewPresenterWrapper::StartPreview()
         return HRESULT_FROM_WIN32(GetLastError());
     }
 
+    StartTimer();
+    RenderCurrentFrame();
+
     return S_OK;
 }
 
@@ -532,6 +542,7 @@ HRESULT PreviewPresenterWrapper::PausePreview()
     {
         m_state = PreviewStatePlaying;
         StartTimer();
+        RenderCurrentFrame();
     }
 
     return S_OK;
@@ -559,6 +570,8 @@ HRESULT PreviewPresenterWrapper::SeekTo(LONGLONG llPositionHns)
 
     if (m_hSeekEvent)
         SetEvent(m_hSeekEvent);
+
+    RenderCurrentFrame();
 
     return S_OK;
 }
@@ -988,6 +1001,41 @@ void PreviewPresenterWrapper::InvalidatePreview()
 }
 
 // ============================================================================
+// SetFrame - stores the current frame as an HBITMAP
+// ============================================================================
+void PreviewPresenterWrapper::SetFrame(HBITMAP hBitmap)
+{
+    EnterCriticalSection(&m_csLock);
+
+    if (m_hCurrentFrameBitmap)
+    {
+        DeleteObject(m_hCurrentFrameBitmap);
+        m_hCurrentFrameBitmap = nullptr;
+    }
+    m_hCurrentFrameBitmap = hBitmap;
+
+    if (m_pCurrentFrame)
+    {
+        delete m_pCurrentFrame;
+        m_pCurrentFrame = nullptr;
+    }
+
+    if (hBitmap)
+    {
+        BITMAP bm;
+        ZeroMemory(&bm, sizeof(bm));
+        if (GetObject(hBitmap, sizeof(bm), &bm) && bm.bmWidth > 0 && bm.bmHeight > 0)
+        {
+            m_pCurrentFrame = new Gdiplus::Bitmap(hBitmap, nullptr);
+        }
+    }
+
+    LeaveCriticalSection(&m_csLock);
+
+    InvalidatePreview();
+}
+
+// ============================================================================
 // OnPaint
 // ============================================================================
 void PreviewPresenterWrapper::OnPaint()
@@ -999,35 +1047,118 @@ void PreviewPresenterWrapper::OnPaint()
     HDC hdc = BeginPaint(m_hWndPreview, &ps);
     if (hdc)
     {
-        PaintFrame(hdc, ps.rcPaint);
-        PresentFrame();
+        EnterCriticalSection(&m_csLock);
+
+        if (m_hCurrentFrameBitmap)
+        {
+            HDC hdcMem = CreateCompatibleDC(hdc);
+            if (hdcMem)
+            {
+                HBITMAP hOld = static_cast<HBITMAP>(SelectObject(hdcMem, m_hCurrentFrameBitmap));
+
+                BITMAP bm;
+                ZeroMemory(&bm, sizeof(bm));
+                GetObject(m_hCurrentFrameBitmap, sizeof(bm), &bm);
+
+                RECT rcClient;
+                GetClientRect(m_hWndPreview, &rcClient);
+
+                int dstW = rcClient.right - rcClient.left;
+                int dstH = rcClient.bottom - rcClient.top;
+                int srcW = bm.bmWidth;
+                int srcH = bm.bmHeight;
+
+                if (srcW > 0 && srcH > 0 && dstW > 0 && dstH > 0)
+                {
+                    float scaleX = static_cast<float>(dstW) / static_cast<float>(srcW);
+                    float scaleY = static_cast<float>(dstH) / static_cast<float>(srcH);
+                    float scale = (std::min)(scaleX, scaleY);
+
+                    int drawW = static_cast<int>(srcW * scale);
+                    int drawH = static_cast<int>(srcH * scale);
+                    int offsetX = (dstW - drawW) / 2;
+                    int offsetY = (dstH - drawH) / 2;
+
+                    SetStretchBltMode(hdc, HALFTONE);
+                    SetBrushOrgEx(hdc, 0, 0, nullptr);
+
+                    RECT rcBlack = { 0, 0, dstW, dstH };
+                    FillRect(hdc, &rcBlack, static_cast<HBRUSH>(GetStockObject(BLACK_BRUSH)));
+
+                    StretchBlt(hdc, offsetX, offsetY, drawW, drawH,
+                               hdcMem, 0, 0, srcW, srcH, SRCCOPY);
+                }
+
+                SelectObject(hdcMem, hOld);
+                DeleteDC(hdcMem);
+            }
+        }
+        else
+        {
+            RECT rcClient;
+            GetClientRect(m_hWndPreview, &rcClient);
+            FillRect(hdc, &rcClient, static_cast<HBRUSH>(GetStockObject(BLACK_BRUSH)));
+        }
+
+        LeaveCriticalSection(&m_csLock);
         EndPaint(m_hWndPreview, &ps);
     }
 }
 
 // ============================================================================
-// Playback timer
+// Playback timer (SetTimer-based, posts WM_TIMER to preview window)
 // ============================================================================
 void PreviewPresenterWrapper::StartTimer()
 {
     if (m_uTimerId != 0)
         return;
 
+    if (!m_hWndPreview)
+        return;
+
     DWORD intervalMs = CalculateFrameIntervalMs();
     if (intervalMs == 0)
         intervalMs = 33;
 
-    m_uTimerId = timeSetEvent(intervalMs, 1, OnPlaybackTimer,
-                              reinterpret_cast<DWORD_PTR>(this),
-                              TIME_PERIODIC | TIME_CALLBACK_FUNCTION);
+    m_uTimerId = ::SetTimer(m_hWndPreview, kPlaybackTimerId, intervalMs, nullptr);
 }
 
 void PreviewPresenterWrapper::StopTimer()
 {
     if (m_uTimerId != 0)
     {
-        timeKillEvent(m_uTimerId);
+        if (m_hWndPreview)
+            ::KillTimer(m_hWndPreview, kPlaybackTimerId);
         m_uTimerId = 0;
+    }
+}
+
+// ============================================================================
+// OnTimer - called from WndProc on WM_TIMER
+// ============================================================================
+void PreviewPresenterWrapper::OnTimer()
+{
+    if (m_state != PreviewStatePlaying)
+        return;
+
+    EnterCriticalSection(&m_csLock);
+
+    m_llCurrentPositionHns += static_cast<LONGLONG>(
+        CalculateFrameIntervalMs() * 10000 * m_dblPlaybackSpeed);
+
+    if (m_llTotalDurationHns > 0 &&
+        m_llCurrentPositionHns >= m_llTotalDurationHns)
+    {
+        m_llCurrentPositionHns = 0;
+    }
+
+    LeaveCriticalSection(&m_csLock);
+
+    RenderCurrentFrame();
+
+    if (m_pPreviewDX)
+    {
+        InvalidatePreview();
     }
 }
 
@@ -1036,24 +1167,8 @@ void CALLBACK PreviewPresenterWrapper::OnPlaybackTimer(
     DWORD_PTR /*dw1*/, DWORD_PTR /*dw2*/)
 {
     PreviewPresenterWrapper* pThis = reinterpret_cast<PreviewPresenterWrapper*>(dwUser);
-    if (!pThis)
-        return;
-
-    if (pThis->m_state != PreviewStatePlaying)
-        return;
-
-    EnterCriticalSection(&pThis->m_csLock);
-    pThis->m_llCurrentPositionHns += static_cast<LONGLONG>(
-        pThis->CalculateFrameIntervalMs() * 10000 * pThis->m_dblPlaybackSpeed);
-
-    if (pThis->m_llTotalDurationHns > 0 &&
-        pThis->m_llCurrentPositionHns >= pThis->m_llTotalDurationHns)
-    {
-        pThis->m_llCurrentPositionHns = 0;
-    }
-    LeaveCriticalSection(&pThis->m_csLock);
-
-    pThis->RenderCurrentFrame();
+    if (pThis)
+        pThis->OnTimer();
 }
 
 DWORD PreviewPresenterWrapper::CalculateFrameIntervalMs() const

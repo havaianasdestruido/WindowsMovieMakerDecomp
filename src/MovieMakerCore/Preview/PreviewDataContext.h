@@ -23,6 +23,8 @@
 
 class PreviewPresenterWrapper;
 
+namespace StoryboardManager { class MovieProject; }
+
 // ============================================================================
 // PreviewDataContext
 // ============================================================================
@@ -75,6 +77,15 @@ public:
     void SetPresenter(PreviewPresenterWrapper* pPresenter);
     PreviewPresenterWrapper* GetPresenter() const throw();
 
+    // -- Project binding --
+    void SetProject(StoryboardManager::MovieProject* pProject);
+    StoryboardManager::MovieProject* GetProject() const throw();
+
+    // -- Position in 100ns units --
+    LONGLONG GetCurrentPositionHns() const throw();
+    LONGLONG GetTotalDurationHns() const throw();
+    void SetCurrentPositionHns(LONGLONG llPositionHns);
+
     // -- Notification handlers (called from the render thread) --
     void OnPlaybackStateChanged();
     void OnPositionChanged(LONGLONG llPositionHns);
@@ -99,8 +110,13 @@ private:
     double  m_dblPlaybackSpeed;
     BSTR    m_bstrCurrentFrameUrl;
 
-    // -- Presenter back-pointer (not owned) --
-    PreviewPresenterWrapper* m_pPresenter;
+    // -- Position in 100ns units --
+    LONGLONG m_llCurrentPositionHns;
+    LONGLONG m_llTotalDurationHns;
+
+    // -- Back-pointers (not owned) --
+    PreviewPresenterWrapper*              m_pPresenter;
+    StoryboardManager::MovieProject*      m_pProject;
 
     PreviewDataContext(const PreviewDataContext&);
     PreviewDataContext& operator=(const PreviewDataContext&);

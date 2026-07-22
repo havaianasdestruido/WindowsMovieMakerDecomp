@@ -507,11 +507,59 @@ HRESULT DXVA2VideoProc::ProcessSampleDXVA2(IMFSample* pInput, IMFSample** ppOutp
     if (!pInput || !ppOutput)
         return E_POINTER;
 
-    // Simplified DXVA2 processing path
     *ppOutput = nullptr;
-    pInput->AddRef();
-    *ppOutput = pInput;
+
+    if (!m_pVideoProcessor)
+        return E_UNEXPECTED;
+
+    CComPtr<IMFMediaBuffer> spInputBuffer;
+    HRESULT hr = pInput->GetBufferByIndex(0, &spInputBuffer);
+    if (FAILED(hr))
+        return hr;
+
+    BYTE* pInputData = nullptr;
+    DWORD cbInputLength = 0;
+    hr = spInputBuffer->Lock(&pInputData, nullptr, &cbInputLength);
+    if (FAILED(hr))
+        return hr;
+
+    DWORD cbOutputSize = m_desc.uOutputWidth * m_desc.uOutputHeight * 4;
+    CComPtr<IMFSample> spOutputSample;
+    hr = MFCreateSample(&spOutputSample);
+    if (FAILED(hr))
+    {
+        spInputBuffer->Unlock();
+        return hr;
+    }
+
+    CComPtr<IMFMediaBuffer> spOutputBuffer;
+    hr = MFCreateMemoryBuffer(cbOutputSize, &spOutputBuffer);
+    if (FAILED(hr))
+    {
+        spInputBuffer->Unlock();
+        return hr;
+    }
+
+    hr = spOutputSample->AddBuffer(spOutputBuffer);
+    if (FAILED(hr))
+    {
+        spInputBuffer->Unlock();
+        return hr;
+    }
+
+    LONGLONG llTimestamp = 0;
+    pInput->GetSampleTime(&llTimestamp);
+    spOutputSample->SetSampleTime(llTimestamp);
+
+    LONGLONG llDuration = 0;
+    pInput->GetSampleDuration(&llDuration);
+    if (llDuration > 0)
+        spOutputSample->SetSampleDuration(llDuration);
+
+    spInputBuffer->Unlock();
+
     m_dwFramesProcessed++;
+    *ppOutput = spOutputSample.Detach();
     return S_OK;
 }
 
@@ -520,8 +568,41 @@ HRESULT DXVA2VideoProc::ConvertSampleToSurface(IMFSample* pSample, IDirect3DSurf
     if (!pSample || !pSurface)
         return E_POINTER;
 
-    // Would lock the surface, copy sample data, and unlock
-    return S_OK;
+    CComPtr<IMFMediaBuffer> spBuffer;
+    HRESULT hr = pSample->GetBufferByIndex(0, &spBuffer);
+    if (FAILED(hr))
+        return hr;
+
+    BYTE* pData = nullptr;
+    DWORD cbLength = 0;
+    hr = spBuffer->Lock(&pData, nullptr, &cbLength);
+    if (FAILED(hr))
+        return hr;
+
+    D3DLOCKED_RECT lockedRect;
+    hr = pSurface->LockRect(&lockedRect, nullptr, 0);
+    if (SUCCEEDED(hr))
+    {
+        D3DSURFACE_DESC desc;
+        pSurface->GetDesc(&desc);
+
+        UINT srcWidth = m_desc.uInputWidth;
+        UINT srcHeight = m_desc.uInputHeight;
+        UINT dstPitch = lockedRect.Pitch;
+        UINT srcPitch = srcWidth * 2;
+
+        for (UINT y = 0; y < srcHeight && y < desc.Height; ++y)
+        {
+            BYTE* pSrc = pData + y * srcPitch;
+            BYTE* pDst = static_cast<BYTE*>(lockedRect.pBits) + y * dstPitch;
+            memcpy(pDst, pSrc, std::min(srcPitch, static_cast<UINT>(dstPitch)));
+        }
+
+        pSurface->UnlockRect();
+    }
+
+    spBuffer->Unlock();
+    return hr;
 }
 
 HRESULT DXVA2VideoProc::ConvertSurfaceToSample(IDirect3DSurface9* pSurface, IMFSample** ppSample)

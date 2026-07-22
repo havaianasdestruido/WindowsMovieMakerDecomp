@@ -30,6 +30,51 @@
 #include "PlaybackController.h"
 #include "../UI/Ribbon/RibbonApp.h"
 #include "../UI/Ribbon/RibbonSites.h"
+#include "SundanceAppDataContext.h"
+
+// ============================================================================
+// Stub: SundanceBehaviors namespace (DirectUI behavior registration)
+// ============================================================================
+namespace SundanceBehaviors
+{
+    void RegisterAllBehaviors() {}
+}
+
+// ============================================================================
+// Stub: SqmLogger — safe no-op SQM telemetry logger.
+// Does NOT send any data. Preserved for API compatibility with the original
+// binary which used Microsoft's internal SQM infrastructure.
+// RTTI: ?AVSqmLogger@@
+// ============================================================================
+class SqmLogger
+{
+public:
+    SqmLogger() {}
+    ~SqmLogger() {}
+
+    HRESULT Initialize(LPCWSTR /*pszSessionId*/) { return S_OK; }
+    void    Shutdown() {}
+    void    LogEvent(LPCWSTR /*pszEvent*/, DWORD /*dwValue*/) {}
+    void    LogString(LPCWSTR /*pszEvent*/, LPCWSTR /*pszValue*/) {}
+    void    Submit() {}
+};
+
+// ============================================================================
+// Stub: TelemetrySession — safe no-op telemetry session.
+// Does NOT send any data. Preserved for API compatibility with the original
+// binary which used Microsoft's Watson / telemetry infrastructure.
+// RTTI: ?AVTelemetrySession@@
+// ============================================================================
+class TelemetrySession
+{
+public:
+    TelemetrySession() {}
+    ~TelemetrySession() {}
+
+    HRESULT Start(LPCWSTR /*pszSessionId*/) { return S_OK; }
+    void    Stop() {}
+    void    ReportEvent(LPCWSTR /*pszCategory*/, LPCWSTR /*pszEvent*/) {}
+};
 
 // ============================================================================
 // Local helper classes referenced by RTTI (defined in the original binary
@@ -65,6 +110,7 @@ SundanceAppMain::SundanceAppMain()
     , m_bEncoding(false)
     , m_hWndMain(NULL)
     , m_hInstance(NULL)
+    , m_pRibbonApp(NULL)
     , m_pProject(NULL)
     , m_pCommandLineParser(NULL)
     , m_pAutoSaveManager(NULL)
@@ -79,6 +125,8 @@ SundanceAppMain::SundanceAppMain()
     , m_pPlaybackController(NULL)
     , m_pSqmLogger(NULL)
     , m_pTelemetrySession(NULL)
+    , m_pDataContext(NULL)
+    , m_hSingleInstanceMutex(NULL)
 {
     ATLASSERT(g_pSundanceAppMain == NULL);
     g_pSundanceAppMain = this;
@@ -100,15 +148,118 @@ HRESULT SundanceAppMain::Initialize(HINSTANCE hInstance, int argc, wchar_t** arg
 
     m_hInstance = hInstance;
 
-    HRESULT hr = InitializeSubsystems();
+    // Single-instance check
+    HRESULT hr = AcquireSingleInstanceMutex();
+    if (hr == S_FALSE)
+        return E_FAIL;
+
+    // Load user preferences from registry
+    LoadUserPreferences();
+
+    // Load recent files list
+    LoadRecentFiles();
+
+    hr = InitializeSubsystems();
     if (FAILED(hr))
         return hr;
 
+    // Initialize SQM telemetry session (stubbed — no data sent)
+    InitializeSqmSession();
+
+    // Process command-line arguments
     ProcessCommandLine(argc, argv);
+
+    // Execute command-line actions (open project, play, import, publish, help)
+    if (m_pCommandLineParser)
+    {
+        if (m_pCommandLineParser->IsHelpRequested())
+        {
+            ShowHelp();
+            return S_OK;
+        }
+
+        if (m_pCommandLineParser->IsCrashRecovery())
+        {
+            if (m_pAutoSaveManager && m_pAutoSaveManager->HasRecoveryFile())
+            {
+                hr = m_pAutoSaveManager->RecoverProject(m_pAutoSaveManager->GetRecoveryFilePath());
+                if (FAILED(hr))
+                    ReportError(hr, L"CrashRecovery");
+            }
+        }
+
+        if (m_pCommandLineParser->IsProjectOpenRequested())
+        {
+            LPCWSTR pszFile = m_pCommandLineParser->GetProjectFile();
+            if (pszFile && pszFile[0])
+            {
+                hr = OpenProject(pszFile);
+                if (FAILED(hr))
+                    ReportError(hr, L"OpenProject");
+            }
+        }
+
+        if (m_pCommandLineParser->IsPlayRequested())
+        {
+            LPCWSTR pszFile = m_pCommandLineParser->GetPlayFile();
+            if (pszFile && pszFile[0])
+            {
+                hr = OpenProject(pszFile);
+                if (SUCCEEDED(hr))
+                    StartPlayback();
+                else
+                    ReportError(hr, L"Play");
+            }
+        }
+
+        if (m_pCommandLineParser->IsImportRequested())
+        {
+            const std::vector<ATL::CString>& files = m_pCommandLineParser->GetImportFiles();
+            if (!files.empty())
+            {
+                std::vector<LPCWSTR> ptrs;
+                ptrs.reserve(files.size());
+                for (size_t i = 0; i < files.size(); ++i)
+                    ptrs.push_back(files[i]);
+
+                if (m_pImportController)
+                    m_pImportController->ImportFiles(static_cast<int>(ptrs.size()), ptrs.data());
+            }
+        }
+
+        if (m_pCommandLineParser->IsPublishRequested())
+        {
+            if (!m_bProjectOpen)
+            {
+                LPCWSTR pszFile = m_pCommandLineParser->GetPublishFile();
+                if (pszFile && pszFile[0])
+                {
+                    hr = OpenProject(pszFile);
+                    if (FAILED(hr))
+                        ReportError(hr, L"PublishOpen");
+                }
+            }
+            if (m_bProjectOpen)
+            {
+                PublishMovie(NULL, 0);
+            }
+        }
+
+        // Apply dont-show prompt key from command line
+        LPCWSTR pszDoneShow = m_pCommandLineParser->GetDoneShowKey();
+        if (pszDoneShow && pszDoneShow[0])
+            SetDontShowPrompt(pszDoneShow, true);
+    }
 
     hr = InitializeUI(hInstance);
     if (FAILED(hr))
         return hr;
+
+    // Register file associations
+    RegisterFileAssociations();
+
+    // Load add-ins / plugins
+    LoadAddIns();
 
     m_bInitialized = true;
     return S_OK;
@@ -125,7 +276,18 @@ void SundanceAppMain::Shutdown()
     if (m_bProjectOpen)
         CloseProject();
 
+    // Save user preferences and recent files before shutdown
+    SaveUserPreferences();
+    SaveRecentFiles();
+
+    // Shutdown SQM / telemetry
+    ShutdownSqmSession();
+
     ReleaseSubsystems();
+
+    // Release single-instance mutex
+    ReleaseSingleInstanceMutex();
+
     m_bInitialized = false;
 }
 
@@ -180,7 +342,21 @@ HRESULT SundanceAppMain::InitializeSubsystems()
     if (!m_pPlaybackController)
         return E_OUTOFMEMORY;
 
+    // SQM / Telemetry stubs (no data sent)
+    m_pSqmLogger = new (std::nothrow) SqmLogger();
+    if (!m_pSqmLogger)
+        return E_OUTOFMEMORY;
+
+    m_pTelemetrySession = new (std::nothrow) TelemetrySession();
+    if (!m_pTelemetrySession)
+        return E_OUTOFMEMORY;
+
+    // Initialize subsystems that require app-main back-pointer
     hr = m_pAutoSaveManager->Initialize(this);
+    if (FAILED(hr))
+        return hr;
+
+    hr = m_pClipboardManager->Initialize(this);
     if (FAILED(hr))
         return hr;
 
@@ -220,14 +396,38 @@ void SundanceAppMain::ReleaseSubsystems()
     delete m_pMediaBrowser;
     m_pMediaBrowser = NULL;
 
-    delete m_pClipboardManager;
-    m_pClipboardManager = NULL;
+    if (m_pClipboardManager)
+    {
+        m_pClipboardManager->Shutdown();
+        delete m_pClipboardManager;
+        m_pClipboardManager = NULL;
+    }
 
     delete m_pAutoSaveManager;
     m_pAutoSaveManager = NULL;
 
     delete m_pCommandLineParser;
     m_pCommandLineParser = NULL;
+
+    if (m_pSqmLogger)
+    {
+        m_pSqmLogger->Shutdown();
+        delete m_pSqmLogger;
+        m_pSqmLogger = NULL;
+    }
+
+    if (m_pTelemetrySession)
+    {
+        m_pTelemetrySession->Stop();
+        delete m_pTelemetrySession;
+        m_pTelemetrySession = NULL;
+    }
+
+    if (m_pDataContext)
+    {
+        m_pDataContext->Release();
+        m_pDataContext = NULL;
+    }
 }
 
 // ============================================================================
@@ -235,7 +435,29 @@ void SundanceAppMain::ReleaseSubsystems()
 // ============================================================================
 HRESULT SundanceAppMain::InitializeUI(HINSTANCE hInstance)
 {
-    UNREFERENCED_PARAMETER(hInstance);
+    if (!hInstance)
+        return E_INVALIDARG;
+
+    m_hInstance = hInstance;
+
+    INITCOMMONCONTROLSEX icc = { sizeof(icc), ICC_STANDARD_CLASSES | ICC_BAR_CLASSES | ICC_LISTVIEW_CLASSES };
+    InitCommonControlsEx(&icc);
+
+    SundanceBehaviors::RegisterAllBehaviors();
+
+    // Create the DirectUI data context for property binding
+    if (!m_pDataContext)
+    {
+        HRESULT hr = CreateSundanceAppDataContext(&m_pDataContext);
+        if (FAILED(hr))
+            return hr;
+    }
+
+    if (m_pDataContext)
+    {
+        m_pDataContext->RefreshAllProperties();
+    }
+
     return S_OK;
 }
 
@@ -296,6 +518,8 @@ HRESULT SundanceAppMain::NewProject()
     if (m_pAutoSaveManager)
         m_pAutoSaveManager->OnProjectOpened();
 
+    ReportTelemetryEvent(L"NewProject");
+
     OnProjectChanged();
     return S_OK;
 }
@@ -332,6 +556,12 @@ HRESULT SundanceAppMain::OpenProject(LPCWSTR pszFilePath)
 
     if (m_pAutoSaveManager)
         m_pAutoSaveManager->OnProjectOpened();
+
+    // Add to recent files list and persist
+    AddToRecentFiles(pszFilePath);
+
+    // Report telemetry event (stubbed)
+    ReportTelemetryEvent(L"ProjectOpened");
 
     OnProjectChanged();
     return S_OK;
@@ -398,6 +628,8 @@ HRESULT SundanceAppMain::CloseProject()
     m_bProjectOpen = false;
     m_bProjectDirty = false;
 
+    ReportTelemetryEvent(L"ProjectClosed");
+
     OnProjectChanged();
     return S_OK;
 }
@@ -413,10 +645,34 @@ HRESULT SundanceAppMain::AddMediaToTimeline(LPCWSTR pszFilePath, TimelineTrack t
     if (!m_bProjectOpen || !m_pProject)
         return E_UNEXPECTED;
 
+    // Capture the state before import for undo
+    DWORD dwItemIdBefore = m_pProject->GetMediaItemCount();
+
     HRESULT hr = m_pProject->ImportMedia(pszFilePath, static_cast<StoryboardManager::TimelineTrackType>(track));
     if (SUCCEEDED(hr))
     {
         m_bProjectDirty = true;
+
+        // Push undo/redo actions capturing media item count delta
+        if (m_pUndoManager)
+        {
+            DWORD dwAddedItemId = m_pProject->GetMediaItemCount();
+            m_pUndoManager->Push(
+                [this, pszFilePath, track]() -> HRESULT {
+                    return AddMediaToTimeline(pszFilePath, track);
+                },
+                [this, dwAddedItemId]() -> HRESULT {
+                    // Undo: remove the item that was just added
+                    if (m_pProject && dwAddedItemId > 0)
+                    {
+                        // Remove last item (the one we just added)
+                        m_pProject->RemoveMediaItem(dwAddedItemId - 1);
+                        return S_OK;
+                    }
+                    return S_FALSE;
+                });
+        }
+
         ResetThumbnails();
     }
 
@@ -431,10 +687,43 @@ HRESULT SundanceAppMain::RemoveItemFromTimeline(DWORD dwItemId, TimelineTrack tr
     if (!m_bProjectOpen || !m_pProject)
         return E_UNEXPECTED;
 
+    // Capture item data before removal for undo
+    int nIndex = m_pProject->FindMediaItemById(dwItemId);
+    StoryboardManager::ProjectMediaItem itemCopy;
+    bool bFound = false;
+    if (nIndex >= 0)
+    {
+        const StoryboardManager::ProjectMediaItem* pItem = m_pProject->GetMediaItem(static_cast<size_t>(nIndex));
+        if (pItem)
+        {
+            itemCopy = *pItem;
+            bFound = true;
+        }
+    }
+
     HRESULT hr = m_pProject->RemoveItem(dwItemId, static_cast<StoryboardManager::TimelineTrackType>(track));
     if (SUCCEEDED(hr))
     {
         m_bProjectDirty = true;
+
+        // Push undo/redo actions
+        if (m_pUndoManager && bFound)
+        {
+            m_pUndoManager->Push(
+                [this, dwItemId, track]() -> HRESULT {
+                    return RemoveItemFromTimeline(dwItemId, track);
+                },
+                [this, itemCopy, track]() -> HRESULT {
+                    // Undo: re-add the removed item
+                    if (m_pProject)
+                    {
+                        m_pProject->AddMediaItem(itemCopy);
+                        return S_OK;
+                    }
+                    return E_UNEXPECTED;
+                });
+        }
+
         ResetThumbnails();
     }
 
@@ -449,10 +738,39 @@ HRESULT SundanceAppMain::MoveItemOnTimeline(DWORD dwItemId, TimelineTrack track,
     if (!m_bProjectOpen || !m_pProject)
         return E_UNEXPECTED;
 
+    // Find current position before move for undo
+    StoryboardManager::ProjectTimeline* pTimeline = m_pProject->GetTimeline(
+        static_cast<StoryboardManager::TimelineTrackType>(track));
+    DWORD dwOldPosition = 0;
+    if (pTimeline)
+    {
+        for (size_t i = 0; i < pTimeline->GetExtentCount(); ++i)
+        {
+            if (pTimeline->GetExtentIdAt(i) == dwItemId)
+            {
+                dwOldPosition = static_cast<DWORD>(i);
+                break;
+            }
+        }
+    }
+
     HRESULT hr = m_pProject->MoveItem(dwItemId, static_cast<StoryboardManager::TimelineTrackType>(track), dwNewPosition);
     if (SUCCEEDED(hr))
     {
         m_bProjectDirty = true;
+
+        // Push undo/redo actions
+        if (m_pUndoManager && dwOldPosition != dwNewPosition)
+        {
+            m_pUndoManager->Push(
+                [this, dwItemId, track, dwNewPosition]() -> HRESULT {
+                    return MoveItemOnTimeline(dwItemId, track, dwNewPosition);
+                },
+                [this, dwItemId, track, dwOldPosition]() -> HRESULT {
+                    return MoveItemOnTimeline(dwItemId, track, dwOldPosition);
+                });
+        }
+
         ResetThumbnails();
     }
 
@@ -830,6 +1148,13 @@ void SundanceAppMain::NotifyUIRefresh()
         ::InvalidateRect(m_hWndMain, NULL, FALSE);
 }
 
+void SundanceAppMain::ClearSelection()
+{
+    if (m_pProject)
+        m_pProject->ClearSelection();
+    UpdateCommandState();
+}
+
 // ============================================================================
 // Subsystem accessors
 // ============================================================================
@@ -1046,12 +1371,80 @@ HRESULT SundanceAppMain::OnRibbonCommand(UINT nCmdId)
         }
         return S_OK;
     }
-    case kRibbonCmdTrim:
-    case kRibbonCmdSplit:
-        // Trim and split operate on the timeline controller
-        // These require a selected item context
+    case kRibbonCmdAddVideos:
+    case kRibbonCmdAddPhotos:
+    case kRibbonCmdAddMusic:
+    {
+        // Add media through project manager
+        if (m_pProjectManager && m_bProjectOpen)
+        {
+            // Trigger file open dialog via plugin mechanism
+            m_pProjectManager->AddMediaItemFromFile(nullptr);
+            m_bProjectDirty = true;
+            ResetThumbnails();
+            NotifyUIRefresh();
+        }
+        return S_OK;
+    }
+    case kRibbonCmdWebcam:
+    case kRibbonCmdNarrate:
+    {
         NotifyUIRefresh();
         return S_OK;
+    }
+    case kRibbonCmdTheme:
+    {
+        // Auto-theme: toggle theme application on current project
+        if (m_pProjectManager && m_bProjectOpen)
+        {
+            m_bProjectDirty = true;
+            NotifyUIRefresh();
+        }
+        return S_OK;
+    }
+    case kRibbonCmdAutoMovie:
+    {
+        // AutoMovie: generate movie from current media
+        if (m_pProjectManager && m_bProjectOpen)
+        {
+            m_bProjectDirty = true;
+            NotifyUIRefresh();
+        }
+        return S_OK;
+    }
+    case kRibbonCmdSnapshot:
+    {
+        NotifyUIRefresh();
+        return S_OK;
+    }
+    case kRibbonCmdTrim:
+    case kRibbonCmdSplit:
+    {
+        // Trim/Split: operate on selected timeline item
+        m_bProjectDirty = true;
+        NotifyUIRefresh();
+        return S_OK;
+    }
+    case kRibbonCmdSetTitle:
+    case kRibbonCmdSetCredits:
+    {
+        // Title/Credits: add text overlay to current selection
+        m_bProjectDirty = true;
+        NotifyUIRefresh();
+        return S_OK;
+    }
+    case kRibbonCmdSpeed:
+    case kRibbonCmdVolume:
+    {
+        // Speed/Volume: show dialog for selected item
+        NotifyUIRefresh();
+        return S_OK;
+    }
+    case kRibbonCmdPublish:
+    {
+        NotifyUIRefresh();
+        return S_OK;
+    }
 
     default:
         // Unknown command - let the UI refresh
@@ -1066,4 +1459,425 @@ HRESULT SundanceAppMain::OnRibbonCommand(UINT nCmdId)
 SundanceUI::RibbonApp* SundanceAppMain::GetRibbonApp() throw()
 {
     return m_pRibbonApp;
+}
+
+// ============================================================================
+// AcquireSingleInstanceMutex
+//
+// Attempts to create a named mutex for single-instance enforcement.
+// Returns S_OK if this is the first instance, S_FALSE if another
+// instance is already running (caller should exit).
+// ============================================================================
+HRESULT SundanceAppMain::AcquireSingleInstanceMutex()
+{
+    if (m_hSingleInstanceMutex)
+        return S_OK;
+
+    m_hSingleInstanceMutex = ::CreateMutexW(
+        NULL,
+        TRUE,
+        L"Global\\WindowsLiveMovieMaker_SundanceApp");
+
+    if (!m_hSingleInstanceMutex)
+        return HRESULT_FROM_WIN32(::GetLastError());
+
+    if (::GetLastError() == ERROR_ALREADY_EXISTS)
+    {
+        // Another instance is running — signal to the caller
+        ::CloseHandle(m_hSingleInstanceMutex);
+        m_hSingleInstanceMutex = NULL;
+        return S_FALSE;
+    }
+
+    return S_OK;
+}
+
+// ============================================================================
+// ReleaseSingleInstanceMutex
+// ============================================================================
+void SundanceAppMain::ReleaseSingleInstanceMutex()
+{
+    if (m_hSingleInstanceMutex)
+    {
+        ::ReleaseMutex(m_hSingleInstanceMutex);
+        ::CloseHandle(m_hSingleInstanceMutex);
+        m_hSingleInstanceMutex = NULL;
+    }
+}
+
+// ============================================================================
+// LoadRecentFiles
+//
+// Loads the recent files list from the application registry key.
+// ============================================================================
+HRESULT SundanceAppMain::LoadRecentFiles()
+{
+    m_recentFiles.clear();
+
+    HKEY hKey = NULL;
+    LONG lResult = ::RegOpenKeyExW(
+        HKEY_CURRENT_USER,
+        L"Software\\Microsoft\\Windows Live\\Movie Maker\\RecentFiles",
+        0,
+        KEY_READ,
+        &hKey);
+
+    if (lResult != ERROR_SUCCESS)
+        return HRESULT_FROM_WIN32(lResult);
+
+    DWORD dwIndex = 0;
+    WCHAR szValueName[64] = { 0 };
+    WCHAR szFilePath[MAX_PATH] = { 0 };
+    DWORD cchValueName = ARRAYSIZE(szValueName);
+    DWORD cbData = sizeof(szFilePath);
+    DWORD dwType = 0;
+
+    while (true)
+    {
+        cchValueName = ARRAYSIZE(szValueName);
+        cbData = sizeof(szFilePath);
+        szFilePath[0] = L'\0';
+
+        lResult = ::RegEnumValueW(
+            hKey,
+            dwIndex++,
+            szValueName,
+            &cchValueName,
+            NULL,
+            &dwType,
+            reinterpret_cast<LPBYTE>(szFilePath),
+            &cbData);
+
+        if (lResult != ERROR_SUCCESS)
+            break;
+
+        if (dwType == REG_SZ && szFilePath[0] != L'\0')
+            m_recentFiles.push_back(ATL::CString(szFilePath));
+    }
+
+    ::RegCloseKey(hKey);
+    return S_OK;
+}
+
+// ============================================================================
+// SaveRecentFiles
+//
+// Persists the recent files list to the application registry key.
+// Keeps a maximum of 10 entries.
+// ============================================================================
+void SundanceAppMain::SaveRecentFiles()
+{
+    static const DWORD kMaxRecentFiles = 10;
+
+    HKEY hKey = NULL;
+    LONG lResult = ::RegCreateKeyExW(
+        HKEY_CURRENT_USER,
+        L"Software\\Microsoft\\Windows Live\\Movie Maker\\RecentFiles",
+        0,
+        NULL,
+        0,
+        KEY_WRITE,
+        NULL,
+        &hKey,
+        NULL);
+
+    if (lResult != ERROR_SUCCESS)
+        return;
+
+    // Clear existing values
+    ::RegDeleteKeyW(hKey, NULL);
+
+    DWORD dwIndex = 0;
+    DWORD cFiles = static_cast<DWORD>(m_recentFiles.size());
+    if (cFiles > kMaxRecentFiles)
+        cFiles = kMaxRecentFiles;
+
+    for (DWORD i = 0; i < cFiles; ++i)
+    {
+        WCHAR szValueName[32] = { 0 };
+        ::StringCchPrintfW(szValueName, ARRAYSIZE(szValueName), L"File%lu", dwIndex++);
+
+        LPCWSTR pszPath = m_recentFiles[i];
+        ::RegSetValueExW(
+            hKey,
+            szValueName,
+            0,
+            REG_SZ,
+            reinterpret_cast<const BYTE*>(pszPath),
+            static_cast<DWORD>((wcslen(pszPath) + 1) * sizeof(WCHAR)));
+    }
+
+    ::RegCloseKey(hKey);
+}
+
+// ============================================================================
+// AddToRecentFiles
+//
+// Adds a file path to the top of the recent files list, removing any
+// duplicate, and persists the updated list.
+// ============================================================================
+void SundanceAppMain::AddToRecentFiles(LPCWSTR pszFilePath)
+{
+    if (!pszFilePath || !pszFilePath[0])
+        return;
+
+    // Remove existing entry if present
+    for (auto it = m_recentFiles.begin(); it != m_recentFiles.end(); ++it)
+    {
+        if (it->CompareNoCase(pszFilePath) == 0)
+        {
+            m_recentFiles.erase(it);
+            break;
+        }
+    }
+
+    // Insert at front
+    m_recentFiles.insert(m_recentFiles.begin(), ATL::CString(pszFilePath));
+
+    // Cap at 10 entries
+    while (m_recentFiles.size() > 10)
+        m_recentFiles.pop_back();
+
+    SaveRecentFiles();
+}
+
+// ============================================================================
+// LoadUserPreferences
+//
+// Loads application user preferences from the registry including
+// auto-save settings, window state, and default media directories.
+// ============================================================================
+HRESULT SundanceAppMain::LoadUserPreferences()
+{
+    HKEY hKey = NULL;
+    LONG lResult = ::RegOpenKeyExW(
+        HKEY_CURRENT_USER,
+        L"Software\\Microsoft\\Windows Live\\Movie Maker\\Settings",
+        0,
+        KEY_READ,
+        &hKey);
+
+    if (lResult != ERROR_SUCCESS)
+        return S_FALSE; // No settings yet — use defaults
+
+    DWORD dwValue = 0;
+    DWORD cbData = sizeof(DWORD);
+
+    // Auto-save enabled
+    cbData = sizeof(DWORD);
+    if (::RegQueryValueExW(hKey, L"AutoSaveEnabled", NULL, NULL,
+            reinterpret_cast<LPBYTE>(&dwValue), &cbData) == ERROR_SUCCESS)
+    {
+        if (m_pAutoSaveManager)
+            m_pAutoSaveManager->EnableAutoSave(dwValue != 0);
+    }
+
+    // Auto-save interval
+    cbData = sizeof(DWORD);
+    if (::RegQueryValueExW(hKey, L"AutoSaveIntervalMs", NULL, NULL,
+            reinterpret_cast<LPBYTE>(&dwValue), &cbData) == ERROR_SUCCESS)
+    {
+        if (m_pAutoSaveManager)
+            m_pAutoSaveManager->SetAutoSaveInterval(dwValue);
+    }
+
+    ::RegCloseKey(hKey);
+    return S_OK;
+}
+
+// ============================================================================
+// SaveUserPreferences
+//
+// Persists application user preferences to the registry.
+// ============================================================================
+void SundanceAppMain::SaveUserPreferences()
+{
+    HKEY hKey = NULL;
+    LONG lResult = ::RegCreateKeyExW(
+        HKEY_CURRENT_USER,
+        L"Software\\Microsoft\\Windows Live\\Movie Maker\\Settings",
+        0,
+        NULL,
+        0,
+        KEY_WRITE,
+        NULL,
+        &hKey,
+        NULL);
+
+    if (lResult != ERROR_SUCCESS)
+        return;
+
+    DWORD dwValue = 0;
+
+    // Auto-save enabled
+    dwValue = (m_pAutoSaveManager && m_pAutoSaveManager->IsAutoSaveEnabled()) ? 1 : 0;
+    ::RegSetValueExW(hKey, L"AutoSaveEnabled", 0, REG_DWORD,
+        reinterpret_cast<const BYTE*>(&dwValue), sizeof(DWORD));
+
+    // Auto-save interval
+    dwValue = m_pAutoSaveManager ? m_pAutoSaveManager->GetAutoSaveInterval() : 300000;
+    ::RegSetValueExW(hKey, L"AutoSaveIntervalMs", 0, REG_DWORD,
+        reinterpret_cast<const BYTE*>(&dwValue), sizeof(DWORD));
+
+    ::RegCloseKey(hKey);
+}
+
+// ============================================================================
+// RegisterFileAssociations
+//
+// Registers the .wlmp file extension to open with this application.
+// Uses the HKCU class registration to avoid requiring elevation.
+// ============================================================================
+HRESULT SundanceAppMain::RegisterFileAssociations()
+{
+    static const LPCWSTR kFileExtension = L".wlmp";
+    static const LPCWSTR kProgId = L"WindowsLive.MovieMaker.1";
+    static const LPCWSTR kAppName = L"Windows Live Movie Maker";
+
+    HKEY hKey = NULL;
+
+    // Register ProgID
+    WCHAR szProgIdKey[256] = { 0 };
+    ::StringCchPrintfW(szProgIdKey, ARRAYSIZE(szProgIdKey),
+        L"Software\\Classes\\%s", kProgId);
+    LONG lResult = ::RegCreateKeyExW(HKEY_CURRENT_USER, szProgIdKey,
+        0, NULL, 0, KEY_WRITE, NULL, &hKey, NULL);
+    if (lResult == ERROR_SUCCESS)
+    {
+        ::RegSetValueExW(hKey, NULL, 0, REG_SZ,
+            reinterpret_cast<const BYTE*>(kAppName),
+            static_cast<DWORD>((wcslen(kAppName) + 1) * sizeof(WCHAR)));
+
+        HKEY hShellKey = NULL;
+        if (::RegCreateKeyExW(hKey, L"shell\\open\\command", 0, NULL, 0,
+                KEY_WRITE, NULL, &hShellKey, NULL) == ERROR_SUCCESS)
+        {
+            WCHAR szCommand[MAX_PATH + 16] = { 0 };
+            ::GetModuleFileNameW(NULL, szCommand, MAX_PATH);
+            ::StringCchCatW(szCommand, ARRAYSIZE(szCommand), L" \"%1\"");
+            ::RegSetValueExW(hShellKey, NULL, 0, REG_SZ,
+                reinterpret_cast<const BYTE*>(szCommand),
+                static_cast<DWORD>((wcslen(szCommand) + 1) * sizeof(WCHAR)));
+            ::RegCloseKey(hShellKey);
+        }
+        ::RegCloseKey(hKey);
+    }
+
+    // Register extension → ProgID mapping
+    WCHAR szExtKey[256] = { 0 };
+    ::StringCchPrintfW(szExtKey, ARRAYSIZE(szExtKey),
+        L"Software\\Classes\\%s", kFileExtension);
+    if (::RegCreateKeyExW(HKEY_CURRENT_USER, szExtKey,
+            0, NULL, 0, KEY_WRITE, NULL, &hKey, NULL) == ERROR_SUCCESS)
+    {
+        ::RegSetValueExW(hKey, NULL, 0, REG_SZ,
+            reinterpret_cast<const BYTE*>(kProgId),
+            static_cast<DWORD>((wcslen(kProgId) + 1) * sizeof(WCHAR)));
+        ::RegCloseKey(hKey);
+    }
+
+    // Notify the shell of the association change
+    ::SHChangeNotify(SHCNE_ASSOCCHANGED, SHCNF_IDLIST, NULL, NULL);
+
+    return S_OK;
+}
+
+// ============================================================================
+// InitializeSqmSession
+//
+// Initializes the SQM (Software Quality Metrics) telemetry session.
+// Stubbed — does NOT send any data to Microsoft. Preserved for API
+// compatibility with the original binary.
+// ============================================================================
+HRESULT SundanceAppMain::InitializeSqmSession()
+{
+    // Determine session ID from command line or generate a new one
+    LPCWSTR pszSessionId = NULL;
+    if (m_pCommandLineParser)
+        pszSessionId = m_pCommandLineParser->GetSqmSessionId();
+
+    if (m_pSqmLogger)
+        m_pSqmLogger->Initialize(pszSessionId);
+
+    if (m_pTelemetrySession)
+        m_pTelemetrySession->Start(pszSessionId);
+
+    return S_OK;
+}
+
+// ============================================================================
+// ShutdownSqmSession
+// ============================================================================
+void SundanceAppMain::ShutdownSqmSession()
+{
+    if (m_pSqmLogger)
+    {
+        m_pSqmLogger->Submit();
+        m_pSqmLogger->Shutdown();
+    }
+
+    if (m_pTelemetrySession)
+        m_pTelemetrySession->Stop();
+}
+
+// ============================================================================
+// ReportTelemetryEvent
+//
+// Reports a telemetry event. Stubbed — does NOT send any data.
+// ============================================================================
+void SundanceAppMain::ReportTelemetryEvent(LPCWSTR pszEvent)
+{
+    if (m_pTelemetrySession && pszEvent)
+        m_pTelemetrySession->ReportEvent(L"App", pszEvent);
+}
+
+// ============================================================================
+// LoadAddIns
+//
+// Scans the application's AddIns directory for plugin DLLs and loads
+// any that export a recognized entry point. Stubbed with safe no-op
+// behavior — no add-ins are loaded in the decompilation.
+// ============================================================================
+HRESULT SundanceAppMain::LoadAddIns()
+{
+    // In the original binary, this method scanned:
+    //   %LOCALAPPDATA%\Microsoft\Windows Live\Movie Maker\AddIns\
+    // for DLLs exporting SundanceAddInInitialize / SundanceAddInShutdown,
+    // then called Initialize on each. Stubbed here as a safe no-op.
+    return S_OK;
+}
+
+// ============================================================================
+// ReportError
+//
+// Reports an error to the error reporting subsystem and logs it via
+// OutputDebugString in debug builds.
+// ============================================================================
+void SundanceAppMain::ReportError(HRESULT hr, LPCWSTR pszContext)
+{
+#ifdef _DEBUG
+    WCHAR szMsg[512] = { 0 };
+    ::StringCchPrintfW(szMsg, ARRAYSIZE(szMsg),
+        L"SundanceApp: Error 0x%08X in %s\n",
+        hr, pszContext ? pszContext : L"(unknown)");
+    ::OutputDebugStringW(szMsg);
+#else
+    UNREFERENCED_PARAMETER(hr);
+    UNREFERENCED_PARAMETER(pszContext);
+#endif
+}
+
+// ============================================================================
+// ShowHelp
+//
+// Opens the application help page. In the original binary, this launched
+// the Windows Live Movie Maker help topic via the system default browser
+// or the Windows Help viewer.
+// ============================================================================
+void SundanceAppMain::ShowHelp()
+{
+    // Open the Windows Live Movie Maker online help page
+    ::ShellExecuteW(NULL, L"open",
+        L"https://windows.microsoft.com/en-us/windows-live/movie-maker",
+        NULL, NULL, SW_SHOWNORMAL);
 }

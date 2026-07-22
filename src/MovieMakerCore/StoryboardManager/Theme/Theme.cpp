@@ -336,45 +336,91 @@ HRESULT Theme::LoadFromStream(IStream* pStream)
         {
             LPCWSTR pwszLocalName = nullptr;
             spReader->GetLocalName(&pwszLocalName, nullptr);
-            if (pwszLocalName && wcscmp(pwszLocalName, kThemeRootElement) == 0)
+            if (!pwszLocalName)
+                continue;
+
+            if (wcscmp(pwszLocalName, kThemeRootElement) == 0)
             {
                 LPCWSTR pwszValue = nullptr;
                 if (SUCCEEDED(XmlReaderGetAttribute(spReader, L"name", &pwszValue)) && pwszValue)
-                {
                     SetName(pwszValue);
-                }
+
                 pwszValue = nullptr;
                 if (SUCCEEDED(XmlReaderGetAttribute(spReader, L"displayName", &pwszValue)) && pwszValue)
-                {
                     SetDisplayName(pwszValue);
-                }
+
+                pwszValue = nullptr;
+                if (SUCCEEDED(XmlReaderGetAttribute(spReader, L"description", &pwszValue)) && pwszValue)
+                    SetDescription(pwszValue);
+
+                pwszValue = nullptr;
+                if (SUCCEEDED(XmlReaderGetAttribute(spReader, L"category", &pwszValue)) && pwszValue)
+                    SetCategory(pwszValue);
 
                 pwszValue = nullptr;
                 if (SUCCEEDED(XmlReaderGetAttribute(spReader, L"primaryColor", &pwszValue)) && pwszValue)
-                {
                     SetPrimaryColor(static_cast<DWORD>(wcstoul(pwszValue, nullptr, 16)));
-                }
+
                 pwszValue = nullptr;
                 if (SUCCEEDED(XmlReaderGetAttribute(spReader, L"secondaryColor", &pwszValue)) && pwszValue)
-                {
                     SetSecondaryColor(static_cast<DWORD>(wcstoul(pwszValue, nullptr, 16)));
-                }
+
                 pwszValue = nullptr;
                 if (SUCCEEDED(XmlReaderGetAttribute(spReader, L"accentColor", &pwszValue)) && pwszValue)
-                {
                     SetAccentColor(static_cast<DWORD>(wcstoul(pwszValue, nullptr, 16)));
-                }
+
                 pwszValue = nullptr;
                 if (SUCCEEDED(XmlReaderGetAttribute(spReader, L"fontFamily", &pwszValue)) && pwszValue)
-                {
                     SetFontFamily(pwszValue);
-                }
+
                 pwszValue = nullptr;
                 if (SUCCEEDED(XmlReaderGetAttribute(spReader, L"fontSize", &pwszValue)) && pwszValue)
-                {
                     SetFontSize(static_cast<float>(_wtof(pwszValue)));
+
+                pwszValue = nullptr;
+                if (SUCCEEDED(XmlReaderGetAttribute(spReader, L"version", &pwszValue)) && pwszValue)
+                {
+                    DWORD dwMajor = 1, dwMinor = 0;
+                    if (swscanf_s(pwszValue, L"%u.%u", &dwMajor, &dwMinor) == 2)
+                        SetVersion(dwMajor, dwMinor);
                 }
-                break;
+
+                pwszValue = nullptr;
+                if (SUCCEEDED(XmlReaderGetAttribute(spReader, L"builtIn", &pwszValue)) && pwszValue)
+                    SetBuiltIn(wcscmp(pwszValue, L"true") == 0);
+
+                continue;
+            }
+
+            if (wcscmp(pwszLocalName, L"intro") == 0)
+            {
+                ThemeIntro* pIntro = new ThemeIntro();
+                pIntro->LoadFromXml(spReader);
+                SetIntro(pIntro);
+            }
+            else if (wcscmp(pwszLocalName, L"mid") == 0)
+            {
+                ThemeMid* pMid = new ThemeMid();
+                pMid->LoadFromXml(spReader);
+                SetMid(pMid);
+            }
+            else if (wcscmp(pwszLocalName, L"outro") == 0)
+            {
+                ThemeOutro* pOutro = new ThemeOutro();
+                pOutro->LoadFromXml(spReader);
+                SetOutro(pOutro);
+            }
+            else if (wcscmp(pwszLocalName, L"effectTemplate") == 0)
+            {
+                ThemeEffectTemplate* pEffTpl = new ThemeEffectTemplate();
+                pEffTpl->LoadFromXml(spReader);
+                AddEffectTemplate(pEffTpl);
+            }
+            else if (wcscmp(pwszLocalName, L"transition") == 0)
+            {
+                ThemeTransition* pTrans = new ThemeTransition();
+                pTrans->LoadFromXml(spReader);
+                AddTransitionTemplate(pTrans);
             }
         }
     }
@@ -498,6 +544,10 @@ HRESULT Theme::SaveToStream(IStream* pStream)
     spWriter->WriteAttributeString(nullptr, L"name", nullptr, m_strName);
     if (!m_strDisplayName.IsEmpty())
         spWriter->WriteAttributeString(nullptr, L"displayName", nullptr, m_strDisplayName);
+    if (!m_strDescription.IsEmpty())
+        spWriter->WriteAttributeString(nullptr, L"description", nullptr, m_strDescription);
+    if (!m_strCategory.IsEmpty())
+        spWriter->WriteAttributeString(nullptr, L"category", nullptr, m_strCategory);
 
     // Visual appearance attributes
     WCHAR szValue[64] = { 0 };
@@ -524,6 +574,52 @@ HRESULT Theme::SaveToStream(IStream* pStream)
     {
         swprintf_s(szValue, L"%g", m_flFontSize);
         spWriter->WriteAttributeString(nullptr, L"fontSize", nullptr, szValue);
+    }
+
+    swprintf_s(szValue, L"%u.%u", m_dwVersionMajor, m_dwVersionMinor);
+    spWriter->WriteAttributeString(nullptr, L"version", nullptr, szValue);
+
+    if (m_fBuiltIn)
+        spWriter->WriteAttributeString(nullptr, L"builtIn", nullptr, L"true");
+
+    // Write intro section
+    if (m_pIntro)
+    {
+        spWriter->WriteStartElement(nullptr, L"intro", nullptr);
+        m_pIntro->SaveToXml(spWriter);
+        spWriter->WriteEndElement();
+    }
+
+    // Write mid section
+    if (m_pMid)
+    {
+        spWriter->WriteStartElement(nullptr, L"mid", nullptr);
+        m_pMid->SaveToXml(spWriter);
+        spWriter->WriteEndElement();
+    }
+
+    // Write outro section
+    if (m_pOutro)
+    {
+        spWriter->WriteStartElement(nullptr, L"outro", nullptr);
+        m_pOutro->SaveToXml(spWriter);
+        spWriter->WriteEndElement();
+    }
+
+    // Write effect templates
+    for (size_t i = 0; i < m_arrEffectTemplates.GetCount(); ++i)
+    {
+        ThemeEffectTemplate* pEffTpl = m_arrEffectTemplates.GetAt(i);
+        if (pEffTpl)
+            pEffTpl->SaveToXml(spWriter);
+    }
+
+    // Write transition templates
+    for (size_t i = 0; i < m_arrTransitionTemplates.GetCount(); ++i)
+    {
+        ThemeTransition* pTrans = m_arrTransitionTemplates.GetAt(i);
+        if (pTrans)
+            pTrans->SaveToXml(spWriter);
     }
 
     spWriter->WriteEndElement();
@@ -1062,7 +1158,9 @@ ThemeProject* ThemeManager::CreateThemeProject(Theme* pTheme)
 
 HRESULT ThemeManager::LoadBuiltInThemes()
 {
-    // Create a default "Contemporary" theme
+    // =====================================================================
+    // Contemporary theme
+    // =====================================================================
     Theme* pContemporary = new Theme();
     pContemporary->SetName(L"Contemporary");
     pContemporary->SetDisplayName(L"Contemporary");
@@ -1132,6 +1230,449 @@ HRESULT ThemeManager::LoadBuiltInThemes()
     AddTheme(pContemporary);
     SetDefaultTheme(L"Contemporary");
 
+    // =====================================================================
+    // Fade theme
+    // =====================================================================
+    Theme* pFadeTheme = new Theme();
+    pFadeTheme->SetName(L"Fade");
+    pFadeTheme->SetDisplayName(L"Fade");
+    pFadeTheme->SetDescription(L"Classic fade transitions between every clip");
+    pFadeTheme->SetCategory(L"AutoMovie");
+    pFadeTheme->SetBuiltIn(true);
+    pFadeTheme->SetPrimaryColor(0xFF5B9BD5);
+    pFadeTheme->SetSecondaryColor(0xFF9DC3E6);
+    pFadeTheme->SetAccentColor(0xFFED7D31);
+    pFadeTheme->SetFontFamily(L"Segoe UI");
+    pFadeTheme->SetFontSize(36.0f);
+
+    ThemeIntro* pFadeIntro = new ThemeIntro();
+    ThemeTitle* pFadeTitle = new ThemeTitle();
+    pFadeTitle->SetFontFamily(L"Segoe UI");
+    pFadeTitle->SetFontSize(48.0f);
+    pFadeTitle->SetFontColor(0xFFFFFFFF);
+    pFadeTitle->SetPosition(0.5f, 0.5f);
+    pFadeTitle->SetAnimation(TitleAnimationFadeIn);
+    pFadeTitle->SetAlignment(ThemeTitle::TextAlignmentCenter);
+    pFadeIntro->SetTitle(pFadeTitle);
+    pFadeIntro->SetDurationMode(ThemeIntro::IntroDurationModeFitToTitle);
+    pFadeIntro->SetBackgroundColor(0xFF000000);
+    pFadeIntro->SetFadeInDurationHns(5000000);
+    pFadeTheme->SetIntro(pFadeIntro);
+
+    ThemeMid* pFadeMid = new ThemeMid();
+    ThemePrimaryTrack* pFadeTrack = new ThemePrimaryTrack();
+    pFadeTrack->SetName(L"Primary");
+    pFadeTrack->SetBoundTrackType(TimelineTrackTypeVideo);
+    pFadeTrack->SetAutoFill(true);
+    pFadeMid->AddTrack(pFadeTrack);
+
+    ThemeEffectTemplate* pFadeEffTpl = new ThemeEffectTemplate();
+    pFadeEffTpl->SetName(L"Fade Effect");
+    pFadeEffTpl->SetDefaultIntensity(1.0f);
+    ThemeEffect* pFadeEffect = new ThemeEffect();
+    pFadeEffect->SetType(ThemeEffectTypeFade);
+    pFadeEffect->SetDurationHns(15000000);
+    pFadeEffTpl->AddEffect(pFadeEffect);
+    pFadeMid->SetDefaultEffectTemplate(pFadeEffTpl);
+
+    ThemeTransition* pFadeTrans = new ThemeTransition();
+    pFadeTrans->SetName(L"Fade");
+    pFadeTrans->SetClipName(L"fade");
+    pFadeTrans->SetDurationHns(15000000);
+    pFadeMid->SetDefaultTransition(pFadeTrans);
+    pFadeMid->SetLooping(true);
+    pFadeTheme->SetMid(pFadeMid);
+
+    ThemeOutro* pFadeOutro = new ThemeOutro();
+    ThemeTitle* pFadeCredits = new ThemeTitle();
+    pFadeCredits->SetFontFamily(L"Segoe UI");
+    pFadeCredits->SetFontSize(24.0f);
+    pFadeCredits->SetFontColor(0xFFFFFFFF);
+    pFadeCredits->SetPosition(0.5f, 0.5f);
+    pFadeCredits->SetAnimation(TitleAnimationFadeIn);
+    pFadeOutro->SetCreditsTitle(pFadeCredits);
+    pFadeOutro->SetDurationMode(ThemeOutro::OutroDurationModeScrollText);
+    pFadeOutro->SetBackgroundColor(0xFF000000);
+    pFadeOutro->SetFadeOutDurationHns(15000000);
+    pFadeOutro->SetScrollSpeed(50.0f);
+    pFadeTheme->SetOutro(pFadeOutro);
+
+    pFadeTheme->SetLoadState(ThemeLoadStateLoaded);
+    AddTheme(pFadeTheme);
+
+    // =====================================================================
+    // Magazine theme
+    // =====================================================================
+    Theme* pMagazine = new Theme();
+    pMagazine->SetName(L"Magazine");
+    pMagazine->SetDisplayName(L"Magazine");
+    pMagazine->SetDescription(L"Bold magazine-style layout with dramatic transitions");
+    pMagazine->SetCategory(L"AutoMovie");
+    pMagazine->SetBuiltIn(true);
+    pMagazine->SetPrimaryColor(0xFF1B1B1B);
+    pMagazine->SetSecondaryColor(0xFF333333);
+    pMagazine->SetAccentColor(0xFFED7D31);
+    pMagazine->SetFontFamily(L"Segoe UI Light");
+    pMagazine->SetFontSize(36.0f);
+
+    ThemeIntro* pMagIntro = new ThemeIntro();
+    ThemeTitle* pMagTitle = new ThemeTitle();
+    pMagTitle->SetFontFamily(L"Segoe UI Light");
+    pMagTitle->SetFontSize(56.0f);
+    pMagTitle->SetFontColor(0xFFFFFFFF);
+    pMagTitle->SetPosition(0.5f, 0.8f);
+    pMagTitle->SetAnimation(TitleAnimationZoomIn);
+    pMagTitle->SetAlignment(ThemeTitle::TextAlignmentCenter);
+    pMagIntro->SetTitle(pMagTitle);
+    pMagIntro->SetDurationMode(ThemeIntro::IntroDurationModeFitToTitle);
+    pMagIntro->SetBackgroundColor(0xFF000000);
+    pMagIntro->SetFadeInDurationHns(5000000);
+    pMagazine->SetIntro(pMagIntro);
+
+    ThemeMid* pMagMid = new ThemeMid();
+    ThemePrimaryTrack* pMagTrack = new ThemePrimaryTrack();
+    pMagTrack->SetName(L"Primary");
+    pMagTrack->SetBoundTrackType(TimelineTrackTypeVideo);
+    pMagTrack->SetAutoFill(true);
+    pMagMid->AddTrack(pMagTrack);
+
+    ThemeEffectTemplate* pMagEffTpl = new ThemeEffectTemplate();
+    pMagEffTpl->SetName(L"Vignette Effect");
+    pMagEffTpl->SetDefaultIntensity(0.3f);
+    ThemeEffect* pMagVignette = new ThemeEffect();
+    pMagVignette->SetType(ThemeEffectTypeVignette);
+    pMagVignette->SetIntensity(0.3);
+    pMagEffTpl->AddEffect(pMagVignette);
+    pMagMid->SetDefaultEffectTemplate(pMagEffTpl);
+
+    ThemeTransition* pMagTrans = new ThemeTransition();
+    pMagTrans->SetName(L"Push");
+    pMagTrans->SetClipName(L"push");
+    pMagTrans->SetDurationHns(7000000);
+    pMagMid->SetDefaultTransition(pMagTrans);
+    pMagMid->SetLooping(true);
+    pMagazine->SetMid(pMagMid);
+
+    ThemeOutro* pMagOutro = new ThemeOutro();
+    ThemeTitle* pMagCredits = new ThemeTitle();
+    pMagCredits->SetFontFamily(L"Segoe UI Light");
+    pMagCredits->SetFontSize(24.0f);
+    pMagCredits->SetFontColor(0xFFFFFFFF);
+    pMagCredits->SetPosition(0.5f, 0.5f);
+    pMagCredits->SetAnimation(TitleAnimationZoomIn);
+    pMagOutro->SetCreditsTitle(pMagCredits);
+    pMagOutro->SetDurationMode(ThemeOutro::OutroDurationModeScrollText);
+    pMagOutro->SetBackgroundColor(0xFF000000);
+    pMagOutro->SetFadeOutDurationHns(5000000);
+    pMagOutro->SetScrollSpeed(60.0f);
+    pMagazine->SetOutro(pMagOutro);
+
+    pMagazine->SetLoadState(ThemeLoadStateLoaded);
+    AddTheme(pMagazine);
+
+    // =====================================================================
+    // Retro theme
+    // =====================================================================
+    Theme* pRetro = new Theme();
+    pRetro->SetName(L"Retro");
+    pRetro->SetDisplayName(L"Retro");
+    pRetro->SetDescription(L"Vintage look with sepia tones and film grain");
+    pRetro->SetCategory(L"AutoMovie");
+    pRetro->SetBuiltIn(true);
+    pRetro->SetPrimaryColor(0xFF8B7355);
+    pRetro->SetSecondaryColor(0xFFD2B48C);
+    pRetro->SetAccentColor(0xFFFFF0D0);
+    pRetro->SetFontFamily(L"Georgia");
+    pRetro->SetFontSize(36.0f);
+
+    ThemeIntro* pRetroIntro = new ThemeIntro();
+    ThemeTitle* pRetroTitle = new ThemeTitle();
+    pRetroTitle->SetFontFamily(L"Georgia");
+    pRetroTitle->SetFontSize(48.0f);
+    pRetroTitle->SetFontColor(0xFFFFF0D0);
+    pRetroTitle->SetPosition(0.5f, 0.5f);
+    pRetroTitle->SetAnimation(TitleAnimationTypewriter);
+    pRetroTitle->SetAlignment(ThemeTitle::TextAlignmentCenter);
+    pRetroIntro->SetTitle(pRetroTitle);
+    pRetroIntro->SetDurationMode(ThemeIntro::IntroDurationModeFitToTitle);
+    pRetroIntro->SetBackgroundColor(0xFF1A1008);
+    pRetroIntro->SetFadeInDurationHns(12000000);
+    pRetro->SetIntro(pRetroIntro);
+
+    ThemeMid* pRetroMid = new ThemeMid();
+    ThemePrimaryTrack* pRetroTrack = new ThemePrimaryTrack();
+    pRetroTrack->SetName(L"Primary");
+    pRetroTrack->SetBoundTrackType(TimelineTrackTypeVideo);
+    pRetroTrack->SetAutoFill(true);
+    pRetroMid->AddTrack(pRetroTrack);
+
+    ThemeEffectTemplate* pRetroEffTpl = new ThemeEffectTemplate();
+    pRetroEffTpl->SetName(L"Retro Effects");
+    pRetroEffTpl->SetDefaultIntensity(1.0f);
+    ThemeEffect* pRetroSepia = new ThemeEffect();
+    pRetroSepia->SetType(ThemeEffectTypeSepia);
+    pRetroSepia->SetIntensity(0.7);
+    pRetroEffTpl->AddEffect(pRetroSepia);
+    ThemeEffect* pRetroGrain = new ThemeEffect();
+    pRetroGrain->SetType(ThemeEffectTypeFilmGrain);
+    pRetroGrain->SetIntensity(0.4);
+    pRetroEffTpl->AddEffect(pRetroGrain);
+    ThemeEffect* pRetroVignette = new ThemeEffect();
+    pRetroVignette->SetType(ThemeEffectTypeVignette);
+    pRetroVignette->SetIntensity(0.5);
+    pRetroEffTpl->AddEffect(pRetroVignette);
+    pRetroMid->SetDefaultEffectTemplate(pRetroEffTpl);
+
+    ThemeTransition* pRetroTrans = new ThemeTransition();
+    pRetroTrans->SetName(L"Crossfade");
+    pRetroTrans->SetClipName(L"crossfade");
+    pRetroTrans->SetDurationHns(12000000);
+    pRetroMid->SetDefaultTransition(pRetroTrans);
+    pRetroMid->SetLooping(true);
+    pRetro->SetMid(pRetroMid);
+
+    ThemeOutro* pRetroOutro = new ThemeOutro();
+    ThemeTitle* pRetroCredits = new ThemeTitle();
+    pRetroCredits->SetFontFamily(L"Georgia");
+    pRetroCredits->SetFontSize(24.0f);
+    pRetroCredits->SetFontColor(0xFFFFF0D0);
+    pRetroCredits->SetPosition(0.5f, 0.5f);
+    pRetroCredits->SetAnimation(TitleAnimationTypewriter);
+    pRetroOutro->SetCreditsTitle(pRetroCredits);
+    pRetroOutro->SetDurationMode(ThemeOutro::OutroDurationModeScrollText);
+    pRetroOutro->SetBackgroundColor(0xFF1A1008);
+    pRetroOutro->SetFadeOutDurationHns(12000000);
+    pRetroOutro->SetScrollSpeed(40.0f);
+    pRetro->SetOutro(pRetroOutro);
+
+    pRetro->SetLoadState(ThemeLoadStateLoaded);
+    AddTheme(pRetro);
+
+    // =====================================================================
+    // Pan and zoom theme
+    // =====================================================================
+    Theme* pPanZoom = new Theme();
+    pPanZoom->SetName(L"Pan and zoom");
+    pPanZoom->SetDisplayName(L"Pan and zoom");
+    pPanZoom->SetDescription(L"Ken Burns style pan and zoom effects on photos");
+    pPanZoom->SetCategory(L"AutoMovie");
+    pPanZoom->SetBuiltIn(true);
+    pPanZoom->SetPrimaryColor(0xFF3A7D44);
+    pPanZoom->SetSecondaryColor(0xFF6AAF6A);
+    pPanZoom->SetAccentColor(0xFFED7D31);
+    pPanZoom->SetFontFamily(L"Segoe UI");
+    pPanZoom->SetFontSize(36.0f);
+
+    ThemeIntro* pPZIntro = new ThemeIntro();
+    ThemeTitle* pPZTitle = new ThemeTitle();
+    pPZTitle->SetFontFamily(L"Segoe UI");
+    pPZTitle->SetFontSize(48.0f);
+    pPZTitle->SetFontColor(0xFFFFFFFF);
+    pPZTitle->SetPosition(0.5f, 0.5f);
+    pPZTitle->SetAnimation(TitleAnimationFadeIn);
+    pPZTitle->SetAlignment(ThemeTitle::TextAlignmentCenter);
+    pPZIntro->SetTitle(pPZTitle);
+    pPZIntro->SetDurationMode(ThemeIntro::IntroDurationModeFitToTitle);
+    pPZIntro->SetBackgroundColor(0xFF000000);
+    pPZIntro->SetFadeInDurationHns(5000000);
+    pPanZoom->SetIntro(pPZIntro);
+
+    ThemeMid* pPZMid = new ThemeMid();
+    ThemePrimaryTrack* pPZTrack = new ThemePrimaryTrack();
+    pPZTrack->SetName(L"Primary");
+    pPZTrack->SetBoundTrackType(TimelineTrackTypeVideo);
+    pPZTrack->SetAutoFill(true);
+    pPZMid->AddTrack(pPZTrack);
+
+    ThemeEffectTemplate* pPZEffTpl = new ThemeEffectTemplate();
+    pPZEffTpl->SetName(L"PanZoom Effect");
+    pPZEffTpl->SetDefaultIntensity(1.0f);
+    ThemeEffect* pPZPanZoom = new ThemeEffect();
+    pPZPanZoom->SetType(ThemeEffectTypePanZoom);
+    pPZPanZoom->SetDurationHns(60000000);
+    pPZPanZoom->SetParameter(L"Style", L"KenBurns");
+    pPZEffTpl->AddEffect(pPZPanZoom);
+    ThemeEffect* pPZDissolve = new ThemeEffect();
+    pPZDissolve->SetType(ThemeEffectTypeDissolve);
+    pPZDissolve->SetDurationHns(10000000);
+    pPZEffTpl->AddEffect(pPZDissolve);
+    pPZMid->SetDefaultEffectTemplate(pPZEffTpl);
+
+    ThemeTransition* pPZTrans = new ThemeTransition();
+    pPZTrans->SetName(L"Dissolve");
+    pPZTrans->SetClipName(L"dissolve");
+    pPZTrans->SetDurationHns(10000000);
+    pPZMid->SetDefaultTransition(pPZTrans);
+    pPZMid->SetLooping(true);
+    pPanZoom->SetMid(pPZMid);
+
+    ThemeOutro* pPZOutro = new ThemeOutro();
+    ThemeTitle* pPZCredits = new ThemeTitle();
+    pPZCredits->SetFontFamily(L"Segoe UI");
+    pPZCredits->SetFontSize(24.0f);
+    pPZCredits->SetFontColor(0xFFFFFFFF);
+    pPZCredits->SetPosition(0.5f, 0.5f);
+    pPZCredits->SetAnimation(TitleAnimationFadeIn);
+    pPZOutro->SetCreditsTitle(pPZCredits);
+    pPZOutro->SetDurationMode(ThemeOutro::OutroDurationModeScrollText);
+    pPZOutro->SetBackgroundColor(0xFF000000);
+    pPZOutro->SetFadeOutDurationHns(10000000);
+    pPZOutro->SetScrollSpeed(50.0f);
+    pPanZoom->SetOutro(pPZOutro);
+
+    pPanZoom->SetLoadState(ThemeLoadStateLoaded);
+    AddTheme(pPanZoom);
+
+    // =====================================================================
+    // Contemporary (photo) theme
+    // =====================================================================
+    Theme* pContPhoto = new Theme();
+    pContPhoto->SetName(L"Contemporary (photo)");
+    pContPhoto->SetDisplayName(L"Contemporary (photo)");
+    pContPhoto->SetDescription(L"Photo-optimized Contemporary theme with pan/zoom and clean transitions");
+    pContPhoto->SetCategory(L"AutoMovie");
+    pContPhoto->SetBuiltIn(true);
+    pContPhoto->SetPrimaryColor(0xFF2E74B5);
+    pContPhoto->SetSecondaryColor(0xFF4472C4);
+    pContPhoto->SetAccentColor(0xFFED7D31);
+    pContPhoto->SetFontFamily(L"Segoe UI Semilight");
+    pContPhoto->SetFontSize(36.0f);
+
+    ThemeIntro* pCpIntro = new ThemeIntro();
+    ThemeTitle* pCpTitle = new ThemeTitle();
+    pCpTitle->SetFontFamily(L"Segoe UI Semilight");
+    pCpTitle->SetFontSize(48.0f);
+    pCpTitle->SetFontColor(0xFFFFFFFF);
+    pCpTitle->SetPosition(0.5f, 0.5f);
+    pCpTitle->SetAnimation(TitleAnimationFadeIn);
+    pCpTitle->SetAlignment(ThemeTitle::TextAlignmentCenter);
+    pCpIntro->SetTitle(pCpTitle);
+    pCpIntro->SetDurationMode(ThemeIntro::IntroDurationModeFitToTitle);
+    pCpIntro->SetBackgroundColor(0xFF000000);
+    pCpIntro->SetFadeInDurationHns(5000000);
+    pContPhoto->SetIntro(pCpIntro);
+
+    ThemeMid* pCpMid = new ThemeMid();
+    ThemePrimaryTrack* pCpTrack = new ThemePrimaryTrack();
+    pCpTrack->SetName(L"Primary");
+    pCpTrack->SetBoundTrackType(TimelineTrackTypeVideo);
+    pCpTrack->SetAutoFill(true);
+    pCpMid->AddTrack(pCpTrack);
+
+    ThemeEffectTemplate* pCpEffTpl = new ThemeEffectTemplate();
+    pCpEffTpl->SetName(L"Photo Effect");
+    pCpEffTpl->SetDefaultIntensity(1.0f);
+    ThemeEffect* pCpPanZoom = new ThemeEffect();
+    pCpPanZoom->SetType(ThemeEffectTypePanZoom);
+    pCpPanZoom->SetDurationHns(50000000);
+    pCpPanZoom->SetParameter(L"Style", L"Auto");
+    pCpEffTpl->AddEffect(pCpPanZoom);
+    ThemeEffect* pCpCrossfade = new ThemeEffect();
+    pCpCrossfade->SetType(ThemeEffectTypeCrossfade);
+    pCpCrossfade->SetDurationHns(8000000);
+    pCpEffTpl->AddEffect(pCpCrossfade);
+    pCpMid->SetDefaultEffectTemplate(pCpEffTpl);
+
+    ThemeTransition* pCpTrans = new ThemeTransition();
+    pCpTrans->SetName(L"Crossfade");
+    pCpTrans->SetClipName(L"crossfade");
+    pCpTrans->SetDurationHns(8000000);
+    pCpMid->SetDefaultTransition(pCpTrans);
+    pCpMid->SetLooping(true);
+    pContPhoto->SetMid(pCpMid);
+
+    ThemeOutro* pCpOutro = new ThemeOutro();
+    ThemeTitle* pCpCredits = new ThemeTitle();
+    pCpCredits->SetFontFamily(L"Segoe UI Semilight");
+    pCpCredits->SetFontSize(24.0f);
+    pCpCredits->SetFontColor(0xFFFFFFFF);
+    pCpCredits->SetPosition(0.5f, 0.5f);
+    pCpCredits->SetAnimation(TitleAnimationFadeIn);
+    pCpOutro->SetCreditsTitle(pCpCredits);
+    pCpOutro->SetDurationMode(ThemeOutro::OutroDurationModeScrollText);
+    pCpOutro->SetBackgroundColor(0xFF000000);
+    pCpOutro->SetFadeOutDurationHns(5000000);
+    pCpOutro->SetScrollSpeed(50.0f);
+    pContPhoto->SetOutro(pCpOutro);
+
+    pContPhoto->SetLoadState(ThemeLoadStateLoaded);
+    AddTheme(pContPhoto);
+
+    // =====================================================================
+    // Fly in theme
+    // =====================================================================
+    Theme* pFlyIn = new Theme();
+    pFlyIn->SetName(L"Fly in");
+    pFlyIn->SetDisplayName(L"Fly in");
+    pFlyIn->SetDescription(L"Dynamic fly-in entrance animations for photos");
+    pFlyIn->SetCategory(L"AutoMovie");
+    pFlyIn->SetBuiltIn(true);
+    pFlyIn->SetPrimaryColor(0xFF7B2D8E);
+    pFlyIn->SetSecondaryColor(0xFFB070C0);
+    pFlyIn->SetAccentColor(0xFFED7D31);
+    pFlyIn->SetFontFamily(L"Segoe UI Semibold");
+    pFlyIn->SetFontSize(36.0f);
+
+    ThemeIntro* pFiIntro = new ThemeIntro();
+    ThemeTitle* pFiTitle = new ThemeTitle();
+    pFiTitle->SetFontFamily(L"Segoe UI Semibold");
+    pFiTitle->SetFontSize(48.0f);
+    pFiTitle->SetFontColor(0xFFFFFFFF);
+    pFiTitle->SetPosition(0.5f, 0.5f);
+    pFiTitle->SetAnimation(TitleAnimationFlyInLeft);
+    pFiTitle->SetAlignment(ThemeTitle::TextAlignmentCenter);
+    pFiIntro->SetTitle(pFiTitle);
+    pFiIntro->SetDurationMode(ThemeIntro::IntroDurationModeFitToTitle);
+    pFiIntro->SetBackgroundColor(0xFF000000);
+    pFiIntro->SetFadeInDurationHns(5000000);
+    pFlyIn->SetIntro(pFiIntro);
+
+    ThemeMid* pFiMid = new ThemeMid();
+    ThemePrimaryTrack* pFiTrack = new ThemePrimaryTrack();
+    pFiTrack->SetName(L"Primary");
+    pFiTrack->SetBoundTrackType(TimelineTrackTypeVideo);
+    pFiTrack->SetAutoFill(true);
+    pFiMid->AddTrack(pFiTrack);
+
+    ThemeEffectTemplate* pFiEffTpl = new ThemeEffectTemplate();
+    pFiEffTpl->SetName(L"Fly In Effect");
+    pFiEffTpl->SetDefaultIntensity(1.0f);
+    ThemeEffect* pFiFlyIn = new ThemeEffect();
+    pFiFlyIn->SetType(ThemeEffectTypeFlyIn);
+    pFiFlyIn->SetDurationHns(8000000);
+    pFiEffTpl->AddEffect(pFiFlyIn);
+    ThemeEffect* pFiPanZoom = new ThemeEffect();
+    pFiPanZoom->SetType(ThemeEffectTypePanZoom);
+    pFiPanZoom->SetDurationHns(50000000);
+    pFiPanZoom->SetParameter(L"Direction", L"Right");
+    pFiEffTpl->AddEffect(pFiPanZoom);
+    pFiMid->SetDefaultEffectTemplate(pFiEffTpl);
+
+    ThemeTransition* pFiTrans = new ThemeTransition();
+    pFiTrans->SetName(L"Fly In Transition");
+    pFiTrans->SetClipName(L"flyin");
+    pFiTrans->SetDurationHns(8000000);
+    pFiMid->SetDefaultTransition(pFiTrans);
+    pFiMid->SetLooping(true);
+    pFlyIn->SetMid(pFiMid);
+
+    ThemeOutro* pFiOutro = new ThemeOutro();
+    ThemeTitle* pFiCredits = new ThemeTitle();
+    pFiCredits->SetFontFamily(L"Segoe UI Semibold");
+    pFiCredits->SetFontSize(24.0f);
+    pFiCredits->SetFontColor(0xFFFFFFFF);
+    pFiCredits->SetPosition(0.5f, 0.5f);
+    pFiCredits->SetAnimation(TitleAnimationFlyInLeft);
+    pFiOutro->SetCreditsTitle(pFiCredits);
+    pFiOutro->SetDurationMode(ThemeOutro::OutroDurationModeScrollText);
+    pFiOutro->SetBackgroundColor(0xFF000000);
+    pFiOutro->SetFadeOutDurationHns(5000000);
+    pFiOutro->SetScrollSpeed(55.0f);
+    pFlyIn->SetOutro(pFiOutro);
+
+    pFlyIn->SetLoadState(ThemeLoadStateLoaded);
+    AddTheme(pFlyIn);
+
     return S_OK;
 }
 
@@ -1186,9 +1727,99 @@ HRESULT ThemeManager::LoadThemeFile(LPCWSTR pszFilePath)
 
 Theme* ThemeManager::ParseThemeXml(IXmlReader* pReader)
 {
-    UNREFERENCED_PARAMETER(pReader);
-    // Placeholder for full XML parsing of theme files
-    return nullptr;
+    if (!pReader)
+        return nullptr;
+
+    Theme* pTheme = new Theme();
+
+    XmlNodeType nodeType;
+    while (pReader->Read(&nodeType) == S_OK)
+    {
+        if (nodeType == XmlNodeType_Element)
+        {
+            LPCWSTR pwszName = nullptr;
+            pReader->GetLocalName(&pwszName, nullptr);
+
+            if (!pwszName)
+                continue;
+
+            if (wcscmp(pwszName, L"theme") == 0)
+            {
+                LPCWSTR pwszVal = nullptr;
+                if (SUCCEEDED(XmlReaderGetAttribute(pReader, L"name", &pwszVal)) && pwszVal)
+                    pTheme->SetName(pwszVal);
+
+                pwszVal = nullptr;
+                if (SUCCEEDED(XmlReaderGetAttribute(pReader, L"displayName", &pwszVal)) && pwszVal)
+                    pTheme->SetDisplayName(pwszVal);
+
+                pwszVal = nullptr;
+                if (SUCCEEDED(XmlReaderGetAttribute(pReader, L"description", &pwszVal)) && pwszVal)
+                    pTheme->SetDescription(pwszVal);
+
+                pwszVal = nullptr;
+                if (SUCCEEDED(XmlReaderGetAttribute(pReader, L"category", &pwszVal)) && pwszVal)
+                    pTheme->SetCategory(pwszVal);
+
+                pwszVal = nullptr;
+                if (SUCCEEDED(XmlReaderGetAttribute(pReader, L"fontFamily", &pwszVal)) && pwszVal)
+                    pTheme->SetFontFamily(pwszVal);
+
+                pwszVal = nullptr;
+                if (SUCCEEDED(XmlReaderGetAttribute(pReader, L"fontSize", &pwszVal)) && pwszVal)
+                    pTheme->SetFontSize(static_cast<float>(_wtof(pwszVal)));
+
+                pwszVal = nullptr;
+                if (SUCCEEDED(XmlReaderGetAttribute(pReader, L"primaryColor", &pwszVal)) && pwszVal)
+                    pTheme->SetPrimaryColor(static_cast<DWORD>(wcstoul(pwszVal, nullptr, 16)));
+
+                pwszVal = nullptr;
+                if (SUCCEEDED(XmlReaderGetAttribute(pReader, L"secondaryColor", &pwszVal)) && pwszVal)
+                    pTheme->SetSecondaryColor(static_cast<DWORD>(wcstoul(pwszVal, nullptr, 16)));
+
+                pwszVal = nullptr;
+                if (SUCCEEDED(XmlReaderGetAttribute(pReader, L"accentColor", &pwszVal)) && pwszVal)
+                    pTheme->SetAccentColor(static_cast<DWORD>(wcstoul(pwszVal, nullptr, 16)));
+
+                pwszVal = nullptr;
+                if (SUCCEEDED(XmlReaderGetAttribute(pReader, L"version", &pwszVal)) && pwszVal)
+                {
+                    DWORD dwMajor = 1, dwMinor = 0;
+                    if (swscanf_s(pwszVal, L"%u.%u", &dwMajor, &dwMinor) == 2)
+                        pTheme->SetVersion(dwMajor, dwMinor);
+                }
+
+                pwszVal = nullptr;
+                if (SUCCEEDED(XmlReaderGetAttribute(pReader, L"builtIn", &pwszVal)) && pwszVal)
+                    pTheme->SetBuiltIn(wcscmp(pwszVal, L"true") == 0);
+            }
+            else if (wcscmp(pwszName, L"intro") == 0)
+            {
+                ThemeIntro* pIntro = new ThemeIntro();
+                pIntro->LoadFromXml(pReader);
+                pTheme->SetIntro(pIntro);
+            }
+            else if (wcscmp(pwszName, L"mid") == 0)
+            {
+                ThemeMid* pMid = new ThemeMid();
+                pMid->LoadFromXml(pReader);
+                pTheme->SetMid(pMid);
+            }
+            else if (wcscmp(pwszName, L"outro") == 0)
+            {
+                ThemeOutro* pOutro = new ThemeOutro();
+                pOutro->LoadFromXml(pReader);
+                pTheme->SetOutro(pOutro);
+            }
+        }
+        else if (nodeType == XmlNodeType_EndElement)
+        {
+            break;
+        }
+    }
+
+    pTheme->SetLoadState(ThemeLoadStateLoaded);
+    return pTheme;
 }
 
 } // namespace StoryboardManager

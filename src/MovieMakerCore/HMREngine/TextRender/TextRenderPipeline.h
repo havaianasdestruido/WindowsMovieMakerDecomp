@@ -52,6 +52,10 @@ namespace HMREngine
 
         HRESULT GetResult() const { return m_result; }
 
+        void SetDevice(ID3D11Device* dev, ID3D11DeviceContext* ctx) { m_device = dev; m_context = ctx; }
+        ID3D11Device* GetDevice() const { return m_device; }
+        ID3D11DeviceContext* GetContext() const { return m_context; }
+
         void SetWidth(UINT w) { m_width = w; }
         void SetHeight(UINT h) { m_height = h; }
         UINT GetWidth() const { return m_width; }
@@ -61,9 +65,13 @@ namespace HMREngine
         ID3D11ShaderResourceView* GetResultSRV() const { return m_resultSRV; }
 
     protected:
+        HRESULT CreateTextureFromWICBitmap(IWICBitmap* pWicBitmap, UINT texW, UINT texH);
+
         TaskState m_state = TaskState::Pending;
         HRESULT m_result = S_OK;
         TaskFinishNotificationCallback* m_callback = nullptr;
+        ID3D11Device* m_device = nullptr;
+        ID3D11DeviceContext* m_context = nullptr;
         CComPtr<ID3D11Texture2D> m_resultTexture;
         CComPtr<ID3D11ShaderResourceView> m_resultSRV;
         UINT m_width = 0;
@@ -86,8 +94,10 @@ namespace HMREngine
         void SetColor(const Rgba& color) { m_color = color; }
         void SetBold(bool bold) { m_bold = bold; }
         void SetItalic(bool italic) { m_italic = italic; }
+        void SetDevice(ID3D11Device* dev) { m_device = dev; }
 
     protected:
+        ID3D11Device* m_device = nullptr;
         std::wstring m_text;
         float m_x = 0.0f;
         float m_y = 0.0f;
@@ -168,8 +178,10 @@ namespace HMREngine
         void SetBold(bool bold) { m_bold = bold; }
         void SetItalic(bool italic) { m_italic = italic; }
         void SetAlignment(UINT align) { m_alignment = align; }
+        void SetDevice(ID3D11Device* dev) { m_device = dev; }
 
     protected:
+        ID3D11Device* m_device = nullptr;
         std::wstring m_text;
         std::wstring m_fontFamily = L"Segoe UI";
         float m_fontSize = 24.0f;

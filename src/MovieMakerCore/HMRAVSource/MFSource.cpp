@@ -277,7 +277,6 @@ HRESULT MFSource::ReadSample(IMFSample** ppSample, DWORD dwStreamIndex)
     if (!m_spReader || !IsOpen())
         return E_UNEXPECTED;
 
-    DWORD dwActualStreamIndex = 0;
     DWORD dwStreamFlags = 0;
     LONGLONG llTimestamp = 0;
 
@@ -285,10 +284,22 @@ HRESULT MFSource::ReadSample(IMFSample** ppSample, DWORD dwStreamIndex)
     {
         m_spCallback->Reset();
 
-        HRESULT hr = m_spCallback->WaitSample(5000);
+        DWORD dwActualStream = dwStreamIndex == DWORD_MAX
+            ? MF_SOURCE_READER_FIRST_VIDEO_STREAM : dwStreamIndex;
+
+        HRESULT hr = m_spReader->ReadSample(
+            dwActualStream,
+            0,
+            nullptr,
+            m_spCallback);
         if (FAILED(hr))
             return hr;
 
+        hr = m_spCallback->WaitSample(5000);
+        if (FAILED(hr))
+            return hr;
+
+        DWORD dwActualStreamIndex = 0;
         return m_spCallback->GetLastSample(ppSample, &dwActualStreamIndex, &dwStreamFlags, &llTimestamp);
     }
     else
@@ -365,10 +376,21 @@ HRESULT MFSource::BeginGetEvent(IMFAsyncCallback* pCallback, IUnknown* punkState
 
 HRESULT MFSource::EndGetEvent(IMFMediaEvent* pEvent, IMFMediaEvent** ppNextEvent)
 {
-    UNREFERENCED_PARAMETER(pEvent);
+    if (!pEvent)
+        return E_POINTER;
+
     if (ppNextEvent)
         *ppNextEvent = nullptr;
-    return S_OK;
+
+    if (!m_spReader)
+        return E_UNEXPECTED;
+
+    CComPtr<IMFMediaEventGenerator> spEventGen;
+    HRESULT hr = m_spReader->QueryInterface(IID_PPV_ARGS(&spEventGen));
+    if (FAILED(hr))
+        return hr;
+
+    return spEventGen->EndGetEvent(pEvent, ppNextEvent);
 }
 
 // ============================================================================
@@ -414,10 +436,15 @@ HRESULT MFSource::GetVideoFrameSize(UINT* pWidth, UINT* pHeight)
     return S_OK;
 }
 
-HRESULT MFSource::SetVideoFrameSize(UINT /*width*/, UINT /*height*/)
+HRESULT MFSource::SetVideoFrameSize(UINT width, UINT height)
 {
-    // Frame size is typically negotiated via the output type
-    return S_OK;
+    if (!m_spReader || !IsOpen())
+        return E_UNEXPECTED;
+
+    m_info.dwWidth = width;
+    m_info.dwHeight = height;
+
+    return ConfigureVideoStream(width, height);
 }
 
 HRESULT MFSource::GetAudioFormat(WAVEFORMATEX* pWfx)
@@ -436,9 +463,19 @@ HRESULT MFSource::GetAudioFormat(WAVEFORMATEX* pWfx)
     return S_OK;
 }
 
-HRESULT MFSource::SetAudioFormat(const WAVEFORMATEX* /*pWfx*/)
+HRESULT MFSource::SetAudioFormat(const WAVEFORMATEX* pWfx)
 {
-    return S_OK;
+    if (!pWfx)
+        return E_POINTER;
+
+    if (!m_spReader || !IsOpen())
+        return E_UNEXPECTED;
+
+    m_info.dwAudioSampleRate = pWfx->nSamplesPerSec;
+    m_info.dwAudioChannels = pWfx->nChannels;
+    m_info.dwAudioBitsPerSample = pWfx->wBitsPerSample;
+
+    return ConfigureAudioStream();
 }
 
 HRESULT MFSource::GetSelectedMediaType(DWORD dwStreamIndex, IMFMediaType** ppType)
@@ -461,6 +498,100 @@ HRESULT MFSource::SetSelectedMediaType(DWORD dwStreamIndex, IMFMediaType* pType)
         return E_UNEXPECTED;
 
     return m_spReader->SetCurrentMediaType(dwStreamIndex, nullptr, pType);
+}
+
+// ============================================================================
+// Metadata extraction
+// ============================================================================
+
+HRESULT MFSource::GetDuration()
+{
+    if (!m_spReader)
+        return E_UNEXPECTED;
+
+    PROPVARIANT varDuration;
+    PropVariantInit(&varDuration);
+    HRESULT hr = m_spReader->GetPresentationAttribute(
+        MF_SOURCE_READER_MEDIASOURCE,
+        MF_PD_DURATION,
+        &varDuration);
+    if (SUCCEEDED(hr) && varDuration.vt == VT_UI8)
+    {
+        m_llDurationHns = static_cast<LONGLONG>(varDuration.uhVal.QuadPart);
+    }
+    PropVariantClear(&varDuration);
+    return hr;
+}
+
+HRESULT MFSource::GetResolution()
+{
+    if (!m_spReader)
+        return E_UNEXPECTED;
+
+    if (m_dwVideoStreamIndex == DWORD_MAX)
+        return MF_E_INVALIDMEDIATYPE;
+
+    CComPtr<IMFMediaType> spType;
+    HRESULT hr = m_spReader->GetCurrentMediaType(m_dwVideoStreamIndex, &spType);
+    if (FAILED(hr))
+        return hr;
+
+    UINT32 width = 0, height = 0;
+    hr = MFGetAttributeSize(spType, MF_MT_FRAME_SIZE, &width, &height);
+    if (SUCCEEDED(hr))
+    {
+        m_info.dwWidth = width;
+        m_info.dwHeight = height;
+    }
+
+    return hr;
+}
+
+HRESULT MFSource::GetFrameRate()
+{
+    if (!m_spReader)
+        return E_UNEXPECTED;
+
+    if (m_dwVideoStreamIndex == DWORD_MAX)
+        return MF_E_INVALIDMEDIATYPE;
+
+    CComPtr<IMFMediaType> spType;
+    HRESULT hr = m_spReader->GetCurrentMediaType(m_dwVideoStreamIndex, &spType);
+    if (FAILED(hr))
+        return hr;
+
+    UINT32 numerator = 0, denominator = 0;
+    hr = MFGetAttributeRatio(spType, MF_MT_FRAME_RATE, &numerator, &denominator);
+    if (SUCCEEDED(hr) && denominator > 0)
+    {
+        m_info.dblFrameRate = static_cast<double>(numerator) / static_cast<double>(denominator);
+    }
+
+    return hr;
+}
+
+// ============================================================================
+// Cached metadata getters
+// ============================================================================
+
+LONGLONG MFSource::GetCachedDuration() const throw()
+{
+    return m_llDurationHns;
+}
+
+UINT MFSource::GetCachedWidth() const throw()
+{
+    return m_info.dwWidth;
+}
+
+UINT MFSource::GetCachedHeight() const throw()
+{
+    return m_info.dwHeight;
+}
+
+double MFSource::GetCachedFrameRate() const throw()
+{
+    return m_info.dblFrameRate;
 }
 
 // ============================================================================
@@ -556,14 +687,64 @@ HRESULT MFSource::EnumerateStreams()
     return MF_E_INVALIDMEDIATYPE;
 }
 
-HRESULT MFSource::ConfigureVideoStream(UINT /*width*/, UINT /*height*/)
+HRESULT MFSource::ConfigureVideoStream(UINT width, UINT height)
 {
-    return S_OK;
+    if (!m_spReader)
+        return E_UNEXPECTED;
+
+    if (m_dwVideoStreamIndex == DWORD_MAX)
+        return E_UNEXPECTED;
+
+    CComPtr<IMFMediaType> spType;
+    HRESULT hr = MFCreateMediaType(&spType);
+    if (FAILED(hr))
+        return hr;
+
+    spType->SetGUID(MF_MT_MAJOR_TYPE, MFMediaType_Video);
+    spType->SetGUID(MF_MT_SUBTYPE, MFVideoFormat_NV12);
+    spType->SetUINT32(MF_MT_INTERLACE_MODE, MFVideoInterlace_Progressive);
+    MFSetAttributeSize(spType, MF_MT_FRAME_SIZE, width, height);
+
+    if (m_info.dblFrameRate > 0.0)
+    {
+        MFSetAttributeRatio(spType, MF_MT_FRAME_RATE,
+            static_cast<UINT32>(m_info.dblFrameRate * 100), 100);
+    }
+
+    hr = m_spReader->SetCurrentMediaType(m_dwVideoStreamIndex, nullptr, spType);
+    if (SUCCEEDED(hr))
+    {
+        m_info.dwWidth = width;
+        m_info.dwHeight = height;
+    }
+
+    return hr;
 }
 
 HRESULT MFSource::ConfigureAudioStream()
 {
-    return S_OK;
+    if (!m_spReader)
+        return E_UNEXPECTED;
+
+    if (m_dwAudioStreamIndex == DWORD_MAX)
+        return E_UNEXPECTED;
+
+    CComPtr<IMFMediaType> spType;
+    HRESULT hr = MFCreateMediaType(&spType);
+    if (FAILED(hr))
+        return hr;
+
+    spType->SetGUID(MF_MT_MAJOR_TYPE, MFMediaType_Audio);
+    spType->SetGUID(MF_MT_SUBTYPE, MFAudioFormat_PCM);
+    spType->SetUINT32(MF_MT_AUDIO_SAMPLES_PER_SECOND, m_info.dwAudioSampleRate);
+    spType->SetUINT32(MF_MT_AUDIO_NUM_CHANNELS, m_info.dwAudioChannels);
+    spType->SetUINT32(MF_MT_AUDIO_BITS_PER_SAMPLE, m_info.dwAudioBitsPerSample);
+    spType->SetUINT32(MF_MT_BLOCK_ALIGNMENT,
+        m_info.dwAudioChannels * (m_info.dwAudioBitsPerSample / 8));
+    spType->SetUINT32(MF_MT_AUDIO_AVG_BYTES_PER_SECTION,
+        m_info.dwAudioSampleRate * m_info.dwAudioChannels * (m_info.dwAudioBitsPerSample / 8));
+
+    return m_spReader->SetCurrentMediaType(m_dwAudioStreamIndex, nullptr, spType);
 }
 
 HRESULT MFSource::SeekToPosition(LONGLONG llPosition)

@@ -1667,6 +1667,100 @@ const EffectX3DTemplate* EffectTemplateHandler::FindTemplate(DWORD dwEffectType)
 
 HRESULT EffectTemplateHandler::LoadDefaultTemplates()
 {
+    // Register built-in effect X3D templates for each ThemeEffectType
+
+    EffectX3DTemplate* pFade = CreateTemplate(ThemeEffectTypeFade);
+    pFade->SetName(L"Fade Effect");
+    pFade->SetBlendMode(1); // alpha blend
+
+    EffectX3DTemplate* pCrossfade = CreateTemplate(ThemeEffectTypeCrossfade);
+    pCrossfade->SetName(L"Crossfade Effect");
+    pCrossfade->SetBlendMode(1);
+
+    EffectX3DTemplate* pDissolve = CreateTemplate(ThemeEffectTypeDissolve);
+    pDissolve->SetName(L"Dissolve Effect");
+    pDissolve->SetBlendMode(1);
+
+    EffectX3DTemplate* pPanZoom = CreateTemplate(ThemeEffectTypePanZoom);
+    pPanZoom->SetName(L"Pan/Zoom Effect");
+    pPanZoom->SetBlendMode(0); // opaque
+
+    EffectX3DTemplate* pSepia = CreateTemplate(ThemeEffectTypeSepia);
+    pSepia->SetName(L"Sepia Effect");
+    pSepia->SetBlendMode(0);
+
+    EffectX3DTemplate* pGrayscale = CreateTemplate(ThemeEffectTypeGrayscale);
+    pGrayscale->SetName(L"Grayscale Effect");
+    pGrayscale->SetBlendMode(0);
+
+    EffectX3DTemplate* pFilmGrain = CreateTemplate(ThemeEffectTypeFilmGrain);
+    pFilmGrain->SetName(L"Film Grain Effect");
+    pFilmGrain->SetBlendMode(2); // overlay
+
+    EffectX3DTemplate* pVignette = CreateTemplate(ThemeEffectTypeVignette);
+    pVignette->SetName(L"Vignette Effect");
+    pVignette->SetBlendMode(2);
+
+    EffectX3DTemplate* pBlur = CreateTemplate(ThemeEffectTypeBlur);
+    pBlur->SetName(L"Blur Effect");
+    pBlur->SetBlendMode(0);
+
+    EffectX3DTemplate* pLensFlare = CreateTemplate(ThemeEffectTypeLensFlare);
+    pLensFlare->SetName(L"Lens Flare Effect");
+    pLensFlare->SetBlendMode(2);
+
+    EffectX3DTemplate* pColorPop = CreateTemplate(ThemeEffectTypeColorPop);
+    pColorPop->SetName(L"Color Pop Effect");
+    pColorPop->SetBlendMode(0);
+
+    EffectX3DTemplate* pFlyIn = CreateTemplate(ThemeEffectTypeFlyIn);
+    pFlyIn->SetName(L"Fly In Effect");
+    pFlyIn->SetBlendMode(0);
+
+    EffectX3DTemplate* pBounce = CreateTemplate(ThemeEffectTypeBounce);
+    pBounce->SetName(L"Bounce Effect");
+    pBounce->SetBlendMode(0);
+
+    EffectX3DTemplate* pSpin = CreateTemplate(ThemeEffectTypeSpin);
+    pSpin->SetName(L"Spin Effect");
+    pSpin->SetBlendMode(0);
+
+    EffectX3DTemplate* pZoom = CreateTemplate(ThemeEffectTypeZoom);
+    pZoom->SetName(L"Zoom Effect");
+    pZoom->SetBlendMode(0);
+
+    EffectX3DTemplate* pShrink = CreateTemplate(ThemeEffectTypeShrink);
+    pShrink->SetName(L"Shrink Effect");
+    pShrink->SetBlendMode(0);
+
+    EffectX3DTemplate* pWipeLeft = CreateTemplate(ThemeEffectTypeWipeLeft);
+    pWipeLeft->SetName(L"Wipe Left");
+    pWipeLeft->SetBlendMode(0);
+
+    EffectX3DTemplate* pWipeRight = CreateTemplate(ThemeEffectTypeWipeRight);
+    pWipeRight->SetName(L"Wipe Right");
+    pWipeRight->SetBlendMode(0);
+
+    EffectX3DTemplate* pWipeUp = CreateTemplate(ThemeEffectTypeWipeUp);
+    pWipeUp->SetName(L"Wipe Up");
+    pWipeUp->SetBlendMode(0);
+
+    EffectX3DTemplate* pWipeDown = CreateTemplate(ThemeEffectTypeWipeDown);
+    pWipeDown->SetName(L"Wipe Down");
+    pWipeDown->SetBlendMode(0);
+
+    EffectX3DTemplate* pPush = CreateTemplate(ThemeEffectTypePush);
+    pPush->SetName(L"Push");
+    pPush->SetBlendMode(0);
+
+    EffectX3DTemplate* pSlide = CreateTemplate(ThemeEffectTypeSlide);
+    pSlide->SetName(L"Slide");
+    pSlide->SetBlendMode(0);
+
+    EffectX3DTemplate* pReveal = CreateTemplate(ThemeEffectTypeReveal);
+    pReveal->SetName(L"Reveal");
+    pReveal->SetBlendMode(0);
+
     m_fDefaultsLoaded = true;
     return S_OK;
 }

@@ -1,5 +1,6 @@
 #include "pch.h"
 #include "ImportController.h"
+#include "ProjectManager.h"
 
 ImportController::ImportController()
     : m_bImporting(false)
@@ -54,4 +55,63 @@ bool ImportController::IsImporting() const throw()
 int ImportController::GetImportedCount() const throw()
 {
     return m_cImported;
+}
+
+HRESULT ImportController::ImportMedia(ProjectManager* pProjectManager)
+{
+    if (!pProjectManager)
+        return E_INVALIDARG;
+
+    WCHAR szFilePath[MAX_PATH] = { 0 };
+
+    OPENFILENAMEW ofn;
+    ZeroMemory(&ofn, sizeof(ofn));
+    ofn.lStructSize  = sizeof(ofn);
+    ofn.hwndOwner    = nullptr;
+    ofn.lpstrFilter  = L"Media Files\0*.wmv;*.wma;*.avi;*.mp3;*.mp4;*.jpg;*.jpeg;*.png;*.bmp;*.gif;*.tiff\0"
+                       L"Video Files\0*.wmv;*.avi;*.mp4\0"
+                       L"Audio Files\0*.wma;*.mp3\0"
+                       L"Image Files\0*.jpg;*.jpeg;*.png;*.bmp;*.gif;*.tiff\0"
+                       L"All Files\0*.*\0";
+    ofn.lpstrFile    = szFilePath;
+    ofn.nMaxFile     = MAX_PATH;
+    ofn.lpstrTitle   = L"Import Media";
+    ofn.Flags        = OFN_FILEMUSTEXIST | OFN_PATHMUSTEXIST | OFN_ALLOWMULTISELECT | OFN_EXPLORER;
+
+    if (!::GetOpenFileNameW(&ofn))
+        return HRESULT_FROM_WIN32(ERROR_CANCELLED);
+
+    HRESULT hr = S_OK;
+    int cImported = 0;
+
+    if (szFilePath[0] != L'\0')
+    {
+        LPCWSTR pszAfterDir = szFilePath + wcslen(szFilePath) + 1;
+        if (*pszAfterDir != L'\0')
+        {
+            // Multi-select: szFilePath contains "directory\0file1\0file2\0\0"
+            LPCWSTR pszDir = szFilePath;
+            LPCWSTR pszFile = pszAfterDir;
+
+            while (*pszFile)
+            {
+                WCHAR szFull[MAX_PATH];
+                if (SUCCEEDED(::StringCchPrintfW(szFull, MAX_PATH, L"%s\\%s", pszDir, pszFile)))
+                {
+                    pProjectManager->AddMediaItemFromFile(szFull);
+                    ++cImported;
+                }
+                pszFile += wcslen(pszFile) + 1;
+            }
+        }
+        else
+        {
+            // Single file selected
+            pProjectManager->AddMediaItemFromFile(szFilePath);
+            ++cImported;
+        }
+    }
+
+    m_cImported = cImported;
+    return (cImported > 0) ? S_OK : S_FALSE;
 }

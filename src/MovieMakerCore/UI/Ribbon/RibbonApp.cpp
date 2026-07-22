@@ -83,9 +83,7 @@ public:
     {
         if (!m_pOwner)
             return E_FAIL;
-        UNREFERENCED_PARAMETER(key);
-        UNREFERENCED_PARAMETER(pCurrentValue);
-        return m_pOwner->UpdateState(commandId, pNewValue, pNewValue);
+        return m_pOwner->UpdateState(commandId, key, pCurrentValue, pNewValue);
     }
 
 private:
@@ -115,7 +113,7 @@ RibbonApp::~RibbonApp()
 // Creates the IUIFramework, stores the application back-pointer.
 // The owner HWND and ribbon XML loading happen via LoadUI().
 // ============================================================================
-HRESULT RibbonApp::Initialize(SundanceAppMain* pAppMain)
+HRESULT RibbonApp::Initialize(SundanceAppMain* pAppMain, HWND hWnd)
 {
     if (m_fInitialized)
         return S_FALSE;
@@ -124,10 +122,13 @@ HRESULT RibbonApp::Initialize(SundanceAppMain* pAppMain)
         return E_INVALIDARG;
 
     m_pAppMain = pAppMain;
+    m_hwndOwner = hWnd;
 
     HRESULT hr = CreateUIFramework();
     if (FAILED(hr))
         return hr;
+
+    RegisterCommonCommands();
 
     m_fInitialized = true;
     return S_OK;
@@ -144,6 +145,7 @@ HRESULT RibbonApp::Shutdown()
         return S_FALSE;
 
     m_commandHandlers.clear();
+    m_commandMap.clear();
 
     if (m_spRibbon)
     {
@@ -210,7 +212,7 @@ HRESULT RibbonApp::OnUpdateProperty(UINT nCmdId, REFUIKEY key,
                                     const PROPVARIANT* pCurrentValue,
                                     PROPVARIANT* pNewValue)
 {
-    return UpdateState(nCmdId, pNewValue, pNewValue);
+    return UpdateState(nCmdId, key, pCurrentValue, pNewValue);
 }
 
 // ============================================================================
@@ -418,7 +420,7 @@ HRESULT RibbonApp::SetVisible(UINT nCmdId, bool fVisible)
     propvar.boolVal = fVisible ? VARIANT_TRUE : VARIANT_FALSE;
 
     return m_spFramework->SetUICommandProperty(
-        nCmdId, UI_PKEY_CompoundLabel, propvar);
+        nCmdId, UI_PKEY_Boolean, propvar);
 }
 
 // ============================================================================
@@ -490,6 +492,233 @@ HRESULT RibbonApp::HideContextualTab(UINT nTabId)
 }
 
 // ============================================================================
+// RegisterCommandHandler (simple std::function overload)
+// ============================================================================
+void RibbonApp::RegisterCommandHandler(UINT nCmdId, std::function<void()> handler)
+{
+    if (handler)
+        m_commandMap[nCmdId] = std::move(handler);
+}
+
+// ============================================================================
+// ExecuteSimpleCommand
+// ============================================================================
+void RibbonApp::ExecuteSimpleCommand(UINT nCmdId)
+{
+    auto it = m_commandMap.find(nCmdId);
+    if (it != m_commandMap.end() && it->second)
+    {
+        it->second();
+    }
+}
+
+// ============================================================================
+// RegisterCommonCommands
+//
+// Populates m_commandMap with lambdas that delegate to SundanceAppMain's
+// subsystem controllers (ImportController, ProjectManager, ExportController,
+// UndoManager, PlaybackController).
+// ============================================================================
+void RibbonApp::RegisterCommonCommands()
+{
+    if (!m_pAppMain)
+        return;
+
+    m_commandMap[ID_FILE_IMPORT] = [this]()
+    {
+        if (m_pAppMain)
+            m_pAppMain->OnRibbonCommand(ID_FILE_IMPORT);
+    };
+
+    m_commandMap[ID_FILE_SAVE] = [this]()
+    {
+        if (m_pAppMain)
+            m_pAppMain->SaveProject();
+    };
+
+    m_commandMap[ID_FILE_EXPORT] = [this]()
+    {
+        if (m_pAppMain)
+            m_pAppMain->OnRibbonCommand(ID_FILE_EXPORT);
+    };
+
+    m_commandMap[ID_EDIT_UNDO] = [this]()
+    {
+        if (m_pAppMain)
+            m_pAppMain->Undo();
+    };
+
+    m_commandMap[ID_EDIT_REDO] = [this]()
+    {
+        if (m_pAppMain)
+            m_pAppMain->Redo();
+    };
+
+    m_commandMap[ID_PLAY_PLAY] = [this]()
+    {
+        if (m_pAppMain)
+            m_pAppMain->StartPlayback();
+    };
+
+    m_commandMap[ID_PLAY_PAUSE] = [this]()
+    {
+        if (m_pAppMain)
+            m_pAppMain->PausePlayback();
+    };
+
+    m_commandMap[ID_PLAY_STOP] = [this]()
+    {
+        if (m_pAppMain)
+            m_pAppMain->StopPlayback();
+    };
+
+    // Ribbon command registrations for all kRibbonCmd* IDs
+    m_commandMap[kRibbonCmdAddVideos] = [this]()
+    {
+        if (m_pAppMain)
+            m_pAppMain->OnRibbonCommand(kRibbonCmdAddVideos);
+    };
+
+    m_commandMap[kRibbonCmdAddPhotos] = [this]()
+    {
+        if (m_pAppMain)
+            m_pAppMain->OnRibbonCommand(kRibbonCmdAddPhotos);
+    };
+
+    m_commandMap[kRibbonCmdAddMusic] = [this]()
+    {
+        if (m_pAppMain)
+            m_pAppMain->OnRibbonCommand(kRibbonCmdAddMusic);
+    };
+
+    m_commandMap[kRibbonCmdWebcam] = [this]()
+    {
+        if (m_pAppMain)
+            m_pAppMain->OnRibbonCommand(kRibbonCmdWebcam);
+    };
+
+    m_commandMap[kRibbonCmdNarrate] = [this]()
+    {
+        if (m_pAppMain)
+            m_pAppMain->OnRibbonCommand(kRibbonCmdNarrate);
+    };
+
+    m_commandMap[kRibbonCmdUndo] = [this]()
+    {
+        if (m_pAppMain)
+            m_pAppMain->Undo();
+    };
+
+    m_commandMap[kRibbonCmdRedo] = [this]()
+    {
+        if (m_pAppMain)
+            m_pAppMain->Redo();
+    };
+
+    m_commandMap[kRibbonCmdCut] = [this]()
+    {
+        if (m_pAppMain)
+            m_pAppMain->CutSelection();
+    };
+
+    m_commandMap[kRibbonCmdCopy] = [this]()
+    {
+        if (m_pAppMain)
+            m_pAppMain->CopySelection();
+    };
+
+    m_commandMap[kRibbonCmdPaste] = [this]()
+    {
+        if (m_pAppMain)
+            m_pAppMain->PasteFromClipboard();
+    };
+
+    m_commandMap[kRibbonCmdDelete] = [this]()
+    {
+        if (m_pAppMain)
+            m_pAppMain->OnRibbonCommand(kRibbonCmdDelete);
+    };
+
+    m_commandMap[kRibbonCmdSelectAll] = [this]()
+    {
+        if (m_pAppMain)
+            m_pAppMain->OnRibbonCommand(kRibbonCmdSelectAll);
+    };
+
+    m_commandMap[kRibbonCmdTheme] = [this]()
+    {
+        if (m_pAppMain)
+            m_pAppMain->OnRibbonCommand(kRibbonCmdTheme);
+    };
+
+    m_commandMap[kRibbonCmdAutoMovie] = [this]()
+    {
+        if (m_pAppMain)
+            m_pAppMain->OnRibbonCommand(kRibbonCmdAutoMovie);
+    };
+
+    m_commandMap[kRibbonCmdSnapshot] = [this]()
+    {
+        if (m_pAppMain)
+            m_pAppMain->OnRibbonCommand(kRibbonCmdSnapshot);
+    };
+
+    m_commandMap[kRibbonCmdTrim] = [this]()
+    {
+        if (m_pAppMain)
+            m_pAppMain->OnRibbonCommand(kRibbonCmdTrim);
+    };
+
+    m_commandMap[kRibbonCmdSplit] = [this]()
+    {
+        if (m_pAppMain)
+            m_pAppMain->OnRibbonCommand(kRibbonCmdSplit);
+    };
+
+    m_commandMap[kRibbonCmdSetTitle] = [this]()
+    {
+        if (m_pAppMain)
+            m_pAppMain->OnRibbonCommand(kRibbonCmdSetTitle);
+    };
+
+    m_commandMap[kRibbonCmdSetCredits] = [this]()
+    {
+        if (m_pAppMain)
+            m_pAppMain->OnRibbonCommand(kRibbonCmdSetCredits);
+    };
+
+    m_commandMap[kRibbonCmdSpeed] = [this]()
+    {
+        if (m_pAppMain)
+            m_pAppMain->OnRibbonCommand(kRibbonCmdSpeed);
+    };
+
+    m_commandMap[kRibbonCmdVolume] = [this]()
+    {
+        if (m_pAppMain)
+            m_pAppMain->OnRibbonCommand(kRibbonCmdVolume);
+    };
+
+    m_commandMap[kRibbonCmdSaveMovie] = [this]()
+    {
+        if (m_pAppMain)
+            m_pAppMain->OnRibbonCommand(kRibbonCmdSaveMovie);
+    };
+
+    m_commandMap[kRibbonCmdSaveFile] = [this]()
+    {
+        if (m_pAppMain)
+            m_pAppMain->SaveProject();
+    };
+
+    m_commandMap[kRibbonCmdPublish] = [this]()
+    {
+        if (m_pAppMain)
+            m_pAppMain->OnRibbonCommand(kRibbonCmdPublish);
+    };
+}
+
+// ============================================================================
 // Execute
 //
 // IUICommandHandler::Execute implementation. Looks up the registered handler
@@ -500,6 +729,14 @@ HRESULT RibbonApp::Execute(UINT nCmdId, UI_COMMANDTYPE commandType,
 {
     if (!m_pAppMain)
         return E_FAIL;
+
+    // Check simple command handler map first
+    auto itSimple = m_commandMap.find(nCmdId);
+    if (itSimple != m_commandMap.end() && itSimple->second)
+    {
+        itSimple->second();
+        return S_OK;
+    }
 
     // Check registered handlers
     auto it = m_commandHandlers.find(nCmdId);
@@ -518,52 +755,68 @@ HRESULT RibbonApp::Execute(UINT nCmdId, UI_COMMANDTYPE commandType,
 // IUICommandHandler::UpdateProperty implementation. Called by the framework
 // whenever it needs to refresh a command's visual state.
 // ============================================================================
-HRESULT RibbonApp::UpdateState(UINT nCmdId, PROPVARIANT* pCurrentValue,
+HRESULT RibbonApp::UpdateState(UINT nCmdId, REFPROPERTYKEY key,
+                               const PROPVARIANT* pCurrentValue,
                                PROPVARIANT* pNewValue)
 {
-    if (!pCurrentValue || !pNewValue)
+    if (!pNewValue)
         return E_INVALIDARG;
 
-    // Check for enabled state query
-    if (pCurrentValue->vt == VT_EMPTY)
-    {
-        auto it = m_commandHandlers.find(nCmdId);
-        if (it != m_commandHandlers.end())
-        {
-            pNewValue->vt = VT_BOOL;
-            pNewValue->boolVal = it->second.fEnabled ? VARIANT_TRUE : VARIANT_FALSE;
-            return S_OK;
-        }
+    UNREFERENCED_PARAMETER(pCurrentValue);
 
-        // Default: command is enabled
+    auto it = m_commandHandlers.find(nCmdId);
+
+    // UI_PKEY_Enabled query
+    if (IsEqualPropertyKey(key, UI_PKEY_Enabled))
+    {
         pNewValue->vt = VT_BOOL;
-        pNewValue->boolVal = VARIANT_TRUE;
+        pNewValue->boolVal = (it != m_commandHandlers.end() && it->second.fEnabled)
+            ? VARIANT_TRUE : VARIANT_FALSE;
         return S_OK;
     }
 
-    // Handle label queries
-    if (pCurrentValue->vt == VT_LPWSTR)
+    // UI_PKEY_Boolean query (used for checkable/toggle buttons, visibility)
+    if (IsEqualPropertyKey(key, UI_PKEY_Boolean))
     {
-        auto it = m_commandHandlers.find(nCmdId);
-        if (it != m_commandHandlers.end())
-        {
-            // Return current label value unchanged
-            return S_OK;
-        }
+        pNewValue->vt = VT_BOOL;
+        pNewValue->boolVal = (it != m_commandHandlers.end() && it->second.fVisible)
+            ? VARIANT_TRUE : VARIANT_FALSE;
+        return S_OK;
     }
 
-    // For any other property query, delegate to the registered handler
-    // if one exists for this command
-    if (m_pAppMain)
+    // UI_PKEY_Label query
+    if (IsEqualPropertyKey(key, UI_PKEY_Label))
     {
-        auto it = m_commandHandlers.find(nCmdId);
-        if (it != m_commandHandlers.end() && it->second.pCallback)
+        if (it != m_commandHandlers.end())
         {
-            // The callback handles property updates via UpdateProperty path
-            pNewValue->vt = VT_BOOL;
-            pNewValue->boolVal = it->second.fEnabled ? VARIANT_TRUE : VARIANT_FALSE;
+            // Return current state - caller has set label via SetText/UpdateLabel
             return S_OK;
         }
+        return S_OK;
+    }
+
+    // UI_PKEY_Tooltip query
+    if (IsEqualPropertyKey(key, UI_PKEY_Tooltip))
+    {
+        return S_OK;
+    }
+
+    // UI_PKEY_CompoundLabel query (visibility of contextual tabs/groups)
+    if (IsEqualPropertyKey(key, UI_PKEY_CompoundLabel))
+    {
+        return S_OK;
+    }
+
+    // UI_PKEY_RepresentativeString (gallery item display)
+    if (IsEqualPropertyKey(key, UI_PKEY_RepresentativeString))
+    {
+        return S_OK;
+    }
+
+    // UI_PKEY_LabelDescription (supplemental tooltip text)
+    if (IsEqualPropertyKey(key, UI_PKEY_LabelDescription))
+    {
+        return S_OK;
     }
 
     return E_NOTIMPL;

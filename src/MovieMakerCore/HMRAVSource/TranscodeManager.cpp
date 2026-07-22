@@ -83,7 +83,19 @@ HRESULT TranscodeManager::BeginTranscode(const TranscodeParams& params)
         return hr;
     }
 
-    hr = m_spSource->Open(AVSourceDesc());
+    AVSourceDesc srcDesc;
+    srcDesc.strFilePath = params.strInputPath;
+    srcDesc.fEnableVideo = params.fIncludeVideo;
+    srcDesc.fEnableAudio = params.fIncludeAudio;
+
+    hr = m_spSource->Open(srcDesc);
+    if (FAILED(hr))
+    {
+        FireError(hr);
+        return hr;
+    }
+
+    hr = ConfigureTransforms();
     if (FAILED(hr))
     {
         FireError(hr);
@@ -95,6 +107,16 @@ HRESULT TranscodeManager::BeginTranscode(const TranscodeParams& params)
         m_progress.llInputDurationHns = params.llEndHns - params.llStartHns;
     else
         m_progress.llInputDurationHns = m_spSource->GetDurationHns() - params.llStartHns;
+
+    if (params.llStartHns > 0)
+    {
+        hr = m_spSource->SetPositionHns(params.llStartHns);
+        if (FAILED(hr))
+        {
+            FireError(hr);
+            return hr;
+        }
+    }
 
     hr = m_spSink->BeginWriting();
     if (FAILED(hr))
@@ -300,59 +322,112 @@ HRESULT TranscodeManager::ConfigureTransforms()
     if (!m_spSink)
         return E_UNEXPECTED;
 
-    if (m_params.fIncludeVideo)
+    if (m_params.fIncludeVideo && m_spVideoTransform)
     {
-        UINT32 unFlags = MFT_ENUM_FLAG_SYNCMFT;
-        if (m_params.fHardwareAcceleration)
-            unFlags = MFT_ENUM_FLAG_HARDWARE | MFT_ENUM_FLAG_SYNCMFT;
-
-        IMFActivate** ppActivates = nullptr;
-        UINT32 cMFTs = 0;
-        HRESULT hr = MFTEnumEx(
-            MFT_CATEGORY_VIDEO_ENCODER,
-            unFlags,
-            nullptr,
-            nullptr,
-            &ppActivates,
-            &cMFTs);
-
-        if (SUCCEEDED(hr) && cMFTs > 0)
+        CComPtr<IMFMediaType> spVideoInputType;
+        HRESULT hr = MFCreateMediaType(&spVideoInputType);
+        if (SUCCEEDED(hr))
         {
-            ppActivates[0]->QueryInterface(IID_PPV_ARGS(&m_spVideoTransform));
-            for (UINT32 i = 0; i < cMFTs; ++i)
-                ppActivates[i]->Release();
-            CoTaskMemFree(ppActivates);
+            spVideoInputType->SetGUID(MF_MT_MAJOR_TYPE, MFMediaType_Video);
+            spVideoInputType->SetGUID(MF_MT_SUBTYPE, MFVideoFormat_NV12);
+            spVideoInputType->SetUINT32(MF_MT_INTERLACE_MODE, MFVideoInterlace_Progressive);
+
+            const EncodeVideoParams& video = m_params.profile.GetVideoParams();
+            MFSetAttributeSize(spVideoInputType, MF_MT_FRAME_SIZE, video.uWidth, video.uHeight);
+            MFSetAttributeRatio(spVideoInputType, MF_MT_FRAME_RATE,
+                static_cast<UINT32>(video.dblFrameRate * 100), 100);
+
+            m_spVideoTransform->SetInputType(0, spVideoInputType, 0);
         }
 
-        if (m_spVideoTransform)
+        CComPtr<IMFMediaType> spVideoOutputType;
+        hr = MFCreateMediaType(&spVideoOutputType);
+        if (SUCCEEDED(hr))
         {
-            CComPtr<IMFAttributes> spAttrs;
-            if (SUCCEEDED(m_spVideoTransform->GetAttributes(&spAttrs)))
+            spVideoOutputType->SetGUID(MF_MT_MAJOR_TYPE, MFMediaType_Video);
+
+            const EncodeVideoParams& video = m_params.profile.GetVideoParams();
+            switch (video.codec)
             {
-                spAttrs->SetUINT32(MF_TRANSFORM_ASYNC_UNLOCK, TRUE);
+            case VideoCodecH264:
+                spVideoOutputType->SetGUID(MF_MT_SUBTYPE, MFVideoFormat_H264);
+                break;
+            case VideoCodecWMV9:
+                spVideoOutputType->SetGUID(MF_MT_SUBTYPE, MFVideoFormat_WMVVC1);
+                break;
+            default:
+                spVideoOutputType->SetGUID(MF_MT_SUBTYPE, MFVideoFormat_H264);
+                break;
             }
+
+            spVideoOutputType->SetUINT32(MF_MT_INTERLACE_MODE, MFVideoInterlace_Progressive);
+            MFSetAttributeSize(spVideoOutputType, MF_MT_FRAME_SIZE, video.uWidth, video.uHeight);
+            MFSetAttributeRatio(spVideoOutputType, MF_MT_FRAME_RATE,
+                static_cast<UINT32>(video.dblFrameRate * 100), 100);
+            spVideoOutputType->SetUINT32(MF_MT_AVG_BITRATE, video.dwBitRate);
+
+            if (video.codec == VideoCodecH264)
+            {
+                spVideoOutputType->SetUINT32(MF_MT_MPEG2_PROFILE, video.uProfile);
+                spVideoOutputType->SetUINT32(MF_MT_MPEG2_LEVEL, video.uLevel);
+            }
+
+            m_spVideoTransform->SetOutputType(0, spVideoOutputType, 0);
         }
+
+        m_spVideoTransform->ProcessMessage(MFT_MESSAGE_COMMAND_FLUSH, 0);
+        m_spVideoTransform->ProcessMessage(MFT_MESSAGE_NOTIFY_BEGIN_STREAMING, 0);
     }
 
-    if (m_params.fIncludeAudio)
+    if (m_params.fIncludeAudio && m_spAudioTransform)
     {
-        IMFActivate** ppActivates = nullptr;
-        UINT32 cMFTs = 0;
-        HRESULT hr = MFTEnumEx(
-            MFT_CATEGORY_AUDIO_ENCODER,
-            MFT_ENUM_FLAG_SYNCMFT,
-            nullptr,
-            nullptr,
-            &ppActivates,
-            &cMFTs);
-
-        if (SUCCEEDED(hr) && cMFTs > 0)
+        CComPtr<IMFMediaType> spAudioInputType;
+        HRESULT hr = MFCreateMediaType(&spAudioInputType);
+        if (SUCCEEDED(hr))
         {
-            ppActivates[0]->QueryInterface(IID_PPV_ARGS(&m_spAudioTransform));
-            for (UINT32 i = 0; i < cMFTs; ++i)
-                ppActivates[i]->Release();
-            CoTaskMemFree(ppActivates);
+            spAudioInputType->SetGUID(MF_MT_MAJOR_TYPE, MFMediaType_Audio);
+            spAudioInputType->SetGUID(MF_MT_SUBTYPE, MFAudioFormat_PCM);
+            spAudioInputType->SetUINT32(MF_MT_AUDIO_BITS_PER_SAMPLE, 16);
+
+            const EncodeAudioParams& audio = m_params.profile.GetAudioParams();
+            spAudioInputType->SetUINT32(MF_MT_AUDIO_SAMPLES_PER_SECOND, audio.dwSampleRate);
+            spAudioInputType->SetUINT32(MF_MT_AUDIO_NUM_CHANNELS, audio.dwChannels);
+            spAudioInputType->SetUINT32(MF_MT_BLOCK_ALIGNMENT, audio.dwChannels * 2);
+
+            m_spAudioTransform->SetInputType(0, spAudioInputType, 0);
         }
+
+        CComPtr<IMFMediaType> spAudioOutputType;
+        hr = MFCreateMediaType(&spAudioOutputType);
+        if (SUCCEEDED(hr))
+        {
+            spAudioOutputType->SetGUID(MF_MT_MAJOR_TYPE, MFMediaType_Audio);
+
+            const EncodeAudioParams& audio = m_params.profile.GetAudioParams();
+            switch (audio.codec)
+            {
+            case AudioCodecAAC:
+                spAudioOutputType->SetGUID(MF_MT_SUBTYPE, MFAudioFormat_AAC);
+                break;
+            case AudioCodecWMA:
+                spAudioOutputType->SetGUID(MF_MT_SUBTYPE, MFAudioFormat_WMAudioV9);
+                break;
+            default:
+                spAudioOutputType->SetGUID(MF_MT_SUBTYPE, MFAudioFormat_AAC);
+                break;
+            }
+
+            spAudioOutputType->SetUINT32(MF_MT_AUDIO_SAMPLES_PER_SECOND, audio.dwSampleRate);
+            spAudioOutputType->SetUINT32(MF_MT_AUDIO_NUM_CHANNELS, audio.dwChannels);
+            spAudioOutputType->SetUINT32(MF_MT_AUDIO_BITS_PER_SAMPLE, 16);
+            spAudioOutputType->SetUINT32(MF_MT_AUDIO_AVG_BYTES_PER_SECTION, audio.dwBitRate / 8);
+            spAudioOutputType->SetUINT32(MF_MT_BLOCK_ALIGNMENT, audio.dwChannels * 2);
+
+            m_spAudioTransform->SetOutputType(0, spAudioOutputType, 0);
+        }
+
+        m_spAudioTransform->ProcessMessage(MFT_MESSAGE_COMMAND_FLUSH, 0);
+        m_spAudioTransform->ProcessMessage(MFT_MESSAGE_NOTIFY_BEGIN_STREAMING, 0);
     }
 
     return S_OK;
@@ -363,7 +438,44 @@ HRESULT TranscodeManager::ProcessVideoFrame(IMFSample* pSample)
     if (!pSample || !m_spSink)
         return E_POINTER;
 
-    return m_spSink->WriteVideoSample(pSample);
+    if (!m_spVideoTransform)
+        return m_spSink->WriteVideoSample(pSample);
+
+    HRESULT hr = m_spVideoTransform->ProcessInput(0, pSample, 0);
+    if (FAILED(hr))
+        return hr;
+
+    MFT_OUTPUT_STREAM_INFO streamInfo = {};
+    hr = m_spVideoTransform->GetOutputStreamInfo(0, &streamInfo);
+    if (FAILED(hr))
+        return hr;
+
+    CComPtr<IMFSample> spOutputSample;
+    hr = MFCreateSample(&spOutputSample);
+    if (FAILED(hr))
+        return hr;
+
+    CComPtr<IMFMediaBuffer> spBuffer;
+    hr = MFCreateMemoryBuffer(streamInfo.cbSize, &spBuffer);
+    if (FAILED(hr))
+        return hr;
+
+    hr = spOutputSample->AddBuffer(spBuffer);
+    if (FAILED(hr))
+        return hr;
+
+    MFT_OUTPUT_DATA_BUFFER outputData = {};
+    outputData.dwStreamID = 0;
+    outputData.pSample = spOutputSample;
+
+    DWORD dwStatus = 0;
+    hr = m_spVideoTransform->ProcessOutput(0, 1, &outputData, &dwStatus);
+    if (hr == MF_E_TRANSFORM_NEED_MORE_INPUT)
+        return S_OK;
+    if (FAILED(hr))
+        return hr;
+
+    return m_spSink->WriteVideoSample(outputData.pSample);
 }
 
 HRESULT TranscodeManager::ProcessAudioSample(IMFSample* pSample)
@@ -371,7 +483,44 @@ HRESULT TranscodeManager::ProcessAudioSample(IMFSample* pSample)
     if (!pSample || !m_spSink)
         return E_POINTER;
 
-    return m_spSink->WriteAudioSample(pSample);
+    if (!m_spAudioTransform)
+        return m_spSink->WriteAudioSample(pSample);
+
+    HRESULT hr = m_spAudioTransform->ProcessInput(0, pSample, 0);
+    if (FAILED(hr))
+        return hr;
+
+    MFT_OUTPUT_STREAM_INFO streamInfo = {};
+    hr = m_spAudioTransform->GetOutputStreamInfo(0, &streamInfo);
+    if (FAILED(hr))
+        return hr;
+
+    CComPtr<IMFSample> spOutputSample;
+    hr = MFCreateSample(&spOutputSample);
+    if (FAILED(hr))
+        return hr;
+
+    CComPtr<IMFMediaBuffer> spBuffer;
+    hr = MFCreateMemoryBuffer(streamInfo.cbSize, &spBuffer);
+    if (FAILED(hr))
+        return hr;
+
+    hr = spOutputSample->AddBuffer(spBuffer);
+    if (FAILED(hr))
+        return hr;
+
+    MFT_OUTPUT_DATA_BUFFER outputData = {};
+    outputData.dwStreamID = 0;
+    outputData.pSample = spOutputSample;
+
+    DWORD dwStatus = 0;
+    hr = m_spAudioTransform->ProcessOutput(0, 1, &outputData, &dwStatus);
+    if (hr == MF_E_TRANSFORM_NEED_MORE_INPUT)
+        return S_OK;
+    if (FAILED(hr))
+        return hr;
+
+    return m_spSink->WriteAudioSample(outputData.pSample);
 }
 
 void TranscodeManager::UpdateProgress(LONGLONG llPosition)

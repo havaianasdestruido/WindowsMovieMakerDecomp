@@ -408,28 +408,131 @@ HRESULT TimelineItemHandler::DuplicateItem(DWORD dwItemId, DWORD* pdwNewItemId)
 
     *pdwNewItemId = 0;
 
-    // Duplicate creates a copy of the item with a new ID
-    // The actual implementation reads the source item properties,
-    // creates a new item with the same file path, and returns
-    // the new item ID.
-    UNREFERENCED_PARAMETER(dwItemId);
-    return E_NOTIMPL;
+    if (!m_pAppMain)
+        return E_FAIL;
+
+    SundanceAppMain* pApp = m_pAppMain;
+    if (!pApp)
+        return E_FAIL;
+
+    StoryboardManager::MovieProject* pProject = pApp->GetProject();
+    if (!pProject)
+        return E_FAIL;
+
+    int nIndex = pProject->FindMediaItemById(dwItemId);
+    if (nIndex < 0)
+        return S_FALSE;
+
+    const StoryboardManager::ProjectMediaItem* pSourceItem = pProject->GetMediaItem(nIndex);
+    if (!pSourceItem)
+        return E_FAIL;
+
+    StoryboardManager::ProjectMediaItem newItem = *pSourceItem;
+    DWORD dwNewId = static_cast<DWORD>(pProject->AddMediaItem(newItem));
+
+    *pdwNewItemId = dwNewId;
+    return S_OK;
 }
 
 HRESULT TimelineItemHandler::GetItemProperty(DWORD dwItemId, LPCWSTR pszProperty, VARIANT* pvarValue)
 {
-    UNREFERENCED_PARAMETER(dwItemId);
-    UNREFERENCED_PARAMETER(pszProperty);
-    UNREFERENCED_PARAMETER(pvarValue);
-    return E_NOTIMPL;
+    if (!pszProperty || !pvarValue)
+        return E_POINTER;
+
+    if (!m_pAppMain)
+        return E_FAIL;
+
+    StoryboardManager::MovieProject* pProject = m_pAppMain->GetProject();
+    if (!pProject)
+        return E_FAIL;
+
+    int nIndex = pProject->FindMediaItemById(dwItemId);
+    if (nIndex < 0)
+        return S_FALSE;
+
+    const StoryboardManager::ProjectMediaItem* pItem = pProject->GetMediaItem(nIndex);
+    if (!pItem)
+        return E_FAIL;
+
+    VariantInit(pvarValue);
+
+    if (_wcsicmp(pszProperty, L"duration") == 0)
+    {
+        pvarValue->vt = VT_I8;
+        pvarValue->llVal = pItem->GetDurationHns();
+    }
+    else if (_wcsicmp(pszProperty, L"path") == 0)
+    {
+        pvarValue->vt = VT_BSTR;
+        pvarValue->bstrVal = SysAllocString(pItem->GetSourcePath());
+    }
+    else if (_wcsicmp(pszProperty, L"width") == 0)
+    {
+        pvarValue->vt = VT_I4;
+        pvarValue->lVal = static_cast<LONG>(pItem->GetWidth());
+    }
+    else if (_wcsicmp(pszProperty, L"height") == 0)
+    {
+        pvarValue->vt = VT_I4;
+        pvarValue->lVal = static_cast<LONG>(pItem->GetHeight());
+    }
+    else if (_wcsicmp(pszProperty, L"type") == 0)
+    {
+        pvarValue->vt = VT_I4;
+        pvarValue->lVal = static_cast<LONG>(pItem->GetMediaType());
+    }
+    else if (_wcsicmp(pszProperty, L"frameRate") == 0)
+    {
+        pvarValue->vt = VT_I4;
+        pvarValue->lVal = static_cast<LONG>(pItem->GetFrameRate());
+    }
+    else if (_wcsicmp(pszProperty, L"rating") == 0)
+    {
+        pvarValue->vt = VT_I4;
+        pvarValue->lVal = static_cast<LONG>(pItem->GetRating());
+    }
+    else
+    {
+        return E_INVALIDARG;
+    }
+
+    return S_OK;
 }
 
 HRESULT TimelineItemHandler::SetItemProperty(DWORD dwItemId, LPCWSTR pszProperty, const VARIANT* varValue)
 {
-    UNREFERENCED_PARAMETER(dwItemId);
-    UNREFERENCED_PARAMETER(pszProperty);
-    UNREFERENCED_PARAMETER(varValue);
-    return E_NOTIMPL;
+    if (!pszProperty || !varValue)
+        return E_POINTER;
+
+    if (!m_pAppMain)
+        return E_FAIL;
+
+    StoryboardManager::MovieProject* pProject = m_pAppMain->GetProject();
+    if (!pProject)
+        return E_FAIL;
+
+    int nIndex = pProject->FindMediaItemById(dwItemId);
+    if (nIndex < 0)
+        return S_FALSE;
+
+    StoryboardManager::ProjectMediaItem* pItem = pProject->GetMediaItem(nIndex);
+    if (!pItem)
+        return E_FAIL;
+
+    if (_wcsicmp(pszProperty, L"rating") == 0 && varValue->vt == VT_I4)
+    {
+        pItem->SetRating(static_cast<UINT>(varValue->lVal));
+    }
+    else if (_wcsicmp(pszProperty, L"tags") == 0 && varValue->vt == VT_BSTR)
+    {
+        pItem->SetTags(varValue->bstrVal);
+    }
+    else
+    {
+        return E_INVALIDARG;
+    }
+
+    return S_OK;
 }
 
 HRESULT TimelineItemHandler::DeleteSelectedItems(const std::vector<DWORD>& itemIds)

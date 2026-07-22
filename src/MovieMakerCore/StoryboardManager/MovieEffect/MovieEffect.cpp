@@ -109,14 +109,105 @@ void MovieEffect::SetEnabled(bool fEnabled) throw() { m_fEnabled = fEnabled; }
 
 HRESULT MovieEffect::LoadFromXml(IXmlReader* pReader)
 {
-    UNREFERENCED_PARAMETER(pReader);
-    return E_NOTIMPL;
+    if (!pReader)
+        return E_POINTER;
+
+    LPCWSTR pszValue = nullptr;
+
+    if (SUCCEEDED(XmlReaderGetAttribute(pReader, L"id", &pszValue)) && pszValue)
+        m_dwEffectId = _wtol(pszValue);
+
+    if (SUCCEEDED(XmlReaderGetAttribute(pReader, L"name", &pszValue)) && pszValue)
+        m_strName = pszValue;
+
+    if (SUCCEEDED(XmlReaderGetAttribute(pReader, L"duration", &pszValue)) && pszValue)
+        m_llDurationHns = _wtoi64(pszValue);
+
+    if (SUCCEEDED(XmlReaderGetAttribute(pReader, L"offset", &pszValue)) && pszValue)
+        m_llStartOffsetHns = _wtoi64(pszValue);
+
+    if (SUCCEEDED(XmlReaderGetAttribute(pReader, L"intensity", &pszValue)) && pszValue)
+        m_flIntensity = (float)_wtof(pszValue);
+
+    if (SUCCEEDED(XmlReaderGetAttribute(pReader, L"enabled", &pszValue)) && pszValue)
+        m_fEnabled = (_wtoi(pszValue) != 0);
+
+    XmlNodeType nodeType;
+    while (pReader->Read(&nodeType) == S_OK)
+    {
+        if (nodeType == XmlNodeType_EndElement)
+            break;
+
+        if (nodeType == XmlNodeType_Element)
+        {
+            LPCWSTR pszLocalName = nullptr;
+            pReader->GetLocalName(&pszLocalName, nullptr);
+            if (pszLocalName && wcscmp(pszLocalName, L"param") == 0)
+            {
+                LPCWSTR pszKey = nullptr;
+                LPCWSTR pszVal = nullptr;
+                XmlReaderGetAttribute(pReader, L"key", &pszKey);
+                XmlReaderGetAttribute(pReader, L"value", &pszVal);
+                if (pszKey)
+                    SetParameter(pszKey, pszVal ? pszVal : L"");
+            }
+        }
+    }
+
+    return S_OK;
 }
 
 HRESULT MovieEffect::SaveToXml(IXmlWriter* pWriter)
 {
-    UNREFERENCED_PARAMETER(pWriter);
-    return E_NOTIMPL;
+    if (!pWriter)
+        return E_POINTER;
+
+    HRESULT hr;
+    WCHAR szBuf[64];
+
+    _itow_s(m_dwEffectId, szBuf, _countof(szBuf), 10);
+    hr = pWriter->WriteAttributeString(nullptr, L"id", nullptr, szBuf);
+    if (FAILED(hr)) return hr;
+
+    if (!m_strName.IsEmpty())
+    {
+        hr = pWriter->WriteAttributeString(nullptr, L"name", nullptr, m_strName);
+        if (FAILED(hr)) return hr;
+    }
+
+    _i64tow_s(m_llDurationHns, szBuf, _countof(szBuf), 10);
+    hr = pWriter->WriteAttributeString(nullptr, L"duration", nullptr, szBuf);
+    if (FAILED(hr)) return hr;
+
+    _i64tow_s(m_llStartOffsetHns, szBuf, _countof(szBuf), 10);
+    hr = pWriter->WriteAttributeString(nullptr, L"offset", nullptr, szBuf);
+    if (FAILED(hr)) return hr;
+
+    char szFloat[32];
+    sprintf_s(szFloat, "%.2f", m_flIntensity);
+    MultiByteToWideChar(CP_ACP, 0, szFloat, -1, szBuf, _countof(szBuf));
+    hr = pWriter->WriteAttributeString(nullptr, L"intensity", nullptr, szBuf);
+    if (FAILED(hr)) return hr;
+
+    hr = pWriter->WriteAttributeString(nullptr, L"enabled", nullptr, m_fEnabled ? L"1" : L"0");
+    if (FAILED(hr)) return hr;
+
+    for (size_t i = 0; i < m_arrParameters.GetCount(); ++i)
+    {
+        hr = pWriter->WriteStartElement(nullptr, L"param", nullptr);
+        if (FAILED(hr)) return hr;
+
+        hr = pWriter->WriteAttributeString(nullptr, L"key", nullptr, m_arrParameters.GetAt(i).strKey);
+        if (FAILED(hr)) return hr;
+
+        hr = pWriter->WriteAttributeString(nullptr, L"value", nullptr, m_arrParameters.GetAt(i).strValue);
+        if (FAILED(hr)) return hr;
+
+        hr = pWriter->WriteEndElement();
+        if (FAILED(hr)) return hr;
+    }
+
+    return S_OK;
 }
 
 // ============================================================================
@@ -176,8 +267,125 @@ void TextEffect::SetAnimationType(DWORD dwType) throw() { m_dwAnimationType = dw
 LONGLONG TextEffect::GetAnimationDurationHns() const throw() { return m_llAnimationDurationHns; }
 void TextEffect::SetAnimationDurationHns(LONGLONG llDuration) throw() { m_llAnimationDurationHns = llDuration; }
 
-HRESULT TextEffect::LoadFromXml(IXmlReader* pReader) { return MovieEffect::LoadFromXml(pReader); }
-HRESULT TextEffect::SaveToXml(IXmlWriter* pWriter) { return MovieEffect::SaveToXml(pWriter); }
+HRESULT TextEffect::LoadFromXml(IXmlReader* pReader)
+{
+    HRESULT hr = MovieEffect::LoadFromXml(pReader);
+    if (FAILED(hr)) return hr;
+
+    LPCWSTR pszValue = nullptr;
+
+    if (SUCCEEDED(XmlReaderGetAttribute(pReader, L"text", &pszValue)) && pszValue)
+        m_strText = pszValue;
+
+    if (SUCCEEDED(XmlReaderGetAttribute(pReader, L"fontFamily", &pszValue)) && pszValue)
+        m_strFontFamily = pszValue;
+
+    if (SUCCEEDED(XmlReaderGetAttribute(pReader, L"fontSize", &pszValue)) && pszValue)
+        m_flFontSize = (float)_wtof(pszValue);
+
+    if (SUCCEEDED(XmlReaderGetAttribute(pReader, L"fontColor", &pszValue)) && pszValue)
+        m_dwFontColor = (DWORD)_wtol(pszValue);
+
+    if (SUCCEEDED(XmlReaderGetAttribute(pReader, L"fontStyle", &pszValue)) && pszValue)
+        m_dwFontStyle = (DWORD)_wtol(pszValue);
+
+    if (SUCCEEDED(XmlReaderGetAttribute(pReader, L"posX", &pszValue)) && pszValue)
+        m_flPositionX = (float)_wtof(pszValue);
+
+    if (SUCCEEDED(XmlReaderGetAttribute(pReader, L"posY", &pszValue)) && pszValue)
+        m_flPositionY = (float)_wtof(pszValue);
+
+    if (SUCCEEDED(XmlReaderGetAttribute(pReader, L"alignment", &pszValue)) && pszValue)
+        m_alignment = static_cast<TextEffectAlignment>(_wtoi(pszValue));
+
+    if (SUCCEEDED(XmlReaderGetAttribute(pReader, L"background", &pszValue)) && pszValue)
+        m_fBackground = (_wtoi(pszValue) != 0);
+
+    if (SUCCEEDED(XmlReaderGetAttribute(pReader, L"bgColor", &pszValue)) && pszValue)
+        m_dwBackgroundColor = (DWORD)_wtol(pszValue);
+
+    if (SUCCEEDED(XmlReaderGetAttribute(pReader, L"animType", &pszValue)) && pszValue)
+        m_dwAnimationType = (DWORD)_wtol(pszValue);
+
+    if (SUCCEEDED(XmlReaderGetAttribute(pReader, L"animDuration", &pszValue)) && pszValue)
+        m_llAnimationDurationHns = _wtoi64(pszValue);
+
+    return S_OK;
+}
+
+HRESULT TextEffect::SaveToXml(IXmlWriter* pWriter)
+{
+    if (!pWriter)
+        return E_POINTER;
+
+    HRESULT hr;
+    WCHAR szBuf[64];
+
+    hr = pWriter->WriteStartElement(nullptr, L"textEffect", nullptr);
+    if (FAILED(hr)) return hr;
+
+    hr = MovieEffect::SaveToXml(pWriter);
+    if (FAILED(hr)) return hr;
+
+    if (!m_strText.IsEmpty())
+    {
+        hr = pWriter->WriteAttributeString(nullptr, L"text", nullptr, m_strText);
+        if (FAILED(hr)) return hr;
+    }
+
+    if (!m_strFontFamily.IsEmpty())
+    {
+        hr = pWriter->WriteAttributeString(nullptr, L"fontFamily", nullptr, m_strFontFamily);
+        if (FAILED(hr)) return hr;
+    }
+
+    char szFloat[32];
+
+    sprintf_s(szFloat, "%.1f", m_flFontSize);
+    MultiByteToWideChar(CP_ACP, 0, szFloat, -1, szBuf, _countof(szBuf));
+    hr = pWriter->WriteAttributeString(nullptr, L"fontSize", nullptr, szBuf);
+    if (FAILED(hr)) return hr;
+
+    _itow_s(m_dwFontColor, szBuf, _countof(szBuf), 10);
+    hr = pWriter->WriteAttributeString(nullptr, L"fontColor", nullptr, szBuf);
+    if (FAILED(hr)) return hr;
+
+    _itow_s(m_dwFontStyle, szBuf, _countof(szBuf), 10);
+    hr = pWriter->WriteAttributeString(nullptr, L"fontStyle", nullptr, szBuf);
+    if (FAILED(hr)) return hr;
+
+    sprintf_s(szFloat, "%.4f", m_flPositionX);
+    MultiByteToWideChar(CP_ACP, 0, szFloat, -1, szBuf, _countof(szBuf));
+    hr = pWriter->WriteAttributeString(nullptr, L"posX", nullptr, szBuf);
+    if (FAILED(hr)) return hr;
+
+    sprintf_s(szFloat, "%.4f", m_flPositionY);
+    MultiByteToWideChar(CP_ACP, 0, szFloat, -1, szBuf, _countof(szBuf));
+    hr = pWriter->WriteAttributeString(nullptr, L"posY", nullptr, szBuf);
+    if (FAILED(hr)) return hr;
+
+    _itow_s(static_cast<int>(m_alignment), szBuf, _countof(szBuf), 10);
+    hr = pWriter->WriteAttributeString(nullptr, L"alignment", nullptr, szBuf);
+    if (FAILED(hr)) return hr;
+
+    hr = pWriter->WriteAttributeString(nullptr, L"background", nullptr, m_fBackground ? L"1" : L"0");
+    if (FAILED(hr)) return hr;
+
+    _itow_s(m_dwBackgroundColor, szBuf, _countof(szBuf), 10);
+    hr = pWriter->WriteAttributeString(nullptr, L"bgColor", nullptr, szBuf);
+    if (FAILED(hr)) return hr;
+
+    _itow_s(m_dwAnimationType, szBuf, _countof(szBuf), 10);
+    hr = pWriter->WriteAttributeString(nullptr, L"animType", nullptr, szBuf);
+    if (FAILED(hr)) return hr;
+
+    _i64tow_s(m_llAnimationDurationHns, szBuf, _countof(szBuf), 10);
+    hr = pWriter->WriteAttributeString(nullptr, L"animDuration", nullptr, szBuf);
+    if (FAILED(hr)) return hr;
+
+    hr = pWriter->WriteEndElement(); // textEffect
+    return hr;
+}
 
 // ============================================================================
 // PanAndZoomShapeEffect implementation
@@ -246,8 +454,122 @@ void PanAndZoomShapeEffect::SetHoldStartHns(LONGLONG llHold) throw() { m_llHoldS
 LONGLONG PanAndZoomShapeEffect::GetHoldEndHns() const throw() { return m_llHoldEndHns; }
 void PanAndZoomShapeEffect::SetHoldEndHns(LONGLONG llHold) throw() { m_llHoldEndHns = llHold; }
 
-HRESULT PanAndZoomShapeEffect::LoadFromXml(IXmlReader* pReader) { return MovieEffect::LoadFromXml(pReader); }
-HRESULT PanAndZoomShapeEffect::SaveToXml(IXmlWriter* pWriter) { return MovieEffect::SaveToXml(pWriter); }
+HRESULT PanAndZoomShapeEffect::LoadFromXml(IXmlReader* pReader)
+{
+    HRESULT hr = MovieEffect::LoadFromXml(pReader);
+    if (FAILED(hr)) return hr;
+
+    LPCWSTR pszValue = nullptr;
+
+    if (SUCCEEDED(XmlReaderGetAttribute(pReader, L"startLeft", &pszValue)) && pszValue)
+        m_flStartLeft = (float)_wtof(pszValue);
+    if (SUCCEEDED(XmlReaderGetAttribute(pReader, L"startTop", &pszValue)) && pszValue)
+        m_flStartTop = (float)_wtof(pszValue);
+    if (SUCCEEDED(XmlReaderGetAttribute(pReader, L"startRight", &pszValue)) && pszValue)
+        m_flStartRight = (float)_wtof(pszValue);
+    if (SUCCEEDED(XmlReaderGetAttribute(pReader, L"startBottom", &pszValue)) && pszValue)
+        m_flStartBottom = (float)_wtof(pszValue);
+
+    if (SUCCEEDED(XmlReaderGetAttribute(pReader, L"endLeft", &pszValue)) && pszValue)
+        m_flEndLeft = (float)_wtof(pszValue);
+    if (SUCCEEDED(XmlReaderGetAttribute(pReader, L"endTop", &pszValue)) && pszValue)
+        m_flEndTop = (float)_wtof(pszValue);
+    if (SUCCEEDED(XmlReaderGetAttribute(pReader, L"endRight", &pszValue)) && pszValue)
+        m_flEndRight = (float)_wtof(pszValue);
+    if (SUCCEEDED(XmlReaderGetAttribute(pReader, L"endBottom", &pszValue)) && pszValue)
+        m_flEndBottom = (float)_wtof(pszValue);
+
+    if (SUCCEEDED(XmlReaderGetAttribute(pReader, L"shape", &pszValue)) && pszValue)
+        m_shape = static_cast<PanZoomShape>(_wtoi(pszValue));
+    if (SUCCEEDED(XmlReaderGetAttribute(pReader, L"easing", &pszValue)) && pszValue)
+        m_easing = static_cast<EasingType>(_wtoi(pszValue));
+    if (SUCCEEDED(XmlReaderGetAttribute(pReader, L"randomStart", &pszValue)) && pszValue)
+        m_fRandomStartPosition = (_wtoi(pszValue) != 0);
+    if (SUCCEEDED(XmlReaderGetAttribute(pReader, L"holdStart", &pszValue)) && pszValue)
+        m_llHoldStartHns = _wtoi64(pszValue);
+    if (SUCCEEDED(XmlReaderGetAttribute(pReader, L"holdEnd", &pszValue)) && pszValue)
+        m_llHoldEndHns = _wtoi64(pszValue);
+
+    return S_OK;
+}
+
+HRESULT PanAndZoomShapeEffect::SaveToXml(IXmlWriter* pWriter)
+{
+    if (!pWriter)
+        return E_POINTER;
+
+    HRESULT hr;
+    WCHAR szBuf[64];
+    char szFloat[32];
+
+    hr = pWriter->WriteStartElement(nullptr, L"panZoomEffect", nullptr);
+    if (FAILED(hr)) return hr;
+
+    hr = MovieEffect::SaveToXml(pWriter);
+    if (FAILED(hr)) return hr;
+
+    sprintf_s(szFloat, "%.4f", m_flStartLeft);
+    MultiByteToWideChar(CP_ACP, 0, szFloat, -1, szBuf, _countof(szBuf));
+    hr = pWriter->WriteAttributeString(nullptr, L"startLeft", nullptr, szBuf);
+    if (FAILED(hr)) return hr;
+
+    sprintf_s(szFloat, "%.4f", m_flStartTop);
+    MultiByteToWideChar(CP_ACP, 0, szFloat, -1, szBuf, _countof(szBuf));
+    hr = pWriter->WriteAttributeString(nullptr, L"startTop", nullptr, szBuf);
+    if (FAILED(hr)) return hr;
+
+    sprintf_s(szFloat, "%.4f", m_flStartRight);
+    MultiByteToWideChar(CP_ACP, 0, szFloat, -1, szBuf, _countof(szBuf));
+    hr = pWriter->WriteAttributeString(nullptr, L"startRight", nullptr, szBuf);
+    if (FAILED(hr)) return hr;
+
+    sprintf_s(szFloat, "%.4f", m_flStartBottom);
+    MultiByteToWideChar(CP_ACP, 0, szFloat, -1, szBuf, _countof(szBuf));
+    hr = pWriter->WriteAttributeString(nullptr, L"startBottom", nullptr, szBuf);
+    if (FAILED(hr)) return hr;
+
+    sprintf_s(szFloat, "%.4f", m_flEndLeft);
+    MultiByteToWideChar(CP_ACP, 0, szFloat, -1, szBuf, _countof(szBuf));
+    hr = pWriter->WriteAttributeString(nullptr, L"endLeft", nullptr, szBuf);
+    if (FAILED(hr)) return hr;
+
+    sprintf_s(szFloat, "%.4f", m_flEndTop);
+    MultiByteToWideChar(CP_ACP, 0, szFloat, -1, szBuf, _countof(szBuf));
+    hr = pWriter->WriteAttributeString(nullptr, L"endTop", nullptr, szBuf);
+    if (FAILED(hr)) return hr;
+
+    sprintf_s(szFloat, "%.4f", m_flEndRight);
+    MultiByteToWideChar(CP_ACP, 0, szFloat, -1, szBuf, _countof(szBuf));
+    hr = pWriter->WriteAttributeString(nullptr, L"endRight", nullptr, szBuf);
+    if (FAILED(hr)) return hr;
+
+    sprintf_s(szFloat, "%.4f", m_flEndBottom);
+    MultiByteToWideChar(CP_ACP, 0, szFloat, -1, szBuf, _countof(szBuf));
+    hr = pWriter->WriteAttributeString(nullptr, L"endBottom", nullptr, szBuf);
+    if (FAILED(hr)) return hr;
+
+    _itow_s(static_cast<int>(m_shape), szBuf, _countof(szBuf), 10);
+    hr = pWriter->WriteAttributeString(nullptr, L"shape", nullptr, szBuf);
+    if (FAILED(hr)) return hr;
+
+    _itow_s(static_cast<int>(m_easing), szBuf, _countof(szBuf), 10);
+    hr = pWriter->WriteAttributeString(nullptr, L"easing", nullptr, szBuf);
+    if (FAILED(hr)) return hr;
+
+    hr = pWriter->WriteAttributeString(nullptr, L"randomStart", nullptr, m_fRandomStartPosition ? L"1" : L"0");
+    if (FAILED(hr)) return hr;
+
+    _i64tow_s(m_llHoldStartHns, szBuf, _countof(szBuf), 10);
+    hr = pWriter->WriteAttributeString(nullptr, L"holdStart", nullptr, szBuf);
+    if (FAILED(hr)) return hr;
+
+    _i64tow_s(m_llHoldEndHns, szBuf, _countof(szBuf), 10);
+    hr = pWriter->WriteAttributeString(nullptr, L"holdEnd", nullptr, szBuf);
+    if (FAILED(hr)) return hr;
+
+    hr = pWriter->WriteEndElement(); // panZoomEffect
+    return hr;
+}
 
 // ============================================================================
 // AudioDuckingProperties implementation
@@ -292,14 +614,71 @@ void AudioDuckingProperties::SetTargetTrackIndex(DWORD dwIndex) throw() { m_dwTa
 
 HRESULT AudioDuckingProperties::LoadFromXml(IXmlReader* pReader)
 {
-    UNREFERENCED_PARAMETER(pReader);
-    return E_NOTIMPL;
+    if (!pReader)
+        return E_POINTER;
+
+    LPCWSTR pszValue = nullptr;
+
+    if (SUCCEEDED(XmlReaderGetAttribute(pReader, L"enabled", &pszValue)) && pszValue)
+        m_fEnabled = (_wtoi(pszValue) != 0);
+
+    if (SUCCEEDED(XmlReaderGetAttribute(pReader, L"duckLevel", &pszValue)) && pszValue)
+        m_flDuckLevel = (float)_wtof(pszValue);
+
+    if (SUCCEEDED(XmlReaderGetAttribute(pReader, L"fadeInMs", &pszValue)) && pszValue)
+        m_dwFadeInMs = (DWORD)_wtol(pszValue);
+
+    if (SUCCEEDED(XmlReaderGetAttribute(pReader, L"fadeOutMs", &pszValue)) && pszValue)
+        m_dwFadeOutMs = (DWORD)_wtol(pszValue);
+
+    if (SUCCEEDED(XmlReaderGetAttribute(pReader, L"thresholdDb", &pszValue)) && pszValue)
+        m_flThresholdDb = (float)_wtof(pszValue);
+
+    if (SUCCEEDED(XmlReaderGetAttribute(pReader, L"targetTrack", &pszValue)) && pszValue)
+        m_dwTargetTrackIndex = (DWORD)_wtol(pszValue);
+
+    return S_OK;
 }
 
 HRESULT AudioDuckingProperties::SaveToXml(IXmlWriter* pWriter)
 {
-    UNREFERENCED_PARAMETER(pWriter);
-    return E_NOTIMPL;
+    if (!pWriter)
+        return E_POINTER;
+
+    HRESULT hr;
+    WCHAR szBuf[64];
+    char szFloat[32];
+
+    hr = pWriter->WriteStartElement(nullptr, L"audioDucking", nullptr);
+    if (FAILED(hr)) return hr;
+
+    hr = pWriter->WriteAttributeString(nullptr, L"enabled", nullptr, m_fEnabled ? L"1" : L"0");
+    if (FAILED(hr)) return hr;
+
+    sprintf_s(szFloat, "%.2f", m_flDuckLevel);
+    MultiByteToWideChar(CP_ACP, 0, szFloat, -1, szBuf, _countof(szBuf));
+    hr = pWriter->WriteAttributeString(nullptr, L"duckLevel", nullptr, szBuf);
+    if (FAILED(hr)) return hr;
+
+    _itow_s(m_dwFadeInMs, szBuf, _countof(szBuf), 10);
+    hr = pWriter->WriteAttributeString(nullptr, L"fadeInMs", nullptr, szBuf);
+    if (FAILED(hr)) return hr;
+
+    _itow_s(m_dwFadeOutMs, szBuf, _countof(szBuf), 10);
+    hr = pWriter->WriteAttributeString(nullptr, L"fadeOutMs", nullptr, szBuf);
+    if (FAILED(hr)) return hr;
+
+    sprintf_s(szFloat, "%.1f", m_flThresholdDb);
+    MultiByteToWideChar(CP_ACP, 0, szFloat, -1, szBuf, _countof(szBuf));
+    hr = pWriter->WriteAttributeString(nullptr, L"thresholdDb", nullptr, szBuf);
+    if (FAILED(hr)) return hr;
+
+    _itow_s(m_dwTargetTrackIndex, szBuf, _countof(szBuf), 10);
+    hr = pWriter->WriteAttributeString(nullptr, L"targetTrack", nullptr, szBuf);
+    if (FAILED(hr)) return hr;
+
+    hr = pWriter->WriteEndElement(); // audioDucking
+    return hr;
 }
 
 } // namespace StoryboardManager

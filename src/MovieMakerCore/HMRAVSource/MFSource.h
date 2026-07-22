@@ -115,6 +115,17 @@ public:
     HRESULT GetSelectedMediaType(DWORD dwStreamIndex, IMFMediaType** ppType);
     HRESULT SetSelectedMediaType(DWORD dwStreamIndex, IMFMediaType* pType);
 
+    // Metadata extraction
+    HRESULT GetDuration();
+    HRESULT GetResolution();
+    HRESULT GetFrameRate();
+
+    // Cached metadata getters
+    LONGLONG GetCachedDuration() const throw();
+    UINT GetCachedWidth() const throw();
+    UINT GetCachedHeight() const throw();
+    double GetCachedFrameRate() const throw();
+
 private:
     CComPtr<IMFSourceReader>        m_spReader;
     CComPtr<MFSourceReaderCallback>    m_spCallback;
@@ -122,6 +133,12 @@ private:
     DWORD                           m_dwAudioStreamIndex;
     DWORD                           m_dwStreamCount;
     bool                            m_fAsyncMode;
+
+    ATL::CString    m_strFilePath;
+    LONGLONG        m_llCachedDuration;
+    UINT            m_uCachedWidth;
+    UINT            m_uCachedHeight;
+    double          m_dblCachedFrameRate;
 
     HRESULT CreateSourceReader(const AVSourceDesc& desc);
     HRESULT EnumerateStreams();

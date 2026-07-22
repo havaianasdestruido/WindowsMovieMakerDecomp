@@ -117,6 +117,7 @@ namespace HMREngine
     HRESULT TextImpl::Initialize(ID3D11Device* dev)
     {
         if (!dev) return E_POINTER;
+        m_device = dev;
         return m_fontAtlas.Initialize(dev, "");
     }
 
@@ -133,6 +134,8 @@ namespace HMREngine
 
     void TextImpl::RebuildVertices()
     {
+        if (!m_device) return;
+
         std::vector<TextVertex> verts;
         float x = 0;
         float y = 0;
@@ -159,13 +162,40 @@ namespace HMREngine
         }
 
         m_vertexCount = static_cast<UINT>(verts.size());
+
+        m_vertexBuffer.Release();
+
+        if (!verts.empty())
+        {
+            D3D11_BUFFER_DESC bd{};
+            bd.ByteWidth = static_cast<UINT>(verts.size() * sizeof(TextVertex));
+            bd.Usage = D3D11_USAGE_DEFAULT;
+            bd.BindFlags = D3D11_BIND_VERTEX_BUFFER;
+
+            D3D11_SUBRESOURCE_DATA initData{};
+            initData.pSysMem = verts.data();
+
+            m_device->CreateBuffer(&bd, &initData, &m_vertexBuffer);
+        }
+
         m_needsRebuild = false;
     }
 
     void TextImpl::Render(ID3D11DeviceContext* ctx, const Matrix4f& worldViewProj, float time)
     {
         if (m_text.empty() || !ctx) return;
-        // Rendering is done via TextShader in RenderingList
+
+        if (m_needsRebuild)
+            RebuildVertices();
+
+        if (!m_vertexBuffer || m_vertexCount == 0) return;
+
+        UINT stride = sizeof(TextVertex);
+        UINT offset = 0;
+        ID3D11Buffer* vb = m_vertexBuffer;
+        ctx->IASetVertexBuffers(0, 1, &vb, &stride, &offset);
+        ctx->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+        ctx->Draw(m_vertexCount, 0);
     }
 
     // ScrollingTextImpl

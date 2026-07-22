@@ -201,7 +201,38 @@ HRESULT AudioOutput::WriteSample(const BYTE* pData, DWORD cbData)
     if (FAILED(hr)) return hr;
 
     DWORD cbToWrite = framesToWrite * m_format.wfx.nBlockAlign;
-    memcpy(pBuffer, pData, cbToWrite);
+
+    if (m_fMute)
+    {
+        memset(pBuffer, 0, cbToWrite);
+    }
+    else if (m_flVolume < 1.0f)
+    {
+        if (m_format.wfx.wBitsPerSample == 16)
+        {
+            const short* pSrc = reinterpret_cast<const short*>(pData);
+            short* pDst = reinterpret_cast<short*>(pBuffer);
+            DWORD dwSampleCount = cbToWrite / sizeof(short);
+            for (DWORD i = 0; i < dwSampleCount; ++i)
+                pDst[i] = static_cast<short>(pSrc[i] * m_flVolume);
+        }
+        else if (m_format.wfx.wBitsPerSample == 32)
+        {
+            const float* pSrc = reinterpret_cast<const float*>(pData);
+            float* pDst = reinterpret_cast<float*>(pBuffer);
+            DWORD dwSampleCount = cbToWrite / sizeof(float);
+            for (DWORD i = 0; i < dwSampleCount; ++i)
+                pDst[i] = pSrc[i] * m_flVolume;
+        }
+        else
+        {
+            memcpy(pBuffer, pData, cbToWrite);
+        }
+    }
+    else
+    {
+        memcpy(pBuffer, pData, cbToWrite);
+    }
 
     hr = m_spRenderClient->ReleaseBuffer(framesToWrite, 0);
     return hr;

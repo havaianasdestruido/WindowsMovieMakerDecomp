@@ -36,6 +36,7 @@ extern "C"
 // ============================================================================
 
 #include "SundanceApp/SundanceAppMain.h"
+#include "StoryboardManager/MovieProject.h"
 
 namespace Sundance
 {
@@ -179,24 +180,12 @@ enum AppCommandIds
     ID_APP_EXPORT     = 0xE203,
 };
 
-static LRESULT CALLBACK SundanceWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
 
-enum AppCommandIds
-{
-    ID_APP_IMPORT     = 0xE101,
-    ID_APP_SAVE       = 0xE103,
-    ID_APP_UNDO       = 0xE12B,
-    ID_APP_REDO       = 0xE12C,
-    ID_APP_COPY       = 0xE122,
-    ID_APP_PASTE      = 0xE125,
-    ID_APP_DELETE     = 0xE200,
-    ID_APP_PLAY_PAUSE = 0xE201,
-    ID_APP_REMOVE     = 0xE202,
-    ID_APP_EXPORT     = 0xE203,
-};
+static LRESULT CALLBACK SundanceWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
 
 class AppMain
 {
+
 public:
     AppMain()
         : m_hInstance(NULL)
@@ -565,7 +554,7 @@ static LRESULT CALLBACK SundanceWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPA
                     }
                     else if (szFiles[0] != L'\0')
                     {
-                        pSundanceApp->ImportMediaFiles(1, &szFiles);
+                        LPCWSTR szFilePtr = szFiles; pSundanceApp->ImportMediaFiles(1, &szFilePtr);
                         pSundanceApp->AddMediaToTimeline(szFiles, TimelineTrack_Video);
                     }
                 }
@@ -810,4 +799,9 @@ cleanup:
     }
 
     return nExitCode;
+}
+
+extern "C" int __cdecl MovieMakerMain(int argc, wchar_t** argv)
+{
+    return MovieMakerMainCore(argc, argv);
 }

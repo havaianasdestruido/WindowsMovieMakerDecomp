@@ -113,6 +113,12 @@ public:
     // -- Paint --
     void OnPaint();
 
+    // -- Frame management --
+    void SetFrame(HBITMAP hBitmap);
+
+    // -- Timer callback (called from WndProc on WM_TIMER) --
+    void OnTimer();
+
     // -- Playback state --
     enum PreviewState
     {
@@ -162,6 +168,7 @@ private:
 
     // -- Frame rendering --
     Gdiplus::Bitmap* m_pCurrentFrame;
+    HBITMAP          m_hCurrentFrameBitmap;
     HDC              m_hdcBackBuffer;
     HBITMAP          m_hbmpBackBuffer;
     HBITMAP          m_hbmpOld;

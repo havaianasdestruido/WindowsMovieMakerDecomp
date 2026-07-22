@@ -29,6 +29,7 @@ class SundanceAppMain;
 // Registered via RegisterClipboardFormat on first use.
 //
 static const WCHAR kSundanceClipboardFormat[] = L"SundanceTimelineItem";
+static const WCHAR kWmmrClipboardFormat[]    = L"WMMR_MediaItems";
 
 // ============================================================================
 // ClipboardManager
@@ -54,6 +55,12 @@ public:
     HRESULT Copy();
     HRESULT Paste();
     HRESULT Delete();
+
+    // -- System clipboard operations (WMMR_MediaItems format) --
+    HRESULT CopySelection();
+    HRESULT PasteSelection();
+    HRESULT DeleteSelection();
+    bool    HasData() const throw();
 
     // -- Availability queries --
     bool CanCut() const throw();
@@ -95,6 +102,7 @@ private:
     bool                        m_bCutMode;     // true = cut, false = copy
     std::vector<ClipboardEntry> m_clipboardData;
     UINT                        m_uClipFormat;
+    UINT                        m_uWmmrFormat;
 
     // Internal helpers
     HRESULT SerializeSelection();

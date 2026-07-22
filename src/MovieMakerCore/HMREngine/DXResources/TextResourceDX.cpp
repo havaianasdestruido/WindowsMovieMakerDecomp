@@ -359,6 +359,22 @@ HRESULT ScrollingTextResourceDX::RenderScrollingText(
     hr = EndTextLayout();
     if (FAILED(hr)) return hr;
 
+    if (m_texture && m_wicBitmap)
+    {
+        CComPtr<IWICBitmapLock> lock;
+        WICRect rect = { 0, 0, static_cast<INT>(m_bitmapWidth), static_cast<INT>(m_bitmapHeight) };
+        if (SUCCEEDED(m_wicBitmap->Lock(&rect, WICBitmapLockRead, &lock)))
+        {
+            BYTE* pixData = nullptr;
+            UINT bufSize = 0;
+            UINT stride = 0;
+            if (SUCCEEDED(lock->GetDataPointer(&bufSize, &pixData)) && SUCCEEDED(lock->GetStride(&stride)))
+            {
+                m_context->UpdateSubresource(m_texture, 0, nullptr, pixData, stride, 0);
+            }
+        }
+    }
+
     return S_OK;
 }
 
@@ -467,7 +483,26 @@ HRESULT PartialTextRendererDX::RenderPartialText(const std::wstring& text,
     hr = rt->EndDraw();
     if (FAILED(hr)) return hr;
 
-    EndTextLayout();
+    hr = EndTextLayout();
+    if (FAILED(hr)) return hr;
+
+    if (m_texture && m_wicBitmap)
+    {
+        CComPtr<IWICBitmapLock> lock;
+        WICRect rect = { static_cast<INT>(x), static_cast<INT>(y), static_cast<INT>(regionWidth), static_cast<INT>(regionHeight) };
+        if (SUCCEEDED(m_wicBitmap->Lock(&rect, WICBitmapLockRead, &lock)))
+        {
+            BYTE* pixData = nullptr;
+            UINT bufSize = 0;
+            UINT stride = 0;
+            if (SUCCEEDED(lock->GetDataPointer(&bufSize, &pixData)) && SUCCEEDED(lock->GetStride(&stride)))
+            {
+                D3D11_BOX box = { static_cast<UINT>(x), static_cast<UINT>(y), 0,
+                                  static_cast<UINT>(x) + regionWidth, static_cast<UINT>(y) + regionHeight, 1 };
+                m_context->UpdateSubresource(m_texture, 0, &box, pixData, stride, 0);
+            }
+        }
+    }
 
     return S_OK;
 }

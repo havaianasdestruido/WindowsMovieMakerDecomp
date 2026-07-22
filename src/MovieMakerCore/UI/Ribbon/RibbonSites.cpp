@@ -102,7 +102,10 @@ size_t RibbonList::AddCategory(const RibbonCategoryItem& category) { return m_ar
 
 void RibbonList::RemoveAllCategories() { m_arrCategories.RemoveAll(); }
 
-HRESULT RibbonList::Refresh() { return S_OK; }
+HRESULT RibbonList::Refresh()
+{
+    return S_OK;
+}
 
 // ============================================================================
 // RibbonCategoryList implementation

@@ -78,7 +78,10 @@ PreviewDataContext::PreviewDataContext()
     , m_dblVolume(1.0)
     , m_dblPlaybackSpeed(1.0)
     , m_bstrCurrentFrameUrl(nullptr)
+    , m_llCurrentPositionHns(0)
+    , m_llTotalDurationHns(0)
     , m_pPresenter(nullptr)
+    , m_pProject(nullptr)
 {
 }
 
@@ -125,6 +128,20 @@ void PreviewDataContext::SetPresenter(PreviewPresenterWrapper* pPresenter)
 PreviewPresenterWrapper* PreviewDataContext::GetPresenter() const throw()
 {
     return m_pPresenter;
+}
+
+// ============================================================================
+// SetProject / GetProject
+// ============================================================================
+void PreviewDataContext::SetProject(StoryboardManager::MovieProject* pProject)
+{
+    m_pProject = pProject;
+    RefreshPositionState();
+}
+
+StoryboardManager::MovieProject* PreviewDataContext::GetProject() const throw()
+{
+    return m_pProject;
 }
 
 // ============================================================================
@@ -328,7 +345,49 @@ void PreviewDataContext::OnVolumeChanged(double dblVolume)
 // ============================================================================
 void PreviewDataContext::FirePropertyChanged(LPCWSTR pszPropertyName)
 {
-    UNREFERENCED_PARAMETER(pszPropertyName);
+    if (!pszPropertyName)
+        return;
+
+    DISPID dispid = DISPID_UNKNOWN;
+    for (int j = 0; j < g_cProperties; ++j)
+    {
+        if (_wcsicmp(g_propertyMap[j].pwszName, pszPropertyName) == 0)
+        {
+            dispid = g_propertyMap[j].dispid;
+            break;
+        }
+    }
+
+    if (dispid == DISPID_UNKNOWN)
+        return;
+
+    IConnectionPointContainer* pCPC = NULL;
+    if (SUCCEEDED(QueryInterface(IID_IConnectionPointContainer, (void**)&pCPC)))
+    {
+        IConnectionPoint* pCP = NULL;
+        if (SUCCEEDED(pCPC->FindConnectionPoint(IID_IDispatch, &pCP)))
+        {
+            IEnumConnections* pEnum = NULL;
+            if (SUCCEEDED(pCP->EnumConnections(&pEnum)))
+            {
+                CONNECTDATA cd;
+                while (pEnum->Next(1, &cd, NULL) == S_OK)
+                {
+                    IDispatch* pSink = NULL;
+                    if (SUCCEEDED(cd.punk->QueryInterface(IID_IDispatch, (void**)&pSink)))
+                    {
+                        DISPPARAMS dp = { NULL, NULL, 0, 0 };
+                        pSink->Invoke(dispid, IID_NULL, LOCALE_USER_DEFAULT, DISPATCH_PROPERTYPUT, &dp, NULL, NULL, NULL);
+                        pSink->Release();
+                    }
+                    if (cd.punk) cd.punk->Release();
+                }
+                pEnum->Release();
+            }
+            pCP->Release();
+        }
+        pCPC->Release();
+    }
 }
 
 // ============================================================================

@@ -11,8 +11,8 @@ public:
     ThumbnailCache();
     ~ThumbnailCache();
 
-    Gdiplus::Bitmap* GetThumbnail(LPCWSTR pszPath);
-    HRESULT AddThumbnail(LPCWSTR pszPath, Gdiplus::Bitmap* pBitmap);
+    HBITMAP GetThumbnail(LPCWSTR pszPath);
+    HRESULT AddThumbnail(LPCWSTR pszPath, HBITMAP hBitmap);
     HRESULT RemoveThumbnail(LPCWSTR pszPath);
     void Clear();
     void InvalidateAll();
@@ -22,7 +22,10 @@ private:
     ThumbnailCache(const ThumbnailCache&);
     ThumbnailCache& operator=(const ThumbnailCache&);
 
-    std::map<std::wstring, Gdiplus::Bitmap*> m_cache;
+    HBITMAP GenerateThumbnail(LPCWSTR pszPath);
+    static HBITMAP CreateHBitmapFromFrame(BYTE* pbFrameData, UINT uWidth, UINT uHeight);
+
+    std::map<std::wstring, HBITMAP> m_cache;
 };
 
 #endif

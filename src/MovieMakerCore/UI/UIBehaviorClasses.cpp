@@ -36,11 +36,39 @@ HRESULT TimelineBehaviorSelection::OnElementDetached(IDuiElement*) { m_pElement 
 
 HRESULT TimelineBehaviorSelection::OnMessage(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL* pbHandled)
 {
-    UNREFERENCED_PARAMETER(uMsg);
-    UNREFERENCED_PARAMETER(wParam);
-    UNREFERENCED_PARAMETER(lParam);
     if (pbHandled) *pbHandled = FALSE;
-    return E_NOTIMPL;
+
+    switch (uMsg)
+    {
+    case WM_LBUTTONDOWN:
+    {
+        POINT pt = { GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam) };
+        if (m_pElement)
+        {
+            RECT rcBounds;
+            m_pElement->GetBounds(&rcBounds);
+            if (PtInRect(&rcBounds, pt))
+            {
+                if (pbHandled) *pbHandled = TRUE;
+            }
+        }
+        break;
+    }
+    case WM_MOUSEMOVE:
+    {
+        if (m_pElement)
+        {
+            RECT rcBounds;
+            m_pElement->GetBounds(&rcBounds);
+            POINT pt = { GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam) };
+            HCURSOR hCursor = LoadCursor(NULL, PtInRect(&rcBounds, pt) ? IDC_HAND : IDC_ARROW);
+            if (hCursor) ::SetCursor(hCursor);
+        }
+        break;
+    }
+    }
+
+    return S_OK;
 }
 
 // ============================================================================
@@ -61,11 +89,47 @@ HRESULT TimelineBehaviorDragDrop::OnElementDetached(IDuiElement*) { m_pElement =
 
 HRESULT TimelineBehaviorDragDrop::OnMessage(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL* pbHandled)
 {
-    UNREFERENCED_PARAMETER(uMsg);
-    UNREFERENCED_PARAMETER(wParam);
-    UNREFERENCED_PARAMETER(lParam);
     if (pbHandled) *pbHandled = FALSE;
-    return E_NOTIMPL;
+
+    switch (uMsg)
+    {
+    case WM_LBUTTONDOWN:
+    {
+        m_bDragging = FALSE;
+        m_ptDragStart = { GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam) };
+        if (pbHandled) *pbHandled = TRUE;
+        break;
+    }
+    case WM_MOUSEMOVE:
+    {
+        if (m_bDragging)
+        {
+            POINT pt = { GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam) };
+            int dx = pt.x - m_ptDragStart.x;
+            int dy = pt.y - m_ptDragStart.y;
+            if (abs(dx) > GetSystemMetrics(SM_CXDRAG) || abs(dy) > GetSystemMetrics(SM_CYDRAG))
+            {
+                POINT ptScreen = m_ptDragStart;
+                ClientToScreen(NULL, &ptScreen);
+                IDropTarget* pDropTarget = NULL;
+                DragDetect(NULL, ptScreen);
+            }
+        }
+        break;
+    }
+    case WM_LBUTTONUP:
+    {
+        if (m_bDragging)
+        {
+            m_bDragging = FALSE;
+            DragLeave(NULL);
+            if (pbHandled) *pbHandled = TRUE;
+        }
+        break;
+    }
+    }
+
+    return S_OK;
 }
 
 // ============================================================================
@@ -86,11 +150,53 @@ HRESULT TimelineBehaviorResize::OnElementDetached(IDuiElement*) { m_pElement = N
 
 HRESULT TimelineBehaviorResize::OnMessage(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL* pbHandled)
 {
-    UNREFERENCED_PARAMETER(uMsg);
-    UNREFERENCED_PARAMETER(wParam);
-    UNREFERENCED_PARAMETER(lParam);
     if (pbHandled) *pbHandled = FALSE;
-    return E_NOTIMPL;
+
+    switch (uMsg)
+    {
+    case WM_MOUSEMOVE:
+    {
+        if (m_pElement && m_bResizing)
+        {
+            POINT pt = { GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam) };
+            LONG newWidth = pt.x - m_rcOriginal.left;
+            if (newWidth < m_minWidth) newWidth = m_minWidth;
+            m_rcOriginal.right = m_rcOriginal.left + newWidth;
+            if (m_pTimelineElement) m_pTimelineElement->SetBounds(&m_rcOriginal);
+            if (pbHandled) *pbHandled = TRUE;
+        }
+        break;
+    }
+    case WM_LBUTTONDOWN:
+    {
+        POINT pt = { GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam) };
+        if (m_pElement)
+        {
+            m_pElement->GetBounds(&m_rcOriginal);
+            RECT rcRightEdge = m_rcOriginal;
+            rcRightEdge.left = rcRightEdge.right - GetSystemMetrics(SM_CXEDGE) * 2;
+            if (PtInRect(&rcRightEdge, pt))
+            {
+                m_bResizing = TRUE;
+                SetCapture(m_hWnd);
+                if (pbHandled) *pbHandled = TRUE;
+            }
+        }
+        break;
+    }
+    case WM_LBUTTONUP:
+    {
+        if (m_bResizing)
+        {
+            m_bResizing = FALSE;
+            ReleaseCapture();
+            if (pbHandled) *pbHandled = TRUE;
+        }
+        break;
+    }
+    }
+
+    return S_OK;
 }
 
 // ============================================================================
@@ -111,11 +217,75 @@ HRESULT TimelineBehaviorTrim::OnElementDetached(IDuiElement*) { m_pElement = NUL
 
 HRESULT TimelineBehaviorTrim::OnMessage(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL* pbHandled)
 {
-    UNREFERENCED_PARAMETER(uMsg);
-    UNREFERENCED_PARAMETER(wParam);
-    UNREFERENCED_PARAMETER(lParam);
     if (pbHandled) *pbHandled = FALSE;
-    return E_NOTIMPL;
+
+    switch (uMsg)
+    {
+    case WM_MOUSEMOVE:
+    {
+        if (m_bTrimming)
+        {
+            POINT pt = { GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam) };
+            LONG delta = pt.x - m_ptTrimStart.x;
+            if (m_bTrimmingStart)
+            {
+                LONG newLeft = m_rcOriginal.left + delta;
+                if (newLeft < m_rcOriginal.right - m_minTrimWidth)
+                    m_rcTrimmed.left = newLeft;
+            }
+            else
+            {
+                LONG newRight = m_rcOriginal.right + delta;
+                if (newRight > m_rcOriginal.left + m_minTrimWidth)
+                    m_rcTrimmed.right = newRight;
+            }
+            if (pbHandled) *pbHandled = TRUE;
+        }
+        break;
+    }
+    case WM_LBUTTONDOWN:
+    {
+        POINT pt = { GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam) };
+        if (m_pElement)
+        {
+            m_pElement->GetBounds(&m_rcOriginal);
+            m_rcTrimmed = m_rcOriginal;
+            RECT rcLeftEdge = m_rcOriginal;
+            rcLeftEdge.right = rcLeftEdge.left + GetSystemMetrics(SM_CXEDGE) * 2;
+            RECT rcRightEdge = m_rcOriginal;
+            rcRightEdge.left = rcRightEdge.right - GetSystemMetrics(SM_CXEDGE) * 2;
+            if (PtInRect(&rcLeftEdge, pt))
+            {
+                m_bTrimming = TRUE;
+                m_bTrimmingStart = TRUE;
+                m_ptTrimStart = pt;
+                SetCapture(m_hWnd);
+                if (pbHandled) *pbHandled = TRUE;
+            }
+            else if (PtInRect(&rcRightEdge, pt))
+            {
+                m_bTrimming = TRUE;
+                m_bTrimmingStart = FALSE;
+                m_ptTrimStart = pt;
+                SetCapture(m_hWnd);
+                if (pbHandled) *pbHandled = TRUE;
+            }
+        }
+        break;
+    }
+    case WM_LBUTTONUP:
+    {
+        if (m_bTrimming)
+        {
+            m_bTrimming = FALSE;
+            ReleaseCapture();
+            if (pbHandled) *pbHandled = TRUE;
+        }
+        break;
+    }
+    }
+
+    return S_OK;
 }
 
 // ============================================================================
@@ -136,11 +306,47 @@ HRESULT TimelineBehaviorSplit::OnElementDetached(IDuiElement*) { m_pElement = NU
 
 HRESULT TimelineBehaviorSplit::OnMessage(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL* pbHandled)
 {
-    UNREFERENCED_PARAMETER(uMsg);
-    UNREFERENCED_PARAMETER(wParam);
-    UNREFERENCED_PARAMETER(lParam);
     if (pbHandled) *pbHandled = FALSE;
-    return E_NOTIMPL;
+
+    switch (uMsg)
+    {
+    case WM_LBUTTONDOWN:
+    {
+        POINT pt = { GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam) };
+        if (m_pElement)
+        {
+            RECT rcBounds;
+            m_pElement->GetBounds(&rcBounds);
+            if (PtInRect(&rcBounds, pt))
+            {
+                m_ptSplitPoint = pt;
+                if (m_pTimelineElement)
+                {
+                    m_pTimelineElement->SplitAtPosition(pt.x - rcBounds.left);
+                }
+                if (pbHandled) *pbHandled = TRUE;
+            }
+        }
+        break;
+    }
+    case WM_MOUSEMOVE:
+    {
+        if (m_pElement)
+        {
+            RECT rcBounds;
+            m_pElement->GetBounds(&rcBounds);
+            POINT pt = { GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam) };
+            if (PtInRect(&rcBounds, pt))
+            {
+                HCURSOR hCursor = LoadCursor(NULL, IDC_CROSS);
+                if (hCursor) ::SetCursor(hCursor);
+            }
+        }
+        break;
+    }
+    }
+
+    return S_OK;
 }
 
 // ============================================================================
@@ -161,11 +367,57 @@ HRESULT TimelineBehaviorReorder::OnElementDetached(IDuiElement*) { m_pElement = 
 
 HRESULT TimelineBehaviorReorder::OnMessage(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL* pbHandled)
 {
-    UNREFERENCED_PARAMETER(uMsg);
-    UNREFERENCED_PARAMETER(wParam);
-    UNREFERENCED_PARAMETER(lParam);
     if (pbHandled) *pbHandled = FALSE;
-    return E_NOTIMPL;
+
+    switch (uMsg)
+    {
+    case WM_LBUTTONDOWN:
+    {
+        m_bReordering = FALSE;
+        m_ptDragStart = { GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam) };
+        if (m_pElement)
+        {
+            m_pElement->GetBounds(&m_rcOriginal);
+            if (pbHandled) *pbHandled = TRUE;
+        }
+        break;
+    }
+    case WM_MOUSEMOVE:
+    {
+        if (!m_bReordering)
+        {
+            POINT pt = { GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam) };
+            int dx = abs(pt.x - m_ptDragStart.x);
+            int dy = abs(pt.y - m_ptDragStart.y);
+            if (dx > GetSystemMetrics(SM_CXDRAG) || dy > GetSystemMetrics(SM_CYDRAG))
+            {
+                m_bReordering = TRUE;
+                m_nStartIndex = m_nOriginalIndex;
+            }
+        }
+        if (m_bReordering)
+        {
+            POINT pt = { GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam) };
+            if (m_pTimelineElement)
+            {
+                m_pTimelineElement->ReorderToPosition(pt.x);
+            }
+            if (pbHandled) *pbHandled = TRUE;
+        }
+        break;
+    }
+    case WM_LBUTTONUP:
+    {
+        if (m_bReordering)
+        {
+            m_bReordering = FALSE;
+            if (pbHandled) *pbHandled = TRUE;
+        }
+        break;
+    }
+    }
+
+    return S_OK;
 }
 
 // ============================================================================
@@ -186,11 +438,62 @@ HRESULT TimelineBehaviorZoom::OnElementDetached(IDuiElement*) { m_pElement = NUL
 
 HRESULT TimelineBehaviorZoom::OnMessage(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL* pbHandled)
 {
-    UNREFERENCED_PARAMETER(uMsg);
-    UNREFERENCED_PARAMETER(wParam);
-    UNREFERENCED_PARAMETER(lParam);
     if (pbHandled) *pbHandled = FALSE;
-    return E_NOTIMPL;
+
+    switch (uMsg)
+    {
+    case WM_MOUSEWHEEL:
+    {
+        short zDelta = GET_WHEEL_DELTA_WPARAM(wParam);
+        if (zDelta > 0)
+        {
+            if (m_pTimelineElement) m_pTimelineElement->ZoomIn();
+        }
+        else
+        {
+            if (m_pTimelineElement) m_pTimelineElement->ZoomOut();
+        }
+        if (pbHandled) *pbHandled = TRUE;
+        break;
+    }
+    case WM_LBUTTONDOWN:
+    {
+        POINT pt = { GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam) };
+        m_bZooming = TRUE;
+        m_ptZoomStart = pt;
+        m_dStartZoomLevel = m_dCurrentZoomLevel;
+        SetCapture(m_hWnd);
+        if (pbHandled) *pbHandled = TRUE;
+        break;
+    }
+    case WM_MOUSEMOVE:
+    {
+        if (m_bZooming)
+        {
+            POINT pt = { GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam) };
+            int dy = m_ptZoomStart.y - pt.y;
+            double newZoom = m_dStartZoomLevel * (1.0 + dy * 0.005);
+            if (newZoom < m_dMinZoom) newZoom = m_dMinZoom;
+            if (newZoom > m_dMaxZoom) newZoom = m_dMaxZoom;
+            m_dCurrentZoomLevel = newZoom;
+            if (m_pTimelineElement) m_pTimelineElement->SetZoomLevel(m_dCurrentZoomLevel);
+            if (pbHandled) *pbHandled = TRUE;
+        }
+        break;
+    }
+    case WM_LBUTTONUP:
+    {
+        if (m_bZooming)
+        {
+            m_bZooming = FALSE;
+            ReleaseCapture();
+            if (pbHandled) *pbHandled = TRUE;
+        }
+        break;
+    }
+    }
+
+    return S_OK;
 }
 
 // ============================================================================
@@ -211,11 +514,52 @@ HRESULT TimelineBehaviorScroll::OnElementDetached(IDuiElement*) { m_pElement = N
 
 HRESULT TimelineBehaviorScroll::OnMessage(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL* pbHandled)
 {
-    UNREFERENCED_PARAMETER(uMsg);
-    UNREFERENCED_PARAMETER(wParam);
-    UNREFERENCED_PARAMETER(lParam);
     if (pbHandled) *pbHandled = FALSE;
-    return E_NOTIMPL;
+
+    switch (uMsg)
+    {
+    case WM_MOUSEWHEEL:
+    {
+        short zDelta = GET_WHEEL_DELTA_WPARAM(wParam);
+        int scrollAmount = -zDelta / WHEEL_DELTA * m_nScrollStep;
+        if (m_pTimelineElement) m_pTimelineElement->Scroll(scrollAmount, 0);
+        if (pbHandled) *pbHandled = TRUE;
+        break;
+    }
+    case WM_LBUTTONDOWN:
+    {
+        m_bScrolling = TRUE;
+        m_ptScrollStart = { GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam) };
+        SetCapture(m_hWnd);
+        if (pbHandled) *pbHandled = TRUE;
+        break;
+    }
+    case WM_MOUSEMOVE:
+    {
+        if (m_bScrolling)
+        {
+            POINT pt = { GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam) };
+            int dx = pt.x - m_ptScrollStart.x;
+            int dy = pt.y - m_ptScrollStart.y;
+            if (m_pTimelineElement) m_pTimelineElement->Scroll(-dx, -dy);
+            m_ptScrollStart = pt;
+            if (pbHandled) *pbHandled = TRUE;
+        }
+        break;
+    }
+    case WM_LBUTTONUP:
+    {
+        if (m_bScrolling)
+        {
+            m_bScrolling = FALSE;
+            ReleaseCapture();
+            if (pbHandled) *pbHandled = TRUE;
+        }
+        break;
+    }
+    }
+
+    return S_OK;
 }
 
 // ============================================================================
@@ -236,11 +580,43 @@ HRESULT TimelineBehaviorSnap::OnElementDetached(IDuiElement*) { m_pElement = NUL
 
 HRESULT TimelineBehaviorSnap::OnMessage(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL* pbHandled)
 {
-    UNREFERENCED_PARAMETER(uMsg);
-    UNREFERENCED_PARAMETER(wParam);
-    UNREFERENCED_PARAMETER(lParam);
     if (pbHandled) *pbHandled = FALSE;
-    return E_NOTIMPL;
+
+    switch (uMsg)
+    {
+    case WM_MOUSEMOVE:
+    {
+        POINT pt = { GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam) };
+        if (m_pTimelineElement)
+        {
+            LONGLONG snapPosition = 0;
+            BOOL bSnapped = m_pTimelineElement->FindSnapPoint(pt.x, &snapPosition);
+            if (bSnapped)
+            {
+                m_bSnapping = TRUE;
+                m_llSnapPosition = snapPosition;
+                if (pbHandled) *pbHandled = TRUE;
+            }
+            else
+            {
+                m_bSnapping = FALSE;
+            }
+        }
+        break;
+    }
+    case WM_LBUTTONUP:
+    {
+        if (m_bSnapping && m_pTimelineElement)
+        {
+            m_pTimelineElement->ApplySnap(m_llSnapPosition);
+            m_bSnapping = FALSE;
+            if (pbHandled) *pbHandled = TRUE;
+        }
+        break;
+    }
+    }
+
+    return S_OK;
 }
 
 // ============================================================================
@@ -366,11 +742,35 @@ HRESULT SelectionRootImpl::OnElementDetached(IDuiElement*) { m_pElement = NULL; 
 
 HRESULT SelectionRootImpl::OnMessage(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL* pbHandled)
 {
-    UNREFERENCED_PARAMETER(uMsg);
-    UNREFERENCED_PARAMETER(wParam);
-    UNREFERENCED_PARAMETER(lParam);
     if (pbHandled) *pbHandled = FALSE;
-    return E_NOTIMPL;
+
+    switch (uMsg)
+    {
+    case WM_LBUTTONDOWN:
+    {
+        POINT pt = { GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam) };
+        if (m_pAppMain)
+        {
+            m_pAppMain->ClearSelection();
+            if (pbHandled) *pbHandled = TRUE;
+        }
+        break;
+    }
+    case WM_KEYDOWN:
+    {
+        if (wParam == VK_ESCAPE)
+        {
+            if (m_pAppMain)
+            {
+                m_pAppMain->ClearSelection();
+                if (pbHandled) *pbHandled = TRUE;
+            }
+        }
+        break;
+    }
+    }
+
+    return S_OK;
 }
 
 // ============================================================================
@@ -406,8 +806,18 @@ HRESULT SelectionRange::OnElementDetached(IDuiElement*) { m_pElement = NULL; ret
 
 HRESULT SelectionRange::OnPaint(HDC hdc, const RECT* prcBounds)
 {
-    UNREFERENCED_PARAMETER(hdc);
-    UNREFERENCED_PARAMETER(prcBounds);
+    if (!hdc || !prcBounds) return E_POINTER;
+
+    HPEN hPen = CreatePen(PS_SOLID, 1, RGB(100, 149, 237));
+    HBRUSH hBrush = CreateSolidBrush(RGB(100, 149, 237));
+    HPEN hOldPen = (HPEN)SelectObject(hdc, hPen);
+    HBRUSH hOldBrush = (HBRUSH)SelectObject(hdc, hBrush);
+    Rectangle(hdc, prcBounds->left, prcBounds->top, prcBounds->right, prcBounds->bottom);
+    SelectObject(hdc, hOldPen);
+    SelectObject(hdc, hOldBrush);
+    DeleteObject(hPen);
+    DeleteObject(hBrush);
+
     return S_OK;
 }
 
@@ -443,8 +853,17 @@ HRESULT SelectionUI::OnElementDetached(IDuiElement*) { m_pElement = NULL; return
 
 HRESULT SelectionUI::OnPaint(HDC hdc, const RECT* prcBounds)
 {
-    UNREFERENCED_PARAMETER(hdc);
-    UNREFERENCED_PARAMETER(prcBounds);
+    if (!hdc || !prcBounds) return E_POINTER;
+
+    HPEN hPen = CreatePen(PS_DOT, 1, RGB(0, 120, 215));
+    HBRUSH hBrush = (HBRUSH)GetStockObject(NULL_BRUSH);
+    HPEN hOldPen = (HPEN)SelectObject(hdc, hPen);
+    HBRUSH hOldBrush = (HBRUSH)SelectObject(hdc, hBrush);
+    Rectangle(hdc, prcBounds->left, prcBounds->top, prcBounds->right, prcBounds->bottom);
+    SelectObject(hdc, hOldPen);
+    SelectObject(hdc, hOldBrush);
+    DeleteObject(hPen);
+
     return S_OK;
 }
 
@@ -861,8 +1280,31 @@ HRESULT ProgressBarUIBehavior::OnElementDetached(IDuiElement*) { m_pElement = NU
 
 HRESULT ProgressBarUIBehavior::OnPaint(HDC hdc, const RECT* prcBounds)
 {
-    UNREFERENCED_PARAMETER(hdc);
-    UNREFERENCED_PARAMETER(prcBounds);
+    if (!hdc || !prcBounds) return E_POINTER;
+
+    int width = prcBounds->right - prcBounds->left;
+    int height = prcBounds->bottom - prcBounds->top;
+
+    HBRUSH hBgBrush = CreateSolidBrush(RGB(230, 230, 230));
+    RECT rcBg = *prcBounds;
+    FillRect(hdc, &rcBg, hBgBrush);
+    DeleteObject(hBgBrush);
+
+    HPEN hBorderPen = CreatePen(PS_SOLID, 1, RGB(180, 180, 180));
+    HPEN hOldPen = (HPEN)SelectObject(hdc, hBorderPen);
+    HBRUSH hOldBrush = (HBRUSH)SelectObject(hdc, (HBRUSH)GetStockObject(NULL_BRUSH));
+    Rectangle(hdc, prcBounds->left, prcBounds->top, prcBounds->right, prcBounds->bottom);
+    SelectObject(hdc, hOldPen);
+    SelectObject(hdc, hOldBrush);
+    DeleteObject(hBorderPen);
+
+    HBRUSH hBarBrush = CreateSolidBrush(RGB(0, 120, 215));
+    RECT rcBar = *prcBounds;
+    rcBar.right = rcBar.left + width / 2;
+    InflateRect(&rcBar, -1, -1);
+    FillRect(hdc, &rcBar, hBarBrush);
+    DeleteObject(hBarBrush);
+
     return S_OK;
 }
 
@@ -1003,8 +1445,71 @@ HRESULT CropUIBehavior::OnElementDetached(IDuiElement*) { m_pElement = NULL; ret
 
 HRESULT CropUIBehavior::OnPaint(HDC hdc, const RECT* prcBounds)
 {
-    UNREFERENCED_PARAMETER(hdc);
-    UNREFERENCED_PARAMETER(prcBounds);
+    if (!hdc || !prcBounds) return E_POINTER;
+
+    int width = prcBounds->right - prcBounds->left;
+    int height = prcBounds->bottom - prcBounds->top;
+
+    int insetX = width / 6;
+    int insetY = height / 6;
+
+    HBRUSH hOverlayBrush = CreateSolidBrush(RGB(0, 0, 0));
+    HBRUSH hOldBrush = (HBRUSH)SelectObject(hdc, hOverlayBrush);
+
+    RECT rcTop = *prcBounds;
+    rcTop.bottom = rcTop.top + insetY;
+    FillRect(hdc, &rcTop, hOverlayBrush);
+
+    RECT rcBottom = *prcBounds;
+    rcBottom.top = rcBottom.bottom - insetY;
+    FillRect(hdc, &rcBottom, hOverlayBrush);
+
+    RECT rcLeft = *prcBounds;
+    rcLeft.top += insetY;
+    rcLeft.bottom -= insetY;
+    rcLeft.right = rcLeft.left + insetX;
+    FillRect(hdc, &rcLeft, hOverlayBrush);
+
+    RECT rcRight = *prcBounds;
+    rcRight.top += insetY;
+    rcRight.bottom -= insetY;
+    rcRight.left = rcRight.right - insetX;
+    FillRect(hdc, &rcRight, hOverlayBrush);
+
+    SelectObject(hdc, hOldBrush);
+    DeleteObject(hOverlayBrush);
+
+    HPEN hGuidelinePen = CreatePen(PS_DOT, 1, RGB(255, 255, 255));
+    HPEN hOldPen = (HPEN)SelectObject(hdc, hGuidelinePen);
+    SetBkColor(hdc, RGB(0, 0, 0));
+
+    RECT rcCrop = *prcBounds;
+    rcCrop.left += insetX;
+    rcCrop.right -= insetX;
+    rcCrop.top += insetY;
+    rcCrop.bottom -= insetY;
+
+    MoveToEx(hdc, rcCrop.left + (rcCrop.right - rcCrop.left) / 3, rcCrop.top, NULL);
+    LineTo(hdc, rcCrop.left + (rcCrop.right - rcCrop.left) / 3, rcCrop.bottom);
+    MoveToEx(hdc, rcCrop.left + 2 * (rcCrop.right - rcCrop.left) / 3, rcCrop.top, NULL);
+    LineTo(hdc, rcCrop.left + 2 * (rcCrop.right - rcCrop.left) / 3, rcCrop.bottom);
+    MoveToEx(hdc, rcCrop.left, rcCrop.top + (rcCrop.bottom - rcCrop.top) / 3, NULL);
+    LineTo(hdc, rcCrop.right, rcCrop.top + (rcCrop.bottom - rcCrop.top) / 3);
+    MoveToEx(hdc, rcCrop.left, rcCrop.top + 2 * (rcCrop.bottom - rcCrop.top) / 3, NULL);
+    LineTo(hdc, rcCrop.right, rcCrop.top + 2 * (rcCrop.bottom - rcCrop.top) / 3);
+
+    SelectObject(hdc, hOldPen);
+    DeleteObject(hGuidelinePen);
+
+    HPEN hBorderPen = CreatePen(PS_SOLID, 2, RGB(255, 255, 255));
+    hOldPen = (HPEN)SelectObject(hdc, hBorderPen);
+    HBRUSH hNullBrush = (HBRUSH)GetStockObject(NULL_BRUSH);
+    HBRUSH hNullOld = (HBRUSH)SelectObject(hdc, hNullBrush);
+    Rectangle(hdc, rcCrop.left, rcCrop.top, rcCrop.right, rcCrop.bottom);
+    SelectObject(hdc, hOldPen);
+    SelectObject(hdc, hNullOld);
+    DeleteObject(hBorderPen);
+
     return S_OK;
 }
 

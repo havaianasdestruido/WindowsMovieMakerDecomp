@@ -5,6 +5,8 @@
 #include "../pch.h"
 #include "../MovieMakerCore.h"
 
+class ProjectManager;
+
 class ImportController
 {
 public:
@@ -12,6 +14,7 @@ public:
     ~ImportController();
 
     HRESULT ImportFiles(int cFiles, LPCWSTR* ppszFiles);
+    HRESULT ImportMedia(ProjectManager* pProjectManager);
     float GetImportProgress() const throw();
     bool IsImporting() const throw();
     int GetImportedCount() const throw();

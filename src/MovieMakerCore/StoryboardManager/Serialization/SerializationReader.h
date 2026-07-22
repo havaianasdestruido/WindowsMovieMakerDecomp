@@ -69,6 +69,9 @@ public:
     HRESULT ReadFromStream(IStream* pStream, MovieProject* pProject);
     HRESULT ReadFromMemory(const BYTE* pcbData, DWORD cbData, MovieProject* pProject);
 
+    // -- Project load (WLMP format) --
+    HRESULT LoadProject(LPCWSTR pszFilePath, MovieProject* pProject);
+
     // -- Element handler registration --
     void RegisterHandler(LPCWSTR pszElementName, SerializationElementHandler* pHandler);
     void UnregisterHandler(LPCWSTR pszElementName);

@@ -81,6 +81,29 @@ static const UINT kRibbonCmdSaveMovie     = 300;
 static const UINT kRibbonCmdSaveFile      = 301;
 static const UINT kRibbonCmdPublish        = 302;
 
+// Standard application command IDs
+// Undef Windows SDK macros that conflict with our IDs
+#ifdef ID_FILE_SAVE
+#undef ID_FILE_SAVE
+#endif
+#ifdef ID_EDIT_UNDO
+#undef ID_EDIT_UNDO
+#endif
+#ifdef ID_EDIT_REDO
+#undef ID_EDIT_REDO
+#endif
+
+static const UINT ID_FILE_IMPORT    = 0xE150;
+static const UINT ID_FILE_SAVE      = 0xE103;
+static const UINT ID_FILE_EXPORT    = 0xE151;
+
+static const UINT ID_EDIT_UNDO      = 0xE12B;
+static const UINT ID_EDIT_REDO      = 0xE12C;
+
+static const UINT ID_PLAY_PLAY      = 0xE230;
+static const UINT ID_PLAY_PAUSE     = 0xE231;
+static const UINT ID_PLAY_STOP      = 0xE232;
+
 // ============================================================================
 // RibbonCommandHandler callback type
 // ============================================================================
@@ -118,7 +141,7 @@ public:
     ~RibbonApp();
 
     // Lifecycle
-    HRESULT Initialize(SundanceAppMain* pAppMain);
+    HRESULT Initialize(SundanceAppMain* pAppMain, HWND hWnd);
     HRESULT Shutdown();
 
     // Ribbon framework access
@@ -150,6 +173,10 @@ public:
     HRESULT RegisterCommandHandler(UINT nCmdId, RibbonCommandCallback pCallback);
     HRESULT UnregisterCommandHandler(UINT nCmdId);
 
+    // Simple command handler registration (std::function<void()>)
+    void RegisterCommandHandler(UINT nCmdId, std::function<void()> handler);
+    void ExecuteSimpleCommand(UINT nCmdId);
+
     // Batch UI update
     void UpdateUI();
 
@@ -164,16 +191,20 @@ public:
 
     // IUICommandHandler methods (called by framework via CCommandHandler)
     HRESULT Execute(UINT nCmdId, UI_COMMANDTYPE commandType, IUISimplePropertySet* pArgs);
-    HRESULT UpdateState(UINT nCmdId, PROPVARIANT* pCurrentValue, PROPVARIANT* pNewValue);
+    HRESULT UpdateState(UINT nCmdId, REFPROPERTYKEY key, const PROPVARIANT* pCurrentValue, PROPVARIANT* pNewValue);
 
 private:
     HRESULT CreateUIFramework();
     HRESULT LoadRibbonFromResource(HINSTANCE hInstance, LPCWSTR pszResource);
     HRESULT RegisterFrameworkCommands();
     HRESULT GetRibbonView();
+    void    RegisterCommonCommands();
 
     // Command handler map
     std::map<UINT, RibbonCommandEntry> m_commandHandlers;
+
+    // Simple command handler map (void lambdas for common commands)
+    std::map<UINT, std::function<void()>> m_commandMap;
 
     CComPtr<IUIFramework>       m_spFramework;
     CComPtr<IUIRibbon>          m_spRibbon;

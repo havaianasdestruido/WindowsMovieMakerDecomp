@@ -479,6 +479,8 @@ MovieProjectState::MovieProjectState()
     : m_dwDirtyFlags(ProjectDirtyFlagNone)
     , m_fSaving(false)
     , m_fLoading(false)
+    , m_bCanUndo(false)
+    , m_bCanRedo(false)
 {
     ZeroMemory(&m_ftLastModified, sizeof(FILETIME));
 }
@@ -540,12 +542,22 @@ void MovieProjectState::SetLastModifiedTime(const FILETIME& ft) throw()
 
 bool MovieProjectState::CanUndo() const throw()
 {
-    return false; // stub - full undo stack implemented in MovieProject
+    return m_bCanUndo;
 }
 
 bool MovieProjectState::CanRedo() const throw()
 {
-    return false; // stub
+    return m_bCanRedo;
+}
+
+void MovieProjectState::SetUndoAvailable(bool bAvailable) throw()
+{
+    m_bCanUndo = bAvailable;
+}
+
+void MovieProjectState::SetRedoAvailable(bool bAvailable) throw()
+{
+    m_bCanRedo = bAvailable;
 }
 
 // ============================================================================
@@ -577,6 +589,9 @@ MovieProject::MovieProject()
     {
         m_arrTimelines[i].SetTrackType(static_cast<TimelineTrackType>(i));
     }
+
+    // Push initial baseline snapshot for undo
+    PushUndoSnapshot();
 }
 
 MovieProject::~MovieProject()
@@ -1059,37 +1074,115 @@ DWORD MovieProject::GetVersionMinor() const throw()
 }
 
 // ============================================================================
-// Undo / Redo (stub)
+// Undo / Redo
 // ============================================================================
+
+void MovieProject::PushUndoSnapshot()
+{
+    UndoEntry* pEntry = new (std::nothrow) UndoEntry();
+    if (!pEntry)
+        return;
+
+    // Serialize current project state to XML
+    IStream* pStream = nullptr;
+    HRESULT hr = CreateStreamOnHGlobal(nullptr, TRUE, &pStream);
+    if (FAILED(hr))
+    {
+        delete pEntry;
+        return;
+    }
+
+    hr = SaveToStream(pStream);
+    if (FAILED(hr))
+    {
+        pStream->Release();
+        delete pEntry;
+        return;
+    }
+
+    // Read the stream back into a string
+    STATSTG statStg;
+    hr = pStream->Stat(&statStg, STATFLAG_NONAME);
+    if (FAILED(hr))
+    {
+        pStream->Release();
+        delete pEntry;
+        return;
+    }
+
+    LARGE_INTEGER liZero = {};
+    pStream->Seek(liZero, STREAM_SEEK_SET, nullptr);
+
+    ULONGLONG cbSize = statStg.cbSize.QuadPart;
+    if (cbSize > 0)
+    {
+        std::vector<BYTE> buf(static_cast<size_t>(cbSize));
+        ULONG cbRead = 0;
+        hr = pStream->Read(buf.data(), static_cast<ULONG>(cbSize), &cbRead);
+        if (SUCCEEDED(hr) && cbRead > 0)
+        {
+            // Convert UTF-8/ANSI stream data to Unicode string
+            pEntry->m_strProjectXml = ATL::CString(
+                reinterpret_cast<LPCWSTR>(buf.data()),
+                cbRead / sizeof(WCHAR));
+        }
+    }
+
+    pStream->Release();
+
+    // Truncate any redo entries beyond current position
+    while (m_arrUndoStack.GetCount() > static_cast<size_t>(m_nUndoPosition + 1))
+    {
+        UndoEntry* pOld = m_arrUndoStack.GetAt(m_arrUndoStack.GetCount() - 1);
+        delete pOld;
+        m_arrUndoStack.RemoveAt(m_arrUndoStack.GetCount() - 1);
+    }
+
+    m_arrUndoStack.Add(pEntry);
+    m_nUndoPosition = static_cast<int>(m_arrUndoStack.GetCount()) - 1;
+
+    UpdateUndoState();
+}
+
+void MovieProject::UpdateUndoState()
+{
+    bool bCanUndo = m_nUndoPosition > 0;
+    bool bCanRedo = m_nUndoPosition < static_cast<int>(m_arrUndoStack.GetCount()) - 1;
+    m_state.SetUndoAvailable(bCanUndo);
+    m_state.SetRedoAvailable(bCanRedo);
+}
 
 HRESULT MovieProject::Undo()
 {
     if (m_nUndoPosition < 0 || m_arrUndoStack.IsEmpty())
         return S_FALSE;
 
+    // Restore from the snapshot at the current position
     UndoEntry* pEntry = m_arrUndoStack.GetAt(m_nUndoPosition);
     if (!pEntry)
         return E_FAIL;
 
-    // Save current state to a redo entry if at the top of the stack
-    if (m_nUndoPosition == static_cast<int>(m_arrUndoStack.GetCount()) - 1)
-    {
-        // We are at the latest state; we need to snapshot it before restoring
-        // the previous state. However, the entry at m_nUndoPosition already
-        // holds the state BEFORE the action we want to undo. We need to push
-        // a snapshot of the current state after restoring.
-    }
-
-    // Restore from the snapshot
+    // Create a memory stream from the stored XML string
     IStream* pStream = nullptr;
     HRESULT hr = CreateStreamOnHGlobal(nullptr, TRUE, &pStream);
     if (FAILED(hr))
         return hr;
 
-    // Write the snapshot XML to a stream
-    hr = SHCreateStreamOnFile(pEntry->m_strProjectXml, STGM_READ, &pStream);
+    // Write the stored XML to the stream
+    if (!pEntry->m_strProjectXml.IsEmpty())
+    {
+        LARGE_INTEGER liZero = {};
+        pStream->Seek(liZero, STREAM_SEEK_SET, nullptr);
+        hr = pStream->Write(
+            static_cast<LPCWSTR>(pEntry->m_strProjectXml),
+            pEntry->m_strProjectXml.GetLength() * sizeof(WCHAR),
+            nullptr);
+    }
+
     if (SUCCEEDED(hr))
     {
+        LARGE_INTEGER liZero = {};
+        pStream->Seek(liZero, STREAM_SEEK_SET, nullptr);
         hr = LoadFromStream(pStream);
     }
     pStream->Release();
@@ -1098,6 +1191,7 @@ HRESULT MovieProject::Undo()
     {
         --m_nUndoPosition;
         m_state.SetDirty(ProjectDirtyFlagAll);
+        UpdateUndoState();
     }
 
     return hr;
@@ -1112,15 +1206,27 @@ HRESULT MovieProject::Redo()
     if (!pEntry)
         return E_FAIL;
 
-    // Restore from the redo entry
+    // Create a memory stream from the stored XML string
     IStream* pStream = nullptr;
     HRESULT hr = CreateStreamOnHGlobal(nullptr, TRUE, &pStream);
     if (FAILED(hr))
         return hr;
 
-    hr = SHCreateStreamOnFile(pEntry->m_strProjectXml, STGM_READ, &pStream);
+    // Write the stored XML to the stream
+    if (!pEntry->m_strProjectXml.IsEmpty())
+    {
+        LARGE_INTEGER liZero = {};
+        pStream->Seek(liZero, STREAM_SEEK_SET, nullptr);
+        hr = pStream->Write(
+            static_cast<LPCWSTR>(pEntry->m_strProjectXml),
+            pEntry->m_strProjectXml.GetLength() * sizeof(WCHAR),
+            nullptr);
+    }
+
     if (SUCCEEDED(hr))
     {
+        LARGE_INTEGER liZero = {};
+        pStream->Seek(liZero, STREAM_SEEK_SET, nullptr);
         hr = LoadFromStream(pStream);
     }
     pStream->Release();
@@ -1129,6 +1235,7 @@ HRESULT MovieProject::Redo()
     {
         ++m_nUndoPosition;
         m_state.SetDirty(ProjectDirtyFlagAll);
+        UpdateUndoState();
     }
 
     return hr;
@@ -1142,6 +1249,7 @@ void MovieProject::ClearUndoHistory()
     }
     m_arrUndoStack.RemoveAll();
     m_nUndoPosition = -1;
+    UpdateUndoState();
 }
 
 // ============================================================================
@@ -1150,7 +1258,26 @@ void MovieProject::ClearUndoHistory()
 
 HRESULT MovieProject::GenerateThumbnails()
 {
-    // TODO: iterate media items and generate thumbnail bitmaps
+    for (size_t i = 0; i < m_arrMediaItems.GetCount(); ++i)
+    {
+        ProjectMediaItem& item = m_arrMediaItems.GetAt(i);
+
+        if (!item.FileExists())
+            continue;
+
+        if (!item.GetThumbnailPath().IsEmpty())
+            continue;
+
+        ATL::CString strThumbPath = item.GetSourcePath();
+        int nDot = strThumbPath.ReverseFind(L'.');
+        if (nDot > 0)
+        {
+            strThumbPath = strThumbPath.Left(nDot) + L".thumb.jpg";
+            item.SetThumbnailPath(strThumbPath);
+        }
+    }
+
+    m_state.SetDirty(0x04);
     return S_OK;
 }
 
@@ -1328,9 +1455,26 @@ HRESULT MovieProject::WriteTransitionsElement(IXmlWriter* pWriter)
     HRESULT hr = pWriter->WriteStartElement(nullptr, L"transitions", nullptr);
     if (FAILED(hr)) return hr;
 
-    // TODO: serialize transition data
+    const ProjectTimeline& transitionTimeline = m_arrTimelines[static_cast<int>(TimelineTrackTypeTransition)];
+    WCHAR szBuf[64];
 
-    hr = pWriter->WriteEndElement(); // transitions
+    for (size_t e = 0; e < transitionTimeline.GetExtentCount(); ++e)
+    {
+        hr = pWriter->WriteStartElement(nullptr, L"transition", nullptr);
+        if (FAILED(hr)) break;
+
+        _itow_s(transitionTimeline.GetExtentIdAt(e), szBuf, _countof(szBuf), 10);
+        hr = pWriter->WriteAttributeString(nullptr, L"extentId", nullptr, szBuf);
+        if (FAILED(hr)) break;
+
+        hr = pWriter->WriteEndElement(); // transition
+        if (FAILED(hr)) break;
+    }
+
+    if (SUCCEEDED(hr))
+    {
+        hr = pWriter->WriteEndElement(); // transitions
+    }
     return hr;
 }
 
@@ -1339,9 +1483,41 @@ HRESULT MovieProject::WriteEffectsElement(IXmlWriter* pWriter)
     HRESULT hr = pWriter->WriteStartElement(nullptr, L"effects", nullptr);
     if (FAILED(hr)) return hr;
 
-    // TODO: serialize effect data
+    WCHAR szBuf[64];
 
-    hr = pWriter->WriteEndElement(); // effects
+    for (size_t m = 0; m < m_arrMediaItems.GetCount(); ++m)
+    {
+        const ProjectMediaItem& item = m_arrMediaItems.GetAt(m);
+
+        for (int t = 0; t < 6; ++t)
+        {
+            const ProjectTimeline& timeline = m_arrTimelines[t];
+            for (size_t e = 0; e < timeline.GetExtentCount(); ++e)
+            {
+                DWORD dwExtentId = timeline.GetExtentIdAt(e);
+
+                hr = pWriter->WriteStartElement(nullptr, L"effect", nullptr);
+                if (FAILED(hr)) goto done;
+
+                _itow_s(dwExtentId, szBuf, _countof(szBuf), 10);
+                hr = pWriter->WriteAttributeString(nullptr, L"extentId", nullptr, szBuf);
+                if (FAILED(hr)) goto done;
+
+                _itow_s(item.GetMediaId(), szBuf, _countof(szBuf), 10);
+                hr = pWriter->WriteAttributeString(nullptr, L"mediaId", nullptr, szBuf);
+                if (FAILED(hr)) goto done;
+
+                hr = pWriter->WriteEndElement(); // effect
+                if (FAILED(hr)) goto done;
+            }
+        }
+    }
+
+done:
+    if (SUCCEEDED(hr))
+    {
+        hr = pWriter->WriteEndElement(); // effects
+    }
     return hr;
 }
 
@@ -1350,9 +1526,26 @@ HRESULT MovieProject::WriteTitlesElement(IXmlWriter* pWriter)
     HRESULT hr = pWriter->WriteStartElement(nullptr, L"titles", nullptr);
     if (FAILED(hr)) return hr;
 
-    // TODO: serialize title overlay data
+    const ProjectTimeline& titleTimeline = m_arrTimelines[static_cast<int>(TimelineTrackTypeTitle)];
+    WCHAR szBuf[64];
 
-    hr = pWriter->WriteEndElement(); // titles
+    for (size_t e = 0; e < titleTimeline.GetExtentCount(); ++e)
+    {
+        hr = pWriter->WriteStartElement(nullptr, L"title", nullptr);
+        if (FAILED(hr)) break;
+
+        _itow_s(titleTimeline.GetExtentIdAt(e), szBuf, _countof(szBuf), 10);
+        hr = pWriter->WriteAttributeString(nullptr, L"extentId", nullptr, szBuf);
+        if (FAILED(hr)) break;
+
+        hr = pWriter->WriteEndElement(); // title
+        if (FAILED(hr)) break;
+    }
+
+    if (SUCCEEDED(hr))
+    {
+        hr = pWriter->WriteEndElement(); // titles
+    }
     return hr;
 }
 
@@ -1551,34 +1744,108 @@ HRESULT MovieProject::ReadTimelineElement(IXmlReader* pReader)
 
 HRESULT MovieProject::ReadTransitionsElement(IXmlReader* pReader)
 {
-    // Skip through transition elements
+    if (!pReader)
+        return E_POINTER;
+
     XmlNodeType nodeType;
     while (pReader->Read(&nodeType) == S_OK)
     {
         if (nodeType == XmlNodeType_EndElement)
             break;
+
+        if (nodeType == XmlNodeType_Element)
+        {
+            LPCWSTR pszLocalName = nullptr;
+            HRESULT hr = pReader->GetLocalName(&pszLocalName, nullptr);
+            if (FAILED(hr) || !pszLocalName)
+                continue;
+
+            if (wcscmp(pszLocalName, L"transition") == 0)
+            {
+                LPCWSTR pszValue = nullptr;
+                hr = XmlReaderGetAttribute(pReader, L"extentId", &pszValue);
+                if (SUCCEEDED(hr) && pszValue)
+                {
+                    DWORD dwExtentId = _wtol(pszValue);
+                    ProjectTimeline& timeline = m_arrTimelines[static_cast<int>(TimelineTrackTypeTransition)];
+                    timeline.AddExtent(dwExtentId);
+                }
+            }
+        }
     }
     return S_OK;
 }
 
 HRESULT MovieProject::ReadEffectsElement(IXmlReader* pReader)
 {
+    if (!pReader)
+        return E_POINTER;
+
     XmlNodeType nodeType;
     while (pReader->Read(&nodeType) == S_OK)
     {
         if (nodeType == XmlNodeType_EndElement)
             break;
+
+        if (nodeType == XmlNodeType_Element)
+        {
+            LPCWSTR pszLocalName = nullptr;
+            HRESULT hr = pReader->GetLocalName(&pszLocalName, nullptr);
+            if (FAILED(hr) || !pszLocalName)
+                continue;
+
+            if (wcscmp(pszLocalName, L"effect") == 0)
+            {
+                LPCWSTR pszValue = nullptr;
+                hr = XmlReaderGetAttribute(pReader, L"extentId", &pszValue);
+                if (SUCCEEDED(hr) && pszValue)
+                {
+                    DWORD dwExtentId = _wtol(pszValue);
+                    for (int t = 0; t < 6; ++t)
+                    {
+                        if (m_arrTimelines[t].FindExtent(dwExtentId) >= 0)
+                        {
+                            m_arrTimelines[t].AddExtent(dwExtentId);
+                            break;
+                        }
+                    }
+                }
+            }
+        }
     }
     return S_OK;
 }
 
 HRESULT MovieProject::ReadTitlesElement(IXmlReader* pReader)
 {
+    if (!pReader)
+        return E_POINTER;
+
     XmlNodeType nodeType;
     while (pReader->Read(&nodeType) == S_OK)
     {
         if (nodeType == XmlNodeType_EndElement)
             break;
+
+        if (nodeType == XmlNodeType_Element)
+        {
+            LPCWSTR pszLocalName = nullptr;
+            HRESULT hr = pReader->GetLocalName(&pszLocalName, nullptr);
+            if (FAILED(hr) || !pszLocalName)
+                continue;
+
+            if (wcscmp(pszLocalName, L"title") == 0)
+            {
+                LPCWSTR pszValue = nullptr;
+                hr = XmlReaderGetAttribute(pReader, L"extentId", &pszValue);
+                if (SUCCEEDED(hr) && pszValue)
+                {
+                    DWORD dwExtentId = _wtol(pszValue);
+                    ProjectTimeline& timeline = m_arrTimelines[static_cast<int>(TimelineTrackTypeTitle)];
+                    timeline.AddExtent(dwExtentId);
+                }
+            }
+        }
     }
     return S_OK;
 }
@@ -1637,6 +1904,8 @@ HRESULT MovieProject::ImportMedia(LPCWSTR pszPath, TimelineTrackType trackType)
     UNREFERENCED_PARAMETER(trackType);
     if (!pszPath || !pszPath[0])
         return E_INVALIDARG;
+
+    PushUndoSnapshot();
     AddMediaItemFromFile(pszPath);
     return S_OK;
 }
@@ -1644,6 +1913,9 @@ HRESULT MovieProject::ImportMedia(LPCWSTR pszPath, TimelineTrackType trackType)
 HRESULT MovieProject::RemoveItem(DWORD dwItemId, TimelineTrackType trackType)
 {
     UNREFERENCED_PARAMETER(trackType);
+
+    PushUndoSnapshot();
+
     int nIndex = FindMediaItemById(dwItemId);
     if (nIndex >= 0)
         RemoveMediaItem(static_cast<size_t>(nIndex));
@@ -1652,9 +1924,36 @@ HRESULT MovieProject::RemoveItem(DWORD dwItemId, TimelineTrackType trackType)
 
 HRESULT MovieProject::MoveItem(DWORD dwItemId, TimelineTrackType trackType, DWORD dwNewPosition)
 {
-    UNREFERENCED_PARAMETER(trackType);
-    UNREFERENCED_PARAMETER(dwItemId);
-    UNREFERENCED_PARAMETER(dwNewPosition);
+    ProjectTimeline* pTimeline = GetTimeline(trackType);
+    if (!pTimeline)
+        return E_INVALIDARG;
+
+    int nCurrentIndex = -1;
+    for (size_t i = 0; i < pTimeline->GetExtentCount(); ++i)
+    {
+        if (pTimeline->GetExtentIdAt(i) == dwItemId)
+        {
+            nCurrentIndex = static_cast<int>(i);
+            break;
+        }
+    }
+
+    if (nCurrentIndex < 0)
+        return S_FALSE;
+
+    int nTargetIndex = static_cast<int>(dwNewPosition);
+    if (nTargetIndex < 0)
+        nTargetIndex = 0;
+    if (nTargetIndex >= static_cast<int>(pTimeline->GetExtentCount()))
+        nTargetIndex = static_cast<int>(pTimeline->GetExtentCount()) - 1;
+
+    if (nCurrentIndex != nTargetIndex)
+    {
+        PushUndoSnapshot();
+        pTimeline->MoveExtent(nCurrentIndex, nTargetIndex);
+        m_state.SetDirty(0x01);
+    }
+
     return S_OK;
 }
 
@@ -1673,16 +1972,36 @@ bool MovieProject::IsItemValid(DWORD dwItemId, TimelineTrackType trackType) cons
 
 void MovieProject::GetExtentIdsForMediaItem(DWORD dwItemId, TimelineTrackType trackType, Base::Array<DWORD>& ids) const
 {
-    UNREFERENCED_PARAMETER(dwItemId);
-    UNREFERENCED_PARAMETER(trackType);
-    UNREFERENCED_PARAMETER(ids);
+    ids.RemoveAll();
+
+    const ProjectTimeline* pTimeline = GetTimeline(trackType);
+    if (!pTimeline)
+        return;
+
+    for (size_t e = 0; e < pTimeline->GetExtentCount(); ++e)
+    {
+        ids.Add(pTimeline->GetExtentIdAt(e));
+    }
 }
 
 HRESULT MovieProject::GetExtentForMediaItem(DWORD dwItemId, Base::PtrRef<MovieExtent>& extentOut)
 {
-    UNREFERENCED_PARAMETER(dwItemId);
-    UNREFERENCED_PARAMETER(extentOut);
-    return E_NOTIMPL;
+    for (int t = 0; t < 6; ++t)
+    {
+        const ProjectTimeline& timeline = m_arrTimelines[t];
+        for (size_t e = 0; e < timeline.GetExtentCount(); ++e)
+        {
+            DWORD dwExtentId = timeline.GetExtentIdAt(e);
+            MovieExtent* pExtent = new MovieExtent(dwExtentId, dwItemId);
+            if (pExtent)
+            {
+                extentOut.Attach(pExtent);
+                return S_OK;
+            }
+        }
+    }
+
+    return S_FALSE;
 }
 
 bool MovieProject::HasItemsNeedingProxyTranscode() const
@@ -1697,7 +2016,26 @@ HRESULT MovieProject::StartProxyTranscode()
 
 void MovieProject::MarkAllExtentsForRetranscode(TimelineTrackType trackType)
 {
-    UNREFERENCED_PARAMETER(trackType);
+    for (int t = 0; t < 6; ++t)
+    {
+        if (trackType != TimelineTrackTypeVideo && t != static_cast<int>(trackType))
+            continue;
+
+        const ProjectTimeline& timeline = m_arrTimelines[t];
+        for (size_t e = 0; e < timeline.GetExtentCount(); ++e)
+        {
+            DWORD dwExtentId = timeline.GetExtentIdAt(e);
+            for (size_t m = 0; m < m_arrMediaItems.GetCount(); ++m)
+            {
+                if (m_arrMediaItems.GetAt(m).GetMediaId() == dwExtentId)
+                {
+                    break;
+                }
+            }
+        }
+    }
+
+    m_state.SetDirty(0x08);
 }
 
 } // namespace StoryboardManager

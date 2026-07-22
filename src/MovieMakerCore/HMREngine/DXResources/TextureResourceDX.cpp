@@ -167,28 +167,30 @@ HRESULT TextureResourceDX::CreateTextureFromWIC(const void* data, UINT size)
         return CoInitializeEx(nullptr, COINIT_APARTMENTTHREADED);
     }();
 
-    IWICImagingFactory* wicFactory = nullptr;
+    CComPtr<IWICImagingFactory> wicFactory;
     HRESULT hr = CoCreateInstance(CLSID_WICImagingFactory, nullptr, CLSCTX_INPROC_SERVER,
         __uuidof(IWICImagingFactory), (void**)&wicFactory);
     if (FAILED(hr)) return hr;
 
-    IStream* stream = nullptr;
+    CComPtr<IStream> stream;
     hr = CreateStreamOnHGlobal(nullptr, TRUE, &stream);
-    if (FAILED(hr)) { wicFactory->Release(); return hr; }
+    if (FAILED(hr)) return hr;
 
-    stream->Write(data, size, nullptr);
+    hr = stream->Write(data, size, nullptr);
+    if (FAILED(hr)) return hr;
+
     LARGE_INTEGER li = {};
     li.QuadPart = 0;
-    stream->Seek(li, STREAM_SEEK_SET, nullptr);
+    hr = stream->Seek(li, STREAM_SEEK_SET, nullptr);
+    if (FAILED(hr)) return hr;
 
-    IWICBitmapDecoder* decoder = nullptr;
+    CComPtr<IWICBitmapDecoder> decoder;
     hr = wicFactory->CreateDecoderFromStream(stream, nullptr, WICDecodeMetadataCacheOnLoad, &decoder);
-    stream->Release();
-    if (FAILED(hr)) { wicFactory->Release(); return hr; }
+    if (FAILED(hr)) return hr;
 
-    IWICBitmapFrameDecode* frame = nullptr;
+    CComPtr<IWICBitmapFrameDecode> frame;
     hr = decoder->GetFrame(0, &frame);
-    if (FAILED(hr)) { decoder->Release(); wicFactory->Release(); return hr; }
+    if (FAILED(hr)) return hr;
 
     UINT w = 0, h = 0;
     frame->GetSize(&w, &h);
@@ -196,7 +198,7 @@ HRESULT TextureResourceDX::CreateTextureFromWIC(const void* data, UINT size)
     m_height = h;
     m_format = DXGI_FORMAT_B8G8R8A8_UNORM;
 
-    IWICFormatConverter* converter = nullptr;
+    CComPtr<IWICFormatConverter> converter;
     hr = wicFactory->CreateFormatConverter(&converter);
     if (SUCCEEDED(hr))
     {
@@ -204,16 +206,10 @@ HRESULT TextureResourceDX::CreateTextureFromWIC(const void* data, UINT size)
             WICBitmapDitherTypeNone, nullptr, 0.0, WICBitmapPaletteTypeCustom);
     }
 
-    frame->Release();
-
-    if (FAILED(hr)) { decoder->Release(); wicFactory->Release(); return hr; }
+    if (FAILED(hr)) return hr;
 
     std::vector<BYTE> pixels(w * h * 4);
     hr = converter->CopyPixels(nullptr, w * 4, w * h * 4, pixels.data());
-    converter->Release();
-    decoder->Release();
-    wicFactory->Release();
-
     if (FAILED(hr)) return hr;
 
     return CreateFromData(pixels.data(), w, h, DXGI_FORMAT_B8G8R8A8_UNORM, w * 4);
@@ -473,8 +469,6 @@ HRESULT MotionTextureResourceDX::GetTextureAtTime(double time, UINT fps, ID3D11S
     if (m_frameCount == 0) return E_FAIL;
 
     UINT frame = static_cast<UINT>(time * fps) % m_frameCount;
-    frame = static_cast<UINT>(Saturate(static_cast<float>(frame) / static_cast<float>(m_frameCount)) * m_frameCount);
-    if (frame >= m_frameCount) frame = m_frameCount - 1;
 
     return GetTextureForFrame(frame, ppSRV);
 }

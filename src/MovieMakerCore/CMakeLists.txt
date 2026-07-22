@@ -7,7 +7,7 @@ set(TARGET MovieMakerCore)
 
 add_library(${TARGET} SHARED
     dllmain.cpp
-    MovieMakerCore.cpp
+    MovieMakerCore_new.cpp
     MovieMakerCore.def
     pch.cpp
     SundanceApp/SundanceAppMain.cpp

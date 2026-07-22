@@ -337,13 +337,39 @@ HRESULT MediaBrowser::LoadThumbnail(DWORD dwIndex)
 
     MediaBrowserItem& item = m_items[dwIndex];
 
-    // Skip if already loaded
     if (item.iThumbnailIndex >= 0)
         return S_OK;
 
-    // TODO: Load thumbnail using WIC (IWICImagingFactory) or SHGetFileInfo
-    // For now, mark as "no thumbnail" (-2)
-    item.iThumbnailIndex = -2;
+    SHFILEINFOW sfi = {};
+    DWORD_PTR dwResult = SHGetFileInfoW(
+        item.strFilePath,
+        FILE_ATTRIBUTE_NORMAL,
+        &sfi,
+        sizeof(sfi),
+        SHGFI_ICON | SHGFI_SMALLICON | SHGFI_USEFILEATTRIBUTES);
+
+    if (dwResult && sfi.hIcon)
+    {
+        ICONINFO iconInfo = {};
+        if (GetIconInfo(sfi.hIcon, &iconInfo))
+        {
+            HBITMAP hBmp = iconInfo.hbmColor ? iconInfo.hbmColor : iconInfo.hbmMask;
+            if (hBmp)
+            {
+                int nIdx = static_cast<int>(m_thumbnails.size());
+                m_thumbnails.push_back(hBmp);
+                item.iThumbnailIndex = nIdx;
+            }
+            if (iconInfo.hbmColor) DeleteObject(iconInfo.hbmColor);
+            if (iconInfo.hbmMask) DeleteObject(iconInfo.hbmMask);
+        }
+        DestroyIcon(sfi.hIcon);
+    }
+
+    if (item.iThumbnailIndex < 0)
+    {
+        item.iThumbnailIndex = -2;
+    }
 
     return S_OK;
 }
@@ -437,12 +463,41 @@ HRESULT MediaBrowser::BeginDrag(DWORD dwIndex)
         return E_INVALIDARG;
 
     m_bDragging = true;
+    m_dwDragIndex = dwIndex;
 
-    // TODO: Initiate OLE drag-and-drop via DoDragDrop
-    // For now, store the drag source index
+    IDataObject* pDataObject = NULL;
+    IDropSource* pDropSource = NULL;
+    DWORD dwEffect = DROPEFFECT_COPY;
+
+    STGMEDIUM stgMedium = {};
+    stgMedium.tymed = TYMED_HGLOBAL;
+    stgMedium.hGlobal = GlobalAlloc(GMEM_MOVEABLE, sizeof(CF_HDROP) + (m_items[dwIndex].strFilePath.GetLength() + 2) * sizeof(WCHAR));
+    if (!stgMedium.hGlobal)
+    {
+        m_bDragging = false;
+        return E_OUTOFMEMORY;
+    }
+
+    DROPFILES* pDropFiles = (DROPFILES*)GlobalLock(stgMedium.hGlobal);
+    pDropFiles->pFiles = sizeof(DROPFILES);
+    pDropFiles->fWide = TRUE;
+    WCHAR* pFiles = (WCHAR*)((BYTE*)pDropFiles + sizeof(DROPFILES));
+    wcscpy_s(pFiles, m_items[dwIndex].strFilePath.GetLength() + 1, m_items[dwIndex].strFilePath);
+    pFiles[m_items[dwIndex].strFilePath.GetLength() + 1] = L'\0';
+    GlobalUnlock(stgMedium.hGlobal);
+
+    FORMATETC fmtetc = { CF_HDROP, NULL, DVASPECT_CONTENT, -1, TYMED_HGLOBAL };
+
+    HRESULT hr = CreateDataObject(&fmtetc, &stgMedium, 1, &pDataObject);
+    if (SUCCEEDED(hr))
+    {
+        hr = DoDragDrop(pDataObject, NULL, dwEffect, &dwEffect);
+        pDataObject->Release();
+    }
 
     m_bDragging = false;
-    return S_OK;
+    m_dwDragIndex = 0;
+    return hr;
 }
 
 bool MediaBrowser::IsDragging() const throw()

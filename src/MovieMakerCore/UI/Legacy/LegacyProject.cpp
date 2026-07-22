@@ -405,6 +405,13 @@ HRESULT LegacyProjectSupport::ReadLegacyTimeline(
                 DWORD dwMediaId = 0;
                 LONGLONG llStartTime = 0;
                 LONGLONG llEndTime = 0;
+                double dblSpeed = 1.0;
+                double dblVolume = 1.0;
+                double dblPan = 0.0;
+                bool fReversed = false;
+                bool fMuted = false;
+                LONGLONG llFadeIn = 0;
+                LONGLONG llFadeOut = 0;
 
                 if (SUCCEEDED(XmlReaderGetAttribute(pReader, L"extentId", &pszValue)) && pszValue)
                     dwExtentId = _wtoi(pszValue);
@@ -414,31 +421,35 @@ HRESULT LegacyProjectSupport::ReadLegacyTimeline(
                     llStartTime = _wtoi64(pszValue);
                 if (SUCCEEDED(XmlReaderGetAttribute(pReader, L"endTime", &pszValue)) && pszValue)
                     llEndTime = _wtoi64(pszValue);
+                if (SUCCEEDED(XmlReaderGetAttribute(pReader, L"speed", &pszValue)) && pszValue)
+                    dblSpeed = _wtof(pszValue);
+                if (SUCCEEDED(XmlReaderGetAttribute(pReader, L"volume", &pszValue)) && pszValue)
+                    dblVolume = _wtof(pszValue);
+                if (SUCCEEDED(XmlReaderGetAttribute(pReader, L"pan", &pszValue)) && pszValue)
+                    dblPan = _wtof(pszValue);
+                if (SUCCEEDED(XmlReaderGetAttribute(pReader, L"reversed", &pszValue)) && pszValue)
+                    fReversed = (_wtoi(pszValue) != 0);
+                if (SUCCEEDED(XmlReaderGetAttribute(pReader, L"muted", &pszValue)) && pszValue)
+                    fMuted = (_wtoi(pszValue) != 0);
+                if (SUCCEEDED(XmlReaderGetAttribute(pReader, L"fadeIn", &pszValue)) && pszValue)
+                    llFadeIn = ConvertLegacyTimeToHns(static_cast<DWORD>(_wtoi64(pszValue)));
+                if (SUCCEEDED(XmlReaderGetAttribute(pReader, L"fadeOut", &pszValue)) && pszValue)
+                    llFadeOut = ConvertLegacyTimeToHns(static_cast<DWORD>(_wtoi64(pszValue)));
 
                 if (pTimeline)
                     pTimeline->AddExtent(dwExtentId);
 
-                if (SUCCEEDED(XmlReaderGetAttribute(pReader, L"speed", &pszValue)) && pszValue)
-                {
-                }
-                if (SUCCEEDED(XmlReaderGetAttribute(pReader, L"volume", &pszValue)) && pszValue)
-                {
-                }
-                if (SUCCEEDED(XmlReaderGetAttribute(pReader, L"pan", &pszValue)) && pszValue)
-                {
-                }
-                if (SUCCEEDED(XmlReaderGetAttribute(pReader, L"reversed", &pszValue)) && pszValue)
-                {
-                }
-                if (SUCCEEDED(XmlReaderGetAttribute(pReader, L"muted", &pszValue)) && pszValue)
-                {
-                }
-                if (SUCCEEDED(XmlReaderGetAttribute(pReader, L"fadeIn", &pszValue)) && pszValue)
-                {
-                }
-                if (SUCCEEDED(XmlReaderGetAttribute(pReader, L"fadeOut", &pszValue)) && pszValue)
-                {
-                }
+                StoryboardManager::MovieExtent extent(dwExtentId, dwMediaId);
+                extent.SetStartTimeHns(ConvertLegacyTimeToHns(static_cast<DWORD>(llStartTime)));
+                extent.SetEndTimeHns(ConvertLegacyTimeToHns(static_cast<DWORD>(llEndTime)));
+                extent.SetSpeedFactor(dblSpeed);
+                extent.SetVolume(dblVolume);
+                extent.SetPan(dblPan);
+                extent.SetReversed(fReversed);
+                extent.SetMuted(fMuted);
+                extent.SetFadeInDurationHns(llFadeIn);
+                extent.SetFadeOutDurationHns(llFadeOut);
+                pProject->AddExtent(extent);
 
                 SkipCurrentElement(pReader);
             }

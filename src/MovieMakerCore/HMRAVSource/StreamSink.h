@@ -106,6 +106,10 @@ private:
     DWORD                       m_dwAudioStreamIndex;
     LONGLONG                    m_llTotalDurationHns;
     ProgressCallback            m_progressCb;
+    CComPtr<IMFMediaType>       m_spInputVideoType;
+    CComPtr<IMFMediaType>       m_spInputAudioType;
+    CComPtr<IMFMediaType>       m_spOutputVideoType;
+    CComPtr<IMFMediaType>       m_spOutputAudioType;
 
     HRESULT ConfigureVideoStream();
     HRESULT ConfigureAudioStream();

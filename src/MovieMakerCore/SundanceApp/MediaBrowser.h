@@ -111,6 +111,7 @@ private:
     // State
     HWND                                m_hWndOwner;
     bool                                m_bDragging;
+    DWORD                               m_dwDragIndex;
     ATL::CString                        m_strFilter;
     ATL::CString                        m_strSearchQuery;
     std::vector<ATL::CString>           m_mediaDirectories;

@@ -109,7 +109,7 @@ public:
     // Event handling
     virtual HRESULT GetEvent(IMFMediaEvent** ppEvent);
     virtual HRESULT BeginGetEvent(IMFAsyncCallback* pCallback, IUnknown* punkState);
-    virtual HRESULT EndGetEvent(IMFMediaEvent* pEvent, IMFMediaEvent** ppNextEvent);
+    virtual HRESULT EndGetEvent(IMFAsyncResult* pResult, IMFMediaEvent** ppNextEvent);
 
     // Error info
     ATL::CString GetLastErrorDescription() const;

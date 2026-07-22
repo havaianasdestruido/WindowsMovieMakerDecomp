@@ -2,6 +2,7 @@
 
 #include "pch.h"
 #include "VideoProc.h"
+#include <algorithm>
 
 namespace HMRAVSource
 {
@@ -117,7 +118,7 @@ HRESULT XVideoProc::ProcessFrameToSurface(IMFSample* pInputSample, IDirect3DSurf
         {
             BYTE* pSrc = pData + y * srcPitch;
             BYTE* pDst = static_cast<BYTE*>(lockedRect.pBits) + y * lockedRect.Pitch;
-            memcpy(pDst, pSrc, min(srcPitch, static_cast<UINT>(lockedRect.Pitch)));
+            memcpy(pDst, pSrc, std::min(srcPitch, static_cast<UINT>(lockedRect.Pitch)));
         }
 
         pOutputSurface->UnlockRect();
@@ -589,7 +590,7 @@ HRESULT DXVA2VideoProc::ProcessSampleDXVA2(IMFSample* pInput, IMFSample** ppOutp
             {
                 BYTE* pSrc = pInputData + y * srcPitch;
                 BYTE* pDst = static_cast<BYTE*>(lockedRect.pBits) + y * lockedRect.Pitch;
-                memcpy(pDst, pSrc, min(srcPitch, static_cast<UINT>(lockedRect.Pitch)));
+                memcpy(pDst, pSrc, std::min(srcPitch, static_cast<UINT>(lockedRect.Pitch)));
             }
 
             m_spTempSurface->UnlockRect();
@@ -645,7 +646,7 @@ HRESULT DXVA2VideoProc::ProcessSampleDXVA2(IMFSample* pInput, IMFSample** ppOutp
                 {
                     memcpy(pDstData + y * m_desc.uOutputWidth * 4,
                            static_cast<BYTE*>(lockedRect.pBits) + y * lockedRect.Pitch,
-                           min(static_cast<UINT>(m_desc.uOutputWidth * 4), static_cast<UINT>(lockedRect.Pitch)));
+                           std::min(static_cast<UINT>(m_desc.uOutputWidth * 4), static_cast<UINT>(lockedRect.Pitch)));
                 }
                 spOutputBuffer->Unlock();
             }
@@ -750,7 +751,7 @@ HRESULT DXVA2VideoProc::ConvertSurfaceToSample(IDirect3DSurface9* pSurface, IMFS
             {
                 memcpy(pDstData + y * desc.Width * 4,
                        static_cast<BYTE*>(lockedRect.pBits) + y * lockedRect.Pitch,
-                       min(static_cast<UINT>(desc.Width * 4), static_cast<UINT>(lockedRect.Pitch)));
+                       std::min(static_cast<UINT>(desc.Width * 4), static_cast<UINT>(lockedRect.Pitch)));
             }
             spBuffer->Unlock();
         }

@@ -379,6 +379,11 @@ public:
     HRESULT Redo();
     void ClearUndoHistory();
 
+    // Selection management
+    void ClearSelection();
+    SelectionIndex& GetSelectionIndex() throw();
+    const SelectionIndex& GetSelectionIndex() const throw();
+
     // Thumbnail management
     HRESULT GenerateThumbnails();
 
@@ -416,6 +421,7 @@ private:
 
     ATL::CAtlArray<ProjectMediaItem>   m_arrMediaItems;
     ProjectTimeline    m_arrTimelines[6];  // one per TimelineTrackType
+    SelectionIndex     m_selectionIndex;
 
     DWORD               m_dwVersionMajor;
     DWORD               m_dwVersionMinor;

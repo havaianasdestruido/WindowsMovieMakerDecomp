@@ -14,6 +14,8 @@
 
 #include "pch.h"
 #include "SundanceAppMain.h"
+#include <prsht.h>
+#include <commctrl.h>
 #include "../StoryboardManager/TimelineTrack.h"
 #include "CommandLineParser.h"
 #include "AutoSaveManager.h"

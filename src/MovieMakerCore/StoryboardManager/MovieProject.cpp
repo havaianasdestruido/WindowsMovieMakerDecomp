@@ -2038,4 +2038,19 @@ void MovieProject::MarkAllExtentsForRetranscode(TimelineTrackType trackType)
     m_state.SetDirty(0x08);
 }
 
+void MovieProject::ClearSelection()
+{
+    m_selectionIndex.ClearSelection();
+}
+
+SelectionIndex& MovieProject::GetSelectionIndex() throw()
+{
+    return m_selectionIndex;
+}
+
+const SelectionIndex& MovieProject::GetSelectionIndex() const throw()
+{
+    return m_selectionIndex;
+}
+
 } // namespace StoryboardManager

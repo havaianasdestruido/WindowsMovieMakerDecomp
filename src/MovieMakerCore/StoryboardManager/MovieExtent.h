@@ -40,6 +40,12 @@ public:
     MovieExtent(DWORD dwId, DWORD dwMediaId);
     ~MovieExtent();
 
+    // Reference counting (for PtrRef<MovieExtent> compatibility)
+    // MovieExtent is not IUnknown-derived but must be compatible with
+    // Base::PtrRef which calls AddRef/Release.
+    ULONG AddRef() throw();
+    ULONG Release() throw();
+
     // Identity
     DWORD GetExtentId() const throw();
     void SetExtentId(DWORD dwId) throw();

@@ -96,7 +96,7 @@ public:
 
     HRESULT GetEvent(IMFMediaEvent** ppEvent) override;
     HRESULT BeginGetEvent(IMFAsyncCallback* pCallback, IUnknown* punkState) override;
-    HRESULT EndGetEvent(IMFMediaEvent* pEvent, IMFMediaEvent** ppNextEvent) override;
+    HRESULT EndGetEvent(IMFAsyncResult* pResult, IMFMediaEvent** ppNextEvent) override;
 
     // MF-specific queries
     HRESULT GetSourceReader(IMFSourceReader** ppReader);

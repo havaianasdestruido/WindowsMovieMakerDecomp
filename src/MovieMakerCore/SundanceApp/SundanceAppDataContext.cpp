@@ -397,13 +397,13 @@ void SundanceAppDataContext::FirePropertyChanged(LPCWSTR pszPropertyName)
                 while (pEnum->Next(1, &cd, NULL) == S_OK)
                 {
                     IDispatch* pSink = NULL;
-                    if (SUCCEEDED(cd.punk->QueryInterface(IID_IDispatch, (void**)&pSink)))
+                    if (SUCCEEDED(cd.pUnk->QueryInterface(IID_IDispatch, (void**)&pSink)))
                     {
                         DISPPARAMS dp = { NULL, NULL, 0, 0 };
                         pSink->Invoke(dispid, IID_NULL, LOCALE_USER_DEFAULT, DISPATCH_PROPERTYPUT, &dp, NULL, NULL, NULL);
                         pSink->Release();
                     }
-                    if (cd.punk) cd.punk->Release();
+                    if (cd.pUnk) cd.pUnk->Release();
                 }
                 pEnum->Release();
             }

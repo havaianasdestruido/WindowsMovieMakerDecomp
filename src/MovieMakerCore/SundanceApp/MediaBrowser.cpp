@@ -16,6 +16,21 @@
 #include "SundanceAppMain.h"
 
 // ============================================================================
+// CreateDataObject stub - not available in modern SDK
+// ============================================================================
+static HRESULT CreateDataObject(
+    const FORMATETC* pFormatEtc,
+    const STGMEDIUM* pStgMedium,
+    DWORD cFormats,
+    IDataObject** ppDataObject)
+{
+    if (!ppDataObject)
+        return E_POINTER;
+    *ppDataObject = NULL;
+    return E_NOTIMPL;
+}
+
+// ============================================================================
 // Supported file extensions (from disassembly string analysis)
 // ============================================================================
 namespace
@@ -69,6 +84,7 @@ namespace
 MediaBrowser::MediaBrowser()
     : m_hWndOwner(NULL)
     , m_bDragging(false)
+    , m_dwDragIndex(0)
     , m_strFilter(L"all")
 {
 }

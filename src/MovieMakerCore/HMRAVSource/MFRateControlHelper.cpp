@@ -251,7 +251,7 @@ HRESULT MFRateControlHelper::ApplyRateViaSourceReader(double dblRate, bool fThin
         hr = m_pReader->QueryInterface(IID_PPV_ARGS(&spAttrs));
         if (SUCCEEDED(hr))
         {
-            hr = spAttrs->SetUINT32(MF_SOURCE_READER_CONTROL_THINNING, fThin ? TRUE : FALSE);
+            hr = spAttrs->SetUINT32(0x00000009 /* MF_SOURCE_READER_CONTROL_THINNING */, fThin ? TRUE : FALSE);
         }
     }
 
@@ -272,7 +272,7 @@ HRESULT MFRateControlHelper::ApplyRateViaSession(double dblRate)
     if (!m_pSession)
         return E_UNEXPECTED;
 
-    CComPtr<IMFPresentationClock> spClock;
+    CComPtr<IMFClock> spClock;
     HRESULT hr = m_pSession->GetClock(&spClock);
     if (FAILED(hr))
         return hr;

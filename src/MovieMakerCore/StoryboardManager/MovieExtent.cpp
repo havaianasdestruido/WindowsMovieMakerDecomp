@@ -72,6 +72,16 @@ MovieExtent::~MovieExtent()
     ClearSnapshot();
 }
 
+ULONG MovieExtent::AddRef() throw()
+{
+    return 1;
+}
+
+ULONG MovieExtent::Release() throw()
+{
+    return 1;
+}
+
 // ============================================================================
 // Identity
 // ============================================================================

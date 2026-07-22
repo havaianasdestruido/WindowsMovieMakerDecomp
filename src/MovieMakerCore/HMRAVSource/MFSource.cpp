@@ -297,7 +297,9 @@ HRESULT MFSource::ReadSample(IMFSample** ppSample, DWORD dwStreamIndex)
             dwActualStream,
             0,
             nullptr,
-            m_spCallback);
+            nullptr,
+            nullptr,
+            nullptr);
         if (FAILED(hr))
             return hr;
 
@@ -380,9 +382,9 @@ HRESULT MFSource::BeginGetEvent(IMFAsyncCallback* pCallback, IUnknown* punkState
     return spEventGen->BeginGetEvent(pCallback, punkState);
 }
 
-HRESULT MFSource::EndGetEvent(IMFMediaEvent* pEvent, IMFMediaEvent** ppNextEvent)
+HRESULT MFSource::EndGetEvent(IMFAsyncResult* pResult, IMFMediaEvent** ppNextEvent)
 {
-    if (!pEvent)
+    if (!pResult)
         return E_POINTER;
 
     if (ppNextEvent)
@@ -396,7 +398,7 @@ HRESULT MFSource::EndGetEvent(IMFMediaEvent* pEvent, IMFMediaEvent** ppNextEvent
     if (FAILED(hr))
         return hr;
 
-    return spEventGen->EndGetEvent(pEvent, ppNextEvent);
+    return spEventGen->EndGetEvent(pResult, ppNextEvent);
 }
 
 // ============================================================================

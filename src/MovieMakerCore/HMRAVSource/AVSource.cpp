@@ -260,9 +260,9 @@ HRESULT AVSource::BeginGetEvent(IMFAsyncCallback* pCallback, IUnknown* punkState
     return S_OK;
 }
 
-HRESULT AVSource::EndGetEvent(IMFMediaEvent* pEvent, IMFMediaEvent** ppNextEvent)
+HRESULT AVSource::EndGetEvent(IMFAsyncResult* pResult, IMFMediaEvent** ppNextEvent)
 {
-    UNREFERENCED_PARAMETER(pEvent);
+    UNREFERENCED_PARAMETER(pResult);
     if (ppNextEvent)
         *ppNextEvent = nullptr;
     return S_OK;

@@ -2,6 +2,7 @@
 
 #include "pch.h"
 #include "TextureInterop.h"
+#include <algorithm>
 #include <d3d11.h>
 
 namespace HMRAVSource
@@ -124,11 +125,11 @@ HRESULT TextureInterOp::CopyFromSample(IMFSample* pSample)
         D3DLOCKED_RECT lockedRect = {};
         if (SUCCEEDED(m_spTexture->LockRect(0, &lockedRect, nullptr, 0)))
         {
-            UINT copyH = min(m_desc.uHeight, cbCurrentLength / lockedRect.Pitch);
+            UINT copyH = std::min(m_desc.uHeight, cbCurrentLength / lockedRect.Pitch);
             for (UINT y = 0; y < copyH; ++y)
                 memcpy((BYTE*)lockedRect.pBits + y * lockedRect.Pitch,
                        pSrcData + y * (cbCurrentLength / m_desc.uHeight),
-                       min(lockedRect.Pitch, cbCurrentLength / m_desc.uHeight));
+                       std::min(lockedRect.Pitch, cbCurrentLength / m_desc.uHeight));
             m_spTexture->UnlockRect(0);
         }
     }
@@ -159,11 +160,11 @@ HRESULT TextureInterOp::CopyToSample(IMFSample* pSample)
         D3DLOCKED_RECT lockedRect = {};
         if (SUCCEEDED(m_spTexture->LockRect(0, &lockedRect, nullptr, D3DLOCK_READONLY)))
         {
-            UINT copyH = min(m_desc.uHeight, cbMaxLength / lockedRect.Pitch);
+            UINT copyH = std::min(m_desc.uHeight, cbMaxLength / lockedRect.Pitch);
             for (UINT y = 0; y < copyH; ++y)
                 memcpy(pDestData + y * (cbMaxLength / m_desc.uHeight),
                        (BYTE*)lockedRect.pBits + y * lockedRect.Pitch,
-                       min(lockedRect.Pitch, cbMaxLength / m_desc.uHeight));
+                       std::min(lockedRect.Pitch, cbMaxLength / m_desc.uHeight));
             m_spTexture->UnlockRect(0);
         }
     }

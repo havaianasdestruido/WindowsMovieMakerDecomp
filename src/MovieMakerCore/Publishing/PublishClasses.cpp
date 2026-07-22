@@ -1353,7 +1353,8 @@ HRESULT PublishServiceYouTube::ValidateFile(LPCWSTR pszFilePath) const
     if (GetFileAttributesExW(pszFilePath, GetFileExInfoStandard, &fad))
     {
         ULONGLONG cbFileSize = (static_cast<ULONGLONG>(fad.nFileSizeHigh) << 32) | fad.nFileSizeLow;
-        if (cbFileSize > static_cast<ULONGLONG>(m_dwMaxFileSizeMB) * 1024 * 1024)
+        const ULONGLONG cbMaxFileSize = 2048ULL * 1024 * 1024;
+        if (cbFileSize > cbMaxFileSize)
             return HRESULT_FROM_WIN32(ERROR_FILE_TOO_LARGE);
     }
 
@@ -1561,7 +1562,8 @@ HRESULT PublishServiceSkyDrive::ValidateFile(LPCWSTR pszFilePath) const
     if (GetFileAttributesExW(pszFilePath, GetFileExInfoStandard, &fad))
     {
         ULONGLONG cbFileSize = (static_cast<ULONGLONG>(fad.nFileSizeHigh) << 32) | fad.nFileSizeLow;
-        if (cbFileSize > static_cast<ULONGLONG>(m_dwMaxFileSizeMB) * 1024 * 1024)
+        const ULONGLONG cbMaxFileSize = 4096ULL * 1024 * 1024;
+        if (cbFileSize > cbMaxFileSize)
             return HRESULT_FROM_WIN32(ERROR_FILE_TOO_LARGE);
     }
 

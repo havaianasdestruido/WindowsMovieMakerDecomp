@@ -1382,9 +1382,10 @@ HRESULT Serializable::Serialize(SerializationWriter* pWriter) const
 
 HRESULT Serializable::Deserialize(SerializationReader* pReader, SerializationContext& ctx)
 {
-    UNREFERENCED_PARAMETER(ctx);
     if (!pReader)
         return E_POINTER;
+
+    UNREFERENCED_PARAMETER(ctx);
 
     return S_OK;
 }
@@ -1422,9 +1423,10 @@ HRESULT SerializableBase::Serialize(SerializationWriter* pWriter) const
 
 HRESULT SerializableBase::Deserialize(SerializationReader* pReader, SerializationContext& ctx)
 {
-    UNREFERENCED_PARAMETER(ctx);
     if (!pReader)
         return E_POINTER;
+
+    UNREFERENCED_PARAMETER(ctx);
 
     return S_OK;
 }
@@ -3348,15 +3350,27 @@ HRESULT PropertyBindingManager::RemoveBinding(LPCWSTR pszSourceProperty, LPCWSTR
 
 HRESULT PropertyBindingManager::ResolveAll(const BoundPropertyDictionary& dictionary)
 {
+    HRESULT hrAll = S_OK;
+
     for (size_t i = 0; i < m_arrBindings.GetCount(); ++i)
     {
         PropertyBinding* pBinding = m_arrBindings.GetAt(i);
-        if (pBinding && !pBinding->IsBound())
-        {
-            pBinding->Bind();
-        }
+        if (!pBinding || pBinding->IsBound())
+            continue;
+
+        const ATL::CString& strSource = pBinding->GetSourceProperty();
+        if (strSource.IsEmpty())
+            continue;
+
+        if (!dictionary.HasProperty(strSource))
+            continue;
+
+        HRESULT hr = pBinding->Bind();
+        if (FAILED(hr))
+            hrAll = hr;
     }
-    return S_OK;
+
+    return hrAll;
 }
 
 HRESULT PropertyBindingManager::ApplyAll()

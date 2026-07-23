@@ -168,6 +168,22 @@ HRESULT WINAPI D3DX11CompileEffectFromMemory(
 }
 
 // ============================================================================
+// D3DX11CreateEffectFromMemory - Stub: D3DX11 effect framework is removed
+// ============================================================================
+HRESULT WINAPI D3DX11CreateEffectFromMemory(
+    LPCVOID pData,
+    SIZE_T DataLength,
+    UINT Flags,
+    ID3D11Device* pDevice,
+    ID3DX11Effect** ppEffect,
+    void* pEffectPool)
+{
+    UNREFERENCED_PARAMETER(pEffectPool);
+    if (ppEffect) *ppEffect = nullptr;
+    return E_NOTIMPL;
+}
+
+// ============================================================================
 // D3DX11CreateShaderResourceViewFromFileA
 // Loads an image file via WIC and creates a D3D11 SRV.
 // ============================================================================

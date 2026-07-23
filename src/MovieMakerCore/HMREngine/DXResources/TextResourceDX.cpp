@@ -73,15 +73,14 @@ HRESULT TextResourceBaseDX::CreateWICBitmap(UINT width, UINT height)
         GUID_WICPixelFormat32bppBGRA, WICBitmapCacheOnDemand, &m_wicBitmap);
     if (FAILED(hr)) return hr;
 
-    CComPtr<ID2D1Factory> factory;
-    D2D1CreateFactory(D2D1_FACTORY_TYPE_SINGLE_THREADED, __uuidof(ID2D1Factory), (void**)&factory);
+    if (!m_d2dFactory) return E_FAIL;
 
     D2D1_RENDER_TARGET_PROPERTIES rtProps = D2D1::RenderTargetProperties(
         D2D1_RENDER_TARGET_TYPE_DEFAULT,
         D2D1::PixelFormat(DXGI_FORMAT_B8G8R8A8_UNORM, D2D1_ALPHA_MODE_PREMULTIPLIED));
 
     m_renderTarget.Release();
-    hr = factory->CreateWicBitmapRenderTarget(m_wicBitmap, &rtProps, &m_renderTarget);
+    hr = m_d2dFactory->CreateWicBitmapRenderTarget(m_wicBitmap, &rtProps, &m_renderTarget);
     return hr;
 }
 

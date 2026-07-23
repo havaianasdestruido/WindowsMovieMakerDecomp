@@ -14,6 +14,7 @@
 
 #include "PublishJob.h"
 #include "PublishClasses.h"
+#include <algorithm>
 #include <process.h>
 
 // ============================================================================
@@ -337,7 +338,7 @@ HRESULT PublishJob::Encode()
         bool fHasAudio = false;
 
         CComPtr<IMFMediaType> spNativeVideoType;
-        hr = spSourceReader->GetNativeMediaType(
+        hr = spSourceReader.p->GetNativeMediaType(
             MF_SOURCE_READER_FIRST_VIDEO_STREAM, 0, &spNativeVideoType);
         fHasVideo = SUCCEEDED(hr);
 
@@ -347,21 +348,21 @@ HRESULT PublishJob::Encode()
             hr = MFCreateMediaType(&spOutputVideoType);
             if (SUCCEEDED(hr))
             {
-                spNativeVideoType->CopyAllItems(spOutputVideoType);
+                spNativeVideoType.p->CopyAllItems(spOutputVideoType);
 
                 GUID guidVideoSubtype = bWMV ? MFVideoFormat_WMVVC1 : MFVideoFormat_H264;
-                spOutputVideoType->SetGUID(MF_MT_SUBTYPE, guidVideoSubtype);
-                spOutputVideoType->SetUINT32(MF_MT_AVG_BITRATE, dwVideoBitrate);
+                spOutputVideoType.p->SetGUID(MF_MT_SUBTYPE, guidVideoSubtype);
+                spOutputVideoType.p->SetUINT32(MF_MT_AVG_BITRATE, dwVideoBitrate);
                 MFSetAttributeSize(spOutputVideoType, MF_MT_FRAME_SIZE, m_dwWidth, m_dwHeight);
-                spOutputVideoType->SetUINT32(MF_MT_INTERLACE_MODE, MFVideoInterlace_Progressive);
-                spOutputVideoType->SetRatio(MF_MT_FRAME_RATE, 30, 1);
+                spOutputVideoType.p->SetUINT32(MF_MT_INTERLACE_MODE, MFVideoInterlace_Progressive);
+                MFSetAttributeRatio(spOutputVideoType, MF_MT_FRAME_RATE, 30, 1);
 
-                hr = spSinkWriter->AddStream(spOutputVideoType, &dwVideoStreamIndex);
+                hr = spSinkWriter.p->AddStream(spOutputVideoType, &dwVideoStreamIndex);
             }
         }
 
         CComPtr<IMFMediaType> spNativeAudioType;
-        hr = spSourceReader->GetNativeMediaType(
+        hr = spSourceReader.p->GetNativeMediaType(
             MF_SOURCE_READER_FIRST_AUDIO_STREAM, 0, &spNativeAudioType);
         fHasAudio = SUCCEEDED(hr);
 
@@ -371,20 +372,20 @@ HRESULT PublishJob::Encode()
             hr = MFCreateMediaType(&spOutputAudioType);
             if (SUCCEEDED(hr))
             {
-                spNativeAudioType->CopyAllItems(spOutputAudioType);
+                spNativeAudioType.p->CopyAllItems(spOutputAudioType);
 
                 GUID guidAudioSubtype = bWMV ? MFAudioFormat_WMAudioV9 : MFAudioFormat_AAC;
-                spOutputAudioType->SetGUID(MF_MT_SUBTYPE, guidAudioSubtype);
-                spOutputAudioType->SetUINT32(MF_MT_AUDIO_SAMPLES_PER_SECOND, 44100);
-                spOutputAudioType->SetUINT32(MF_MT_AUDIO_NUM_CHANNELS, 2);
-                spOutputAudioType->SetUINT32(MF_MT_AUDIO_BITS_PER_SAMPLE, 16);
+                spOutputAudioType.p->SetGUID(MF_MT_SUBTYPE, guidAudioSubtype);
+                spOutputAudioType.p->SetUINT32(MF_MT_AUDIO_SAMPLES_PER_SECOND, 44100);
+                spOutputAudioType.p->SetUINT32(MF_MT_AUDIO_NUM_CHANNELS, 2);
+                spOutputAudioType.p->SetUINT32(MF_MT_AUDIO_BITS_PER_SAMPLE, 16);
 
-                hr = spSinkWriter->AddStream(spOutputAudioType, &dwAudioStreamIndex);
+                hr = spSinkWriter.p->AddStream(spOutputAudioType, &dwAudioStreamIndex);
             }
         }
 
         if (SUCCEEDED(hr))
-            hr = spSinkWriter->BeginWriting();
+            hr = spSinkWriter.p->BeginWriting();
 
         if (FAILED(hr))
         {
@@ -395,7 +396,7 @@ HRESULT PublishJob::Encode()
         LONGLONG llDuration = 0;
         PROPVARIANT var;
         PropVariantInit(&var);
-        hr = spSourceReader->GetPresentationAttribute(
+        hr = spSourceReader.p->GetPresentationAttribute(
             (DWORD)MF_SOURCE_READER_MEDIASOURCE, MF_PD_DURATION, &var);
         if (SUCCEEDED(hr))
         {
@@ -407,7 +408,7 @@ HRESULT PublishJob::Encode()
         {
             if (m_bCancelled)
             {
-                spSinkWriter->Abort();
+                spSinkWriter.p->Finalize();
                 MFShutdown();
                 return E_ABORT;
             }
@@ -417,7 +418,7 @@ HRESULT PublishJob::Encode()
 
             if (m_bCancelled)
             {
-                spSinkWriter->Abort();
+                spSinkWriter.p->Finalize();
                 MFShutdown();
                 return E_ABORT;
             }
@@ -425,7 +426,7 @@ HRESULT PublishJob::Encode()
             DWORD dwFlags = 0;
             LONGLONG llPosition = 0;
             CComPtr<IMFSample> spVideoSample;
-            hr = spSourceReader->ReadSample(
+            hr = spSourceReader.p->ReadSample(
                 MF_SOURCE_READER_FIRST_VIDEO_STREAM,
                 0, NULL, &dwFlags, &llPosition, &spVideoSample);
 
@@ -437,7 +438,7 @@ HRESULT PublishJob::Encode()
 
             if (spVideoSample)
             {
-                hr = spSinkWriter->WriteSample(dwVideoStreamIndex, spVideoSample);
+                hr = spSinkWriter.p->WriteSample(dwVideoStreamIndex, spVideoSample);
                 if (FAILED(hr))
                     break;
 
@@ -466,7 +467,7 @@ HRESULT PublishJob::Encode()
                     DWORD dwAudioFlags = 0;
                     LONGLONG llAudioPos = 0;
                     CComPtr<IMFSample> spAudioSample;
-                    hr = spSourceReader->ReadSample(
+                    hr = spSourceReader.p->ReadSample(
                         MF_SOURCE_READER_FIRST_AUDIO_STREAM,
                         0, NULL, &dwAudioFlags, &llAudioPos, &spAudioSample);
 
@@ -474,7 +475,7 @@ HRESULT PublishJob::Encode()
                         break;
 
                     if (spAudioSample)
-                        spSinkWriter->WriteSample(dwAudioStreamIndex, spAudioSample);
+                        spSinkWriter.p->WriteSample(dwAudioStreamIndex, spAudioSample);
                     else
                         break;
                 }
@@ -482,7 +483,7 @@ HRESULT PublishJob::Encode()
         }
 
         if (SUCCEEDED(hr))
-            hr = spSinkWriter->Finalize();
+            hr = spSinkWriter.p->Finalize();
     }
     else
     {
@@ -490,14 +491,14 @@ HRESULT PublishJob::Encode()
         hr = MFCreateMediaType(&spVideoType);
         if (SUCCEEDED(hr))
         {
-            spVideoType->SetGUID(MF_MT_MAJOR_TYPE, MFMediaType_Video);
-            spVideoType->SetGUID(MF_MT_SUBTYPE, bWMV ? MFVideoFormat_WMVVC1 : MFVideoFormat_H264);
-            spVideoType->SetUINT32(MF_MT_AVG_BITRATE, dwVideoBitrate);
-            spVideoType->SetUINT32(MF_MT_INTERLACE_MODE, MFVideoInterlace_Progressive);
-            spVideoType->SetRatio(MF_MT_FRAME_RATE, 30, 1);
+            spVideoType.p->SetGUID(MF_MT_MAJOR_TYPE, MFMediaType_Video);
+            spVideoType.p->SetGUID(MF_MT_SUBTYPE, bWMV ? MFVideoFormat_WMVVC1 : MFVideoFormat_H264);
+            spVideoType.p->SetUINT32(MF_MT_AVG_BITRATE, dwVideoBitrate);
+            spVideoType.p->SetUINT32(MF_MT_INTERLACE_MODE, MFVideoInterlace_Progressive);
+            MFSetAttributeRatio(spVideoType, MF_MT_FRAME_RATE, 30, 1);
             MFSetAttributeSize(spVideoType, MF_MT_FRAME_SIZE, m_dwWidth, m_dwHeight);
 
-            hr = spSinkWriter->AddStream(spVideoType, &dwVideoStreamIndex);
+            hr = spSinkWriter.p->AddStream(spVideoType, &dwVideoStreamIndex);
         }
 
         CComPtr<IMFMediaType> spAudioType;
@@ -506,18 +507,18 @@ HRESULT PublishJob::Encode()
             hr = MFCreateMediaType(&spAudioType);
             if (SUCCEEDED(hr))
             {
-                spAudioType->SetGUID(MF_MT_MAJOR_TYPE, MFMediaType_Audio);
-                spAudioType->SetGUID(MF_MT_SUBTYPE, bWMV ? MFAudioFormat_WMAudioV9 : MFAudioFormat_AAC);
-                spAudioType->SetUINT32(MF_MT_AUDIO_SAMPLES_PER_SECOND, 44100);
-                spAudioType->SetUINT32(MF_MT_AUDIO_NUM_CHANNELS, 2);
-                spAudioType->SetUINT32(MF_MT_AUDIO_BITS_PER_SAMPLE, 16);
+                spAudioType.p->SetGUID(MF_MT_MAJOR_TYPE, MFMediaType_Audio);
+                spAudioType.p->SetGUID(MF_MT_SUBTYPE, bWMV ? MFAudioFormat_WMAudioV9 : MFAudioFormat_AAC);
+                spAudioType.p->SetUINT32(MF_MT_AUDIO_SAMPLES_PER_SECOND, 44100);
+                spAudioType.p->SetUINT32(MF_MT_AUDIO_NUM_CHANNELS, 2);
+                spAudioType.p->SetUINT32(MF_MT_AUDIO_BITS_PER_SAMPLE, 16);
 
-                hr = spSinkWriter->AddStream(spAudioType, &dwAudioStreamIndex);
+                hr = spSinkWriter.p->AddStream(spAudioType, &dwAudioStreamIndex);
             }
         }
 
         if (SUCCEEDED(hr))
-            hr = spSinkWriter->BeginWriting();
+            hr = spSinkWriter.p->BeginWriting();
 
         if (SUCCEEDED(hr))
         {
@@ -529,9 +530,9 @@ HRESULT PublishJob::Encode()
             {
                 if (m_bCancelled)
                 {
-                    spSinkWriter->Abort();
-                    MFShutdown();
-                    return E_ABORT;
+                spSinkWriter.p->Finalize();
+                MFShutdown();
+                return E_ABORT;
                 }
 
                 while (m_bPaused)
@@ -539,15 +540,17 @@ HRESULT PublishJob::Encode()
 
                 DWORD cbBuffer = m_dwWidth * m_dwHeight * 2;
                 CComPtr<IMFSample> spVideoSample;
-                hr = MFCreateMemoryBuffer(cbBuffer, CComQIPtr<IMFMediaBuffer>(&spVideoSample));
+                hr = MFCreateSample(&spVideoSample);
                 if (SUCCEEDED(hr))
                 {
                     CComPtr<IMFMediaBuffer> spBuffer;
-                    hr = spVideoSample->GetBufferByIndex(0, &spBuffer);
+                    hr = MFCreateMemoryBuffer(cbBuffer, &spBuffer);
+                    if (SUCCEEDED(hr))
+                        hr = spVideoSample.p->AddBuffer(spBuffer);
                     if (SUCCEEDED(hr))
                     {
                         BYTE* pData = nullptr;
-                        hr = spBuffer->Lock(&pData, nullptr, &cbBuffer);
+                        hr = spBuffer.p->Lock(&pData, nullptr, &cbBuffer);
                         if (SUCCEEDED(hr))
                         {
                             const BYTE yVal = static_cast<BYTE>((i * 255) / dwFrameCount);
@@ -556,16 +559,16 @@ HRESULT PublishJob::Encode()
                             for (DWORD p = 0; p < dwPixels; ++p)
                                 pY[p] = yVal;
 
-                            spBuffer->Unlock();
-                            spBuffer->SetCurrentLength(cbBuffer);
+                            spBuffer.p->Unlock();
+                            spBuffer.p->SetCurrentLength(cbBuffer);
                         }
                     }
 
                     if (SUCCEEDED(hr))
                     {
-                        spVideoSample->SetSampleTime(i * llFrameDuration);
-                        spVideoSample->SetSampleDuration(llFrameDuration);
-                        hr = spSinkWriter->WriteSample(dwVideoStreamIndex, spVideoSample);
+                        spVideoSample.p->SetSampleTime(i * llFrameDuration);
+                        spVideoSample.p->SetSampleDuration(llFrameDuration);
+                        hr = spSinkWriter.p->WriteSample(dwVideoStreamIndex, spVideoSample);
                     }
                 }
 
@@ -574,28 +577,30 @@ HRESULT PublishJob::Encode()
                     const DWORD dwAudioSamplesPerFrame = 1470;
                     const DWORD cbAudioBuffer = dwAudioSamplesPerFrame * 2 * sizeof(INT16);
                     CComPtr<IMFSample> spAudioSample;
-                    hr = MFCreateMemoryBuffer(cbAudioBuffer, CComQIPtr<IMFMediaBuffer>(&spAudioSample));
+                    hr = MFCreateSample(&spAudioSample);
                     if (SUCCEEDED(hr))
                     {
                         CComPtr<IMFMediaBuffer> spAudioBuffer;
-                        hr = spAudioSample->GetBufferByIndex(0, &spAudioBuffer);
+                        hr = MFCreateMemoryBuffer(cbAudioBuffer, &spAudioBuffer);
+                        if (SUCCEEDED(hr))
+                            hr = spAudioSample.p->AddBuffer(spAudioBuffer);
                         if (SUCCEEDED(hr))
                         {
                             BYTE* pAudioData = nullptr;
-                            hr = spAudioBuffer->Lock(&pAudioData, nullptr, nullptr);
+                            hr = spAudioBuffer.p->Lock(&pAudioData, nullptr, nullptr);
                             if (SUCCEEDED(hr))
                             {
                                 ZeroMemory(pAudioData, cbAudioBuffer);
-                                spAudioBuffer->Unlock();
-                                spAudioBuffer->SetCurrentLength(cbAudioBuffer);
+                                spAudioBuffer.p->Unlock();
+                                spAudioBuffer.p->SetCurrentLength(cbAudioBuffer);
                             }
                         }
 
                         if (SUCCEEDED(hr))
                         {
-                            spAudioSample->SetSampleTime(i * llFrameDuration);
-                            spAudioSample->SetSampleDuration(llFrameDuration);
-                            hr = spSinkWriter->WriteSample(dwAudioStreamIndex, spAudioSample);
+                            spAudioSample.p->SetSampleTime(i * llFrameDuration);
+                            spAudioSample.p->SetSampleDuration(llFrameDuration);
+                            hr = spSinkWriter.p->WriteSample(dwAudioStreamIndex, spAudioSample);
                         }
                     }
                 }
@@ -616,7 +621,7 @@ HRESULT PublishJob::Encode()
             }
 
             if (SUCCEEDED(hr))
-                hr = spSinkWriter->Finalize();
+                hr = spSinkWriter.p->Finalize();
         }
     }
 
@@ -676,13 +681,13 @@ HRESULT PublishJob::Upload()
         return E_ABORT;
     }
 
-    CComPtr<PublishServiceBase> spService;
+    std::unique_ptr<PublishServiceBase> spService;
     PublishServiceType serviceType = PublishServiceTypeLocal;
 
     if (m_strServiceName.CompareNoCase(L"YouTube") == 0)
     {
         PublishServiceYouTube* pYouTube = new PublishServiceYouTube();
-        spService = pYouTube;
+        spService.reset(pYouTube);
         serviceType = PublishServiceTypeYouTube;
     }
     else if (m_strServiceName.CompareNoCase(L"Facebook") == 0)
@@ -692,7 +697,7 @@ HRESULT PublishJob::Upload()
     else if (m_strServiceName.CompareNoCase(L"SkyDrive") == 0 || m_strServiceName.CompareNoCase(L"OneDrive") == 0)
     {
         PublishServiceSkyDrive* pSkyDrive = new PublishServiceSkyDrive();
-        spService = pSkyDrive;
+        spService.reset(pSkyDrive);
         serviceType = PublishServiceTypeSkyDrive;
     }
 
@@ -828,7 +833,7 @@ HRESULT PublishJob::Upload()
             return E_ABORT;
         }
 
-        DWORD cbToRead = static_cast<DWORD>(min(static_cast<ULONGLONG>(dwChunkSize), cbTotal - cbUploaded));
+        DWORD cbToRead = static_cast<DWORD>((std::min)(static_cast<ULONGLONG>(dwChunkSize), cbTotal - cbUploaded));
         DWORD cbRead = 0;
 
         if (hFile != INVALID_HANDLE_VALUE)

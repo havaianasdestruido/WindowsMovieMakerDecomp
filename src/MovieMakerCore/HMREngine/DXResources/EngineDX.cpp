@@ -357,6 +357,9 @@ HRESULT EngineDX::BeginFrame()
 
 HRESULT EngineDX::EndFrame()
 {
+    if (!m_immediateContext) return E_FAIL;
+
+    m_immediateContext->Flush();
     return S_OK;
 }
 
@@ -888,20 +891,39 @@ HRESULT SnapShotDX::CaptureFromRTV(ID3D11RenderTargetView* pRTV, const std::wstr
 
 HRESULT SnapShotDX::CaptureScreen(ID3D11Texture2D** ppOut)
 {
-    if (!ppOut) return E_POINTER;
+    if (!ppOut || !m_device || !m_context) return E_POINTER;
 
-    D3D11_TEXTURE2D_DESC desc = {};
-    desc.Width = 1;
-    desc.Height = 1;
-    desc.MipLevels = 1;
-    desc.ArraySize = 1;
-    desc.Format = DXGI_FORMAT_B8G8R8A8_UNORM;
-    desc.SampleDesc.Count = 1;
-    desc.Usage = D3D11_USAGE_STAGING;
-    desc.CPUAccessFlags = D3D11_CPU_ACCESS_READ;
+    CComPtr<ID3D11RenderTargetView> curRTV;
+    CComPtr<ID3D11DepthStencilView> curDSV;
+    m_context->OMGetRenderTargets(1, &curRTV.p, &curDSV.p);
 
-    HRESULT hr = m_device->CreateTexture2D(&desc, nullptr, ppOut);
-    return hr;
+    if (!curRTV) return E_FAIL;
+
+    CComPtr<ID3D11Resource> rtResource;
+    curRTV->GetResource(&rtResource);
+
+    CComPtr<ID3D11Texture2D> rtTex;
+    HRESULT hr = rtResource->QueryInterface(__uuidof(ID3D11Texture2D), (void**)&rtTex);
+    if (FAILED(hr)) return hr;
+
+    D3D11_TEXTURE2D_DESC desc;
+    rtTex->GetDesc(&desc);
+
+    D3D11_TEXTURE2D_DESC stagDesc = {};
+    stagDesc.Width = desc.Width;
+    stagDesc.Height = desc.Height;
+    stagDesc.MipLevels = 1;
+    stagDesc.ArraySize = 1;
+    stagDesc.Format = desc.Format;
+    stagDesc.SampleDesc.Count = 1;
+    stagDesc.Usage = D3D11_USAGE_STAGING;
+    stagDesc.CPUAccessFlags = D3D11_CPU_ACCESS_READ;
+
+    hr = m_device->CreateTexture2D(&stagDesc, nullptr, ppOut);
+    if (FAILED(hr)) return hr;
+
+    m_context->CopyResource(*ppOut, rtTex);
+    return S_OK;
 }
 
 } // namespace DX

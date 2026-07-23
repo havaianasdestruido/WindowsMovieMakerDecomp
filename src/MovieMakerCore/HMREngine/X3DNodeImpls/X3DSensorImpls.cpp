@@ -30,6 +30,18 @@ void X3DSensorNodeImpl::SetEnabled(bool enabled)
 
 void X3DSensorNodeImpl::OnActiveChanged(bool active)
 {
+    if (!m_enabled) return;
+
+    for (UINT i = 0; i < GetNumChildren(); ++i)
+    {
+        X3DChildNodeImpl* child = GetChild(i);
+        if (child)
+        {
+            auto* sensor = dynamic_cast<X3DSensorNodeImpl*>(child);
+            if (sensor)
+                sensor->SetActive(active);
+        }
+    }
 }
 
 HRESULT X3DSensorNodeImpl::SetupFields()
@@ -82,17 +94,24 @@ void X3DTimeDependentObjectImpl::Evaluate(double globalTime)
     {
         m_timeActive = false;
         m_fraction = 1.0;
+        m_elapsed = m_stopTime - m_startTime;
+        MarkDirty();
         return;
     }
-
-    m_elapsed = globalTime - m_startTime;
 
     if (m_pauseTime > 0 && m_resumeTime <= m_pauseTime)
     {
         return;
     }
 
-    m_fraction = 0.0;
+    m_elapsed = globalTime - m_startTime;
+
+    double interval = (m_stopTime > m_startTime) ? (m_stopTime - m_startTime) : 1.0;
+    if (interval > 0.0)
+        m_fraction = Saturate(static_cast<float>(m_elapsed / interval));
+    else
+        m_fraction = 0.0;
+
     MarkDirty();
 }
 

@@ -61,11 +61,10 @@ namespace HMREngine
         dsd.Usage = D3D11_USAGE_DEFAULT;
         dsd.BindFlags = D3D11_BIND_DEPTH_STENCIL;
 
-        CComPtr<ID3D11Texture2D> dsTex;
-        hr = dev->CreateTexture2D(&dsd, nullptr, &dsTex);
+        hr = dev->CreateTexture2D(&dsd, nullptr, &m_previewDSTex);
         if (FAILED(hr)) return hr;
 
-        hr = dev->CreateDepthStencilView(dsTex, nullptr, &m_previewDSV);
+        hr = dev->CreateDepthStencilView(m_previewDSTex, nullptr, &m_previewDSV);
         if (FAILED(hr)) return hr;
 
         UpdateMatrices();
@@ -78,6 +77,7 @@ namespace HMREngine
         m_renderedRTV.Release();
         m_renderedTexture.Release();
         m_previewDSV.Release();
+        m_previewDSTex.Release();
         m_engine = nullptr;
     }
 
@@ -169,10 +169,9 @@ namespace HMREngine
         dsd.SampleDesc.Count = 1;
         dsd.Usage = D3D11_USAGE_DEFAULT;
         dsd.BindFlags = D3D11_BIND_DEPTH_STENCIL;
-        CComPtr<ID3D11Texture2D> dsTex;
-        hr = dev->CreateTexture2D(&dsd, nullptr, &dsTex);
+        hr = dev->CreateTexture2D(&dsd, nullptr, &m_previewDSTex);
         if (FAILED(hr)) return hr;
-        hr = dev->CreateDepthStencilView(dsTex, nullptr, &m_previewDSV);
+        hr = dev->CreateDepthStencilView(m_previewDSTex, nullptr, &m_previewDSV);
 
         UpdateMatrices();
         return hr;
@@ -226,7 +225,7 @@ namespace HMREngine
         bd.BindFlags = D3D11_BIND_VERTEX_BUFFER;
 
         D3D11_SUBRESOURCE_DATA init{};
-        init.pSysMemData = verts.data();
+        init.pSysMem = verts.data();
 
         CComPtr<ID3D11Buffer> vb;
         HRESULT hr = dev->CreateBuffer(&bd, &init, &vb);
@@ -268,7 +267,7 @@ namespace HMREngine
         bd.BindFlags = D3D11_BIND_VERTEX_BUFFER;
 
         D3D11_SUBRESOURCE_DATA init{};
-        init.pSysMemData = verts;
+        init.pSysMem = verts;
 
         CComPtr<ID3D11Buffer> vb;
         HRESULT hr = dev->CreateBuffer(&bd, &init, &vb);

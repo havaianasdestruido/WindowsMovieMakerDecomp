@@ -604,8 +604,15 @@ HRESULT Conductor::QueueMediaLoad(LPCWSTR pszFilePath)
     if (!pszFilePath)
         return E_POINTER;
 
+    // Verify the file exists before queuing
+    if (::PathFileExistsW(pszFilePath) == FALSE)
+        return HRESULT_FROM_WIN32(ERROR_FILE_NOT_FOUND);
+
     MediaLoadBackgroundRequest* pRequest =
         new MediaLoadBackgroundRequest(pszFilePath);
+
+    // Media load requests get high priority since they block UI feedback
+    pRequest->m_priority = RequestPriorityHigh;
 
     return m_pOrchestrator->QueueRequest(pRequest);
 }
@@ -692,11 +699,43 @@ HRESULT Conductor::RunAutofit(DWORD dwPhotoCount, LONGLONG llTotalDurationHns)
     if (!m_bInitialized)
         return E_UNEXPECTED;
 
+    if (dwPhotoCount == 0)
+        return E_INVALIDARG;
+
     AutofitProcess autofit;
     autofit.SetPhotoCount(dwPhotoCount);
     autofit.SetTotalDurationHns(llTotalDurationHns);
 
-    return autofit.Analyze();
+    // Set reasonable photo duration bounds
+    autofit.SetMinPhotoDurationHns(20000000);  // 2 seconds minimum
+    autofit.SetMaxPhotoDurationHns(120000000); // 12 seconds maximum
+
+    HRESULT hr = autofit.Analyze();
+    if (FAILED(hr))
+        return hr;
+
+    hr = autofit.ApplyToProject();
+    if (FAILED(hr))
+        return hr;
+
+    // Begin a theme operation to track this autofit
+    DWORD dwOperationId = 0;
+    BeginThemeOperation(L"Autofit Photos", &dwOperationId);
+
+    WCHAR szStep[128];
+    StringCchPrintfW(szStep, _countof(szStep),
+        L"Applied durations for %u photos (total: %lld hns)",
+        dwPhotoCount, autofit.GetTotalDurationHns());
+
+    MonolithicThemeOperation* pOp = m_pMTOContainer->GetOperation(dwOperationId);
+    if (pOp)
+    {
+        pOp->AddStep(szStep);
+    }
+
+    CompleteThemeOperation(dwOperationId);
+
+    return S_OK;
 }
 
 BackgroundOrchestrator* Conductor::GetOrchestrator() const throw()

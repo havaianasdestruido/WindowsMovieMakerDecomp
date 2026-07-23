@@ -101,6 +101,7 @@ public:
 
 protected:
     friend class BackgroundOrchestrator;
+    friend class Conductor;
 
     DWORD           m_dwRequestId;
     RequestType     m_requestType;

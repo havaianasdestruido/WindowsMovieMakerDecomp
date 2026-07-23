@@ -65,8 +65,30 @@ HRESULT MovieThumbnailDX::GenerateThumbnailFromTexture(ID3D11Texture2D* source,
     HRESULT hr = m_device->CreateTexture2D(&td, nullptr, &outThumb->texture);
     if (FAILED(hr)) return hr;
 
-    m_context->CopySubresourceRegion(outThumb->texture, 0, 0, 0, 0,
-        source, 0, nullptr);
+    UINT srcW = srcDesc.Width;
+    UINT srcH = srcDesc.Height;
+
+    if (srcW >= thumbWidth && srcH >= thumbHeight)
+    {
+        UINT offsetX = (srcW - thumbWidth) / 2;
+        UINT offsetY = (srcH - thumbHeight) / 2;
+
+        D3D11_BOX srcBox = {};
+        srcBox.left = offsetX;
+        srcBox.top = offsetY;
+        srcBox.right = offsetX + thumbWidth;
+        srcBox.bottom = offsetY + thumbHeight;
+        srcBox.front = 0;
+        srcBox.back = 1;
+
+        m_context->CopySubresourceRegion(outThumb->texture, 0, 0, 0, 0,
+            source, 0, &srcBox);
+    }
+    else
+    {
+        m_context->CopySubresourceRegion(outThumb->texture, 0, 0, 0, 0,
+            source, 0, nullptr);
+    }
 
     hr = m_device->CreateShaderResourceView(outThumb->texture, nullptr, &outThumb->srv);
     return hr;
@@ -217,7 +239,13 @@ TextureResourceDX* ResourceCacheDX::GetTexture(const std::wstring& path)
     std::lock_guard<std::mutex> lock(m_mutex);
 
     auto it = m_textures.find(path);
-    if (it != m_textures.end()) return it->second.get();
+    if (it != m_textures.end())
+    {
+        TouchTexture(path);
+        return it->second.get();
+    }
+
+    EvictLeastUsedTextures();
 
     auto tex = std::make_unique<TextureResourceDX>();
     tex->InitializeDevice(m_device, m_context);
@@ -227,6 +255,7 @@ TextureResourceDX* ResourceCacheDX::GetTexture(const std::wstring& path)
 
     TextureResourceDX* result = tex.get();
     m_textures[path] = std::move(tex);
+    TouchTexture(path);
     return result;
 }
 
@@ -378,6 +407,55 @@ size_t ResourceCacheDX::GetTextureMemory() const
             total += kv.second->GetWidth() * kv.second->GetHeight() * 4;
     }
     return total;
+}
+
+void ResourceCacheDX::TouchTexture(const std::wstring& path)
+{
+    m_textureAccessOrder[path] = ++m_accessCounter;
+}
+
+void ResourceCacheDX::EvictLeastUsedTextures()
+{
+    if (m_maxTextureMemory == 0) return;
+
+    size_t currentMemory = 0;
+    for (const auto& kv : m_textures)
+    {
+        if (kv.second)
+            currentMemory += kv.second->GetWidth() * kv.second->GetHeight() * 4;
+    }
+
+    if (currentMemory < m_maxTextureMemory) return;
+
+    std::vector<std::wstring> candidates;
+    for (const auto& kv : m_textures)
+    {
+        candidates.push_back(kv.first);
+    }
+
+    std::sort(candidates.begin(), candidates.end(),
+        [this](const std::wstring& a, const std::wstring& b)
+        {
+            auto itA = m_textureAccessOrder.find(a);
+            auto itB = m_textureAccessOrder.find(b);
+            uint64_t orderA = (itA != m_textureAccessOrder.end()) ? itA->second : 0;
+            uint64_t orderB = (itB != m_textureAccessOrder.end()) ? itB->second : 0;
+            return orderA < orderB;
+        });
+
+    for (const auto& key : candidates)
+    {
+        if (currentMemory < m_maxTextureMemory * 75 / 100) break;
+
+        auto it = m_textures.find(key);
+        if (it != m_textures.end())
+        {
+            if (it->second)
+                currentMemory -= it->second->GetWidth() * it->second->GetHeight() * 4;
+            m_textures.erase(it);
+            m_textureAccessOrder.erase(key);
+        }
+    }
 }
 
 } // namespace DX

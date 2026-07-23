@@ -182,17 +182,56 @@ namespace HMREngine
         m_dirty = true;
     }
 
-    HRESULT Scene::Render()
-    {
-        if (!m_engine) return E_POINTER;
+HRESULT Scene::Render()
+{
+    if (!m_engine) return E_POINTER;
 
-        if (m_dirty)
+    if (m_dirty)
+    {
+        PropagateRoutes();
+
+        if (m_rootLayerSet)
         {
-            PropagateRoutes();
-            m_dirty = false;
+            LayerNode* activeLayer = m_rootLayerSet->m_activeLayer;
+            if (activeLayer && activeLayer->m_visible)
+            {
+                UINT childCount = static_cast<UINT>(activeLayer->GetNumChildren());
+                for (UINT i = 0; i < childCount; ++i)
+                {
+                    X3DChildNode* child = activeLayer->GetChild(i);
+                    if (child && child->m_visible)
+                    {
+                        RenderNode(child);
+                    }
+                }
+            }
         }
 
-        return S_OK;
+        m_dirty = false;
     }
+
+    return S_OK;
+}
+
+void Scene::RenderNode(X3DChildNode* node)
+{
+    if (!node) return;
+
+    auto* ts = dynamic_cast<TimeSensorNode*>(node);
+    if (ts && ts->m_enabled)
+    {
+        ts->Evaluate(m_currentTime);
+    }
+
+    UINT childCount = static_cast<UINT>(node->GetNumChildren());
+    for (UINT i = 0; i < childCount; ++i)
+    {
+        X3DChildNode* child = node->GetChild(i);
+        if (child && child->m_visible)
+        {
+            RenderNode(child);
+        }
+    }
+}
 
 } // namespace HMREngine

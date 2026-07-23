@@ -87,32 +87,74 @@ HRESULT AutofitProcess::Analyze()
     if (m_dwPhotoCount == 0)
         return S_FALSE;
 
-    // Analyze music for beat detection
     HRESULT hr = AnalyzeAudio();
     if (FAILED(hr))
         return hr;
 
-    // Distribute total duration across photos
-    if (m_llTotalDurationHns > 0)
+    if (m_llTotalDurationHns > 0 && !m_vBeatPositionsMs.empty())
     {
-        LONGLONG llPerPhoto = m_llTotalDurationHns / m_dwPhotoCount;
+        // Beat-aligned distribution: assign photos to beat segments
+        // Find measure boundaries (groups of 4 beats)
+        std::vector<LONGLONG> measureBoundaries;
+        measureBoundaries.push_back(0);
 
-        // Clamp to min/max bounds
+        for (size_t i = 0; i < m_vBeatPositionsMs.size(); i += 4)
+        {
+            LONGLONG llMeasureMs = m_vBeatPositionsMs[i];
+            measureBoundaries.push_back(llMeasureMs);
+        }
+
+        LONGLONG llTotalMs = m_llTotalDurationHns / 10000;
+        measureBoundaries.push_back(llTotalMs);
+
+        // Assign one photo per measure boundary group
+        size_t cMeasures = measureBoundaries.size() - 1;
+        if (cMeasures > 0)
+        {
+            for (DWORD i = 0; i < m_dwPhotoCount; i++)
+            {
+                size_t nMeasure = i % cMeasures;
+                LONGLONG llStartMs = measureBoundaries[nMeasure];
+                LONGLONG llEndMs = measureBoundaries[nMeasure + 1];
+                LONGLONG llDurationMs = llEndMs - llStartMs;
+
+                LONGLONG llDurationHns = llDurationMs * 10000;
+                llDurationHns = std::max(m_llMinPhotoDurationHns, llDurationHns);
+                llDurationHns = std::min(m_llMaxPhotoDurationHns, llDurationHns);
+
+                m_vPhotoDurations.push_back(llDurationHns);
+            }
+        }
+        else
+        {
+            // Fallback: equal distribution
+            LONGLONG llPerPhoto = m_llTotalDurationHns / m_dwPhotoCount;
+            llPerPhoto = std::max(m_llMinPhotoDurationHns, llPerPhoto);
+            llPerPhoto = std::min(m_llMaxPhotoDurationHns, llPerPhoto);
+
+            for (DWORD i = 0; i < m_dwPhotoCount; i++)
+                m_vPhotoDurations.push_back(llPerPhoto);
+        }
+    }
+    else if (m_llTotalDurationHns > 0)
+    {
+        // No beat data, simple equal distribution
+        LONGLONG llPerPhoto = m_llTotalDurationHns / m_dwPhotoCount;
         llPerPhoto = std::max(m_llMinPhotoDurationHns, llPerPhoto);
         llPerPhoto = std::min(m_llMaxPhotoDurationHns, llPerPhoto);
 
         for (DWORD i = 0; i < m_dwPhotoCount; i++)
-        {
             m_vPhotoDurations.push_back(llPerPhoto);
-        }
     }
     else
     {
-        // No total duration specified, use default per-photo duration
+        // No total duration: use a reasonable default (4 seconds per photo)
+        LONGLONG llDefaultDuration = 40000000; // 4 seconds
+        llDefaultDuration = std::max(m_llMinPhotoDurationHns, llDefaultDuration);
+        llDefaultDuration = std::min(m_llMaxPhotoDurationHns, llDefaultDuration);
+
         for (DWORD i = 0; i < m_dwPhotoCount; i++)
-        {
-            m_vPhotoDurations.push_back(m_llMinPhotoDurationHns);
-        }
+            m_vPhotoDurations.push_back(llDefaultDuration);
     }
 
     return S_OK;
@@ -128,6 +170,8 @@ HRESULT AutofitProcess::ApplyToProject()
 
     size_t cDurations = m_vPhotoDurations.size();
     LONGLONG llTotalApplied = 0;
+    LONGLONG llMinApplied = m_vPhotoDurations[0];
+    LONGLONG llMaxApplied = 0;
 
     for (size_t i = 0; i < cDurations; i++)
     {
@@ -138,10 +182,37 @@ HRESULT AutofitProcess::ApplyToProject()
         if (llDuration > m_llMaxPhotoDurationHns)
             llDuration = m_llMaxPhotoDurationHns;
 
+        // Store the clamped value back
+        m_vPhotoDurations[i] = llDuration;
+
         llTotalApplied += llDuration;
+        if (llDuration < llMinApplied)
+            llMinApplied = llDuration;
+        if (llDuration > llMaxApplied)
+            llMaxApplied = llDuration;
     }
 
-    UNREFERENCED_PARAMETER(llTotalApplied);
+    // Verify the applied total is within acceptable range of the target
+    if (m_llTotalDurationHns > 0)
+    {
+        LONGLONG llDiff = llTotalApplied - m_llTotalDurationHns;
+        if (llDiff < 0) llDiff = -llDiff;
+
+        // Allow 5% tolerance
+        LONGLONG llTolerance = m_llTotalDurationHns / 20;
+        if (llTolerance < 1000000) llTolerance = 1000000; // minimum 100ms tolerance
+
+        if (llDiff > llTolerance)
+        {
+            // Adjust the last photo to fit within tolerance
+            LONGLONG llAdjustment = m_llTotalDurationHns - llTotalApplied;
+            LONGLONG llLastDuration = m_vPhotoDurations[cDurations - 1];
+            llLastDuration += llAdjustment;
+            llLastDuration = std::max(m_llMinPhotoDurationHns, llLastDuration);
+            llLastDuration = std::min(m_llMaxPhotoDurationHns, llLastDuration);
+            m_vPhotoDurations[cDurations - 1] = llLastDuration;
+        }
+    }
 
     return S_OK;
 }

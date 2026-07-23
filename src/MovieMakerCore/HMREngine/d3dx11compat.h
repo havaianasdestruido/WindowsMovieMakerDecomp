@@ -222,6 +222,14 @@ HRESULT WINAPI D3DX11CompileEffectFromMemory(
     ID3DBlob** ppErrorMsgs,
     void* pPool);
 
+HRESULT WINAPI D3DX11CreateEffectFromMemory(
+    LPCVOID pData,
+    SIZE_T DataLength,
+    UINT Flags,
+    ID3D11Device* pDevice,
+    ID3DX11Effect** ppEffect,
+    void* pEffectPool);
+
 HRESULT WINAPI D3DX11CreateShaderResourceViewFromFileA(
     ID3D11Device* pDevice,
     LPCSTR pSrcFile,

@@ -193,8 +193,10 @@ void TextureTransformContainerImpl::Shutdown()
 Matrix4f TextureTransformContainerImpl::GetMatrix() const
 {
     Matrix4f m = Matrix4f::Identity();
-    m._11 = m_scale.x;
-    m._22 = m_scale.y;
+    m._11 = m_scale.x * cosf(m_rotation);
+    m._12 = m_scale.x * sinf(m_rotation);
+    m._21 = -m_scale.y * sinf(m_rotation);
+    m._22 = m_scale.y * cosf(m_rotation);
     m._41 = m_translation.x;
     m._42 = m_translation.y;
     return m;

@@ -315,6 +315,19 @@ struct IDuiElement : public IUnknown
     virtual HRESULT STDMETHODCALLTYPE GetParentElement(IDuiElement** ppParent) = 0;
     virtual HRESULT STDMETHODCALLTYPE GetFirstChildElement(IDuiElement** ppChild) = 0;
     virtual HRESULT STDMETHODCALLTYPE GetNextSiblingElement(IDuiElement** ppSibling) = 0;
+
+    virtual void SplitAtPosition(int pos) = 0;
+    virtual void ReorderToPosition(int pos) = 0;
+    virtual void ZoomIn() = 0;
+    virtual void ZoomOut() = 0;
+    virtual void SetZoomLevel(double level) = 0;
+    virtual void Scroll(int dx, int dy) = 0;
+    virtual BOOL FindSnapPoint(int pos, LONGLONG* pSnapPos) = 0;
+    virtual void ApplySnap(LONGLONG pos) = 0;
+    virtual void Invalidate() = 0;
+    virtual void SetVisible(BOOL vis) = 0;
+    virtual void SetSelection(int idx) = 0;
+    virtual void SetFocus() = 0;
 };
 
 // ============================================================================

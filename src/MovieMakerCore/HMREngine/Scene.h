@@ -125,6 +125,7 @@ namespace HMREngine
         bool m_dirty = false;
 
         void TraverseNode(X3DChildNode* node, int depth, std::function<void(X3DChildNode*, int)>& visitor);
+        void RenderNode(X3DChildNode* node);
     };
 
     OBJECT_ENTRY_AUTO(__uuidof(Scene), Scene)

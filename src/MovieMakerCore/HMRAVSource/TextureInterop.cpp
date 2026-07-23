@@ -125,11 +125,13 @@ HRESULT TextureInterOp::CopyFromSample(IMFSample* pSample)
         D3DLOCKED_RECT lockedRect = {};
         if (SUCCEEDED(m_spTexture->LockRect(0, &lockedRect, nullptr, 0)))
         {
-            UINT copyH = std::min(m_desc.uHeight, cbCurrentLength / lockedRect.Pitch);
+            DWORD dwPitch = static_cast<DWORD>(lockedRect.Pitch);
+            DWORD dwBytesPerRow = cbCurrentLength / static_cast<DWORD>(m_desc.uHeight);
+            UINT copyH = std::min(static_cast<DWORD>(m_desc.uHeight), cbCurrentLength / dwPitch);
             for (UINT y = 0; y < copyH; ++y)
-                memcpy((BYTE*)lockedRect.pBits + y * lockedRect.Pitch,
-                       pSrcData + y * (cbCurrentLength / m_desc.uHeight),
-                       std::min(lockedRect.Pitch, cbCurrentLength / m_desc.uHeight));
+                memcpy((BYTE*)lockedRect.pBits + y * dwPitch,
+                       pSrcData + y * dwBytesPerRow,
+                       std::min(dwPitch, dwBytesPerRow));
             m_spTexture->UnlockRect(0);
         }
     }
@@ -160,11 +162,13 @@ HRESULT TextureInterOp::CopyToSample(IMFSample* pSample)
         D3DLOCKED_RECT lockedRect = {};
         if (SUCCEEDED(m_spTexture->LockRect(0, &lockedRect, nullptr, D3DLOCK_READONLY)))
         {
-            UINT copyH = std::min(m_desc.uHeight, cbMaxLength / lockedRect.Pitch);
+            DWORD dwPitch = static_cast<DWORD>(lockedRect.Pitch);
+            DWORD dwBytesPerRow = cbMaxLength / static_cast<DWORD>(m_desc.uHeight);
+            UINT copyH = std::min(static_cast<DWORD>(m_desc.uHeight), cbMaxLength / dwPitch);
             for (UINT y = 0; y < copyH; ++y)
-                memcpy(pDestData + y * (cbMaxLength / m_desc.uHeight),
-                       (BYTE*)lockedRect.pBits + y * lockedRect.Pitch,
-                       std::min(lockedRect.Pitch, cbMaxLength / m_desc.uHeight));
+                memcpy(pDestData + y * dwBytesPerRow,
+                       (BYTE*)lockedRect.pBits + y * dwPitch,
+                       std::min(dwPitch, dwBytesPerRow));
             m_spTexture->UnlockRect(0);
         }
     }

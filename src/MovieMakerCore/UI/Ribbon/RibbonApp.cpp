@@ -22,17 +22,9 @@ static const PROPERTYKEY UI_PKEY_CompoundLabel = {0x1e0706f8, 0x1c4f, 0x49b4, {0
 static const PROPERTYKEY UI_PKEY_Pressed = {0xc3b3c2f2, 0x05db, 0x4b53, {0x86, 0xb5, 0x92, 0xd7, 0x3c, 0xfb, 0xf4, 0x3b}};
 #endif
 
-#ifndef UI_PKEY_BooleanValue
-static const PROPERTYKEY UI_PKEY_BooleanValue = {0x0c9f4be6, 0x5944, 0x4b4c, {0x8a, 0x33, 0x27, 0x5c, 0x29, 0x33, 0x7b, 0x33}};
-#endif
-
-#ifndef UI_PKEY_SelectedItem
-static const PROPERTYKEY UI_PKEY_SelectedItem = {0x00000000, 0x0000, 0x0000, {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}};
-#endif
-
-#ifndef UI_INVALIDATIONS_PROPERTY
-#define UI_INVALIDATIONS_PROPERTY 0
-#endif
+// UI_PKEY_BooleanValue and UI_PKEY_SelectedItem are provided by UIRibbon.h
+// UI_INVALIDATIONS_PROPERTY is provided by UIRibbon.h as an enum value.
+// Do NOT preprocessor-define it here, as that would conflict with the enum.
 
 /*
  * RibbonApp.cpp
@@ -225,7 +217,7 @@ HRESULT RibbonApp::OnCommand(UINT nCmdId, UI_COMMANDTYPE commandType, IUICommand
 // OnUpdateProperty
 // ============================================================================
 
-HRESULT RibbonApp::OnUpdateProperty(UINT nCmdId, REFUIKEY key,
+HRESULT RibbonApp::OnUpdateProperty(UINT nCmdId, REFPROPERTYKEY key,
                                     const PROPVARIANT* pCurrentValue,
                                     PROPVARIANT* pNewValue)
 {
@@ -477,7 +469,7 @@ HRESULT RibbonApp::SetVisible(UINT nCmdId, bool fVisible)
     propvar.boolVal = fVisible ? VARIANT_TRUE : VARIANT_FALSE;
 
     return m_spFramework->SetUICommandProperty(
-        nCmdId, UI_PKEY_Boolean, propvar);
+        nCmdId, UI_PKEY_BooleanValue, propvar);
 }
 
 // ============================================================================
@@ -515,7 +507,7 @@ HRESULT RibbonApp::ShowContextualTab(UINT nTabId)
     // to re-evaluate its visibility. The tab's actual visibility is determined
     // by the UI_PKEY_CompoundLabel property being set and the group being
     // registered in the ribbon XML.
-    HRESULT hr = m_spFramework->InvalidateUICommand(nTabId, UI_INVALIDATIONS_PROPERTY, nullptr);
+    HRESULT hr = m_spFramework->InvalidateUICommand(nTabId, static_cast<UI_INVALIDATIONS>(UI_INVALIDATIONS_PROPERTY), nullptr);
     if (FAILED(hr))
         return hr;
 
@@ -535,7 +527,7 @@ HRESULT RibbonApp::HideContextualTab(UINT nTabId)
         return E_FAIL;
 
     // Invalidate to re-evaluate, then disable the contextual tab
-    HRESULT hr = m_spFramework->InvalidateUICommand(nTabId, UI_INVALIDATIONS_PROPERTY, nullptr);
+    HRESULT hr = m_spFramework->InvalidateUICommand(nTabId, static_cast<UI_INVALIDATIONS>(UI_INVALIDATIONS_PROPERTY), nullptr);
     if (FAILED(hr))
         return hr;
 
@@ -1077,8 +1069,7 @@ HRESULT RibbonApp::UpdateState(UINT nCmdId, REFPROPERTYKEY key,
     }
 
     // UI_PKEY_Boolean / UI_PKEY_BooleanValue query (checkable/toggle buttons)
-    if (IsEqualPropertyKey(key, UI_PKEY_Boolean) ||
-        IsEqualPropertyKey(key, UI_PKEY_BooleanValue))
+    if (IsEqualPropertyKey(key, UI_PKEY_BooleanValue))
     {
         bool fBoolean = false;
 

@@ -17,12 +17,16 @@ ProjectManager::~ProjectManager()
 
 HRESULT ProjectManager::NewProject()
 {
+    // Free any existing project first
+    delete m_pActiveProject;
+
+    m_pActiveProject = StoryboardManager::MovieProject::CreateEmpty();
+    if (!m_pActiveProject)
+        return E_OUTOFMEMORY;
+
     m_strProjectPath.Empty();
     m_bDirty = false;
     m_dwLastSaveTime = ::GetTickCount();
-
-    delete m_pActiveProject;
-    m_pActiveProject = StoryboardManager::MovieProject::CreateEmpty();
 
     return S_OK;
 }
@@ -39,8 +43,25 @@ HRESULT ProjectManager::OpenProject(LPCWSTR pszProjectPath)
     if (dwAttr & FILE_ATTRIBUTE_DIRECTORY)
         return E_INVALIDARG;
 
+    // Load the .wlmp project file through the MovieProject serializer
+    if (!m_pActiveProject)
+    {
+        m_pActiveProject = StoryboardManager::MovieProject::CreateEmpty();
+        if (!m_pActiveProject)
+            return E_OUTOFMEMORY;
+    }
+
+    HRESULT hr = m_pActiveProject->Load(pszProjectPath);
+    if (FAILED(hr))
+    {
+        delete m_pActiveProject;
+        m_pActiveProject = nullptr;
+        return hr;
+    }
+
     m_strProjectPath = pszProjectPath;
     m_bDirty = false;
+    m_dwLastSaveTime = ::GetTickCount();
     return S_OK;
 }
 
@@ -49,9 +70,23 @@ HRESULT ProjectManager::SaveProject(LPCWSTR pszProjectPath)
     if (!pszProjectPath || !pszProjectPath[0])
         return E_INVALIDARG;
 
-    m_strProjectPath = pszProjectPath;
-    m_bDirty = false;
-    return S_OK;
+    if (!m_pActiveProject)
+        return E_UNEXPECTED;
+
+    // Ensure the directory exists before writing
+    WCHAR szDir[MAX_PATH] = { 0 };
+    ::StringCchCopyW(szDir, MAX_PATH, pszProjectPath);
+    PathRemoveFileSpecW(szDir);
+    ::CreateDirectoryW(szDir, NULL);
+
+    HRESULT hr = m_pActiveProject->SaveAs(pszProjectPath);
+    if (SUCCEEDED(hr))
+    {
+        m_strProjectPath = pszProjectPath;
+        m_bDirty = false;
+        m_dwLastSaveTime = ::GetTickCount();
+    }
+    return hr;
 }
 
 HRESULT ProjectManager::SaveProject()
@@ -59,8 +94,16 @@ HRESULT ProjectManager::SaveProject()
     if (m_strProjectPath.IsEmpty())
         return E_UNEXPECTED;
 
-    m_bDirty = false;
-    return S_OK;
+    if (!m_pActiveProject)
+        return E_UNEXPECTED;
+
+    HRESULT hr = m_pActiveProject->Save(m_strProjectPath);
+    if (SUCCEEDED(hr))
+    {
+        m_bDirty = false;
+        m_dwLastSaveTime = ::GetTickCount();
+    }
+    return hr;
 }
 
 bool ProjectManager::IsDirty() const throw()

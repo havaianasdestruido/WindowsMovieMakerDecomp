@@ -68,16 +68,17 @@ namespace HMREngine
         dsd.BindFlags = D3D11_BIND_DEPTH_STENCIL;
 
         CComPtr<ID3D11Texture2D> dsTex;
-        hr = dev->CreateTexture2D(&dsd, nullptr, &dsTex);
+        hr = dev->CreateTexture2D(&dsd, nullptr, &m_frameDSTex);
         if (FAILED(hr)) return hr;
 
-        hr = dev->CreateDepthStencilView(dsTex, nullptr, &m_frameDSV);
+        hr = dev->CreateDepthStencilView(m_frameDSTex, nullptr, &m_frameDSV);
         return hr;
     }
 
     void SceneEncode::ReleaseFrameBuffer()
     {
         m_frameDSV.Release();
+        m_frameDSTex.Release();
         m_frameSRV.Release();
         m_frameRTV.Release();
         m_frameTexture.Release();

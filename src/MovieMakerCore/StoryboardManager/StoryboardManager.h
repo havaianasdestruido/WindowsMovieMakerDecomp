@@ -86,8 +86,6 @@ class ExtentCollection;
 class ExtentIdSet;
 class ExtentIdSetSelectionRangeIterator;
 class SelectionIndex;
-
-// ============================================================================
 // Forward declarations - timeline tracks
 // ============================================================================
 class TimelineTrack;
@@ -269,6 +267,18 @@ public:
     // Active track
     TimelineTrack* GetCurrentTrack() const;
     void SetCurrentTrack(TimelineTrack* pTrack);
+
+    // Track management
+    HRESULT AddTrack(TimelineTrackType trackType, TimelineTrack** ppTrack);
+    HRESULT RemoveTrack(TimelineTrack* pTrack);
+    HRESULT RemoveTrackAt(size_t nIndex);
+    size_t GetTrackCount() const;
+    TimelineTrack* GetTrackAt(size_t nIndex) const;
+    TimelineTrack* FindTrack(TimelineTrackType trackType) const;
+
+    // Project validation
+    HRESULT ValidateProject() const;
+    LONGLONG GetTotalDurationHns() const;
 
     // Template table
     TemplateTable* GetTemplateTable();

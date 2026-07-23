@@ -313,6 +313,196 @@ void StoryboardManager::SetCurrentTrack(TimelineTrack* pTrack)
     m_pCurrentTrack = pTrack;
 }
 
+HRESULT StoryboardManager::AddTrack(TimelineTrackType trackType, TimelineTrack** ppTrack)
+{
+    if (!m_pCurrentProject)
+        return E_UNEXPECTED;
+
+    if (trackType == TimelineTrackTypeUnknown)
+        return E_INVALIDARG;
+
+    ProjectTimeline* pTimeline = m_pCurrentProject->GetTimeline(trackType);
+    if (!pTimeline)
+        return E_FAIL;
+
+    TimelineTrack* pTrack = new TimelineTrack(trackType);
+    pTrack->SetDisplayName(TimelineTrack::GetDefaultName(trackType));
+
+    pTimeline->SetTrackType(trackType);
+
+    m_pCurrentProject->GetState().SetDirty(ProjectDirtyFlagTimeline);
+
+    if (ppTrack)
+        *ppTrack = pTrack;
+
+    return S_OK;
+}
+
+HRESULT StoryboardManager::RemoveTrack(TimelineTrack* pTrack)
+{
+    if (!pTrack)
+        return E_POINTER;
+
+    if (!m_pCurrentProject)
+        return E_UNEXPECTED;
+
+    TimelineTrackType type = pTrack->GetTrackType();
+    ProjectTimeline* pTimeline = m_pCurrentProject->GetTimeline(type);
+    if (!pTimeline)
+        return E_FAIL;
+
+    pTimeline->RemoveAllExtents();
+
+    if (m_pCurrentTrack == pTrack)
+        m_pCurrentTrack = nullptr;
+
+    m_pCurrentProject->GetState().SetDirty(ProjectDirtyFlagTimeline);
+
+    delete pTrack;
+
+    return S_OK;
+}
+
+HRESULT StoryboardManager::RemoveTrackAt(size_t nIndex)
+{
+    if (!m_pCurrentProject)
+        return E_UNEXPECTED;
+
+    TimelineTrackType types[] = {
+        TimelineTrackTypeVideo,
+        TimelineTrackTypeAudio,
+        TimelineTrackTypeMusic,
+        TimelineTrackTypeTitle,
+        TimelineTrackTypeCredits,
+        TimelineTrackTypeTransition
+    };
+
+    if (nIndex >= _countof(types))
+        return E_INVALIDARG;
+
+    ProjectTimeline* pTimeline = m_pCurrentProject->GetTimeline(types[nIndex]);
+    if (!pTimeline)
+        return E_FAIL;
+
+    pTimeline->RemoveAllExtents();
+    m_pCurrentProject->GetState().SetDirty(ProjectDirtyFlagTimeline);
+
+    return S_OK;
+}
+
+size_t StoryboardManager::GetTrackCount() const
+{
+    if (!m_pCurrentProject)
+        return 0;
+
+    size_t count = 0;
+    TimelineTrackType types[] = {
+        TimelineTrackTypeVideo,
+        TimelineTrackTypeAudio,
+        TimelineTrackTypeMusic,
+        TimelineTrackTypeTitle,
+        TimelineTrackTypeCredits,
+        TimelineTrackTypeTransition
+    };
+
+    for (size_t i = 0; i < _countof(types); i++)
+    {
+        const ProjectTimeline* pTimeline = m_pCurrentProject->GetTimeline(types[i]);
+        if (pTimeline && pTimeline->GetExtentCount() > 0)
+            count++;
+    }
+
+    return count;
+}
+
+TimelineTrack* StoryboardManager::GetTrackAt(size_t nIndex) const
+{
+    if (!m_pCurrentProject)
+        return nullptr;
+
+    TimelineTrackType types[] = {
+        TimelineTrackTypeVideo,
+        TimelineTrackTypeAudio,
+        TimelineTrackTypeMusic,
+        TimelineTrackTypeTitle,
+        TimelineTrackTypeCredits,
+        TimelineTrackTypeTransition
+    };
+
+    size_t activeIndex = 0;
+    for (size_t i = 0; i < _countof(types); i++)
+    {
+        const ProjectTimeline* pTimeline = m_pCurrentProject->GetTimeline(types[i]);
+        if (pTimeline && pTimeline->GetExtentCount() > 0)
+        {
+            if (activeIndex == nIndex)
+            {
+                TimelineTrack* pTrack = new TimelineTrack(types[i]);
+                pTrack->SetDisplayName(TimelineTrack::GetDefaultName(types[i]));
+                return pTrack;
+            }
+            activeIndex++;
+        }
+    }
+
+    return nullptr;
+}
+
+TimelineTrack* StoryboardManager::FindTrack(TimelineTrackType trackType) const
+{
+    if (!m_pCurrentProject)
+        return nullptr;
+
+    if (trackType == TimelineTrackTypeUnknown)
+        return nullptr;
+
+    const ProjectTimeline* pTimeline = m_pCurrentProject->GetTimeline(trackType);
+    if (!pTimeline)
+        return nullptr;
+
+    TimelineTrack* pTrack = new TimelineTrack(trackType);
+    pTrack->SetDisplayName(TimelineTrack::GetDefaultName(trackType));
+    return pTrack;
+}
+
+HRESULT StoryboardManager::ValidateProject() const
+{
+    if (!m_pCurrentProject)
+        return E_UNEXPECTED;
+
+    return m_pCurrentProject->Validate();
+}
+
+LONGLONG StoryboardManager::GetTotalDurationHns() const
+{
+    if (!m_pCurrentProject)
+        return 0;
+
+    LONGLONG llMaxDuration = 0;
+
+    TimelineTrackType types[] = {
+        TimelineTrackTypeVideo,
+        TimelineTrackTypeAudio,
+        TimelineTrackTypeMusic,
+        TimelineTrackTypeTitle,
+        TimelineTrackTypeCredits,
+        TimelineTrackTypeTransition
+    };
+
+    for (size_t i = 0; i < _countof(types); i++)
+    {
+        const ProjectTimeline* pTimeline = m_pCurrentProject->GetTimeline(types[i]);
+        if (pTimeline)
+        {
+            LONGLONG llDuration = pTimeline->GetTotalDurationHns();
+            if (llDuration > llMaxDuration)
+                llMaxDuration = llDuration;
+        }
+    }
+
+    return llMaxDuration;
+}
+
 TemplateTable* StoryboardManager::GetTemplateTable()
 {
     return m_pTemplateTable;

@@ -16,6 +16,15 @@
 #include "SundanceAppMain.h"
 #include <prsht.h>
 #include <commctrl.h>
+
+#ifndef PROPSHEETW
+typedef PROPSHEETHEADERW_V2 PROPSHEETW;
+#endif
+
+#ifndef PropSheet_GetCurPage
+#define PropSheet_GetCurPage(hDlg, i) PropSheet_IndexToPage(hDlg, i)
+#endif
+
 #include "../StoryboardManager/TimelineTrack.h"
 #include "CommandLineParser.h"
 #include "AutoSaveManager.h"
@@ -1305,7 +1314,7 @@ static INT_PTR CALLBACK OptionsDialogProc(HWND hDlg, UINT uMsg, WPARAM wParam, L
         if (pnmh->code == PSN_KILLACTIVE)
         {
             // Validate and save settings when the user switches pages or closes
-            PROPSHEETPAGEW* ppsp = reinterpret_cast<PROPSHEETPAGEW>(
+            PROPSHEETPAGEW* ppsp = reinterpret_cast<PROPSHEETPAGEW*>(
                 ::GetWindowLongPtr(hDlg, DWLP_USER));
             if (!ppsp)
             {

@@ -213,6 +213,19 @@ X3DChildNodeImpl* X3DChildNodeImpl::GetChild(UINT index) const
     return m_children[index];
 }
 
+void X3DChildNodeImpl::Traverse(std::function<void(X3DChildNodeImpl*, int)> visitor, int depth)
+{
+    visitor(this, depth);
+    for (UINT i = 0; i < GetNumChildren(); ++i)
+    {
+        X3DChildNodeImpl* child = GetChild(i);
+        if (child && child->IsVisible())
+        {
+            child->Traverse(visitor, depth + 1);
+        }
+    }
+}
+
 void X3DChildNodeImpl::AddChild(X3DChildNodeImpl* child)
 {
     if (!child) return;

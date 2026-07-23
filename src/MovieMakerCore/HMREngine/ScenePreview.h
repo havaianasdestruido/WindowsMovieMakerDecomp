@@ -69,6 +69,7 @@ namespace HMREngine
         CComPtr<ID3D11Texture2D> m_renderedTexture;
         CComPtr<ID3D11RenderTargetView> m_renderedRTV;
         CComPtr<ID3D11ShaderResourceView> m_renderedSRV;
+        CComPtr<ID3D11Texture2D> m_previewDSTex;
         CComPtr<ID3D11DepthStencilView> m_previewDSV;
 
         Matrix4f m_viewMatrix;

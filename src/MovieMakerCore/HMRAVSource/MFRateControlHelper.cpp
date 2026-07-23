@@ -251,16 +251,8 @@ HRESULT MFRateControlHelper::ApplyRateViaSourceReader(double dblRate, bool fThin
         hr = m_pReader->QueryInterface(IID_PPV_ARGS(&spAttrs));
         if (SUCCEEDED(hr))
         {
-            hr = spAttrs->SetUINT32(0x00000009 /* MF_SOURCE_READER_CONTROL_THINNING */, fThin ? TRUE : FALSE);
+            hr = spAttrs->SetUINT32(MF_SOURCE_READER_DISABLE_THINNING, fThin ? TRUE : FALSE);
         }
-    }
-
-    if (FAILED(hr))
-    {
-        hr = m_pReader->SetCurrentMediaType(
-            MF_SOURCE_READER_FIRST_VIDEO_STREAM,
-            nullptr,
-            nullptr);
     }
 
     PropVariantClear(&var);

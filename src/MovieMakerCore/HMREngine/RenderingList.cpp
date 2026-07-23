@@ -212,7 +212,7 @@ namespace HMREngine
         bd.BindFlags = D3D11_BIND_VERTEX_BUFFER;
 
         D3D11_SUBRESOURCE_DATA init{};
-        init.pSysMemData = verts.data();
+        init.pSysMem = verts.data();
 
         CComPtr<ID3D11Buffer> vb;
         HRESULT hr = dev->CreateBuffer(&bd, &init, &vb);
@@ -284,7 +284,7 @@ namespace HMREngine
         bd.BindFlags = D3D11_BIND_VERTEX_BUFFER;
 
         D3D11_SUBRESOURCE_DATA init{};
-        init.pSysMemData = verts.data();
+        init.pSysMem = verts.data();
 
         CComPtr<ID3D11Buffer> vb;
         HRESULT hr = dev->CreateBuffer(&bd, &init, &vb);

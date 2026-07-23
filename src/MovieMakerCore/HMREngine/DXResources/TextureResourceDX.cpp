@@ -162,11 +162,6 @@ HRESULT TextureResourceDX::CreateFromDIB(const void* dibData, UINT dataSize)
 
 HRESULT TextureResourceDX::CreateTextureFromWIC(const void* data, UINT size)
 {
-    static HRESULT s_wicResult = []() -> HRESULT
-    {
-        return CoInitializeEx(nullptr, COINIT_APARTMENTTHREADED);
-    }();
-
     CComPtr<IWICImagingFactory> wicFactory;
     HRESULT hr = CoCreateInstance(CLSID_WICImagingFactory, nullptr, CLSCTX_INPROC_SERVER,
         __uuidof(IWICImagingFactory), (void**)&wicFactory);

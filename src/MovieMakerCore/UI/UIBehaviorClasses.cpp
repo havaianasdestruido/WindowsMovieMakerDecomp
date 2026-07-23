@@ -123,7 +123,6 @@ HRESULT TimelineBehaviorDragDrop::OnMessage(UINT uMsg, WPARAM wParam, LPARAM lPa
         if (m_bDragging)
         {
             m_bDragging = FALSE;
-            DragLeave(NULL);
             if (pbHandled) *pbHandled = TRUE;
         }
         break;

@@ -18,8 +18,6 @@
  * Source recreation for research and interoperability purposes.
  */
 
-#pragma once
-
 #ifndef EXTENTS_H
 #define EXTENTS_H
 
@@ -211,7 +209,7 @@ private:
 //
 // From RTTI: SelectionIndex
 //
-class STORYBOARD_API SelectionIndex
+class SelectionIndex
 {
 public:
     SelectionIndex();
@@ -269,6 +267,8 @@ private:
     DWORD           m_dwAnchorExtentId;
     SelectionMode   mSelectionMode;
 };
+
+#define SelectionIndex_DEFINED
 
 } // namespace StoryboardManager
 

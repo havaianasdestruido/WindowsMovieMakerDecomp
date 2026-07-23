@@ -93,6 +93,117 @@ namespace HMREngine
         HRESULT SetupFields() override;
     };
 
+    // --- TransformNodeImpl: Transform node bridge ---
+    class TransformNodeImpl : public X3DGroupingNodeImpl
+    {
+    public:
+        TransformNodeImpl();
+        virtual ~TransformNodeImpl();
+
+        HRESULT Initialize(TransformNode* node);
+        void Shutdown() override;
+
+        TransformNode* GetTransformNode() const { return m_transformNode; }
+
+        void SetTranslation(const Vec3& t);
+        void SetRotation(const Rotation4f& r);
+        void SetScale(const Vec3& s);
+        void SetCenter(const Vec3& c);
+
+        const Vec3& GetTranslation() const { return m_translation; }
+        const Rotation4f& GetRotation() const { return m_rotation; }
+        const Vec3& GetScale() const { return m_scale; }
+        const Vec3& GetCenter() const { return m_center; }
+
+        Matrix4f GetLocalMatrix() const;
+        Matrix4f GetWorldMatrix() const;
+        void RebuildMatrix();
+
+    protected:
+        TransformNode* m_transformNode = nullptr;
+        Vec3 m_translation;
+        Rotation4f m_rotation;
+        Vec3 m_scale = Vec3(1, 1, 1);
+        Vec3 m_center;
+        Matrix4f m_worldMatrix;
+        bool m_matrixDirty = true;
+
+        HRESULT SetupFields() override;
+    };
+
+    // --- GroupNodeImpl: Group node bridge ---
+    class GroupNodeImpl : public X3DGroupingNodeImpl
+    {
+    public:
+        GroupNodeImpl();
+        virtual ~GroupNodeImpl();
+
+        HRESULT Initialize(GroupNode* node);
+        void Shutdown() override;
+
+        GroupNode* GetGroupNode() const { return m_groupNode; }
+
+        void Traverse(std::function<void(X3DChildNodeImpl*, int)> visitor, int depth = 0) override;
+
+    protected:
+        GroupNode* m_groupNode = nullptr;
+
+        HRESULT SetupFields() override;
+    };
+
+    // --- SwitchNodeImpl: Switch node bridge ---
+    class SwitchNodeImpl : public X3DGroupingNodeImpl
+    {
+    public:
+        SwitchNodeImpl();
+        virtual ~SwitchNodeImpl();
+
+        HRESULT Initialize(SwitchNode* node);
+        void Shutdown() override;
+
+        SwitchNode* GetSwitchNode() const { return m_switchNode; }
+
+        int GetChoice() const { return m_choice; }
+        void SetChoice(int choice);
+
+        bool IsSwitchEnabled() const { return m_switchEnabled; }
+        void SetSwitchEnabled(bool enabled) { m_switchEnabled = enabled; MarkDirty(); }
+
+        X3DChildNodeImpl* GetActiveChild() const;
+        void TraverseActive(std::function<void(X3DChildNodeImpl*, int)> visitor, int depth = 0);
+
+    protected:
+        SwitchNode* m_switchNode = nullptr;
+        int m_choice = 0;
+        bool m_switchEnabled = true;
+
+        HRESULT SetupFields() override;
+    };
+
+    // --- BillboardNodeImpl: Billboard node bridge ---
+    class BillboardNodeImpl : public X3DGroupingNodeImpl
+    {
+    public:
+        BillboardNodeImpl();
+        virtual ~BillboardNodeImpl();
+
+        HRESULT Initialize(X3DGroupingNode* node);
+        void Shutdown() override;
+
+        void SetAxisOfRotation(const Vec3& axis) { m_axisOfRotation = axis; m_billboardDirty = true; }
+        const Vec3& GetAxisOfRotation() const { return m_axisOfRotation; }
+
+        void UpdateBillboard(const Vec3& eyePosition);
+        Matrix4f GetBillboardMatrix() const;
+
+    protected:
+        Vec3 m_axisOfRotation = Vec3(0, 1, 0);
+        Matrix4f m_billboardMatrix;
+        bool m_billboardDirty = true;
+
+        HRESULT SetupFields() override;
+    };
+
     // --- X3DComposedGeometryNodeImpl: Composed geometry bridge ---
     class X3DComposedGeometryNodeImpl : public X3DGeometryNodeImpl
     {

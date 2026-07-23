@@ -12,6 +12,10 @@
 
 #include "TransportBase.h"
 
+#ifndef MEPosition
+#define MEPosition ((MediaEventType)31)
+#endif
+
 // ============================================================================
 // TransportBase implementation
 // ============================================================================
@@ -222,7 +226,12 @@ HRESULT MovieTransport::Seek(LONGLONG llPositionHns, DWORD dwFlags)
         varStart.hVal.QuadPart = m_llCurrentPositionHns;
 
         IMFPresentationClock* pClock = nullptr;
-        if (SUCCEEDED(m_spSession->GetPresentationClock(&pClock)))
+        CComPtr<IMFClock> spSessionClock;
+        if (SUCCEEDED(m_spSession->GetClock(&spSessionClock)) && spSessionClock)
+        {
+            spSessionClock->QueryInterface(IID_PPV_ARGS(&pClock));
+        }
+        if (pClock)
         {
             IMFPresentationTimeSource* pTimeSource = nullptr;
             if (SUCCEEDED(pClock->GetTimeSource(&pTimeSource)))
@@ -332,10 +341,10 @@ HRESULT MovieTransport::OpenMedia(LPCWSTR pszFilePath)
     if (FAILED(hr))
         return hr;
 
-    MF_OBJECT_TYPE objectType = MF_OBJECT_TYPE_UNKNOWN;
+    MF_OBJECT_TYPE objectType = MF_OBJECT_UNKNOWN;
     IUnknown* pSourceUnk = nullptr;
     hr = pSourceResolver->CreateObjectFromURL(
-        pszFilePath, nullptr, MF_RESOLUTION_MEDIASOURCE, nullptr,
+        pszFilePath, MF_RESOLUTION_MEDIASOURCE, nullptr,
         &objectType, &pSourceUnk);
     pSourceResolver->Release();
 
@@ -408,6 +417,18 @@ RenderTransport::~RenderTransport()
 
 HRESULT RenderTransport::Play()
 {
+    if (m_strOutputPath.IsEmpty())
+        return E_UNEXPECTED;
+
+    if (m_bAbortRequested)
+    {
+        FireError(E_ABORT);
+        return E_ABORT;
+    }
+
+    if (m_state == TransportStatePlaying)
+        return S_FALSE;
+
     SetState(TransportStatePlaying);
     return S_OK;
 }
@@ -415,16 +436,26 @@ HRESULT RenderTransport::Play()
 HRESULT RenderTransport::Pause()
 {
     if (m_state == TransportStatePlaying)
+    {
         SetState(TransportStatePaused);
+    }
+    else if (m_state != TransportStatePaused)
+    {
+        return E_UNEXPECTED;
+    }
     return S_OK;
 }
 
 HRESULT RenderTransport::Stop()
 {
+    if (m_state == TransportStateStopped)
+        return S_FALSE;
+
     SetState(TransportStateStopped);
     m_llCurrentPositionHns = 0;
     m_flRenderProgress = 0.0f;
     m_bAbortRequested = false;
+    FirePositionChange(m_llCurrentPositionHns);
     return S_OK;
 }
 
@@ -435,6 +466,10 @@ HRESULT RenderTransport::Seek(LONGLONG llPositionHns, DWORD dwFlags)
         if (m_state == TransportStatePlaying)
         {
             SetState(TransportStateSeeking);
+        }
+        else if (m_state == TransportStateSeeking)
+        {
+            // Already seeking, update position
         }
         else
         {
@@ -447,7 +482,22 @@ HRESULT RenderTransport::Seek(LONGLONG llPositionHns, DWORD dwFlags)
     else
         m_llCurrentPositionHns = llPositionHns;
 
-    m_llCurrentPositionHns = std::max<LONGLONG>(0, std::min(m_llCurrentPositionHns, m_llDurationHns));
+    // Clamp to valid range
+    if (m_llDurationHns > 0)
+        m_llCurrentPositionHns = std::max<LONGLONG>(0, std::min(m_llCurrentPositionHns, m_llDurationHns));
+    else
+        m_llCurrentPositionHns = std::max<LONGLONG>(0, m_llCurrentPositionHns);
+
+    // Update render progress if we have a target duration
+    if (m_llDurationHns > 0)
+    {
+        m_flRenderProgress = static_cast<float>(m_llCurrentPositionHns) /
+                             static_cast<float>(m_llDurationHns);
+        m_flRenderProgress = std::max(0.0f, std::min(1.0f, m_flRenderProgress));
+
+        if (m_fnProgress)
+            m_fnProgress(m_flRenderProgress);
+    }
 
     FirePositionChange(m_llCurrentPositionHns);
 

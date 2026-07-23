@@ -202,7 +202,7 @@ public:
 
     // Command handling
     HRESULT OnCommand(UINT nCmdId, UI_COMMANDTYPE commandType, IUICommandHandler* pHandler);
-    HRESULT OnUpdateProperty(UINT nCmdId, REFUIKEY key, const PROPVARIANT* pCurrentValue, PROPVARIANT* pNewValue);
+    HRESULT OnUpdateProperty(UINT nCmdId, REFPROPERTYKEY key, const PROPVARIANT* pCurrentValue, PROPVARIANT* pNewValue);
 
     // Application menu
     HRESULT PopulateApplicationMenu(IUIRibbon* pRibbon);

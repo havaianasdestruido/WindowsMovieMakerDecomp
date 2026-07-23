@@ -606,12 +606,12 @@ HRESULT DXVA2VideoProc::ProcessSampleDXVA2(IMFSample* pInput, IMFSample** ppOutp
         DXVA2_VideoProcessBltParameters blt = {};
         blt.TargetRect = { 0, 0, static_cast<LONG>(m_desc.uOutputWidth), static_cast<LONG>(m_desc.uOutputHeight) };
         blt.SourceRect = { 0, 0, static_cast<LONG>(m_desc.uInputWidth), static_cast<LONG>(m_desc.uInputHeight) };
-        blt.TargetFrame = 0;
+        blt.TargetFrame = DXVA2_Fixed32FromDouble(0.0);
         blt.BackgroundColor = 0;
         blt.StreamRect = blt.TargetRect;
         blt.Alpha = DXVA2_Fixed32Opaque();
 
-        m_pVideoProcessor->ProcessBlt(pRenderTarget, &blt, nullptr, nullptr, nullptr, nullptr);
+        m_pVideoProcessor->ProcessBlt(pRenderTarget, &blt, nullptr, 0, nullptr, nullptr);
     }
 
     // Create output sample from the processed surface

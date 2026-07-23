@@ -584,6 +584,7 @@ MovieProject::MovieProject()
     , m_dwNextMediaId(1)
     , m_dwNextExtentId(1)
     , m_nUndoPosition(-1)
+    , m_selectionIndex(new SelectionIndex())
 {
     for (int i = 0; i < 6; ++i)
     {
@@ -2040,17 +2041,17 @@ void MovieProject::MarkAllExtentsForRetranscode(TimelineTrackType trackType)
 
 void MovieProject::ClearSelection()
 {
-    m_selectionIndex.ClearSelection();
+    m_selectionIndex->ClearSelection();
 }
 
 SelectionIndex& MovieProject::GetSelectionIndex() throw()
 {
-    return m_selectionIndex;
+    return *m_selectionIndex;
 }
 
 const SelectionIndex& MovieProject::GetSelectionIndex() const throw()
 {
-    return m_selectionIndex;
+    return *m_selectionIndex;
 }
 
 } // namespace StoryboardManager

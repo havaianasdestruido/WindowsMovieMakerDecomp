@@ -326,6 +326,21 @@ ATL::CString MediaItemBase::GetSourcePath() const
 void MediaItemBase::SetSourcePath(LPCWSTR pszPath)
 {
     m_strSourcePath = pszPath ? pszPath : L"";
+
+    // Auto-generate display name from file name if not already set
+    if (!m_strSourcePath.IsEmpty() && m_strDisplayName.IsEmpty())
+    {
+        LPCWSTR pszFileName = PathFindFileNameW(m_strSourcePath);
+        if (pszFileName && pszFileName[0] != L'\0')
+        {
+            m_strDisplayName = pszFileName;
+
+            // Strip extension for display
+            LPWSTR pszDot = PathFindExtensionW(m_strDisplayName);
+            if (pszDot && pszDot[0] == L'.')
+                m_strDisplayName.SetAt((int)(pszDot - (LPCWSTR)m_strDisplayName), L'\0');
+        }
+    }
 }
 
 ATL::CString MediaItemBase::GetDisplayName() const
@@ -393,7 +408,12 @@ bool MediaItemBase::FileExists() const
 MediaItemBase* MediaItemBase::Clone() const
 {
     MediaItemBase* pClone = new MediaItemBase();
-    *pClone = *this;
+    pClone->SetItemId(GetItemId());
+    pClone->SetSourcePath(GetSourcePath());
+    pClone->SetDisplayName(GetDisplayName());
+    pClone->SetDurationHns(GetDurationHns());
+    pClone->SetMetadata(GetMetadata());
+    pClone->SetProxyInfo(GetProxyInfo());
     return pClone;
 }
 
@@ -421,6 +441,53 @@ void MediaItem::SetItemType(MediaItemType type) throw()
     m_itemType = type;
 }
 
+void MediaItem::AutoDetectType()
+{
+    ATL::CString strSourcePath = GetSourcePath();
+    if (strSourcePath.IsEmpty())
+    {
+        m_itemType = MediaItemTypeUnknown;
+        return;
+    }
+
+    LPCWSTR pszExt = PathFindExtensionW(strSourcePath);
+    if (!pszExt || pszExt[0] == L'\0')
+    {
+        m_itemType = MediaItemTypeUnknown;
+        return;
+    }
+
+    // Compare without case
+    if (_wcsicmp(pszExt, L".jpg") == 0 || _wcsicmp(pszExt, L".jpeg") == 0 ||
+        _wcsicmp(pszExt, L".png") == 0 || _wcsicmp(pszExt, L".bmp") == 0 ||
+        _wcsicmp(pszExt, L".gif") == 0 || _wcsicmp(pszExt, L".tiff") == 0 ||
+        _wcsicmp(pszExt, L".tif") == 0 || _wcsicmp(pszExt, L".ico") == 0 ||
+        _wcsicmp(pszExt, L".webp") == 0)
+    {
+        m_itemType = MediaItemTypeImage;
+    }
+    else if (_wcsicmp(pszExt, L".mp3") == 0 || _wcsicmp(pszExt, L".wav") == 0 ||
+             _wcsicmp(pszExt, L".wma") == 0 || _wcsicmp(pszExt, L".aac") == 0 ||
+             _wcsicmp(pszExt, L".m4a") == 0 || _wcsicmp(pszExt, L".flac") == 0 ||
+             _wcsicmp(pszExt, L".ogg") == 0)
+    {
+        m_itemType = MediaItemTypeAudio;
+    }
+    else if (_wcsicmp(pszExt, L".mp4") == 0 || _wcsicmp(pszExt, L".wmv") == 0 ||
+             _wcsicmp(pszExt, L".avi") == 0 || _wcsicmp(pszExt, L".mov") == 0 ||
+             _wcsicmp(pszExt, L".mkv") == 0 || _wcsicmp(pszExt, L".mpg") == 0 ||
+             _wcsicmp(pszExt, L".mpeg") == 0 || _wcsicmp(pszExt, L".m4v") == 0 ||
+             _wcsicmp(pszExt, L".3gp") == 0 || _wcsicmp(pszExt, L".mts") == 0 ||
+             _wcsicmp(pszExt, L".m2ts") == 0 || _wcsicmp(pszExt, L".wm") == 0)
+    {
+        m_itemType = MediaItemTypeVideo;
+    }
+    else
+    {
+        m_itemType = MediaItemTypeUnknown;
+    }
+}
+
 ATL::CString MediaItem::GetThumbnailPath() const
 {
     return m_strThumbnailPath;
@@ -444,7 +511,15 @@ void MediaItem::SetFileSize(ULONGLONG cbSize) throw()
 MediaItemBase* MediaItem::Clone() const
 {
     MediaItem* pClone = new MediaItem();
-    *pClone = *this;
+    pClone->SetItemId(GetItemId());
+    pClone->SetSourcePath(GetSourcePath());
+    pClone->SetDisplayName(GetDisplayName());
+    pClone->SetDurationHns(GetDurationHns());
+    pClone->SetMetadata(GetMetadata());
+    pClone->SetProxyInfo(GetProxyInfo());
+    pClone->SetItemType(GetItemType());
+    pClone->SetThumbnailPath(GetThumbnailPath());
+    pClone->SetFileSize(GetFileSize());
     return pClone;
 }
 
@@ -623,7 +698,24 @@ void AudioVideoMediaClip::SetHasAudioStream(bool fHas) throw()
 MediaItemBase* AudioVideoMediaClip::Clone() const
 {
     AudioVideoMediaClip* pClone = new AudioVideoMediaClip();
-    *pClone = *this;
+    pClone->SetItemId(GetItemId());
+    pClone->SetSourcePath(GetSourcePath());
+    pClone->SetDisplayName(GetDisplayName());
+    pClone->SetDurationHns(GetDurationHns());
+    pClone->SetMetadata(GetMetadata());
+    pClone->SetProxyInfo(GetProxyInfo());
+    pClone->SetTrimStartHns(GetTrimStartHns());
+    pClone->SetTrimEndHns(GetTrimEndHns());
+    pClone->SetSpeedFactor(GetSpeedFactor());
+    pClone->SetVolume(GetVolume());
+    pClone->SetPan(GetPan());
+    pClone->SetMuted(IsMuted());
+    pClone->SetReversed(IsReversed());
+    pClone->SetFadeInDurationHns(GetFadeInDurationHns());
+    pClone->SetFadeOutDurationHns(GetFadeOutDurationHns());
+    pClone->SetVideoStreamIndex(GetVideoStreamIndex());
+    pClone->SetAudioStreamIndex(GetAudioStreamIndex());
+    pClone->SetHasAudioStream(HasAudioStream());
     return pClone;
 }
 
@@ -774,7 +866,24 @@ void ImageClip::SetRotationDegrees(double dblDegrees) throw()
 MediaItemBase* ImageClip::Clone() const
 {
     ImageClip* pClone = new ImageClip();
-    *pClone = *this;
+    pClone->SetItemId(GetItemId());
+    pClone->SetSourcePath(GetSourcePath());
+    pClone->SetDisplayName(GetDisplayName());
+    pClone->SetDurationHns(GetDurationHns());
+    pClone->SetMetadata(GetMetadata());
+    pClone->SetProxyInfo(GetProxyInfo());
+    pClone->SetTrimStartHns(GetTrimStartHns());
+    pClone->SetTrimEndHns(GetTrimEndHns());
+    pClone->SetSpeedFactor(GetSpeedFactor());
+    pClone->SetVolume(GetVolume());
+    pClone->SetPan(GetPan());
+    pClone->SetMuted(IsMuted());
+    pClone->SetReversed(IsReversed());
+    pClone->SetFadeInDurationHns(GetFadeInDurationHns());
+    pClone->SetFadeOutDurationHns(GetFadeOutDurationHns());
+    pClone->SetPanPoints(GetPanStartX(), GetPanStartY(), GetPanEndX(), GetPanEndY());
+    pClone->SetZoomRange(GetZoomStart(), GetZoomEnd());
+    pClone->SetRotationDegrees(GetRotationDegrees());
     return pClone;
 }
 
@@ -831,7 +940,24 @@ void AudioClip::SetNormalizeEnabled(bool fEnabled) throw()
 MediaItemBase* AudioClip::Clone() const
 {
     AudioClip* pClone = new AudioClip();
-    *pClone = *this;
+    pClone->SetItemId(GetItemId());
+    pClone->SetSourcePath(GetSourcePath());
+    pClone->SetDisplayName(GetDisplayName());
+    pClone->SetDurationHns(GetDurationHns());
+    pClone->SetMetadata(GetMetadata());
+    pClone->SetProxyInfo(GetProxyInfo());
+    pClone->SetTrimStartHns(GetTrimStartHns());
+    pClone->SetTrimEndHns(GetTrimEndHns());
+    pClone->SetSpeedFactor(GetSpeedFactor());
+    pClone->SetVolume(GetVolume());
+    pClone->SetPan(GetPan());
+    pClone->SetMuted(IsMuted());
+    pClone->SetReversed(IsReversed());
+    pClone->SetFadeInDurationHns(GetFadeInDurationHns());
+    pClone->SetFadeOutDurationHns(GetFadeOutDurationHns());
+    pClone->SetAudioFadeInHns(GetAudioFadeInHns());
+    pClone->SetAudioFadeOutHns(GetAudioFadeOutHns());
+    pClone->SetNormalizeEnabled(IsNormalizeEnabled());
     return pClone;
 }
 
@@ -970,7 +1096,22 @@ void TitleClip::SetTitleDurationHns(LONGLONG llDuration) throw()
 MediaItemBase* TitleClip::Clone() const
 {
     TitleClip* pClone = new TitleClip();
-    *pClone = *this;
+    pClone->SetItemId(GetItemId());
+    pClone->SetSourcePath(GetSourcePath());
+    pClone->SetDisplayName(GetDisplayName());
+    pClone->SetDurationHns(GetDurationHns());
+    pClone->SetMetadata(GetMetadata());
+    pClone->SetProxyInfo(GetProxyInfo());
+    pClone->SetTitleText(GetTitleText());
+    pClone->SetFontFamily(GetFontFamily());
+    pClone->SetFontSize(GetFontSize());
+    pClone->SetFontColor(GetFontColor());
+    pClone->SetBold(IsBold());
+    pClone->SetItalic(IsItalic());
+    pClone->SetBackgroundColor(GetBackgroundColor());
+    pClone->SetPosition(GetPositionX(), GetPositionY());
+    pClone->SetAnimationId(GetAnimationId());
+    pClone->SetTitleDurationHns(GetTitleDurationHns());
     return pClone;
 }
 

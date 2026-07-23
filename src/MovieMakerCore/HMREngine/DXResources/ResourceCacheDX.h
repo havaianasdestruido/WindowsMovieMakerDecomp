@@ -154,6 +154,10 @@ namespace HMREngine
             size_t GetMeshCount() const { return m_meshes.size(); }
             size_t GetTextureMemory() const;
 
+            // LRU cache management
+            void SetMaxTextureMemory(size_t maxBytes) { m_maxTextureMemory = maxBytes; }
+            size_t GetMaxTextureMemory() const { return m_maxTextureMemory; }
+
         protected:
             mutable std::mutex m_mutex;
 
@@ -163,6 +167,13 @@ namespace HMREngine
             std::unordered_map<std::wstring, std::unique_ptr<MotionTextureResourceDX>> m_motionTextures;
             std::unordered_map<std::wstring, std::unique_ptr<AVResourceDX>> m_avResources;
             std::unique_ptr<MovieThumbnailDX> m_thumbnailManager;
+
+            std::unordered_map<std::wstring, uint64_t> m_textureAccessOrder;
+            uint64_t m_accessCounter = 0;
+            size_t m_maxTextureMemory = 256 * 1024 * 1024;
+
+            void TouchTexture(const std::wstring& path);
+            void EvictLeastUsedTextures();
         };
 
     } // namespace DX

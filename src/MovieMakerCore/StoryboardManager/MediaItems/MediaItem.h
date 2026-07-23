@@ -259,6 +259,7 @@ public:
 
     virtual MediaItemType GetItemType() const throw() override;
     void SetItemType(MediaItemType type) throw();
+    void AutoDetectType();
 
     // -- Thumbnail path --
     ATL::CString GetThumbnailPath() const;

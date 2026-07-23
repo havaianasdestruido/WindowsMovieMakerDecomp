@@ -25,6 +25,7 @@
 #define MOVIEPROJECT_H
 
 #include "StoryboardManager.h"
+#include "Extents.h"
 #include <vector>
 
 namespace StoryboardManager
@@ -294,6 +295,8 @@ private:
     FILETIME    m_ftLastModified;
 };
 
+
+
 // ============================================================================
 // MovieProject
 // ============================================================================
@@ -421,7 +424,7 @@ private:
 
     ATL::CAtlArray<ProjectMediaItem>   m_arrMediaItems;
     ProjectTimeline    m_arrTimelines[6];  // one per TimelineTrackType
-    SelectionIndex     m_selectionIndex;
+    std::unique_ptr<SelectionIndex> m_selectionIndex;
 
     DWORD               m_dwVersionMajor;
     DWORD               m_dwVersionMinor;

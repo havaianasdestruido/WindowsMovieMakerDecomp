@@ -102,6 +102,7 @@ add_library(${TARGET} SHARED
     StoryboardManager/Transport/CommandBin.cpp
     HMREngine/AsyncWorker.cpp
     HMREngine/ErrHandler.cpp
+    HMREngine/InterpolatorImpl.cpp
     HMREngine/X3DNodes.cpp
     HMREngine/DXResources/EngineDX.cpp
     HMREngine/DXResources/TextureResourceDX.cpp

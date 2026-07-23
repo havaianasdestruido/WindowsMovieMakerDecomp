@@ -554,16 +554,116 @@ HRESULT SerializationWriter::WriteProject(LPCWSTR pszFilePath, MovieProject* pPr
 
 HRESULT SerializationWriter::WriteMediaItems(IXmlWriter* pWriter, MovieProject* pProject)
 {
-    UNREFERENCED_PARAMETER(pWriter);
-    UNREFERENCED_PARAMETER(pProject);
-    return S_OK;
+    if (!pWriter || !pProject)
+        return E_POINTER;
+
+    HRESULT hr = pWriter->WriteStartElement(nullptr, L"media", nullptr);
+    if (FAILED(hr))
+        return hr;
+
+    for (size_t i = 0; i < pProject->GetMediaItemCount(); ++i)
+    {
+        const ProjectMediaItem* pItem = pProject->GetMediaItem(i);
+        if (!pItem)
+            continue;
+
+        hr = pWriter->WriteStartElement(nullptr, L"mediaItem", nullptr);
+        if (FAILED(hr)) break;
+
+        WCHAR szBuf[64];
+
+        _itow_s(static_cast<int>(pItem->GetMediaId()), szBuf, 10);
+        hr = pWriter->WriteAttributeString(nullptr, L"id", nullptr, szBuf);
+        if (FAILED(hr)) break;
+
+        hr = pWriter->WriteAttributeString(nullptr, L"path", nullptr, pItem->GetSourcePath());
+        if (FAILED(hr)) break;
+
+        _itow_s(static_cast<int>(pItem->GetMediaType()), szBuf, 10);
+        hr = pWriter->WriteAttributeString(nullptr, L"type", nullptr, szBuf);
+        if (FAILED(hr)) break;
+
+        _i64tow_s(pItem->GetDurationHns(), szBuf, _countof(szBuf), 10);
+        hr = pWriter->WriteAttributeString(nullptr, L"duration", nullptr, szBuf);
+        if (FAILED(hr)) break;
+
+        if (pItem->GetWidth() > 0 && pItem->GetHeight() > 0)
+        {
+            _itow_s(static_cast<int>(pItem->GetWidth()), szBuf, 10);
+            hr = pWriter->WriteAttributeString(nullptr, L"width", nullptr, szBuf);
+            if (FAILED(hr)) break;
+
+            _itow_s(static_cast<int>(pItem->GetHeight()), szBuf, 10);
+            hr = pWriter->WriteAttributeString(nullptr, L"height", nullptr, szBuf);
+            if (FAILED(hr)) break;
+        }
+
+        if (pItem->GetFrameRate() > 0)
+        {
+            _itow_s(pItem->GetFrameRate(), szBuf, 10);
+            hr = pWriter->WriteAttributeString(nullptr, L"frameRate", nullptr, szBuf);
+            if (FAILED(hr)) break;
+        }
+
+        if (SUCCEEDED(hr))
+            hr = pWriter->WriteEndElement();
+        if (FAILED(hr)) break;
+    }
+
+    if (SUCCEEDED(hr))
+        hr = pWriter->WriteEndElement();
+
+    return hr;
 }
 
 HRESULT SerializationWriter::WriteProperties(IXmlWriter* pWriter, MovieProject* pProject)
 {
-    UNREFERENCED_PARAMETER(pWriter);
-    UNREFERENCED_PARAMETER(pProject);
-    return S_OK;
+    if (!pWriter || !pProject)
+        return E_POINTER;
+
+    const MovieProjectSettings& settings = pProject->GetSettings();
+    WCHAR szBuf[64];
+
+    HRESULT hr = pWriter->WriteStartElement(nullptr, L"settings", nullptr);
+    if (FAILED(hr))
+        return hr;
+
+    _itow_s(static_cast<int>(settings.GetOutputWidth()), szBuf, 10);
+    hr = pWriter->WriteAttributeString(nullptr, L"outputWidth", nullptr, szBuf);
+    if (SUCCEEDED(hr))
+    {
+        _itow_s(static_cast<int>(settings.GetOutputHeight()), szBuf, 10);
+        hr = pWriter->WriteAttributeString(nullptr, L"outputHeight", nullptr, szBuf);
+    }
+
+    if (SUCCEEDED(hr))
+    {
+        _snwprintf_s(szBuf, _countof(szBuf), _TRUNCATE, L"%g", settings.GetAspectRatio());
+        hr = pWriter->WriteAttributeString(nullptr, L"aspectRatio", nullptr, szBuf);
+    }
+
+    if (SUCCEEDED(hr))
+    {
+        _itow_s(settings.GetAudioBitRate(), szBuf, 10);
+        hr = pWriter->WriteAttributeString(nullptr, L"audioBitRate", nullptr, szBuf);
+    }
+
+    if (SUCCEEDED(hr))
+    {
+        _itow_s(settings.GetVideoBitRate(), szBuf, 10);
+        hr = pWriter->WriteAttributeString(nullptr, L"videoBitRate", nullptr, szBuf);
+    }
+
+    if (SUCCEEDED(hr))
+    {
+        _itow_s(settings.GetFrameRate(), szBuf, 10);
+        hr = pWriter->WriteAttributeString(nullptr, L"frameRate", nullptr, szBuf);
+    }
+
+    if (SUCCEEDED(hr))
+        hr = pWriter->WriteEndElement();
+
+    return hr;
 }
 
 ATL::CString SerializationWriter::EscapeXmlString(LPCWSTR pszInput)
@@ -571,7 +671,36 @@ ATL::CString SerializationWriter::EscapeXmlString(LPCWSTR pszInput)
     if (!pszInput)
         return ATL::CString();
 
-    return ATL::CString(pszInput);
+    ATL::CString strOutput;
+
+    LPCWSTR pch = pszInput;
+    while (*pch)
+    {
+        switch (*pch)
+        {
+        case L'&':
+            strOutput += L"&amp;";
+            break;
+        case L'<':
+            strOutput += L"&lt;";
+            break;
+        case L'>':
+            strOutput += L"&gt;";
+            break;
+        case L'"':
+            strOutput += L"&quot;";
+            break;
+        case L'\'':
+            strOutput += L"&apos;";
+            break;
+        default:
+            strOutput += *pch;
+            break;
+        }
+        ++pch;
+    }
+
+    return strOutput;
 }
 
 } // namespace StoryboardManager

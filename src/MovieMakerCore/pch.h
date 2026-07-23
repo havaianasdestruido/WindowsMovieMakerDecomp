@@ -321,6 +321,12 @@ DEFINE_GUID(CLSID_CResamplerMediaObject,
 #define XmlWriterProperty_ImplicitFragmentEscape ((UINT)6)
 #endif
 
+// --- MF_SOURCE_READER_DISABLE_THINNING removed from Win10 SDK ---
+#ifndef MF_SOURCE_READER_DISABLE_THINNING
+DEFINE_GUID(MF_SOURCE_READER_DISABLE_THINNING,
+    0x4164f65f, 0x5793, 0x4bf2, 0xb2, 0x95, 0x34, 0xab, 0x4e, 0x48, 0x79, 0x43);
+#endif
+
 // --- DXVA2 video processing interfaces removed from Win10 SDK ---
 // IDXVA2VideoProcessor and IDXVA2VideoProcessorEnumerator were removed
 // from dxva2api.h in the Windows 10 SDK. These need the Windows 8.1 SDK
@@ -352,6 +358,13 @@ public:
         UINT Width) = 0;
     virtual HRESULT STDMETHODCALLTYPE SetRenderTargetHeight(
         UINT Height) = 0;
+    virtual HRESULT STDMETHODCALLTYPE ProcessBlt(
+        IDirect3DSurface9 *pRenderTarget,
+        const void *pBltParams,
+        const void *pSamples,
+        UINT NumSamples,
+        void *pHandleComplete,
+        void *pReserved) = 0;
 };
 #endif
 
@@ -395,6 +408,67 @@ STDAPI DXVA2CreateVideoProcessor(
     IDXVA2VideoProcessorEnumerator *pVideoProcessorEnumerator,
     void *pVPCaps,
     IDXVA2VideoProcessor **ppVideoProcessor);
+
+// --- DXVA2 custom types not present in the Win10 SDK ---
+// These types were used by the original DXVA2 video processing pipeline.
+
+// Video processor device capability flag
+#define DXVA2_VPDev_HardwareDeinterlaceOrScaling 0x00000001
+
+typedef struct _DXVA2_Ratio
+{
+    UINT Numerator;
+    UINT Denominator;
+} DXVA2_Ratio;
+
+typedef struct _DXVA2_VideoProcessorDesc
+{
+    UINT            DeviceFrameWidth;
+    UINT            DeviceFrameHeight;
+    GUID            DeviceGUID;
+    UINT            Usage;
+    UINT            TargetFrameWidth;
+    UINT            TargetFrameHeight;
+    UINT            TargetMinWidth;
+    UINT            TargetMinHeight;
+    UINT            TargetMaxWidth;
+    UINT            TargetMaxHeight;
+    UINT            TargetProcFreqNumerator;
+    UINT            TargetProcFreqDenominator;
+    UINT            RateControlFreqNumerator;
+    UINT            RateControlFreqDenominator;
+    DXVA2_Ratio     FrameRate;
+    UINT            Uid;
+} DXVA2_VideoProcessorDesc;
+
+typedef struct _DXVA2_VideoProcessBltParameters
+{
+    DXVA2_Fixed32   TargetFrame;
+    RECT            TargetRect;
+    RECT            SourceRect;
+    RECT            StreamRect;
+    COLORREF        BackgroundColor;
+    DXVA2_Fixed32   Alpha;
+    LONGLONG        NoiseFilterTimeLapse;
+    LONGLONG        DeinterlaceProcessingTimeStamp;
+    LONGLONG        OutputProcessTimeStamp;
+} DXVA2_VideoProcessBltParameters;
+
+inline DXVA2_Fixed32 DXVA2_Fixed32Opaque()
+{
+    DXVA2_Fixed32 f = {};
+    f.Fraction = 0;
+    f.Value = 1;
+    return f;
+}
+
+inline DXVA2_Fixed32 DXVA2_Fixed32FromDouble(double d)
+{
+    DXVA2_Fixed32 f = {};
+    f.Fraction = static_cast<WORD>((d - static_cast<int>(d)) * 65536.0);
+    f.Value = static_cast<SHORT>(static_cast<int>(d));
+    return f;
+}
 
 // ============================================================================
 // XmlLite helper — IXmlReader has no GetAttribute method; use

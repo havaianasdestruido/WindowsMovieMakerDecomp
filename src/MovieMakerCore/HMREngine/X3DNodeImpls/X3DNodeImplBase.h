@@ -163,6 +163,8 @@ namespace HMREngine
         UINT GetNumChildren() const { return static_cast<UINT>(m_children.size()); }
         X3DChildNodeImpl* GetChild(UINT index) const;
 
+        virtual void Traverse(std::function<void(X3DChildNodeImpl*, int)> visitor, int depth = 0);
+
     protected:
         X3DChildNode* m_childNode = nullptr;
         bool m_visible = true;

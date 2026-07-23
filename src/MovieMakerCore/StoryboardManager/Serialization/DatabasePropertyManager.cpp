@@ -336,18 +336,50 @@ HRESULT DatabasePropertyManager::SaveToProject(MovieProject* pProject)
     if (!pProject)
         return E_POINTER;
 
+    MovieProjectSettings& settings = pProject->GetSettings();
+
     for (size_t i = 0; i < m_arrProperties.GetCount(); ++i)
     {
         const PropertyEntry& entry = m_arrProperties.GetAt(i);
         if (!entry.fModified)
             continue;
 
-        MovieProjectSettings& settings = pProject->GetSettings();
-
         if (entry.strName.CompareNoCase(L"ProjectName") == 0)
+        {
             settings.SetProjectName(entry.value.strValue);
+        }
         else if (entry.strName.CompareNoCase(L"Author") == 0)
+        {
             settings.SetAuthor(entry.value.strValue);
+        }
+        else if (entry.strName.CompareNoCase(L"OutputWidth") == 0)
+        {
+            UINT cx = static_cast<UINT>(entry.value.nValue);
+            UINT cy = settings.GetOutputHeight();
+            settings.SetOutputDimensions(cx, cy);
+        }
+        else if (entry.strName.CompareNoCase(L"OutputHeight") == 0)
+        {
+            UINT cx = settings.GetOutputWidth();
+            UINT cy = static_cast<UINT>(entry.value.nValue);
+            settings.SetOutputDimensions(cx, cy);
+        }
+        else if (entry.strName.CompareNoCase(L"AspectRatio") == 0)
+        {
+            settings.SetAspectRatio(entry.value.dblValue);
+        }
+        else if (entry.strName.CompareNoCase(L"AudioBitRate") == 0)
+        {
+            settings.SetAudioBitRate(static_cast<DWORD>(entry.value.nValue));
+        }
+        else if (entry.strName.CompareNoCase(L"VideoBitRate") == 0)
+        {
+            settings.SetVideoBitRate(static_cast<DWORD>(entry.value.nValue));
+        }
+        else if (entry.strName.CompareNoCase(L"FrameRate") == 0)
+        {
+            settings.SetFrameRate(static_cast<DWORD>(entry.value.nValue));
+        }
     }
 
     return S_OK;
@@ -373,6 +405,36 @@ HRESULT DatabasePropertyManager::LoadFromProject(MovieProject* pProject)
         {
             entry.value.strValue = settings.GetAuthor();
             entry.value.type = PropertyTypeString;
+        }
+        else if (entry.strName.CompareNoCase(L"OutputWidth") == 0)
+        {
+            entry.value.nValue = static_cast<int>(settings.GetOutputWidth());
+            entry.value.type = PropertyTypeInt;
+        }
+        else if (entry.strName.CompareNoCase(L"OutputHeight") == 0)
+        {
+            entry.value.nValue = static_cast<int>(settings.GetOutputHeight());
+            entry.value.type = PropertyTypeInt;
+        }
+        else if (entry.strName.CompareNoCase(L"AspectRatio") == 0)
+        {
+            entry.value.dblValue = settings.GetAspectRatio();
+            entry.value.type = PropertyTypeDouble;
+        }
+        else if (entry.strName.CompareNoCase(L"AudioBitRate") == 0)
+        {
+            entry.value.nValue = static_cast<int>(settings.GetAudioBitRate());
+            entry.value.type = PropertyTypeInt;
+        }
+        else if (entry.strName.CompareNoCase(L"VideoBitRate") == 0)
+        {
+            entry.value.nValue = static_cast<int>(settings.GetVideoBitRate());
+            entry.value.type = PropertyTypeInt;
+        }
+        else if (entry.strName.CompareNoCase(L"FrameRate") == 0)
+        {
+            entry.value.nValue = static_cast<int>(settings.GetFrameRate());
+            entry.value.type = PropertyTypeInt;
         }
 
         entry.fModified = false;
@@ -417,13 +479,210 @@ HRESULT DatabasePropertyManager::SaveToDatabase()
     if (!m_fDatabaseOpen)
         return E_UNEXPECTED;
 
-    return S_OK;
+    if (m_strDatabasePath.IsEmpty())
+        return E_FAIL;
+
+    CComPtr<IStream> spStream;
+    HRESULT hr = SHCreateStreamOnFileEx(m_strDatabasePath,
+        STGM_CREATE | STGM_WRITE | STGM_SHARE_DENY_WRITE,
+        FILE_ATTRIBUTE_NORMAL, TRUE, nullptr, &spStream);
+    if (FAILED(hr))
+        return hr;
+
+    CComPtr<IXmlWriter> spWriter;
+    hr = CreateXmlWriter(__uuidof(IXmlWriter), reinterpret_cast<void**>(&spWriter), nullptr);
+    if (FAILED(hr))
+        return hr;
+
+    hr = spWriter->SetOutput(spStream);
+    if (FAILED(hr))
+        return hr;
+
+    hr = spWriter->WriteStartDocument(XmlStandalone_Omit);
+    if (FAILED(hr))
+        return hr;
+
+    hr = spWriter->WriteStartElement(nullptr, L"properties", nullptr);
+    if (FAILED(hr))
+        return hr;
+
+    WCHAR szBuf[64];
+
+    for (size_t i = 0; i < m_arrProperties.GetCount(); ++i)
+    {
+        const PropertyEntry& entry = m_arrProperties.GetAt(i);
+
+        hr = spWriter->WriteStartElement(nullptr, L"property", nullptr);
+        if (FAILED(hr)) break;
+
+        hr = spWriter->WriteAttributeString(nullptr, L"name", nullptr, entry.strName);
+        if (FAILED(hr)) break;
+
+        _itow_s(static_cast<int>(entry.type), szBuf, 10);
+        hr = spWriter->WriteAttributeString(nullptr, L"type", nullptr, szBuf);
+        if (FAILED(hr)) break;
+
+        switch (entry.type)
+        {
+        case PropertyTypeString:
+            hr = spWriter->WriteAttributeString(nullptr, L"value", nullptr, entry.value.strValue);
+            break;
+        case PropertyTypeInt:
+            _itow_s(entry.value.nValue, szBuf, 10);
+            hr = spWriter->WriteAttributeString(nullptr, L"value", nullptr, szBuf);
+            break;
+        case PropertyTypeLongLong:
+            _i64tow_s(entry.value.llValue, szBuf, _countof(szBuf), 10);
+            hr = spWriter->WriteAttributeString(nullptr, L"value", nullptr, szBuf);
+            break;
+        case PropertyTypeDouble:
+            _snwprintf_s(szBuf, _countof(szBuf), _TRUNCATE, L"%g", entry.value.dblValue);
+            hr = spWriter->WriteAttributeString(nullptr, L"value", nullptr, szBuf);
+            break;
+        case PropertyTypeBool:
+            hr = spWriter->WriteAttributeString(nullptr, L"value", nullptr,
+                entry.value.fValue ? L"1" : L"0");
+            break;
+        case PropertyTypeBlob:
+            hr = spWriter->WriteAttributeString(nullptr, L"value", nullptr, L"");
+            break;
+        default:
+            hr = spWriter->WriteAttributeString(nullptr, L"value", nullptr, L"");
+            break;
+        }
+        if (FAILED(hr)) break;
+
+        if (entry.fModified)
+        {
+            hr = spWriter->WriteAttributeString(nullptr, L"modified", nullptr, L"1");
+            if (FAILED(hr)) break;
+        }
+
+        hr = spWriter->WriteEndElement();
+        if (FAILED(hr)) break;
+    }
+
+    if (SUCCEEDED(hr))
+        hr = spWriter->WriteEndElement();
+
+    if (SUCCEEDED(hr))
+        hr = spWriter->WriteEndDocument();
+
+    if (SUCCEEDED(hr))
+        hr = spWriter->Flush();
+
+    if (SUCCEEDED(hr))
+        ClearDirty();
+
+    return hr;
 }
 
 HRESULT DatabasePropertyManager::LoadFromDatabase()
 {
     if (!m_fDatabaseOpen)
         return E_UNEXPECTED;
+
+    if (m_strDatabasePath.IsEmpty())
+        return E_FAIL;
+
+    DWORD dwAttrib = GetFileAttributes(m_strDatabasePath);
+    if (dwAttrib == INVALID_FILE_ATTRIBUTES)
+        return HRESULT_FROM_WIN32(ERROR_FILE_NOT_FOUND);
+
+    CComPtr<IStream> spStream;
+    HRESULT hr = SHCreateStreamOnFileEx(m_strDatabasePath,
+        STGM_READ | STGM_SHARE_DENY_WRITE,
+        FILE_ATTRIBUTE_NORMAL, FALSE, nullptr, &spStream);
+    if (FAILED(hr))
+        return hr;
+
+    CComPtr<IXmlReader> spReader;
+    hr = CreateXmlReader(__uuidof(IXmlReader), reinterpret_cast<void**>(&spReader), nullptr);
+    if (FAILED(hr))
+        return hr;
+
+    hr = spReader->SetInput(spStream);
+    if (FAILED(hr))
+        return hr;
+
+    XmlNodeType nodeType;
+    while (SUCCEEDED(spReader->Read(&nodeType)))
+    {
+        if (nodeType == XmlNodeType_Element)
+        {
+            LPCWSTR pwszLocalName = nullptr;
+            hr = spReader->GetLocalName(&pwszLocalName, nullptr);
+            if (FAILED(hr))
+                break;
+
+            if (wcscmp(pwszLocalName, L"property") == 0)
+            {
+                LPCWSTR pwszName = nullptr;
+                LPCWSTR pwszType = nullptr;
+                LPCWSTR pwszValue = nullptr;
+                LPCWSTR pwszModified = nullptr;
+
+                spReader->MoveToAttributeByName(L"name", nullptr);
+                spReader->GetValue(&pwszName, nullptr);
+                spReader->MoveToAttributeByName(L"type", nullptr);
+                spReader->GetValue(&pwszType, nullptr);
+                spReader->MoveToAttributeByName(L"value", nullptr);
+                spReader->GetValue(&pwszValue, nullptr);
+
+                if (SUCCEEDED(spReader->MoveToAttributeByName(L"modified", nullptr)))
+                    spReader->GetValue(&pwszModified, nullptr);
+                else
+                    pwszModified = nullptr;
+
+                spReader->MoveToElement();
+
+                if (pwszName && pwszType)
+                {
+                    PropertyType type = static_cast<PropertyType>(_wtoi(pwszType));
+
+                    int idx = FindProperty(pwszName);
+                    if (idx < 0)
+                    {
+                        PropertyEntry entry;
+                        entry.strName = pwszName;
+                        entry.type = type;
+                        idx = static_cast<int>(m_arrProperties.Add(entry));
+                    }
+
+                    PropertyEntry& entry = m_arrProperties.GetAt(idx);
+                    entry.type = type;
+
+                    if (pwszValue)
+                    {
+                        switch (type)
+                        {
+                        case PropertyTypeString:
+                            entry.value.strValue = pwszValue;
+                            break;
+                        case PropertyTypeInt:
+                            entry.value.nValue = _wtoi(pwszValue);
+                            break;
+                        case PropertyTypeLongLong:
+                            entry.value.llValue = _wtoi64(pwszValue);
+                            break;
+                        case PropertyTypeDouble:
+                            entry.value.dblValue = _wtof(pwszValue);
+                            break;
+                        case PropertyTypeBool:
+                            entry.value.fValue = (_wtoi(pwszValue) != 0);
+                            break;
+                        case PropertyTypeBlob:
+                            break;
+                        default:
+                            break;
+                        }
+                    }
+
+                    entry.fModified = (pwszModified && _wtoi(pwszModified) != 0);
+                }
+            }
+        }
+    }
 
     return S_OK;
 }

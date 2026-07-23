@@ -60,7 +60,7 @@ namespace HMREngine
     void PositionInterpolatorImpl::SetKeyFraction(float fraction)
     {
         if (!m_enabled) return;
-        m_currentValue = InterpolateKeys(m_key.m_value, m_value.m_value, fraction);
+        m_currentValue = InterpolateKeys(m_key.m_values, m_value.m_values, fraction);
     }
 
     // OrientationInterpolatorImpl
@@ -76,7 +76,7 @@ namespace HMREngine
     void OrientationInterpolatorImpl::SetKeyFraction(float fraction)
     {
         if (!m_enabled) return;
-        m_currentValue = SlerpKeys(m_key.m_value, m_value.m_value, fraction);
+        m_currentValue = SlerpKeys(m_key.m_values, m_value.m_values, fraction);
     }
 
     // ScalarInterpolatorImpl
@@ -92,7 +92,7 @@ namespace HMREngine
     void ScalarInterpolatorImpl::SetKeyFraction(float fraction)
     {
         if (!m_enabled) return;
-        m_currentValue = InterpolateKeys(m_key.m_value, m_value.m_value, fraction);
+        m_currentValue = InterpolateKeys(m_key.m_values, m_value.m_values, fraction);
     }
 
     // ColorInterpolatorImpl
@@ -108,7 +108,7 @@ namespace HMREngine
     void ColorInterpolatorImpl::SetKeyFraction(float fraction)
     {
         if (!m_enabled) return;
-        m_currentValue = InterpolateKeys(m_key.m_value, m_value.m_value, fraction);
+        m_currentValue = InterpolateKeys(m_key.m_values, m_value.m_values, fraction);
     }
 
     // CoordinateInterpolatorImpl
@@ -124,49 +124,49 @@ namespace HMREngine
     void CoordinateInterpolatorImpl::SetKeyFraction(float fraction)
     {
         if (!m_enabled) return;
-        if (m_key.m_value.empty() || m_value.m_value.empty()) return;
+        if (m_key.m_values.empty() || m_value.m_values.empty()) return;
 
-        size_t numKeys = m_key.m_value.size();
-        size_t valuePerKey = m_value.m_value.size() / numKeys;
+        size_t numKeys = m_key.m_values.size();
+        size_t valuePerKey = m_value.m_values.size() / numKeys;
         if (valuePerKey == 0) return;
 
-        if (fraction <= m_key.m_value.front())
+        if (fraction <= m_key.m_values.front())
         {
-            m_currentValues.assign(m_value.m_value.begin(),
-                m_value.m_value.begin() + static_cast<ptrdiff_t>(valuePerKey));
+            m_currentValues.assign(m_value.m_values.begin(),
+                m_value.m_values.begin() + static_cast<ptrdiff_t>(valuePerKey));
             return;
         }
-        if (fraction >= m_key.m_value.back())
+        if (fraction >= m_key.m_values.back())
         {
-            m_currentValues.assign(m_value.m_value.end() - static_cast<ptrdiff_t>(valuePerKey),
-                m_value.m_value.end());
+            m_currentValues.assign(m_value.m_values.end() - static_cast<ptrdiff_t>(valuePerKey),
+                m_value.m_values.end());
             return;
         }
 
         for (size_t i = 0; i < numKeys - 1; i++)
         {
-            if (fraction >= m_key.m_value[i] && fraction <= m_key.m_value[i + 1])
+            if (fraction >= m_key.m_values[i] && fraction <= m_key.m_values[i + 1])
             {
-                float range = m_key.m_value[i + 1] - m_key.m_value[i];
-                float t = range > 0.0f ? (fraction - m_key.m_value[i]) / range : 0.0f;
+                float range = m_key.m_values[i + 1] - m_key.m_values[i];
+                float t = range > 0.0f ? (fraction - m_key.m_values[i]) / range : 0.0f;
 
                 m_currentValues.resize(valuePerKey);
                 for (size_t v = 0; v < valuePerKey; v++)
                 {
                     size_t idx0 = i * valuePerKey + v;
                     size_t idx1 = (i + 1) * valuePerKey + v;
-                    if (idx0 < m_value.m_value.size() && idx1 < m_value.m_value.size())
-                        m_currentValues[v] = m_value.m_value[idx0] +
-                            (m_value.m_value[idx1] - m_value.m_value[idx0]) * t;
-                    else if (idx0 < m_value.m_value.size())
-                        m_currentValues[v] = m_value.m_value[idx0];
+                    if (idx0 < m_value.m_values.size() && idx1 < m_value.m_values.size())
+                        m_currentValues[v] = m_value.m_values[idx0] +
+                            (m_value.m_values[idx1] - m_value.m_values[idx0]) * t;
+                    else if (idx0 < m_value.m_values.size())
+                        m_currentValues[v] = m_value.m_values[idx0];
                 }
                 return;
             }
         }
 
-        m_currentValues.assign(m_value.m_value.end() - static_cast<ptrdiff_t>(valuePerKey),
-            m_value.m_value.end());
+        m_currentValues.assign(m_value.m_values.end() - static_cast<ptrdiff_t>(valuePerKey),
+            m_value.m_values.end());
     }
 
 } // namespace HMREngine

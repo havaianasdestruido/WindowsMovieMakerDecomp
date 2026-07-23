@@ -82,6 +82,7 @@ namespace HMREngine
         CComPtr<ID3D11Texture2D> m_frameTexture;
         CComPtr<ID3D11RenderTargetView> m_frameRTV;
         CComPtr<ID3D11ShaderResourceView> m_frameSRV;
+        CComPtr<ID3D11Texture2D> m_frameDSTex;
         CComPtr<ID3D11DepthStencilView> m_frameDSV;
 
         ProgressCallback m_progressCb;

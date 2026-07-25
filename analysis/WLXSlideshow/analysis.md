@@ -191,6 +191,10 @@ Collage
 Spin
 Frame
 Glass
+...
+Stack
+Travel
+Pan and zoom
 ```
 
 These are the built-in slideshow transition/theme styles. The slideshow offers:
@@ -204,6 +208,9 @@ These are the built-in slideshow transition/theme styles. The slideshow offers:
 - **Spin** — rotation effect
 - **Frame** — framed photo effect
 - **Glass** — glass/reflection effect
+- **Stack** — stacked photos effect
+- **Travel** — travel-themed transitions
+- **Pan and zoom** — Ken Burns pan/zoom effect
 
 ### Resource Type Identifiers
 ```
@@ -264,7 +271,7 @@ Software\Microsoft\Windows\CurrentVersion\PropertySystem\PropertyHandlers\%ws
 - `EnabledThemeSet` — theme set toggle
 - `EnabledThemeName%d` — per-index theme name
 
-## RTTI Classes (156 total)
+## RTTI Classes (108 with complete RTTI, 156 total in binary)
 
 ### Core Slideshow COM Objects (with ATL `CComCoClass`)
 | Class | Registered? |

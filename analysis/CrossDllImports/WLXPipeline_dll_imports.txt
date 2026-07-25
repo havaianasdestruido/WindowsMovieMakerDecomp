@@ -1,0 +1,338 @@
+﻿Microsoft (R) COFF/PE Dumper Version 14.44.35228.0
+Copyright (C) Microsoft Corporation.  All rights reserved.
+
+
+Dump of file C:\Users\mcmco\Desktop\WMMR\undecomp\Photo Gallery\WLXPipeline.dll
+
+File Type: DLL
+
+  Section contains the following imports:
+
+    MSVCR110.dll
+              10001154 Import Address Table
+              100968E4 Import Name Table
+                     0 time date stamp
+                     0 Index of first forwarder reference
+
+                  13B ?terminate@@YAXXZ
+                   70 ??1type_info@@UAE@XZ
+                  528 _wcslwr_s
+                  68C wcsstr
+                  627 qsort
+                  599 _wtoi
+                  522 _wcsicmp
+                  618 memcpy
+                  42F _resetstkoflw
+                   88 ??_U@YAPAXI@Z
+                  60D malloc
+                  679 wcschr
+                  61C memset
+                  363 _libm_sse2_sqrt_precise
+                  619 memcpy_s
+                  686 wcsnlen
+                  500 _vsnwprintf
+                  617 memcmp
+                  620 printf
+                  353 _itow_s
+                  173 __CppXcptFilter
+                  205 _amsg_exit
+                  5D4 free
+                  37D _malloc_crt
+                  2EE _initterm
+                  2EF _initterm_e
+                  36C _lock
+                  4D6 _unlock
+                  21B _calloc_crt
+                  19C __dllonexit
+                  412 _onexit
+                  18F __clean_type_info_names_internal
+                  260 _except_handler4_common
+                  23B _crt_debugger_hook
+                  19A __crtUnhandledException
+                  199 __crtTerminateProcess
+                   8A ??_V@YAXPAX@Z
+                  421 _purecall
+                   71 ??2@YAPAXI@Z
+                  5B5 ceil
+                  361 _libm_sse2_pow_precise
+                  698 wmemcpy_s
+                  42D _recalloc
+                  62A rand
+                  67D wcscpy_s
+                  61A memmove
+                  5B4 calloc
+                  61B memmove_s
+                  35D _libm_sse2_cos_precise
+                  5C8 floor
+                   73 ??3@YAXPAX@Z
+                  362 _libm_sse2_sin_precise
+
+    KERNEL32.dll
+              10001050 Import Address Table
+              100967E0 Import Name Table
+                     0 time date stamp
+                     0 Index of first forwarder reference
+
+                  27D GetModuleFileNameW
+                  281 GetModuleHandleW
+                  2B5 GetProcAddress
+                  350 HeapDestroy
+                  34D HeapAlloc
+                  354 HeapReAlloc
+                  351 HeapFree
+                  356 HeapSize
+                  2BA GetProcessHeap
+                  117 DecodePointer
+                  43C QueryPerformanceCounter
+                  228 GetCurrentThreadId
+                  2F4 GetSystemTimeAsFileTime
+                  311 GetTickCount64
+                  448 RaiseException
+                  388 IsProcessorFeaturePresent
+                  2EE GetSystemInfo
+                  49B ReleaseSemaphore
+                   F5 CreateSemaphoreW
+                  310 GetTickCount
+                  30B GetThreadPriority
+                  542 SetThreadPriority
+                  363 InitializeConditionVariable
+                  5C4 WakeConditionVariable
+                  560 SleepConditionVariableCS
+                  227 GetCurrentThread
+                  383 IsDebuggerPresent
+                  611 lstrcmpW
+                  36E InterlockedExchange
+                  4AE ResetEvent
+                  13C EncodePointer
+                  171 ExpandEnvironmentStringsW
+                  36F InterlockedExchangeAdd
+                  3C3 LoadLibraryW
+                  1B9 FreeLibraryAndExitThread
+                  5B3 VirtualQuery
+                  3C2 LoadLibraryExW
+                  1B8 FreeLibrary
+                  323 GetVersionExW
+                   CA CreateEventW
+                  4FC SetEvent
+                  24E GetFileAttributesW
+                  3EC MultiByteToWideChar
+                  58A TryEnterCriticalSection
+                  365 InitializeCriticalSection
+                  140 EnterCriticalSection
+                  3BD LeaveCriticalSection
+                  11E DeleteCriticalSection
+                  371 InterlockedIncrement
+                  36D InterlockedDecrement
+                  1A3 FindResourceExW
+                  3C6 LoadResource
+                  3D8 LockResource
+                  55E SizeofResource
+                  614 lstrcmpiW
+                  1A4 FindResourceW
+                   8E CloseHandle
+                  26A GetLastError
+                  366 InitializeCriticalSectionAndSpinCount
+                  5BB WaitForSingleObject
+                  101 CreateThread
+                  3EB MulDiv
+                  55F Sleep
+                  5B9 WaitForMultipleObjects
+
+    ADVAPI32.dll
+              10001000 Import Address Table
+              10096790 Import Name Table
+                     0 time date stamp
+                     0 Index of first forwarder reference
+
+                  321 TraceEvent
+                  261 RegCreateKeyExW
+                  2A6 RegSetValueExW
+                  289 RegOpenKeyExW
+                  296 RegQueryValueExW
+                  28C RegOpenKeyW
+                  170 GetTraceEnableFlags
+                  171 GetTraceEnableLevel
+                  172 GetTraceLoggerHandle
+                  330 UnregisterTraceGuids
+                  2B2 RegisterTraceGuidsW
+                  258 RegCloseKey
+
+    SHLWAPI.dll
+              10001250 Import Address Table
+              100969E0 Import Name Table
+                     0 time date stamp
+                     0 Index of first forwarder reference
+
+                   90 PathRemoveFileSpecW
+                   4C PathFindExtensionW
+
+    USER32.dll
+              1000125C Import Address Table
+              100969EC Import Name Table
+                     0 time date stamp
+                     0 Index of first forwarder reference
+
+                  251 MsgWaitForMultipleObjects
+                  26F PostThreadMessageW
+                  269 PeekMessageW
+                   F3 EnumDisplayDevicesW
+                  29F RegisterWindowMessageW
+                  195 GetQueueStatus
+                   B6 DispatchMessageW
+                  33A TranslateMessage
+                  172 GetMessageW
+                  223 LoadImageW
+                  174 GetMonitorInfoW
+                  137 GetDesktopWindow
+                   F4 EnumDisplayMonitors
+                  24F MonitorFromWindow
+                  1EC IntersectRect
+                  23E MapWindowPoints
+                  1C9 GetWindowRect
+                  125 GetClientRect
+                  2A1 ReleaseDC
+                  134 GetDC
+                  1A8 GetSystemMetrics
+                  200 IsIconic
+                  20F IsWindow
+                  214 IsWindowVisible
+                  2FA SetThreadDesktop
+                   EF EnumDesktopWindows
+                  25D OpenDesktopW
+                  101 EqualRect
+                   57 CopyRect
+
+    GDI32.dll
+              10001040 Import Address Table
+              100967D0 Import Name Table
+                     0 time date stamp
+                     0 Index of first forwarder reference
+
+                  2D0 SetBkColor
+                  105 DeleteObject
+                  157 ExtTextOutW
+
+    ole32.dll
+              10001390 Import Address Table
+              10096B20 Import Name Table
+                     0 time date stamp
+                     0 Index of first forwarder reference
+
+                   19 CoCreateInstance
+                   4F CoInitializeEx
+                   4E CoInitialize
+                   79 CoTaskMemFree
+                   78 CoTaskMemAlloc
+                  181 PropVariantClear
+                  182 PropVariantCopy
+                   29 CoFreeUnusedLibraries
+                   7D CoUninitialize
+
+    OLEAUT32.dll
+              10001228 Import Address Table
+              100969B8 Import Name Table
+                     0 time date stamp
+                     0 Index of first forwarder reference
+
+                      Ordinal     6
+                      Ordinal     2
+                      Ordinal     8
+                      Ordinal     9
+                      Ordinal    10
+                      Ordinal    12
+                      Ordinal     4
+                      Ordinal   149
+                      Ordinal   150
+
+    gdiplus.dll
+              10001308 Import Address Table
+              10096A98 Import Name Table
+                     0 time date stamp
+                     0 Index of first forwarder reference
+
+                   49 GdipCreateBitmapFromFile
+                   51 GdipCreateBitmapFromStream
+                  176 GdipGetPropertyItem
+                  177 GdipGetPropertyItemSize
+                  19C GdipImageSelectActiveFrame
+                  198 GdipImageGetFrameCount
+                  19A GdipImageGetFrameDimensionsList
+                  199 GdipImageGetFrameDimensionsCount
+                   5F GdipCreateHBITMAPFromBitmap
+                   4B GdipCreateBitmapFromGdiDib
+                  1F0 GdipSaveImageToFile
+                   90 GdipDeleteGraphics
+                   EC GdipFlush
+                   50 GdipCreateBitmapFromScan0
+                  122 GdipGetImageHeight
+                  12C GdipGetImageWidth
+                  121 GdipGetImageGraphicsContext
+                   98 GdipDisposeImage
+                   36 GdipCloneImage
+                   ED GdipFree
+                   21 GdipAlloc
+                   BA GdipDrawImageRectRectI
+                  275 GdiplusStartup
+                  274 GdiplusShutdown
+                   B8 GdipDrawImageRectI
+                   4D GdipCreateBitmapFromHBITMAP
+                  11F GdipGetImageEncodersSize
+                  11E GdipGetImageEncoders
+                  127 GdipGetImagePixelFormat
+
+    d3d9.dll
+              100012EC Import Address Table
+              10096A7C Import Name Table
+                     0 time date stamp
+                     0 Index of first forwarder reference
+
+                    B Direct3DCreate9Ex
+
+    d3dx9_32.dll
+              100012F4 Import Address Table
+              10096A84 Import Name Table
+                     0 time date stamp
+                     0 Index of first forwarder reference
+
+                   E2 D3DXMatrixTranslation
+                   DE D3DXMatrixScaling
+                   3A D3DXCreateEffectFromFileW
+                   CB D3DXMatrixMultiply
+
+    DDRAW.dll
+              10001034 Import Address Table
+              100967C4 Import Name Table
+                     0 time date stamp
+                     0 Index of first forwarder reference
+
+                    A DirectDrawCreateEx
+                    C DirectDrawEnumerateExA
+
+    WINMM.dll
+              100012D4 Import Address Table
+              10096A64 Import Name Table
+                     0 time date stamp
+                     0 Index of first forwarder reference
+
+                   94 timeGetTime
+                   95 timeKillEvent
+                   90 timeBeginPeriod
+                   91 timeEndPeriod
+                   96 timeSetEvent
+
+    msdmo.dll
+              10001380 Import Address Table
+              10096B10 Import Name Table
+                     0 time date stamp
+                     0 Index of first forwarder reference
+
+                    E MoInitMediaType
+                    D MoFreeMediaType
+                    9 MoCopyMediaType
+
+  Summary
+
+        A000 .data
+        F000 .reloc
+        1000 .rsrc
+       97000 .text

@@ -1,0 +1,163 @@
+﻿Microsoft (R) COFF/PE Dumper Version 14.44.35228.0
+Copyright (C) Microsoft Corporation.  All rights reserved.
+
+
+Dump of file C:\Users\mcmco\Desktop\WMMR\undecomp\Photo Gallery\WLXPhotoBase.dll
+
+File Type: DLL
+
+  Section contains the following imports:
+
+    MSVCR110.dll
+              100010A8 Import Address Table
+              10005130 Import Name Table
+                     0 time date stamp
+                     0 Index of first forwarder reference
+
+                  199 __crtTerminateProcess
+                  19A __crtUnhandledException
+                  23B _crt_debugger_hook
+                  260 _except_handler4_common
+                   73 ??3@YAXPAX@Z
+                  18F __clean_type_info_names_internal
+                  412 _onexit
+                  19C __dllonexit
+                  21B _calloc_crt
+                  4D6 _unlock
+                  36C _lock
+                   70 ??1type_info@@UAE@XZ
+                  13B ?terminate@@YAXXZ
+                  2EF _initterm_e
+                  2EE _initterm
+                  37D _malloc_crt
+                  205 _amsg_exit
+                  173 __CppXcptFilter
+                  421 _purecall
+                   71 ??2@YAPAXI@Z
+                  698 wmemcpy_s
+                  522 _wcsicmp
+                  500 _vsnwprintf
+                  214 _beginthreadex
+                  4F6 _vscwprintf
+                  619 memcpy_s
+                  672 vswprintf_s
+                  410 _msize
+                  62C realloc
+                  119 ?_query_new_handler@@YAP6AHI@ZXZ
+                  618 memcpy
+                  15D _CxxThrowException
+                  5D4 free
+                  60D malloc
+                   8A ??_V@YAXPAX@Z
+                  178 __CxxFrameHandler3
+                  61C memset
+
+    KERNEL32.dll
+              10001000 Import Address Table
+              10005088 Import Name Table
+                     0 time date stamp
+                     0 Index of first forwarder reference
+
+                  11E DeleteCriticalSection
+                  36E InterlockedExchange
+                  2B5 GetProcAddress
+                  3C1 LoadLibraryExA
+                  388 IsProcessorFeaturePresent
+                  383 IsDebuggerPresent
+                  311 GetTickCount64
+                  2F4 GetSystemTimeAsFileTime
+                  228 GetCurrentThreadId
+                  43C QueryPerformanceCounter
+                  117 DecodePointer
+                  13C EncodePointer
+                  12E DisableThreadLibraryCalls
+                  27D GetModuleFileNameW
+                  280 GetModuleHandleExW
+                  281 GetModuleHandleW
+                  227 GetCurrentThread
+                  139 DuplicateHandle
+                  223 GetCurrentProcess
+                  5C8 WerRegisterMemoryBlock
+                  1A4 FindResourceW
+                  3C6 LoadResource
+                  3D8 LockResource
+                  55E SizeofResource
+                  5CF WerUnregisterMemoryBlock
+                  4FC SetEvent
+                  3BD LeaveCriticalSection
+                  140 EnterCriticalSection
+                  366 InitializeCriticalSectionAndSpinCount
+                  3C2 LoadLibraryExW
+                  1B8 FreeLibrary
+                  5BB WaitForSingleObject
+                  246 GetExitCodeThread
+                  542 SetThreadPriority
+                  2EE GetSystemInfo
+                  371 InterlockedIncrement
+                  36D InterlockedDecrement
+                  26A GetLastError
+                  323 GetVersionExW
+                   8E CloseHandle
+                  448 RaiseException
+
+    PSAPI.DLL
+              10001140 Import Address Table
+              100051C8 Import Name Table
+                     0 time date stamp
+                     0 Index of first forwarder reference
+
+                   11 GetModuleInformation
+
+    wer.dll
+              10001160 Import Address Table
+              100051E8 Import Name Table
+                     0 time date stamp
+                     0 Index of first forwarder reference
+
+                    6 WerReportSetParameter
+                    5 WerReportCreate
+                    2 WerReportAddDump
+                    8 WerReportSubmit
+                    4 WerReportCloseHandle
+
+    VERSION.dll
+              10001150 Import Address Table
+              100051D8 Import Name Table
+                     0 time date stamp
+                     0 Index of first forwarder reference
+
+                    8 GetFileVersionInfoW
+                    7 GetFileVersionInfoSizeW
+                   10 VerQueryValueW
+
+    SHLWAPI.dll
+              10001148 Import Address Table
+              100051D0 Import Name Table
+                     0 time date stamp
+                     0 Index of first forwarder reference
+
+                   4E PathFindFileNameW
+
+  Section contains the following delay load imports:
+
+    ole32.dll
+              00000001 Characteristics
+              10007588 Address of HMODULE
+              10007240 Import Address Table
+              10004F90 Import Name Table
+              10004FE8 Bound Import Name Table
+              00000000 Unload Import Name Table
+                     0 time date stamp
+
+          1000474A               0 CoTaskMemRealloc
+          10004754               0 CoGetMalloc
+          10004740               0 CoTaskMemFree
+          10004720               0 CoTaskMemAlloc
+
+  Summary
+
+        4000 .data
+        1000 .reloc
+        1000 .rsrc
+        6000 .text
+        1000 .tls

@@ -1,0 +1,313 @@
+﻿Microsoft (R) COFF/PE Dumper Version 14.44.35228.0
+Copyright (C) Microsoft Corporation.  All rights reserved.
+
+
+Dump of file C:\Users\mcmco\Desktop\WMMR\undecomp\Shared\WLMFDS.dll
+
+File Type: DLL
+
+  Section contains the following imports:
+
+    MSVCR110.dll
+              10001210 Import Address Table
+              100564D8 Import Name Table
+                     0 time date stamp
+                     0 Index of first forwarder reference
+
+                  500 _vsnwprintf
+                   71 ??2@YAPAXI@Z
+                  618 memcpy
+                  617 memcmp
+                  683 wcsncmp
+                  5F7 iswalpha
+                  5FB iswdigit
+                  522 _wcsicmp
+                  61A memmove
+                  61C memset
+                  688 wcsrchr
+                  65A swprintf_s
+                  627 qsort
+                  666 towlower
+                  173 __CppXcptFilter
+                  205 _amsg_exit
+                  37D _malloc_crt
+                  2EE _initterm
+                  2EF _initterm_e
+                   70 ??1type_info@@UAE@XZ
+                  23B _crt_debugger_hook
+                  19A __crtUnhandledException
+                  199 __crtTerminateProcess
+                  36C _lock
+                  4D6 _unlock
+                  21B _calloc_crt
+                  19C __dllonexit
+                  412 _onexit
+                  13B ?terminate@@YAXXZ
+                  260 _except_handler4_common
+                  667 towupper
+                  18F __clean_type_info_names_internal
+                  421 _purecall
+                  678 wcscat_s
+                  67D wcscpy_s
+                  42D _recalloc
+                  68C wcsstr
+                  619 memcpy_s
+                  5D4 free
+                  60D malloc
+                  685 wcsncpy_s
+                   73 ??3@YAXPAX@Z
+                  599 _wtoi
+
+    KERNEL32.dll
+              1000107C Import Address Table
+              10056344 Import Name Table
+                     0 time date stamp
+                     0 Index of first forwarder reference
+
+                  351 HeapFree
+                  371 InterlockedIncrement
+                  36D InterlockedDecrement
+                  26A GetLastError
+                  34D HeapAlloc
+                  140 EnterCriticalSection
+                  3BD LeaveCriticalSection
+                  1B8 FreeLibrary
+                  2B5 GetProcAddress
+                  281 GetModuleHandleW
+                  614 lstrcmpiW
+                  448 RaiseException
+                  3EC MultiByteToWideChar
+                  55E SizeofResource
+                  3C6 LoadResource
+                  1A4 FindResourceW
+                  3C2 LoadLibraryExW
+                  27D GetModuleFileNameW
+                  366 InitializeCriticalSectionAndSpinCount
+                  11E DeleteCriticalSection
+                  117 DecodePointer
+                  13C EncodePointer
+                  2BA GetProcessHeap
+                  383 IsDebuggerPresent
+                  388 IsProcessorFeaturePresent
+                  43C QueryPerformanceCounter
+                  228 GetCurrentThreadId
+                  2F4 GetSystemTimeAsFileTime
+                  311 GetTickCount64
+                  3DB MapViewOfFile
+                  593 UnmapViewOfFile
+                  400 OpenFileMappingW
+                   D3 CreateFileMappingW
+                  354 HeapReAlloc
+                  36C InterlockedCompareExchange64
+                  43D QueryPerformanceFrequency
+                  5F1 WriteFile
+                   D6 CreateFileW
+                  517 SetLastError
+                  2D0 GetQueuedCompletionStatus
+                   DB CreateIoCompletionPort
+                  3FC OpenEventW
+                   9C CloseThreadpoolWait
+                  5BF WaitForThreadpoolWaitCallbacks
+                  54C SetThreadpoolWait
+                  106 CreateThreadpoolWait
+                  3EB MulDiv
+                  280 GetModuleHandleExW
+                  3C9 LocalAlloc
+                  262 GetFullPathNameW
+                  356 HeapSize
+                  55F Sleep
+                  5BC WaitForSingleObjectEx
+                   A6 CompareStringOrdinal
+                  36B InterlockedCompareExchange
+                  310 GetTickCount
+                  30B GetThreadPriority
+                  542 SetThreadPriority
+                  227 GetCurrentThread
+                  101 CreateThread
+                  36E InterlockedExchange
+                   F5 CreateSemaphoreW
+                  611 lstrcmpW
+                  5B9 WaitForMultipleObjects
+                  5AE VirtualFree
+                  5AB VirtualAlloc
+                  2EE GetSystemInfo
+                  3CD LocalFree
+                   CA CreateEventW
+                  5BB WaitForSingleObject
+                  49B ReleaseSemaphore
+                  4AE ResetEvent
+                  4FC SetEvent
+                  365 InitializeCriticalSection
+                   8E CloseHandle
+                  61D lstrlenW
+                  61C lstrlenA
+                  27C GetModuleFileNameA
+                  12E DisableThreadLibraryCalls
+                  323 GetVersionExW
+
+    USER32.dll
+              100012E4 Import Address Table
+              100565AC Import Name Table
+                     0 time date stamp
+                     0 Index of first forwarder reference
+
+                   31 CharNextW
+
+    ADVAPI32.dll
+              10001000 Import Address Table
+              100562C8 Import Name Table
+                     0 time date stamp
+                     0 Index of first forwarder reference
+
+                   20 AllocateAndInitializeSid
+                  296 RegQueryValueExW
+                  2A7 RegSetValueW
+                  264 RegCreateKeyW
+                  27A RegEnumValueW
+                  133 FreeSid
+                   58 BuildTrusteeWithSidW
+                  2D3 SetEntriesInAclW
+                  18D InitializeSecurityDescriptor
+                  2E3 SetSecurityDescriptorDacl
+                  27E RegGetValueW
+                  270 RegDeleteValueW
+                  261 RegCreateKeyExW
+                  2A6 RegSetValueExW
+                  289 RegOpenKeyExW
+                  277 RegEnumKeyExW
+                  290 RegQueryInfoKeyW
+                  258 RegCloseKey
+                  26C RegDeleteKeyW
+                  330 UnregisterTraceGuids
+                  2B2 RegisterTraceGuidsW
+                  170 GetTraceEnableFlags
+                  171 GetTraceEnableLevel
+                  172 GetTraceLoggerHandle
+                  323 TraceMessage
+
+    ole32.dll
+              10001318 Import Address Table
+              100565E0 Import Name Table
+                     0 time date stamp
+                     0 Index of first forwarder reference
+
+                  1B4 StringFromCLSID
+                    C CLSIDFromString
+                   3F CoGetMalloc
+                   18 CoCreateGuid
+                  182 PropVariantCopy
+                   4E CoInitialize
+                  1B5 StringFromGUID2
+                   19 CoCreateInstance
+                   78 CoTaskMemAlloc
+                   7A CoTaskMemRealloc
+                   79 CoTaskMemFree
+                   29 CoFreeUnusedLibraries
+                   7D CoUninitialize
+                  181 PropVariantClear
+
+    OLEAUT32.dll
+              100012C0 Import Address Table
+              10056588 Import Name Table
+                     0 time date stamp
+                     0 Index of first forwarder reference
+
+                      Ordinal     6
+                      Ordinal   277
+                      Ordinal     4
+                      Ordinal     9
+
+    WINMM.dll
+              100012FC Import Address Table
+              100565C4 Import Name Table
+                     0 time date stamp
+                     0 Index of first forwarder reference
+
+                   95 timeKillEvent
+                   92 timeGetDevCaps
+                   90 timeBeginPeriod
+                   91 timeEndPeriod
+                   94 timeGetTime
+                   96 timeSetEvent
+
+    MFPlat.DLL
+              100011C8 Import Address Table
+              10056490 Import Name Table
+                     0 time date stamp
+                     0 Index of first forwarder reference
+
+                   30 MFCreateSample
+                   33 MFCreateStreamDescriptor
+                   7C MFTEnum
+                   29 MFCreateMediaTypeFromRepresentation
+                   17 MFCreateAlignedMemoryBuffer
+                    2 CreatePropertyStore
+                   1C MFCreateEventQueue
+                   2D MFCreatePresentationDescriptor
+                   2A MFCreateMemoryBuffer
+                   6E MFPutWorkItemEx
+                   84 MFUnlockPlatform
+                   66 MFLockPlatform
+                   58 MFHeapFree
+                   18 MFCreateAsyncResult
+                   62 MFInvokeCallback
+                   57 MFHeapAlloc
+                   6C MFPutWorkItem
+
+    MF.dll
+              100011C0 Import Address Table
+              10056488 Import Name Table
+                     0 time date stamp
+                     0 Index of first forwarder reference
+
+                   31 MFCreateSourceResolver
+
+    SHELL32.dll
+              100012D4 Import Address Table
+              1005659C Import Name Table
+                     0 time date stamp
+                     0 Index of first forwarder reference
+
+                   95 SHCreateItemFromParsingName
+
+    SHLWAPI.dll
+              100012DC Import Address Table
+              100565A4 Import Name Table
+                     0 time date stamp
+                     0 Index of first forwarder reference
+
+                   6A PathIsRelativeW
+
+    VERSION.dll
+              100012EC Import Address Table
+              100565B4 Import Name Table
+                     0 time date stamp
+                     0 Index of first forwarder reference
+
+                   10 VerQueryValueW
+                    7 GetFileVersionInfoSizeW
+                    8 GetFileVersionInfoW
+
+    EVR.dll
+              10001074 Import Address Table
+              1005633C Import Name Table
+                     0 time date stamp
+                     0 Index of first forwarder reference
+
+                    8 MFCopyImage
+
+    AVRT.dll
+              10001068 Import Address Table
+              10056330 Import Name Table
+                     0 time date stamp
+                     0 Index of first forwarder reference
+
+                    C AvSetMmThreadCharacteristicsW
+                    1 AvRevertMmThreadCharacteristics
+
+  Summary
+
+        6000 .data
+        8000 .reloc
+        1000 .rsrc
+       57000 .text

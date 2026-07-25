@@ -1,0 +1,233 @@
+﻿Microsoft (R) COFF/PE Dumper Version 14.44.35228.0
+Copyright (C) Microsoft Corporation.  All rights reserved.
+
+
+Dump of file C:\Users\mcmco\Desktop\WMMR\undecomp\Shared\WLMFReadWrite.dll
+
+File Type: DLL
+
+  Section contains the following imports:
+
+    MSVCR110.dll
+              100011A0 Import Address Table
+              10036658 Import Name Table
+                     0 time date stamp
+                     0 Index of first forwarder reference
+
+                  522 _wcsicmp
+                  688 wcsrchr
+                  4C8 _ultoa
+                  2B2 _gcvt_s
+                  4FA _vsnprintf
+                  500 _vsnwprintf
+                  61A memmove
+                  618 memcpy
+                  617 memcmp
+                  13B ?terminate@@YAXXZ
+                  260 _except_handler4_common
+                  18F __clean_type_info_names_internal
+                  412 _onexit
+                  19C __dllonexit
+                  21B _calloc_crt
+                  4D6 _unlock
+                  36C _lock
+                   70 ??1type_info@@UAE@XZ
+                  199 __crtTerminateProcess
+                  19A __crtUnhandledException
+                  23B _crt_debugger_hook
+                  2EF _initterm_e
+                  2EE _initterm
+                  37D _malloc_crt
+                  205 _amsg_exit
+                  173 __CppXcptFilter
+                  61C memset
+                  421 _purecall
+                  42D _recalloc
+                  68C wcsstr
+                  619 memcpy_s
+                  5D4 free
+                  60D malloc
+                  685 wcsncpy_s
+                   73 ??3@YAXPAX@Z
+
+    KERNEL32.dll
+              10001050 Import Address Table
+              10036508 Import Name Table
+                     0 time date stamp
+                     0 Index of first forwarder reference
+
+                  280 GetModuleHandleExW
+                  5B9 WaitForMultipleObjects
+                  272 GetLogicalProcessorInformation
+                  227 GetCurrentThread
+                  538 SetThreadAffinityMask
+                  2EE GetSystemInfo
+                  356 HeapSize
+                  36E InterlockedExchange
+                  140 EnterCriticalSection
+                  3BD LeaveCriticalSection
+                  1B8 FreeLibrary
+                  2B5 GetProcAddress
+                  281 GetModuleHandleW
+                  614 lstrcmpiW
+                  448 RaiseException
+                  26A GetLastError
+                  3EC MultiByteToWideChar
+                  55E SizeofResource
+                  3C6 LoadResource
+                  5BC WaitForSingleObjectEx
+                  3C2 LoadLibraryExW
+                  27D GetModuleFileNameW
+                  366 InitializeCriticalSectionAndSpinCount
+                  11E DeleteCriticalSection
+                  36D InterlockedDecrement
+                  371 InterlockedIncrement
+                  12E DisableThreadLibraryCalls
+                  117 DecodePointer
+                  13C EncodePointer
+                  365 InitializeCriticalSection
+                  517 SetLastError
+                  27E GetModuleHandleA
+                  321 GetVersion
+                  24E GetFileAttributesW
+                  3C3 LoadLibraryW
+                  414 OutputDebugStringA
+                  383 IsDebuggerPresent
+                  388 IsProcessorFeaturePresent
+                  43C QueryPerformanceCounter
+                  228 GetCurrentThreadId
+                  2F4 GetSystemTimeAsFileTime
+                  311 GetTickCount64
+                  55F Sleep
+                  5BB WaitForSingleObject
+                  34D HeapAlloc
+                  5DD WideCharToMultiByte
+                  2BA GetProcessHeap
+                  351 HeapFree
+                  49B ReleaseSemaphore
+                  5BA WaitForMultipleObjectsEx
+                   F5 CreateSemaphoreW
+                   8E CloseHandle
+                   CA CreateEventW
+                  4FC SetEvent
+                  139 DuplicateHandle
+                  1A4 FindResourceW
+                  223 GetCurrentProcess
+
+    USER32.dll
+              1000124C Import Address Table
+              10036704 Import Name Table
+                     0 time date stamp
+                     0 Index of first forwarder reference
+
+                   31 CharNextW
+
+    ADVAPI32.dll
+              10001000 Import Address Table
+              100364B8 Import Name Table
+                     0 time date stamp
+                     0 Index of first forwarder reference
+
+                  258 RegCloseKey
+                  261 RegCreateKeyExW
+                  2A6 RegSetValueExW
+                  289 RegOpenKeyExW
+                  277 RegEnumKeyExW
+                  290 RegQueryInfoKeyW
+                  26C RegDeleteKeyW
+                  330 UnregisterTraceGuids
+                  2B2 RegisterTraceGuidsW
+                  170 GetTraceEnableFlags
+                  171 GetTraceEnableLevel
+                  172 GetTraceLoggerHandle
+                  270 RegDeleteValueW
+                  323 TraceMessage
+                  296 RegQueryValueExW
+
+    ole32.dll
+              10001254 Import Address Table
+              1003670C Import Name Table
+                     0 time date stamp
+                     0 Index of first forwarder reference
+
+                  1B5 StringFromGUID2
+                   7A CoTaskMemRealloc
+                   79 CoTaskMemFree
+                   19 CoCreateInstance
+                  182 PropVariantCopy
+                  181 PropVariantClear
+                   78 CoTaskMemAlloc
+
+    OLEAUT32.dll
+              10001230 Import Address Table
+              100366E8 Import Name Table
+                     0 time date stamp
+                     0 Index of first forwarder reference
+
+                      Ordinal     9
+                      Ordinal     8
+                      Ordinal   277
+
+    MFPlat.DLL
+              10001150 Import Address Table
+              10036608 Import Name Table
+                     0 time date stamp
+                     0 Index of first forwarder reference
+
+                   7C MFTEnum
+                    D MFBeginRegisterWorkQueueWithMMCSS
+                   58 MFHeapFree
+                   19 MFCreateAttributes
+                   57 MFHeapAlloc
+                   42 MFEndRegisterWorkQueueWithMMCSS
+                    E MFBeginUnregisterWorkQueueWithMMCSS
+                   43 MFEndUnregisterWorkQueueWithMMCSS
+                    8 MFAllocateWorkQueue
+                   6C MFPutWorkItem
+                   85 MFUnlockWorkQueue
+                   27 MFCreateMediaType
+                   2A MFCreateMemoryBuffer
+                   30 MFCreateSample
+                   11 MFCalculateImageSize
+                   26 MFCreateMediaEvent
+                   1D MFCreateFile
+                   35 MFCreateSystemTimeSource
+                   53 MFGetSystemTime
+
+    MF.dll
+              10001138 Import Address Table
+              100365F0 Import Name Table
+                     0 time date stamp
+                     0 Index of first forwarder reference
+
+                   25 MFCreatePresentationClock
+                    F MFCreateASFProfile
+                   31 MFCreateSourceResolver
+                    C MFCreateASFMediaSink
+                   3B MFGetService
+
+    EVR.dll
+              10001040 Import Address Table
+              100364F8 Import Name Table
+                     0 time date stamp
+                     0 Index of first forwarder reference
+
+                   16 MFGetStrideForBitmapInfoHeader
+                   13 MFCreateVideoSampleAllocator
+                    8 MFCopyImage
+
+    PROPSYS.dll
+              10001240 Import Address Table
+              100366F8 Import Name Table
+                     0 time date stamp
+                     0 Index of first forwarder reference
+
+                   2D PSCreateMemoryPropertyStore
+                   A4 PropVariantToVariant
+
+  Summary
+
+        2000 .data
+        4000 .reloc
+        1000 .rsrc
+       37000 .text

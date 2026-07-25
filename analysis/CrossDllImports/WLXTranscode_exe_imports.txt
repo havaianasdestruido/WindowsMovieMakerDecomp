@@ -1,0 +1,301 @@
+﻿Microsoft (R) COFF/PE Dumper Version 14.44.35228.0
+Copyright (C) Microsoft Corporation.  All rights reserved.
+
+
+Dump of file C:\Users\mcmco\Desktop\WMMR\undecomp\Photo Gallery\WLXTranscode.exe
+
+File Type: EXECUTABLE IMAGE
+
+  Section contains the following imports:
+
+    ADVAPI32.dll
+                401000 Import Address Table
+                443AF8 Import Name Table
+                     0 time date stamp
+                     0 Index of first forwarder reference
+
+                  323 TraceMessage
+                  172 GetTraceLoggerHandle
+                  171 GetTraceEnableLevel
+                  170 GetTraceEnableFlags
+                  2B2 RegisterTraceGuidsW
+                  330 UnregisterTraceGuids
+                   C1 CryptAcquireContextW
+                   DB CryptReleaseContext
+                   E4 CryptSignHashW
+                   D8 CryptHashData
+                   C3 CryptCreateHash
+                   C6 CryptDestroyHash
+                   DA CryptImportKey
+                   C7 CryptDestroyKey
+                  321 TraceEvent
+                  296 RegQueryValueExW
+                  289 RegOpenKeyExW
+                  258 RegCloseKey
+
+    KERNEL32.dll
+                40104C Import Address Table
+                443B44 Import Name Table
+                     0 time date stamp
+                     0 Index of first forwarder reference
+
+                  26A GetLastError
+                   F5 CreateSemaphoreW
+                  49B ReleaseSemaphore
+                  5DD WideCharToMultiByte
+                  5B9 WaitForMultipleObjects
+                  4AE ResetEvent
+                  4FC SetEvent
+                   8E CloseHandle
+                   CA CreateEventW
+                  3BD LeaveCriticalSection
+                  140 EnterCriticalSection
+                  5BB WaitForSingleObject
+                  3CD LocalFree
+                  61D lstrlenW
+                  1B4 FormatMessageW
+                  1A3 FindResourceExW
+                  1A4 FindResourceW
+                  3C6 LoadResource
+                  3D8 LockResource
+                  55E SizeofResource
+                  3EC MultiByteToWideChar
+                  3C2 LoadLibraryExW
+                  1B8 FreeLibrary
+                  24E GetFileAttributesW
+                  321 GetVersion
+                  27E GetModuleHandleA
+                  27D GetModuleFileNameW
+                  281 GetModuleHandleW
+                  2B5 GetProcAddress
+                  388 IsProcessorFeaturePresent
+                  383 IsDebuggerPresent
+                  311 GetTickCount64
+                  2F4 GetSystemTimeAsFileTime
+                  228 GetCurrentThreadId
+                  43C QueryPerformanceCounter
+                  117 DecodePointer
+                  13C EncodePointer
+                  53B SetThreadExecutionState
+                  11E DeleteCriticalSection
+                  448 RaiseException
+                  4F4 SetDllDirectoryW
+                  123 DeleteFileW
+                  366 InitializeCriticalSectionAndSpinCount
+                  371 InterlockedIncrement
+                  36D InterlockedDecrement
+                  55F Sleep
+                  24B GetFileAttributesExW
+                  310 GetTickCount
+
+    MSVCR110.dll
+                40116C Import Address Table
+                443C64 Import Name Table
+                     0 time date stamp
+                     0 Index of first forwarder reference
+
+                  617 memcmp
+                  421 _purecall
+                  5B4 calloc
+                  65C swscanf_s
+                  5D4 free
+                  664 tolower
+                  5EE isdigit
+                  42D _recalloc
+                  4F6 _vscwprintf
+                  672 vswprintf_s
+                  60D malloc
+                  522 _wcsicmp
+                  693 wcstoul
+                  5CC fprintf
+                  1A6 __iob_func
+                  5C2 fflush
+                  618 memcpy
+                  686 wcsnlen
+                  61C memset
+                  698 wmemcpy_s
+                  15D _CxxThrowException
+                  199 __crtTerminateProcess
+                  19A __crtUnhandledException
+                  23B _crt_debugger_hook
+                  260 _except_handler4_common
+                  22F _controlfp_s
+                  2F6 _invoke_watson
+                  198 __crtSetUnhandledExceptionFilter
+                   70 ??1type_info@@UAE@XZ
+                  412 _onexit
+                  19C __dllonexit
+                  21B _calloc_crt
+                  4D6 _unlock
+                  36C _lock
+                  13B ?terminate@@YAXXZ
+                  22B _commode
+                  284 _fmode
+                  1F7 __winitenv
+                  2EE _initterm
+                  2EF _initterm_e
+                  1E2 __setusermatherr
+                  22C _configthreadlocale
+                  21C _cexit
+                  269 _exit
+                  5BC exit
+                  1E0 __set_app_type
+                  1F6 __wgetmainargs
+                  205 _amsg_exit
+                  16F _XcptFilter
+                  61B memmove_s
+                  619 memcpy_s
+                  562 _wfullpath
+                  597 _wtof
+                  680 wcslen
+                  178 __CxxFrameHandler3
+
+    ole32.dll
+                4012E8 Import Address Table
+                443DE0 Import Name Table
+                     0 time date stamp
+                     0 Index of first forwarder reference
+
+                   79 CoTaskMemFree
+                  1B4 StringFromCLSID
+                    C CLSIDFromString
+                   78 CoTaskMemAlloc
+                   19 CoCreateInstance
+                   7D CoUninitialize
+                   4F CoInitializeEx
+                  181 PropVariantClear
+
+    OLEAUT32.dll
+                40124C Import Address Table
+                443D44 Import Name Table
+                     0 time date stamp
+                     0 Index of first forwarder reference
+
+                      Ordinal     6
+                      Ordinal     4
+                      Ordinal     9
+                      Ordinal     2
+
+    WLXPhotoBase.dll
+                4012A0 Import Address Table
+                443D98 Import Name Table
+                     0 time date stamp
+                     0 Index of first forwarder reference
+
+                   11 ?BaseAtlThrow@ATL@@YGXJ@Z
+                   14 ?Delete@BasePrivate@@YAXPAX@Z
+                   2B ?New@BasePrivate@@YAPAXI_N@Z
+                   34 ?Throw@Base@@YGXJ@Z
+                   35 ?ThrowLastError@Base@@YGXXZ
+                    B ??BException@Base@@QBEJXZ
+                    6 ??1Exception@Base@@UAE@XZ
+                   2A ?IsWin8OrGreater@OS@Base@@YG_NXZ
+                   29 ?IsWin7OrGreater@OS@Base@@YG_NXZ
+                   1B ?GetBaseStringManager@String@Base@@SGAAVCAtlStringMgr@ATL@@XZ
+
+    d3d9.dll
+                4012D4 Import Address Table
+                443DCC Import Name Table
+                     0 time date stamp
+                     0 Index of first forwarder reference
+
+                    A Direct3DCreate9Ex
+
+    d3d11.dll
+                4012CC Import Address Table
+                443DC4 Import Name Table
+                     0 time date stamp
+                     0 Index of first forwarder reference
+
+                    4 D3D11CreateDevice
+
+    dxva2.dll
+                4012DC Import Address Table
+                443DD4 Import Name Table
+                     0 time date stamp
+                     0 Index of first forwarder reference
+
+                    2 DXVA2CreateVideoService
+                    1 DXVA2CreateDirect3DDeviceManager9
+
+    PROPSYS.dll
+                401260 Import Address Table
+                443D58 Import Name Table
+                     0 time date stamp
+                     0 Index of first forwarder reference
+
+                   2D PSCreateMemoryPropertyStore
+
+    SHLWAPI.dll
+                401270 Import Address Table
+                443D68 Import Name Table
+                     0 time date stamp
+                     0 Index of first forwarder reference
+
+                   4A PathFileExistsW
+                   4E PathFindFileNameW
+                   90 PathRemoveFileSpecW
+                   8A PathRemoveBackslashW
+                   4C PathFindExtensionW
+                   38 PathAppendW
+                   34 PathAddBackslashW
+
+    MF.dll
+                401110 Import Address Table
+                443C08 Import Name Table
+                     0 time date stamp
+                     0 Index of first forwarder reference
+
+                   45 MFCreateTranscodeProfile
+                   44 MFCreateTopologyNode
+                   2B MFCreateMediaSession
+                   47 MFCreateTranscodeTopology
+                   5B MFTranscodeGetAudioOutputAvailableTypes
+                   51 MFGetService
+
+    MFPlat.DLL
+                40112C Import Address Table
+                443C24 Import Name Table
+                     0 time date stamp
+                     0 Index of first forwarder reference
+
+                   94 MFLockPlatform
+                   63 MFFrameRateToAverageTimePerFrame
+                   9E MFPutWorkItemEx
+                   BD MFUnlockPlatform
+                   8D MFInvokeCallback
+                   AD MFStartup
+                   73 MFGetPluginControl
+                   24 MFCreateAttributes
+                   26 MFCreateCollection
+                    D MFAverageTimePerFrameToFrameRate
+                   39 MFCreateMediaType
+                   42 MFCreateSample
+                   3C MFCreateMemoryBuffer
+                   45 MFCreateSourceResolver
+                   AC MFShutdown
+
+    SHELL32.dll
+                401268 Import Address Table
+                443D60 Import Name Table
+                     0 time date stamp
+                     0 Index of first forwarder reference
+
+                   E7 SHGetPropertyStoreFromParsingName
+
+    USER32.dll
+                401290 Import Address Table
+                443D88 Import Name Table
+                     0 time date stamp
+                     0 Index of first forwarder reference
+
+                  137 GetDesktopWindow
+                  25A OffsetRect
+                  2EE SetRect
+
+  Summary
+
+        2000 .data
+        4000 .reloc
+        1000 .rsrc
+       44000 .text

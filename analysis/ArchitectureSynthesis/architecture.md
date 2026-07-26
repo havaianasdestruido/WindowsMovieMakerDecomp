@@ -331,20 +331,71 @@ MovieMaker.exe launch
 | **WLXSlideshow** | — | `CLSID_SlideshowExtension` | — | Slideshow extension point |
 | **WLXSlideshow** | — | `CLSID_TimelineDisplay` | — | Timeline display widget |
 | **WLXVideoTrim** | `{8095E7A5-4AF7-448d-9548-0DBE027FBEB0}` | — | — | Video trim processor (self-reg) |
-| **WLXFaceRecognition** | `{EF401225-1260-4716-A842-7D180DC14C1E}` | `CLSID_FaceRecognitionPipeline` | — | Face recognition pipeline |
-| **WLXFaceRecognition** | `{4107FA03-3FD3-4406-B4F3-68E6D610EC2B}` (likely) | `CLSID_FaceDetection` | — | Face detection engine |
-| **WLXFaceRecognition** | `{483A53CD-EF18-4b19-8AA3-2E2E3214EB41}` (likely) | `CLSID_ImageManager` | — | Image loading/management |
-| **WLXFaceRecognition** | `{D01C34A5-A6DC-4d28-ABBD-78D06EA27B60}` (likely) | `CLSID_FaceRegion` / `CLSID_FaceRegionSet` | — | Face region / region set |
+| **WLXFaceRecognition** | `{D01C34A5-A6DC-4d28-ABBD-78D06EA27B60}` | `CLSID_FaceRecognitionPipeline` | Apartment | Face recognition pipeline (**CORRECTED**: was `{EF401225...}` which is TypeLib IID) |
+| **WLXFaceRecognition** | `{4107FA03-3FD3-4406-B4F3-68E6D610EC2B}` | `CLSID_FaceDetection` | Apartment | Face detection engine ✅ .rgs confirmed |
+| **WLXFaceRecognition** | `{483A53CD-EF18-4b19-8AA3-2E2E3214EB41}` | `CLSID_ImageManager` | Apartment | Image loading/management ✅ .rgs confirmed |
+| **WLXFaceRecognition** | — | TypeLib: `{EF401225-1260-4716-A842-7D180DC14C1E}` | — | TypeLib (**CORRECTED**: was "CLSID_FaceRecognitionPipeline") |
 | **WLXFaceRecognition** | — | `CLSID_FaceRepImpl` | — | Face feature representation |
 | **WLXFaceRecognition** | — | `CLSID_ImageData` | — | Image data wrapper |
 | **WLXMovieLibrary** | — | `IMovieFactory` (via `CreateMovieFactory` export) | — | Movie library factory |
 | **MovieMakerCore** | `{CE8B9537-708C-4784-9DD4-127B635DD348}` (likely APPID) | `Microsoft\Live\MovieMaker` | — | Application COM APPID |
-| **WLXMediaPublishSubscribe** | — | `CLSID_LiveProvider` | — | Windows Live/SkyDrive publishing |
-| **WLXMediaPublishSubscribe** | — | `CLSID_FlickrProvider` | — | Flickr photo publishing |
-| **WLXMediaPublishSubscribe** | — | `CLSID_MediaPluginManager` | — | Plugin manager |
-| **WLXMediaPublishSubscribe** | — | `CLSID_MediaPublishSubscribeProviderManager` | — | Provider manager factory |
-| **WLXMediaPublishSubscribe** | — | `CLSID_MetadataManager` | — | Metadata manager |
-| **WLXMediaPublishSubscribe** | — | `CLSID_LivePlugin` / `CLSID_LivePluginT` | — | Plugin templates |
+| **WLXMediaPublishSubscribe** | `{5F4019FA-375D-4D74-9922-EFCD9D920A0D}` | LiveProvider Interface ✅ .rgs | Apartment | Windows Live/SkyDrive publishing |
+| **WLXMediaPublishSubscribe** | `{197608E2-D42D-43a5-927E-1C67FC041431}` | FlickrProvider Interface ✅ .rgs | Apartment | Flickr photo publishing |
+| **WLXMediaPublishSubscribe** | `{43DBAB44-8EDC-4FB0-B305-F117ECB15305}` | ProviderManager Interface ✅ .rgs | Apartment | Provider manager factory |
+| **WLXMediaPublishSubscribe** | `{8ab5eea6-7a20-417d-b6d1-d40c9804b2cc}` | OnlineMediaPluginManager ✅ .rgs | Apartment | Online media plugin manager |
+| **WLXMediaPublishSubscribe** | `{54c41e30-bfd8-44e5-91a2-ce038e242817}` | PluginDecorator Interface ✅ .rgs | Apartment | Plugin decorator |
+| **WLXMediaPublishSubscribe** | `{66A5A6CA-0D84-44cb-BEC4-04B3B888E4B2}` | PluginManagerHelper ✅ .rgs | Apartment | Plugin manager helper |
+| **WLXMediaPublishSubscribe** | `{C9C25561-A401-43b4-BC22-79FBA2A00042}` | InternetCacheManager ✅ .rgs | Apartment | Internet cache manager |
+| **WLXMediaPublishSubscribe** | `{CE5E100A-6CE8-4d67-8870-245DFA3499AB}` | PublishPluginHelper ✅ .rgs | Apartment | Publish plugin helper |
+| **WLXMediaPublishSubscribe** | `{DA69067E-3959-47ca-A58D-2300786168CD}` | MetadataSettingsController ✅ .rgs | Apartment | Metadata settings controller |
+| **WLXMediaPublishSubscribe** | — | TypeLib: `{7B996FF4-FFF2-4573-9728-C1A612BD8592}` | — | TypeLib for interfaces |
+
+#### Newly Verified Binaries (2026-07-26 scan)
+
+| DLL | CLSID | ProgID / Name | Purpose |
+|-----|-------|---------------|---------|
+| **WLXPhotoClassic.dll** | `{773AFF18-2083-47C1-9EA9-A5DA346A0122}` | Classic Slideshow Theme | Classic slideshow theme |
+| **WLXPhotoClassic.dll** | `{854E43AC-E1FD-46f2-8DD3-EE4C7A1844B6}` | Classic Slideshow Transform | Classic slideshow transform |
+| **WLXPhotoClassic.dll** | `{B9087BDF-F0F8-4454-A7D1-F6242E1654F8}` | Black and White Theme | Black & white theme |
+| **WLXPhotoClassic.dll** | `{F91A0A3F-3E4E-4273-88CC-6664834ACA6F}` | Sepia Theme | Sepia theme |
+| **WLXPhotoClassic.dll** | `{71ED30A7-499A-4F61-84F8-10CDEC657FE0}` | Basic Slideshow Theme | Basic theme |
+| **WLXPhotoVoyager.dll** | `{C84CFE1B-89DC-40e7-83BF-CB821255F9EC}` | Voyager Album Theme | Album theme |
+| **WLXPhotoVoyager.dll** | `{AEE6C573-A192-4af3-B62B-A4E6848533D3}` | Voyager Collage Theme | Collage theme |
+| **WLXPhotoVoyager.dll** | `{653E52D8-D033-469a-8BB5-9C1A164416D5}` | Voyager Flip Theme | Flip theme |
+| **WLXPhotoVoyager.dll** | `{B4E10BE6-A2CE-4bef-9D80-99995CB3C162}` | Voyager Frame Theme | Frame theme |
+| **WLXPhotoVoyager.dll** | `{5515D2B5-6825-409e-B377-544708C9DD06}` | Voyager Glass Theme | Glass theme |
+| **WLXPhotoVoyager.dll** | `{D5561752-E5A7-46e7-B768-D945E144CA78}` | Voyager Snapshots Theme | Snapshots theme |
+| **WLXPhotoVoyager.dll** | `{CC4F1166-CE12-41f7-85E2-AE4744D9381B}` | Voyager Travel Theme | Travel theme |
+| **WLXPhotoVoyager.dll** | `{E48325CB-1EFC-425e-9CD9-47EF51BECD55}` | Voyager Transform | Voyager transform |
+| **WLXPhotoAcq.dll** | `{4E13844B-6012-40cb-8E3C-0F7EB9AEF6DD}` | LivePhotoAcquire | Photo acquisition wizard |
+| **WLXPhotoAcq.dll** | `{94B1CBEA-F33F-4508-8AAA-55FD8113EFCB}` | LivePhotoAcquireOptionsDialog | Options dialog |
+| **WLXPhotoAcq.dll** | `{0D5A7D0E-9A06-4e17-85D9-A0B24036371D}` | LivePhotoPickerDialog | Photo picker |
+| **WLXPhotoAcq.dll** | `{E84D0D46-3D57-4039-9EFE-310AF1CAF92A}` | LivePhotoAcqDeviceSelectionDlg | Device selection |
+| **WLXPhotoAcq.dll** | `{4D8A134F-3D0A-4375-8B1A-78CD171C9318}` | LivePhotoAcquisitionWizard | Acquisition wizard |
+| **WLXGrinderScheduler.dll** | `{121244C5-B0AD-45fb-9D8E-B893B917D053}` | GrinderScheduler | Background job scheduler |
+| **WLXImageTranscode.dll** | `{20575516-78AF-4404-B3C7-51D05F9945B5}` | ImageTranscode | Image transcoding |
+| **WLXImageTranscode.dll** | `{E253845C-A1A2-4ae4-B784-5E8140CD5B2C}` | ImageLoader | Image loading |
+| **WLXImageTranscode.dll** | `{B8A2E14E-290D-4122-B092-1A7D86198CCE}` | WLXOutofProc | Out-of-process hosting |
+| **WLXCodecHost.exe** | `{E30A45E6-1916-4659-95EE-035E62DB9AB0}` | Codec Host | Out-of-process codec host |
+| **WLXQuickTimeControlHost.exe** | `{B9AD19CB-FA75-4B29-B4A4-86C7E9616390}` | QuickTimePlayerHost | QuickTime hosting |
+| **WLXQuickTimeControlHost.exe** | `{AE3A66BB-85FE-49B8-BF7B-4DB4E0005091}` | QuickTimeMovieThumbnail | QT thumbnail extraction |
+| **WLXVideoAcquireWizard.exe** | `{5abe6468-4a2a-403c-892d-06e1fc31097f}` | MSLive Capture Wizard | Video capture wizard |
+| **WLXVideoAcquireWizard.exe** | `{5ab23fca-6040-4012-8fea-8da67f5806a7}` | MSLive Auto Capture | Auto capture |
+| **WLXVideoCameraAutoPlayManager.exe** | `{9b5c97f6-b3a5-4a6d-8b03-993ec7291a22}` | WLXHWEventHandler | Hardware event handler |
+| **WLXQuickTimeShellExt.dll** | `{007EFBDF-8A5D-4930-97CC-A4B437CBA777}` | MovieThumbnail | QuickTime thumbnail provider |
+| **WLXDSPA.dll** | `{BC8CA1B3-B013-4866-9621-825957DF23F3}` | CWLXTocGeneratorDmo | TOC generator DMO |
+| **WLXDSPA.dll** | `{09BC59C2-70DD-45f9-A5B7-DE9F2A5CA34B}` | CWLXThumbnailGeneratorDmo | Thumbnail generator DMO |
+| **WLXDSPA.dll** | `{15CD2459-C14B-457b-B57B-3DBA111B9D09}` | CClusterDetectorEx | Cluster detector |
+| **WLXDSPA.dll** | `{75704D6C-09BA-4d19-AFEA-5F21FC08B3DB}` | CTocParser | TOC parser |
+| **WLXDSPA.dll** | `{BF620143-7420-460a-9EEE-178B78D4939D}` | CAsfTocParser | ASF TOC parser |
+| **WLXDSPA.dll** | `{9FAE79C9-BA02-43d9-9382-C7BEF740A596}` | CAviTocParser | AVI TOC parser |
+| **WLAVRes.dll** | 8 COM classes | AV Resource DLL | DirectUI resource DLL (threading=both) |
+| **AlbumDownloadProtocolHandler.dll** | `{E43EF6CD-A37A-4A9B-9E6F-83F89B8E6324}` | Album Downloader Protocol | Album download handler |
+| **PublishPluginsInterop.dll** | `{00f43b3a-7fbe-4b84-a670-27f3a0a9cd4d}` | Publish Plugin Wrapper | .NET interop wrapper |
+| **SubscribePluginsInterop.dll** | `{f4482a71-df4f-4988-a731-bdb83e71127c}` | Subscribe Plugin Wrapper | .NET interop wrapper |
+| **PhotoViewerShim.dll** | `{00f346cb-35a4-465b-8b8f-65a29dbab1f6}` | Live Shell Viewer Extension | Shell viewer extension |
+| **PhotoViewerShim.dll** | `{00f3712a-ca79-45b4-9e4d-d7891e7f8b9d}` | Live Shell Editor Extension | Shell editor extension |
+| **Imaging.dll** | ~65+ CLSIDs | TypeLib: `{AEE505D4-...}` | WIC image effects engine (CaptureOne RAW pipeline) |
 
 ### External COM Objects Used (via CoCreateInstance)
 
@@ -810,8 +861,8 @@ Sqm::Set(DWORD, DWORD)     → Set value
 
 | Gap | Description |
 |-----|-------------|
-| **COM GUID registry scripts** | No `.rgs` files reconstructed for any COM DLL |
-| **Type libraries (.tlb)** | FaceRecognition has an embedded TLB; others may have runtime-only registration |
+| **COM GUID registry scripts** | No `.rgs` files reconstructed for any COM DLL | ✅ Now extracted from 23 binaries via findstr scan |
+| **Type libraries (.tlb)** | FaceRecognition has an embedded TLB; others may have runtime-only registration | ✅ 9 TypeLib GUIDs identified across binaries |
 | **Resource sections (.rsrc)** | MovieMakerCore has 4.07 MB of resources (DirectUI layouts, icons, strings) — mostly undocumented |
 | **WLMP project format** | XML schema only partially reverse-engineered |
 | **WLVS profile format** | Video profile XML format not documented |

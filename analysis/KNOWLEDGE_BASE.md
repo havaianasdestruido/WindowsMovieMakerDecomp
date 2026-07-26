@@ -48,19 +48,56 @@ This file is continuously updated by all subagents. Each DLL analysis contribute
 
 ## COM GUIDs Discovered
 
-Updated from binary ASCII/UTF-16 string extraction across 10 WLMM binaries. Full report: `analysis/COMGuids/guids.md`.
+Updated from binary ASCII/UTF-16 string extraction + .rgs registry script extraction across 23+ WLMM binaries. Full report: `analysis/COMGuids/guids.md`.
 
-### Key CLSIDs Found in Binary Strings
+### CORRECTED CLSIDs (2026-07-26)
+
+| GUID | Previous Label | Corrected Label | Source |
+|------|---------------|-----------------|--------|
+| `{D01C34A5-A6DC-4d28-ABBD-78D06EA27B60}` | ~~CLSID_FaceRegion/FaceRegionSet~~ | **CLSID_FaceRecognitionPipeline** | .rgs confirmed |
+| `{EF401225-1260-4716-A842-7D180DC14C1E}` | ~~CLSID_FaceRecognitionPipeline~~ | **TypeLib IID** | .rgs confirmed |
+
+### Key CLSIDs Found in Binary Strings + .rgs (verified)
 
 | GUID | Name | DLL(s) |
 |------|------|--------|
+| `{D01C34A5-A6DC-4d28-ABBD-78D06EA27B60}` | CLSID_FaceRecognitionPipeline | WLXFaceRecognition.dll |
 | `{4107FA03-3FD3-4406-B4F3-68E6D610EC2B}` | CLSID_FaceDetection | WLXFaceRecognition.dll |
 | `{483A53CD-EF18-4b19-8AA3-2E2E3214EB41}` | CLSID_ImageManager | WLXFaceRecognition.dll |
-| `{D01C34A5-A6DC-4d28-ABBD-78D06EA27B60}` | CLSID_FaceRegion or FaceRegionSet | WLXFaceRecognition.dll |
-| `{EF401225-1260-4716-A842-7D180DC14C1E}` | CLSID_FaceRecognitionPipeline | WLXFaceRecognition.dll |
 | `{8095E7A5-4AF7-448d-9548-0DBE027FBEB0}` | CLSID_VideoTrim | WLXVideoTrim, WLXPipeline, WLXMediaPublishSubscribe |
 | `{84FBA192-4F8D-4a5d-94DE-083446ACC1D0}` | COM GUID (WLXSlideshow) | WLXSlideshow.dll |
-| `{73647561-0000-0010-8000-00AA00389B71}` | MEDIATYPE_Audio (DirectShow) | WLXMediaPublishSubscribe.dll |
+| `{B1CACF91-6F51-4533-BB28-B22D4E8A9C65}` | CLSID_CinematicFullScreen | WLXPhotoCinematic.dll |
+| `{5409AB48-D8D3-40e6-A1EB-23489DC422DE}` | CLSID_CinematicTransform | WLXPhotoCinematic.dll |
+| `{E30A45E6-1916-4659-95EE-035E62DB9AB0}` | Codec Host | WLXCodecHost.exe |
+| `{121244C5-B0AD-45fb-9D8E-B893B917D053}` | GrinderScheduler | WLXGrinderScheduler.dll |
+
+### WLXMediaPublishSubscribe Interfaces (confirmed by .rgs)
+
+| GUID | Confirmed Name |
+|------|----------------|
+| `{5F4019FA-375D-4D74-9922-EFCD9D920A0D}` | Live Publish and Subscribe Provider Interface |
+| `{197608E2-D42D-43a5-927E-1C67FC041431}` | Flickr Publish and Subscribe Provider Interface |
+| `{43DBAB44-8EDC-4FB0-B305-F117ECB15305}` | Publish and Subscribe Provider Manager Interface |
+| `{8ab5eea6-7a20-417d-b6d1-d40c9804b2cc}` | Online Media Plugin Manager Interface |
+| `{54c41e30-bfd8-44e5-91a2-ce038e242817}` | Plugin Decorator Interface |
+| `{66A5A6CA-0D84-44cb-BEC4-04B3B888E4B2}` | Publish Plugin Manager Helper |
+| `{C9C25561-A401-43b4-BC22-79FBA2A00042}` | Internet Cache Manager |
+| `{CE5E100A-6CE8-4d67-8870-245DFA3499AB}` | Publish Plugin Helper |
+| `{DA69067E-3959-47ca-A58D-2300786168CD}` | Metadata Settings Controller Interface |
+| `{7B996FF4-FFF2-4573-9728-C1A612BD8592}` | TypeLib IID |
+
+### Newly Discovered COM CLSIDs (from .rgs scan, 2026-07-26)
+
+**WLXPhotoClassic.dll (5):** Classic, Classic Transform, Black&White, Sepia, Basic themes
+**WLXPhotoVoyager.dll (9):** Album, Collage, Flip, Frame, Glass, Snapshots, Travel themes + Voyager Transform
+**WLXPhotoAcq.dll (5):** LivePhotoAcquire, OptionsDialog, PickerDialog, DeviceSelectionDlg, AcquisitionWizard
+**WLXImageTranscode.dll (3):** ImageTranscode, ImageLoader, WLXOutofProc
+**WLXQuickTimeControlHost.exe (2):** QuickTimePlayerHost, QuickTimeMovieThumbnail
+**WLXVideoAcquireWizard.exe (2):** MSLive Capture Wizard, Auto Capture
+**WLXVideoCameraAutoPlayManager.exe (1):** WLXHWEventHandler
+**WLXDSPA.dll (11):** CWLXTocGeneratorDmo, CWLXThumbnailGeneratorDmo, CClusterDetectorEx, CTocEntry, CTocEntryList, CToc, CTocCollection, CTocParser, CFileIo, CAsfTocParser, CAviTocParser
+**WLAVRes.dll (8):** AV Resource DLL COM classes (all threading=both)
+**Imaging.dll (~65):** WIC-based image effects engine + CaptureOne RAW pipeline
 
 ### Movie Maker App Identifiers
 
@@ -75,6 +112,20 @@ Updated from binary ASCII/UTF-16 string extraction across 10 WLMM binaries. Full
 
 ### Cross-DLL Shared CLSIDs
 - `{8095E7A5-4AF7-448d-9548-0DBE027FBEB0}` (CLSID_VideoTrim) referenced in **3 DLLs**: WLXVideoTrim (defines it), WLXPipeline (uses it), WLXMediaPublishSubscribe (uses it)
+
+### TypeLib GUIDs (9 discovered)
+
+| TypeLib | DLL | CLSIDs |
+|---------|-----|--------|
+| `{AEE505D4-908A-4BFC-9A7E-31AF955C15BF}` | Imaging.dll | ~65 |
+| `{7B996FF4-FFF2-4573-9728-C1A612BD8592}` | WLXMediaPublishSubscribe.dll | 8 |
+| `{D85885D4-A18A-4fac-AEE1-BE9AAB0F4485}` | WLXPhotoAcq.dll | 5 |
+| `{17DC7884-443D-478e-ABD7-BC22856FC7F1}` | WLXImageTranscode.dll | 3 |
+| `{C6D340BB-0CEA-4923-8082-51036E472379}` | WLXQuickTimeControlHost.exe | 2 |
+| `{5ab7792c-0f76-4003-aa47-5f075165d4de}` | WLXVideoAcquireWizard.exe | 2 |
+| `{9b5c8343-bdee-475d-9d3b-3715c6b8972e}` | WLXVideoCameraAutoPlayManager.exe | 1 |
+| `{77A16B7E-9DFE-410c-8863-264BF3E91103}` | WLXGrinderScheduler.dll | 1 |
+| `{60E1FA84-4F2F-417C-AEE4-7681A960D09E}` | AlbumDownloadProtocolHandler.dll | 1 |
 
 ### Certificate GUIDs (non-COM, present in ALL binaries)
 - `{4faf0b71-ad37-4aa3-a671-76bc052344ad}`

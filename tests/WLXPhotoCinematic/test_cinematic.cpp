@@ -1,8 +1,12 @@
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 #include <objbase.h>
+#include <oleauto.h>
 #include <stdio.h>
 #include <stdint.h>
+
+#pragma comment(lib, "ole32.lib")
+#pragma comment(lib, "oleaut32.lib")
 
 typedef BOOL (WINAPI *FnDllCanUnloadNow)(void);
 typedef HRESULT (WINAPI *FnDllGetClassObject)(REFCLSID, REFIID, LPVOID*);
@@ -17,6 +21,10 @@ static const CLSID CLSID_RGS_CinematicFullScreen =
     {0xB1CACF91, 0x6F51, 0x4533, {0xBB, 0x28, 0xB2, 0x2D, 0x4E, 0x8A, 0x9C, 0x65}};
 static const CLSID CLSID_RGS_CinematicTransform =
     {0x5409AB48, 0xD8D3, 0x40e6, {0xA1, 0xEB, 0x23, 0x48, 0x9D, 0xC4, 0x22, 0xDE}};
+static const CLSID CLSID_KenBurnsEffect =
+    {0xB1A6684D, 0x1C5B, 0x4976, {0x84, 0x3D, 0x53, 0xF1, 0xE8, 0x40, 0xE4, 0x9C}};
+static const CLSID CLSID_KenBurnsEffectConfig =
+    {0x0831F9E2, 0x19E0, 0x4837, {0xB0, 0x26, 0x28, 0xE1, 0xE6, 0xE0, 0x87, 0xF4}};
 
 static const IID IID_IUnknown1 =
     {0x00000000, 0x0000, 0x0000, {0xC0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x46}};
@@ -61,56 +69,30 @@ static void LogVtable(void** vtable, const char* name, int maxSlots) {
 static void TryClsid(REFCLSID clsid, const char* name, FnDllGetClassObject pGetClassObj) {
     printf("\n--- %s ---\n", name);
 
+    char clsidStr[64];
+    StringFromGUID2(clsid, (LPOLESTR)clsidStr, 64);
+    printf("  CLSID: %hs\n", clsidStr);
+
     IClassFactory* pFactory = NULL;
     HRESULT hr = pGetClassObj(clsid, IID_IClassFactory, (void**)&pFactory);
-    printf("  DllGetClassObject: 0x%08X %s\n", hr, HrStr(hr));
+    printf("  DllGetClassObject(IClassFactory): 0x%08X %s\n", hr, HrStr(hr));
 
     if (SUCCEEDED(hr) && pFactory) {
         void** pFactoryVtable = *(void***)pFactory;
-        LogVtable(pFactoryVtable, "IClassFactory vtable", 7);
+        LogVtable(pFactoryVtable, "IClassFactory", 7);
 
         IUnknown* pObj = NULL;
         hr = pFactory->CreateInstance(NULL, IID_IUnknown1, (void**)&pObj);
         printf("  CreateInstance(IUnknown): 0x%08X %s obj=%p\n", hr, HrStr(hr), pObj);
         if (SUCCEEDED(hr) && pObj) {
             void** pObjVtable = *(void***)pObj;
-            LogVtable(pObjVtable, "Object vtable", 30);
-
-            printf("\n  --- QueryInterface enumeration ---\n");
-            for (int i = 0; i < 30; i++) {
-                if (pObjVtable[i] == NULL) break;
-                GUID iid = {0};
-                iid.Data1 = 0;
-                iid.Data2 = (WORD)(i & 0xFFFF);
-                iid.Data3 = (WORD)(i >> 16);
-                memset(iid.Data4, 0, 8);
-
-                IUnknown* pQ = NULL;
-                hr = pObj->QueryInterface(IID_IUnknown1, (void**)&pQ);
-                if (FAILED(hr)) break;
-                pQ->Release();
-
-                IID tryIid = IID_IUnknown1;
-                tryIid.Data2 = (WORD)i;
-                tryIid.Data3 = (WORD)(0xC000 + i);
-                memset(tryIid.Data4, 0, 8);
-                tryIid.Data4[0] = (BYTE)(0xC0 + (i >> 8));
-                tryIid.Data4[7] = 0x46;
-
-                pQ = NULL;
-                hr = pObj->QueryInterface(tryIid, (void**)&pQ);
-                if (SUCCEEDED(hr)) {
-                    printf("    QI slot[%02d] -> S_OK (ref=%p)\n", i, pQ);
-                    pQ->Release();
-                }
-            }
+            LogVtable(pObjVtable, "Object vtable", 20);
 
             printf("\n  --- Specific IID probing ---\n");
             struct { const IID* iid; const char* name; } probes[] = {
                 {&IID_IUnknown1, "IUnknown"},
-                {&IID_IClassFactory, "IClassFactory"},
-                {&IID_IServiceProvider, "IServiceProvider"},
-                {&IID_ISlideshowTheme, "ISlideshowTheme"},
+                {&IID_IServiceProvider, "IServiceProvider {6D5140C1-...}"},
+                {&IID_ISlideshowTheme, "ISlideshowTheme {5E843E41-...}"},
                 {&IID_Entry0_IUnknown, "Entry0_IUnknown {70E8E77F-...}"},
                 {&IID_Entry1_IUnknown, "Entry1_IUnknown {C2DB9835-...}"},
                 {&IID_Entry1_Second, "Entry1_Second {6D5140C1-...}"},
@@ -124,10 +106,10 @@ static void TryClsid(REFCLSID clsid, const char* name, FnDllGetClassObject pGetC
                     printf(" ptr=%p same=%d", pQ, pQ == (IUnknown*)pObj);
                     if (pQ != (IUnknown*)pObj) {
                         void** qvtable = *(void***)pQ;
-                        printf(" vtable=%p", qvtable);
-                        for (int s = 0; s < 20; s++) {
+                        printf("\n      Sub-vtable @ %p:", qvtable);
+                        for (int s = 0; s < 15; s++) {
                             if (qvtable[s] == NULL) break;
-                            printf("\n          [%02d] %p", s, qvtable[s]);
+                            printf("\n        [%02d] %p", s, qvtable[s]);
                         }
                     }
                     pQ->Release();
@@ -141,7 +123,7 @@ static void TryClsid(REFCLSID clsid, const char* name, FnDllGetClassObject pGetC
 }
 
 int main() {
-    printf("=== WLXPhotoCinematic.dll Dynamic Analysis (v2) ===\n\n");
+    printf("=== WLXPhotoCinematic.dll Dynamic Analysis (v3) ===\n\n");
 
     CoInitializeEx(NULL, COINIT_APARTMENTTHREADED);
 
@@ -150,26 +132,36 @@ int main() {
     WCHAR* lastSlash = wcsrchr(exeDir, L'\\');
     if (lastSlash) *(lastSlash + 1) = L'\0';
     SetDllDirectoryW(exeDir);
+    printf("Working dir: %ls\n", exeDir);
 
     HMODULE hDll = LoadLibraryW(L"WLXPhotoCinematic.dll");
     if (!hDll) {
         printf("Failed to load DLL. Error: %lu\n", GetLastError());
+        CoUninitialize();
         return 1;
     }
-    printf("DLL loaded at %p\n\n", hDll);
+    printf("DLL loaded at %p\n", hDll);
 
     FnDllGetClassObject pGetClassObj = (FnDllGetClassObject)GetProcAddress(hDll, "DllGetClassObject");
     FnDllCanUnloadNow pCanUnload = (FnDllCanUnloadNow)GetProcAddress(hDll, "DllCanUnloadNow");
+    printf("DllGetClassObject @ %p\n", pGetClassObj);
+    printf("DllCanUnloadNow @ %p\n\n", pCanUnload);
 
     printf("=== Object map CLSIDs (from disassembly) ===\n");
-    TryClsid(CLSID_ActualEntry0, "Entry0 {557B4CD8-C1EA-4A46-84EE-BA1AF9AA67D4}", pGetClassObj);
-    TryClsid(CLSID_ActualEntry1, "Entry1 {0B1A232A-4A09-4A43-A7B3-E367D1C3B4B7}", pGetClassObj);
+    TryClsid(CLSID_ActualEntry0, "Entry0 CinematicFullScreen {557B4CD8-C1EA-4A46-84EE-BA1AF9AA67D4}", pGetClassObj);
+    TryClsid(CLSID_ActualEntry1, "Entry1 PanZoomTransform {0B1A232A-4A09-4A43-A7B3-E367D1C3B4B7}", pGetClassObj);
 
     printf("\n=== RGS script CLSIDs (from resources) ===\n");
     TryClsid(CLSID_RGS_CinematicFullScreen, "RGS_FullScreen {B1CACF91-...}", pGetClassObj);
     TryClsid(CLSID_RGS_CinematicTransform, "RGS_Transform {5409AB48-...}", pGetClassObj);
 
-    printf("\nDllCanUnloadNow: %d\n", pCanUnload());
+    printf("\n=== RGS script CLSIDs (KenBurns, likely from other DLLs) ===\n");
+    TryClsid(CLSID_KenBurnsEffect, "KenBurnsEffect {B1A6684D-...}", pGetClassObj);
+    TryClsid(CLSID_KenBurnsEffectConfig, "KenBurnsEffectConfig {0831F9E2-...}", pGetClassObj);
+
+    printf("\n=== DllCanUnloadNow ===\n");
+    BOOL canUnload = pCanUnload();
+    printf("  Result: %d (TRUE=can unload, FALSE=still in use)\n", canUnload);
 
     CoUninitialize();
     FreeLibrary(hDll);

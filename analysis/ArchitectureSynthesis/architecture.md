@@ -91,9 +91,19 @@
  +-- WLXTranscode.exe: Standalone EXE for MF-based transcoding
        Dependencies: MF, MFPlat, D3D9, D3D11, DXVA2, CryptAPI, WLXPhotoBase
 ================================================================================
- LAYER 9: PARSERS — WLXMP4Parser.dll
+  LAYER 9: PARSERS — WLXMP4Parser.dll  (184 KB, PDB: {A4577D2C-...})
 ================================================================================
- +-- MP4/MOV/3GP container parser, GDI+ thumbnail extraction, WinMM timers, message loop
+  +-- MP4/MOV/3GP container parser, GDI+ thumbnail extraction, WinMM timers, message loop
+  +-- 9 exports: AddMP4SourceFilter, BuildMP4FilterGraph, BuildMP4PlayBack, IsMP4FilePlayable
+  +-- 4 COM exports (DllCanUnloadNow/GetClassObject/RegisterServer/UnregisterServer)
+  +-- Full ISO 14496 atom model: moov, trak, stbl, mdia, minf, edts, udta, meta, ilst
+  +-- Video codecs: H.264, MPEG-4, VC-1, VP8/VP9, AV1, Motion JPEG
+  +-- Audio codecs: AAC, PCM, IMA ADPCM, QDesign, Dolby AC3/AC3+, DTS, Apple Lossless, Opus, FLAC
+  +-- DRM: PlayReady/Widevine (pssh/tenc/sinf/frma/schm/schi)
+  +-- IThumbnailProvider + IExtractImage + IPersistFile (Windows Explorer thumbnail handler)
+  +-- DirectShow filter graph integration via BaseClasses/STRMBASE
+  +-- QuickTime/ISO atom parsing: CQTMovie, CQTTrack, CQTMedia, CQTAtom hierarchy
+  +-- Apple/iTunes metadata + Windows Media metadata extraction
 ================================================================================
  LAYER 10: FACE RECOGNITION — WLXFaceRecognition.dll  (4.5 MB, MSRA origin)
 ================================================================================
@@ -330,7 +340,7 @@ MovieMaker.exe launch
 | **WLXSlideshow** | `{84FBA192-4F8D-4a5d-94DE-083446ACC1D0}` (likely) | `CLSID_SimpleSlideshowDisplay` | — | Slideshow rendering surface |
 | **WLXSlideshow** | — | `CLSID_SlideshowExtension` | — | Slideshow extension point |
 | **WLXSlideshow** | — | `CLSID_TimelineDisplay` | — | Timeline display widget |
-| **WLXVideoTrim** | `{8095E7A5-4AF7-448d-9548-0DBE027FBEB0}` | — | — | Video trim processor (self-reg) |
+| **WLXVideoTrim** | `{8095E7A5-4AF7-448d-9548-0DBE027FBEB0}` | `CLSID_VideoTrim` | — | Video trim processor (self-reg) — referenced by 3 DLLs |
 | **WLXFaceRecognition** | `{D01C34A5-A6DC-4d28-ABBD-78D06EA27B60}` | `CLSID_FaceRecognitionPipeline` | Apartment | Face recognition pipeline (**CORRECTED**: was `{EF401225...}` which is TypeLib IID) |
 | **WLXFaceRecognition** | `{4107FA03-3FD3-4406-B4F3-68E6D610EC2B}` | `CLSID_FaceDetection` | Apartment | Face detection engine ✅ .rgs confirmed |
 | **WLXFaceRecognition** | `{483A53CD-EF18-4b19-8AA3-2E2E3214EB41}` | `CLSID_ImageManager` | Apartment | Image loading/management ✅ .rgs confirmed |
@@ -838,47 +848,80 @@ Sqm::Set(DWORD, DWORD)     → Set value
 
 ## 10. Gaps Identified in Reconstruction
 
-### 10.1 Critical Gaps
+### 10.1 Binary Analysis Status (Updated 2026-07-27)
+
+All 20 DLL/EXE binaries plus 4 .NET publish plugins have been fully analyzed with both static and dynamic analysis.
+
+| Component | Static | Dynamic | Harness | Status |
+|-----------|--------|---------|---------|--------|
+| MovieMakerExe | ✅ | — | — | Complete |
+| MovieMakerCore.dll | ✅ | — | — | Complete |
+| MovieMakerLang.dll | ✅ | — | — | Complete |
+| MovieMakerPreviewClient.dll | ✅ | — | — | Complete |
+| WLXPhotoBase.dll | ✅ | ✅ (56/56 exports) | — | Complete |
+| WLXMovieLibrary.dll | ✅ | ✅ (CreateMovieFactory) | — | Complete |
+| WLXFaceRecognition.dll | ✅ | ✅ | ✅ (14 TCs) | Complete |
+| WLXSlideshow.dll | ✅ | ✅ (4 COM exports) | ✅ (14 TCs) | Complete |
+| WLXVideoTrim.dll | ✅ | ✅ (5 factories) | — | Complete |
+| WLXPipeline.dll | ✅ | ✅ (2 exports) | — | Complete |
+| WLXPipetran.dll | ✅ | ✅ (GetTFXCreateFunctions) | — | Complete |
+| WLXMP4Parser.dll | ✅ | ✅ (9 exports, crash on NULL) | — | Complete |
+| WLMFDS.dll | ✅ | ✅ (CLASS_E when unreg) | — | Complete |
+| WLMFReadWrite.dll | ✅ | ✅ (7 exports) | — | Complete |
+| WLXTranscode.exe | ✅ | — | — | Complete |
+| WLXCodecHost.exe | ✅ | — | — | Complete |
+| WLXMediaPublishSubscribe.dll | ✅ | ✅ (22 exports) | — | Complete |
+| WLXPhotoCinematic.dll | ✅ | ✅ | — | Complete |
+| SharedMFDlls (RSCMFT + MPG4DEMUX) | ✅ | — | — | Complete |
+| PublishPlugins (4x .NET) | ✅ | — | — | Complete |
+
+### 10.2 Remaining Gaps
 
 | Gap | Component | Impact | Details |
 |-----|-----------|--------|---------|
 | **ESENT (Jet) database** | MovieMakerCore.dll | Missing persistent storage for MRU, project index, thumbnail cache | 28 Jet functions imported, no ESENT usage in reconstructed source |
 | **WLXPhotoSqm.dll stubs** | Telemetry | No SQM infrastructure in reconstruction | 13+ functions across multiple DLLs; needed for any telemetry |
 | **DmxBici.dll stubs** | Telemetry | No BICI A/B testing | 5–7 functions across MovieMakerCore, WLXSlideshow, WLXMediaPublishSubscribe |
-| **owlidcli.dll integration** | Auth/Identity | No Windows Live ID authentication | 7–18 ordinal imports in MovieMakerCore and MediaPublishSubscribe |
-| **WLXPipeline.dll analysis** | Effects/Transitions | No analysis done — core rendering pipeline | D3D9+DDRAW+DMO pipeline, 300+ KB code |
-| **WLXPipetran.dll analysis** | Transport/FX | No analysis done — pipeline transport | D3DX9 mesh/quaternion transforms, GDI+ text, 295 KB code |
-| **WLXTranscode.exe analysis** | MF Export | No analysis done — separate transcode EXE | MF Transcode API, DXVA2, D3D9/11 |
-| **WLXCodecHost.exe analysis** | Codec Isolation | No analysis done — out-of-process codec hosting | COM out-of-proc server, codec sandboxing |
-| **WLMFDS.dll analysis** | MF↔DShow Bridge | No analysis done — critical bridge | 336 KB code, AVRT, stream buffer interop |
-| **WLMFReadWrite.dll analysis** | MF R/W Helper | No analysis done — MFT, work queues | 219 KB code, EVR, work queue MMCSS |
-| **WLXMP4Parser.dll analysis** | MP4 Parser | Only guessed exports (AddMP4SourceFilter, IsMP4FilePlayable) | 148 KB code, no detailed analysis |
-| **WLXPhotoSqm.dll itself** | Telemetry DLL | Not analyzed or stubbed | Required by 5+ DLLs |
+| **wlidcli.dll integration** | Auth/Identity | No Windows Live ID authentication | 7–18 ordinal imports in MovieMakerCore and MediaPublishSubscribe |
 | **UXCore.dll** | UI Framework | No source reconstruction | 180+ imports in MovieMakerCore alone |
 | **uxctl.dll** | Controls | No reconstruction | 3 imports in MovieMakerCore |
+| **WLXPhotoSqm.dll itself** | Telemetry DLL | Not analyzed or stubbed | Required by 5+ DLLs |
+| **DmxBici.dll itself** | Telemetry DLL | Not analyzed or stubbed | Required by 3 DLLs |
+| **MetadataSys.dll** | Metadata | Not analyzed or stubbed | Property handler used by Core and MediaPublishSubscribe |
 
-### 10.2 Secondary Gaps
+### 10.3 Secondary Gaps
 
-| Gap | Description |
-|-----|-------------|
-| **COM GUID registry scripts** | No `.rgs` files reconstructed for any COM DLL | ✅ Now extracted from 23 binaries via findstr scan |
-| **Type libraries (.tlb)** | FaceRecognition has an embedded TLB; others may have runtime-only registration | ✅ 9 TypeLib GUIDs identified across binaries |
-| **Resource sections (.rsrc)** | MovieMakerCore has 4.07 MB of resources (DirectUI layouts, icons, strings) — mostly undocumented |
-| **WLMP project format** | XML schema only partially reverse-engineered |
-| **WLVS profile format** | Video profile XML format not documented |
-| **WLXPhotoLibraryDuiResourcesLocalized.dll** | Referenced resource DLL — not analyzed |
-| **WLAVRes.dll** | AV resource DLL referenced by WLXVideoTrim, WLXMovieLibrary — not analyzed |
-| **MovieMakerLang.dll** | Language resources — not analyzed |
-| **MovieMakerPreviewClient.dll** | Preview client — not analyzed |
-| **Published plugins** | WLFacebookPlugin, WLFlickrPlugin, WLVimeoPlugin, WLYouTubePlugin — not analyzed |
-| **MetadataSys.dll** | Metadata property handler — not analyzed |
-| **WLXPhotoSqm.dll** | SQM DLL itself — not analyzed |
-| **DmxBici.dll** | BICI telemetry DLL — not analyzed |
-| **DirectUI layout details** | The DirectUI element hierarchy is embedded in .rsrc and not documented |
-| **Transition/effect XML schemas** | Embedded XML templates not fully extracted |
-| **Clipboard format details** | Serialized binary formats not documented |
-| **PanZoom theme XML structure** | Only partially extracted from WLXPhotoCinematic |
-| **Build environment** | Build tree: `e:\bt\1105173\client\personalmedia\` — tools, scripts, project files unknown |
+| Gap | Description | Status |
+|-----|-------------|--------|
+| **COM GUID registry scripts** | `.rgs` files extracted from 23+ binaries | ✅ Done |
+| **Type libraries (.tlb)** | 9 TypeLib GUIDs identified across binaries | ✅ Done |
+| **Resource sections (.rsrc)** | MovieMakerCore has 4.07 MB of resources (DirectUI layouts, icons, strings) — mostly undocumented | Partially documented |
+| **WLMP project format** | XML schema only partially reverse-engineered | Partial |
+| **WLVS profile format** | Video profile XML format not documented | Not started |
+| **WLXPhotoLibraryDuiResourcesLocalized.dll** | Referenced resource DLL — not analyzed | Not started |
+| **WLAVRes.dll** | AV resource DLL referenced by WLXVideoTrim, WLXMovieLibrary — not analyzed | Not started |
+| **DirectUI layout details** | The DirectUI element hierarchy is embedded in .rsrc and not documented | Not started |
+| **Transition/effect XML schemas** | Embedded XML templates not fully extracted | Not started |
+| **Clipboard format details** | Serialized binary formats not documented | Not started |
+| **PanZoom theme XML structure** | Partially extracted from WLXPhotoCinematic | Partial |
+| **Build environment** | Build tree: `e:\bt\1105173\client\personalmedia\` — tools, scripts, project files unknown | Not started |
+
+### 10.4 ELF/PDB Symbol Recovery Opportunities
+
+| Gap | Description | Status |
+|-----|-------------|--------|
+| **COM GUID registry scripts** | `.rgs` files extracted from 23+ binaries | ✅ Done |
+| **Type libraries (.tlb)** | 9 TypeLib GUIDs identified across binaries | ✅ Done |
+| **Resource sections (.rsrc)** | MovieMakerCore has 4.07 MB of resources (DirectUI layouts, icons, strings) — mostly undocumented | Partially documented |
+| **WLMP project format** | XML schema only partially reverse-engineered | Partial |
+| **WLVS profile format** | Video profile XML format not documented | Not started |
+| **WLXPhotoLibraryDuiResourcesLocalized.dll** | Referenced resource DLL — not analyzed | Not started |
+| **WLAVRes.dll** | AV resource DLL referenced by WLXVideoTrim, WLXMovieLibrary — not analyzed | Not started |
+| **DirectUI layout details** | The DirectUI element hierarchy is embedded in .rsrc and not documented | Not started |
+| **Transition/effect XML schemas** | Embedded XML templates not fully extracted | Not started |
+| **Clipboard format details** | Serialized binary formats not documented | Not started |
+| **PanZoom theme XML structure** | Partially extracted from WLXPhotoCinematic | Partial |
+| **Build environment** | Build tree: `e:\bt\1105173\client\personalmedia\` — tools, scripts, project files unknown | Not started |
 
 ### 10.3 ELF/PDB Symbol Recovery Opportunities
 
@@ -893,8 +936,14 @@ Sqm::Set(DWORD, DWORD)     → Set value
 | WLXMovieLibrary.pdb | `{CBF27DEC-DD3B-4A76-A5DF-9EECCC486627}` | Not available |
 | WLXFaceRecognition.pdb | `{2FEBA5E0-6376-46CD-9ADA-4A79335C37BD}` | Not available |
 | WLXMediaPublishSubscribe.pdb | `{17F284FA-930A-4DA2-9649-93B296009330}` | Not available |
+| WLMFDS.pdb | `{41188442-2579-4939-8E66-6697FE148922}` | Not available |
+| WLMFReadWrite.pdb | `{54E10C67-67A5-4F8A-8567-1D47C28B2189}` | Not available |
+| WLXMP4Parser.pdb | `{A4577D2C-5400-4F17-91C0-06B5EA1BE4DE}` | Not available |
+| WLXPipeline.pdb | `{911D33AE-5E96-461A-B0D1-1ECCB116070F}` | Not available |
+| WLXPipeTran.pdb | `{89765767-4CF9-44E2-8351-95650D5D12B1}` | Not available |
+| MovieMakerPreviewClient.pdb | `{ABE6F6C4-02E6-47EA-B7FF-6A44A32264DD}` | Not available |
 
-### 10.4 Known Good: Correctly Reconstructed Components
+### 10.5 Known Good: Correctly Reconstructed Components
 
 | Component | Status |
 |-----------|--------|
@@ -903,12 +952,27 @@ Sqm::Set(DWORD, DWORD)     → Set value
 | WLXPhotoBase.dll core (Exception, Throw, New/Delete, string manager, OS detection) | ✅ Correct (but missing Version class, WER/SQM reporting) |
 | WLXPhotoBase.dll export count (56 functions) | ✅ Confirmed |
 | WLXSlideshow.dll COM DLL pattern (4 standard exports) | ✅ Confirmed |
-| WLXVideoTrim.dll 5 factory exports (AVICopier, CopierFromMT, Transcoder, Player, WMVTranscoder) | ✅ Confirmed |
+| WLXVideoTrim.dll 5 factory exports (CreateAVICopierDirect, CreateVideoCopierFromMediaType, CreateVideoFormatContextTranscoder, CreateVideoPlayer, CreateVideoWMVTranscoder) | ✅ Confirmed |
 | WLXFaceRecognition.dll 7 COM objects, MSRA origin | ✅ Confirmed |
 | D3D9 rendering pipeline for WLXSlideshow & WLXPhotoCinematic | ✅ Confirmed |
 | WLXPhotoCinematic.dll Ken Burns D3DX9 camera matrix architecture | ✅ Confirmed |
 | WLXMediaPublishSubscribe 22 exports, Live+Flickr providers | ✅ Confirmed |
 | WLXMovieLibrary registry-based (not SQL), 1 export (CreateMovieFactory) | ✅ Confirmed |
+| WLXPipeline.dll 2 exports (GetPipelineCreateFunctions + DllRegisterServer) | ✅ Confirmed — NOT ATL COM |
+| WLXPipetran.dll 1 export (GetTFXCreateFunctions) | ✅ Confirmed — NOT ATL COM |
+| WLXMP4Parser.dll 4 API exports + 5 COM exports | ✅ Confirmed |
+| WLMFDS.dll 4 standard COM exports | ✅ Confirmed |
+| WLMFReadWrite.dll 7 exports (5 MF API shadow + 2 COM) | ✅ Confirmed |
+| WLMFDS COM CLSID: CLSID_DShowSourceResolver | ✅ Confirmed via RTTI as CComCoClass template param |
+| WLMFDS PDB: `{41188442-2579-4939-8E66-6697FE148922}` | ✅ Confirmed |
+| WLMFReadWrite PDB: `{54E10C67-67A5-4F8A-8567-1D47C28B2189}` | ✅ Confirmed |
+| WLXMP4Parser PDB: `{A4577D2C-5400-4F17-91C0-06B5EA1BE4DE}` | ✅ Confirmed |
+| WLXPipeline PDB: `{911D33AE-5E96-461A-B0D1-1ECCB116070F}` | ✅ Confirmed |
+| WLXPipeTran PDB: `{89765767-4CF9-44E2-8351-95650D5D12B1}` | ✅ Confirmed |
+| MovieMakerPreviewClient PDB: `{ABE6F6C4-02E6-47EA-B7FF-6A44A32264DD}` | ✅ Confirmed |
+| WLXFaceRecognition CLSID: `{4107FA03-3FD3-4406-B4F3-68E6D610EC2B}` | ✅ .rgs confirmed (NOT `{CC1A9149-0E73-4EBB-93D3-F52A83D36935}`) |
+| WLXFaceRecognition CLSID: `{D01C34A5-A6DC-4d28-ABBD-78D06EA27B60}` = CLSID_FaceRecognitionPipeline | ✅ .rgs confirmed (was mislabeled) |
+| IPreviewClientStatusCallback IID: `{DBFFDF24-FBB1-42D1-719A-EC305FBF765F}` | ✅ Confirmed |
 
 ---
 
@@ -984,7 +1048,12 @@ Sqm::Set(DWORD, DWORD)     → Set value
 | WLXPhotoCinematic | 15+ .cpp/.h | `personalmedia\cinematic\dev\` |
 | WLXFaceRecognition | 60+ .cpp/.h (MSRA) | MSRA face recognition team |
 | WLXPhotoBase | ~10 .cpp/.h | `personalmedia\photobase\dev\` |
+| WLXPipeline | 40+ .cpp/.h | `personalmedia\pipeline\dev\` |
+| WLXPipetran | 60+ .cpp/.h | `personalmedia\pipetran\dev\` |
+| WLXMP4Parser | 50+ .cpp/.h | `personalmedia\mp4parser\dev\` |
+| WLMFDS | 30+ .cpp/.h | `personalmedia\shared\` |
+| WLMFReadWrite | 35+ .cpp/.h | `personalmedia\shared\` |
 
 ---
 
-*Synthesis generated from all available DLL analysis files, import tables, string extractions, RTTI inventories, COM registrations, and cross-DLL dependency analysis. WLXPipeline, WLXPipetran, WLXTranscode, WLXCodecHost, WLMFDS, WLMFReadWrite, and WLXMP4Parser remain the primary components requiring further analysis.*
+*Synthesis generated from all available DLL analysis files, import tables, string extractions, RTTI inventories, COM registrations, cross-DLL dependency analysis, and dynamic analysis across all 20 binaries. Last updated 2026-07-27.*

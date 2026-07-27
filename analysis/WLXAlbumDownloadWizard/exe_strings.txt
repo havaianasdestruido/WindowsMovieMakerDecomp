@@ -1,0 +1,187 @@
+﻿ Microsoft Corporation. All rights reserved.
+$(AcquisitionDate)$([ ]GroupTag)
+$(AlbumName).$(OriginalExtension)
+$(DateTaken)$([ ]GroupTag)
+$(DateTaken)$([ ]GroupTag) $(AcquisitionSequence).$(OriginalExtension)
+$(DateTakenRange)$([ ]GroupTag)
+$(DateTimeTaken)$([ ]GroupTag).$(OriginalExtension)
+$(DownloadedAlbums[\])$(AlbumName)
+$(DownloadedAlbums[\])$(OwnerName[\])$(AlbumName)
+$(GroupTag)
+$(GroupTag[ ])$(AcquisitionDate)
+$(GroupTag[ ])$(AcquisitionSequence).$(OriginalExtension)
+$(GroupTag[ ])$(DateTaken)
+$(GroupTag[ ])$(DateTaken) $(AcquisitionSequence).$(OriginalExtension)
+$(GroupTag[ ])$(DateTakenRange)
+$(GroupTag[ ])$(DateTimeTaken).$(OriginalExtension)
+$(MyPicturesFolder)\$(DownloadedAlbums[\])$(OwnerName[\])$(AlbumName)\$(OriginalFilename).$(OriginalExtension)
+$(MyPicturesFolder)\$(GroupTag)\$(OriginalFilename).$(OriginalExtension)
+$(MyPicturesFolder)\$(GroupTag)\$(RelativePathname[\])$(OriginalFilename).$(OriginalExtension)
+$(MyVideoFolder)\$(DateTimeTaken)$([ ]GroupTag).$(OriginalExtension)
+$(OriginalFilename).$(OriginalExtension)
+$(RelativePathname[\])$(OriginalFilename).$(OriginalExtension)
+$Windows Essential
+%.6lf, %.6lf, %.6lf, %.6lf
+%hu/%hu/%hu
+%lf, %lf, %lf, %lf
+%ProgramFiles%
+%ProgramW6432%
+%s/%s%s/%u
+%s:%I64d
+/<xmpbag>http\:\/\/ns.microsoft.com\/photo\/1.2\/t\/RegionInfo#:Regions
+/<xmpstruct>{ulong=%d}
+/<xmpstruct>http\:\/\/ns.microsoft.com\/photo\/1.2\/:RegionInfo
+/app1/ifd/
+/app1/ifd/exif
+/app1/ifd/exif/PaddingSchema:Padding
+/app1/ifd/PaddingSchema:Padding
+/app1/thumb
+/http\:\/\/ns.microsoft.com\/photo\/1.2\/t\/Region#:PersonDisplayName
+/http\:\/\/ns.microsoft.com\/photo\/1.2\/t\/Region#:PersonEmailDigest
+/http\:\/\/ns.microsoft.com\/photo\/1.2\/t\/Region#:PersonLiveIdCID
+/http\:\/\/ns.microsoft.com\/photo\/1.2\/t\/Region#:PersonSourceID
+/http\:\/\/ns.microsoft.com\/photo\/1.2\/t\/Region#:Rectangle
+/ifd/exif
+/ifd/exif/PaddingSchema:Padding
+/ifd/PaddingSchema:Padding
+/ifd/xmp
+/ifd/xmp/PaddingSchema:Padding
+/xmp/PaddingSchema:Padding
+/xmp:CreatorTool
+:ProgramFilesNative:
+@http://g.live-int.com
+@WLXPhotoBase.dll
+@WLXPhotoLibraryDatabase.dll
+\msidcrl40.dll
+\wlidcli.dll
+{84FBA192-4F8D-4a5d-94DE-083446ACC1D0}
+{uint=306}
+040904b0
+16.0.0.0
+16.4.3528.0331
+A%d.%d.%d.%d
+AlbumName
+ar-ploc-sa
+az-Latn-AZ
+B:PhotoBasePath:
+bs-Latn-BA
+BSystem.Photo.Orientation
+ca-ES-valencia
+chr-Cher
+Comctl32.dll
+CommonProgramFiles
+CommonProgramFiles(x86)
+CompanyName
+Component Categories
+Content Type
+DefaultJPEGImageQuality
+DefaultWDPImageQuality
+DisableQuickTime
+DmxBici.dll
+DownloadedAlbums
+en-locr-us
+eshownewlyacquiredpath
+FileAssociations
+FileDescription
+FileType
+FileVersion
+ForceRemove
+GalleryScopedFolders
+ha-Latn-NG
+Hardware
+HKEY_CLASSES_ROOT
+HKEY_CURRENT_CONFIG
+HKEY_CURRENT_USER
+HKEY_DYN_DATA
+HKEY_LOCAL_MACHINE
+HKEY_PERFORMANCE_DATA
+HKEY_USERS
+http://g.live.com
+ImageQuality
+InstalledLanguages
+Interface
+InternalName
+iu-latn-ca
+ja-ploc-jp
+kernel32
+Legal_policy_statement
+LegalCopyright
+lKernel32.dll
+Media Type\Extensions
+messenger
+MetadataSys.dll
+Microsoft Corporation
+Microsoft Photo Gallery 
+Microsoft Shared\Windows Live
+Module_Raw
+MovieMaker
+MyPicturesFolder
+MyVideoFolder
+NoRemove
+OpticalMedia
+OriginalFilename
+OwnerName
+Photo Gallery
+Photo Gallery Download Wizard
+PreferredMPEG2AudioDecoderCLSID
+ProductName
+ProductVersion
+ProgramFiles
+ProgramFiles(x86)
+-QueueRequests -firstrun
+-QueueRequests -module:tou
+QuickTime
+qut-Latn
+REGISTRY
+SECURITY
+shell32.dll
+ShortCatalogRescan
+ShortCatalogTimeStamp
+Software
+SOFTWARE\Classes
+Software\Microsoft\IdentityCRL
+Software\Microsoft\Windows Live\Common
+Software\Microsoft\Windows Live\Installer
+Software\Microsoft\Windows Live\Installer\ProductStatus
+Software\Microsoft\Windows Live\Photo Gallery
+Software\Microsoft\Windows Live\Photo Gallery\FileSupport\DownloadableCodecs
+Software\Microsoft\Windows Live\Photo Gallery\FileSupport\DownloadableWLRawCodecs
+Software\Microsoft\Windows Live\Photo Gallery\FileSupport\QuickTimeMovieExtensions
+Software\Microsoft\Windows Live\Photo Gallery\FileSupport\RawPhotoExtensions
+Software\Microsoft\Windows Live\Photo Gallery\SuppressFileTypes
+Software\Microsoft\Windows Live\Photo Gallery\Viewer
+Software\Microsoft\Windows Media Foundation\ByteStreamHandlers
+SOFTWARE\Microsoft\Windows\CurrentVersion\Media Center\Decoder
+Software\Microsoft\Windows\CurrentVersion\PropertySystem\PropertyHandlers\%ws
+Software\RegisteredApplications
+sqmapi.dll
+sr-cyrl-ba
+sr-cyrl-cs
+sr-latn-cs
+StringFileInfo
+SuiteLanguage
+TargetDir
+TOUVersion
+Translation
+UserLanguage
+UXCore.dll
+uz-latn-uz
+VarFileInfo
+VideoCamera
+VS_VERSION_INFO
+WAdvapi32.dll
+Win7Sync
+Windows Live\Shared
+Windows Media Player
+WindowsLive
+WindowsLiveAlbumDownload
+WLDCore.dll
+wlidcli.dll
+WLXAlbumDownloadWizard
+WLXAlbumDownloadWizard.exe
+WLXAlbumDownloadWizardResources
+WLXMediaPublishSubscribe.dll
+WLXPhotoLibraryDuiResources
+WLXPhotoLibraryDuiResourcesLocalized
+WLXPhotoSqm.dll
+WLXVideoTrim.dll

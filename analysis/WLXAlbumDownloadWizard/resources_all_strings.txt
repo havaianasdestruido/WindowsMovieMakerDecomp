@@ -1,0 +1,47 @@
+﻿ 2012 Microsoft Corporation. All rights reserved.
+$Windows Essential
+&Download Downloading %1!u! of %2!u! itemsOIf you cancel, the photos won't be downloaded. Are you sure you want to cancel?0You don't have permission to access the content.
+16.4.3528.0331
+16.4.3528.0331_ship.client.main.w5m4 (ship)
+3BQ`o~
+CompanyName
+Downloaded Albums%Select the files you want to downloadgPhoto Gallery is unable to complete this album download due to network errors.  Please try again later.mSome items in this album could not be downloaded due to network error.  Would you like to retry the download?fThere is not enough disk space to continue downloading. Free additional disk space and then try again.
+Downloading %s
+ENW`ir{
+FileDescription
+FileVersion
+FPZdnx
+FPZdny
+From %1!s!
+From %1!s!'s %2!s!
+GR]hs~
+gThe folder you're trying to download to isn't available or doesn't exist. Please choose another folder.MSorry, something went wrong and the album couldn't be downloaded.  Try again.)Only image and video files are displayed.
+InternalName
+Legal_policy_statement
+LegalCopyright
+Locating photos and videos...
+Microsoft Corporation
+OneDrive
+OneDrive Photos
+OriginalFilename
+Photo Gallery
+Photo Gallery Download Wizard
+Photo Gallery is unable to download this album because your Microsoft account doesn't have permission to view it.  Would you like to retry with another email address??The service is not available right now. Please try again later.
+photos
+ProductName
+ProductVersion
+Retrieving information#You have entered an invalid command
+Some files couldn't be downloaded.
+Sorry, Photo Gallery couldn't save to the folder you selected. Please make sure that the folder is available and not marked Read-only.ISorry, we can't save to that location because the final path is too long.
+SThe folder you have selected doesn't contain any files that Photo Gallery supports.
+StringFileInfo
+The files may have been deleted, changed recently or might be infected with a virus. The following files weren't downloaded: %1!s!QA network error has occurred. Please check your network connection and try again.
+Translation
+Unknown
+utsrqp}
+VarFileInfo
+VS_VERSION_INFO
+WLXAlbumDownloadWizardResources
+WLXAlbumDownloadWizardResources.dll
+YXWVUTd
+YXWVUTr

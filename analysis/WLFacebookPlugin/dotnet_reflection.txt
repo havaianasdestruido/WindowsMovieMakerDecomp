@@ -1,0 +1,10 @@
+﻿C:\Users\mcmco\Desktop\WMMR\analysis\WLFacebookPlugin\dotnet_temp\Program.cs(9,71): error CS1009: Sequ├¬ncia de escape n├úo reconhecida [C:\Users\mcmco\Desktop\WMMR\analysis\WLFacebookPlugin\dotnet_temp\temp.csproj]
+C:\Users\mcmco\Desktop\WMMR\analysis\WLFacebookPlugin\dotnet_temp\Program.cs(13,102): error CS1009: Sequ├¬ncia de escape n├úo reconhecida [C:\Users\mcmco\Desktop\WMMR\analysis\WLFacebookPlugin\dotnet_temp\temp.csproj]
+dotnet.exe : 
+No linha:68 caractere:1
++ & "C:\Program Files\dotnet\dotnet.exe" run --project $tempDir 2>&1 |  ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+Ocorreu uma falha no build. Corrija os erros de build e execute novamente.

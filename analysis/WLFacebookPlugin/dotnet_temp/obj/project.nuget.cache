@@ -1,0 +1,10 @@
+{
+  "version": 2,
+  "dgSpecHash": "FBsgnDMaI3A=",
+  "success": true,
+  "projectFilePath": "C:\\Users\\mcmco\\Desktop\\WMMR\\analysis\\WLFacebookPlugin\\dotnet_temp\\temp.csproj",
+  "expectedPackageFiles": [
+    "C:\\Users\\mcmco\\.nuget\\packages\\system.reflection.metadataloadcontext\\10.0.0\\system.reflection.metadataloadcontext.10.0.0.nupkg.sha512"
+  ],
+  "logs": []
+}

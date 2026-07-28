@@ -1,0 +1,78 @@
+STDERR: entering main
+=== WLXPhotoBase.dll Dynamic Test ===
+
+Thunks at 001F0000 001F0010 001F0020 001F0040
+
+Loaded at 71F90000
+
+=== Export Resolution (56) ===
+Resolved: 56/56
+
+--- OS Detection ---
+  IsVistaOrGreater: true
+  IsWin7OrGreater:  true
+  IsWin8OrGreater:  true
+
+--- CPU ---
+  ProcessorCount: 8
+  Caps[0..3]: BFCBFBFF 00000000 00000000 00000000
+
+--- Assert ---
+  s_nAssertsInhibited: 0
+  NoAssertCount: 0
+  +IncrementNoAssertCount
+  NoAssertCount: 1
+  -DecrementNoAssertCount
+  NoAssertCount: 0
+
+--- IsOutOfMemoryError ---
+  S_OK(0):          false
+  E_OUTOFMEMORY:    true
+  E_FAIL:           false
+  E_ACCESSDENIED:   false
+
+--- Version ---
+  Default ctor done
+  IsValid(default): true
+  Set(16,4,3528,331) done
+  IsValid(after Set4): true
+  Set(2ul) done
+  v1<v2: false
+  v1>v2: true
+  Copy ctor done
+  v3 IsValid(copy): true
+  Invalidate done
+  v3 IsValid(inval): true
+  operator= done
+  v3 IsValid(assign): true
+
+--- Memory ---
+  New(64,false): 0027A458
+  Verify(valid): true
+  Deleted
+  Verify(NULL): false
+  Verify(0xDEADBEEF): true
+
+--- Vtables ---
+  Exception vtable @ 71F91218:
+    [0] = 0x71F918B4
+    [1] = 0x00000000
+    [2] = 0x71F915D0
+    [3] = 0x71F91F54
+    [4] = 0x71F91F49
+  OOM vtable @ 71F91210:
+    [0] = 0x71F918B4
+    [1] = 0x71F91554
+    [2] = 0x71F918B4
+    [3] = 0x00000000
+    [4] = 0x71F915D0
+  Shared [0]:same [1]:diff [2]:diff
+
+--- Module Version ---
+  GetModuleVersion: 0x80070715
+  MV: 00000000 00000000 00000000 00000000
+  GetModuleAddresses: 0x80004005 base=00000000 sz=0x0
+
+--- Telemetry ---
+  Metrics: 00000000 00000000 00000000 00000000
+  SQM: 00000000 00000000 00000000 00000000

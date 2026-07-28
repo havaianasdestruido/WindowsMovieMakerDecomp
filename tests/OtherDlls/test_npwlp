@@ -1,0 +1,142 @@
+#include <windows.h>
+#include <stdio.h>
+#include <stdint.h>
+
+typedef int (__cdecl *NP_Initialize_t)(void);
+typedef int (__cdecl *NP_Shutdown_t)(void);
+typedef int (__cdecl *NP_GetEntryPoints_t)(void *p1, void *p2, void *p3);
+
+static HMODULE hNPWLPG = NULL;
+
+static const char *nperr_to_str(int code) {
+    switch (code) {
+        case 0:   return "NPERR_NO_ERROR";
+        case 1:   return "NPERR_GENERIC_ERROR";
+        case 2:   return "NPERR_INVALID_INSTANCE_ERROR";
+        case 3:   return "NPERR_OUT_OF_MEMORY_ERROR";
+        case 4:   return "NPERR_INVALID_PLUGIN_ERROR";
+        case 5:   return "NPERR_INVALID_PLUGIN_DIR_ERROR";
+        case 6:   return "NPERR_SELECT_FAILURE_ERROR";
+        case 7:   return "NPERR_GET_URL_ERROR";
+        case 8:   return "NPERR_FILE_NOT_FOUND_ERROR";
+        case 9:   return "NPERR_NO_DATA";
+        case 10:  return "NPERR_STREAM_NOT_SEEKABLE";
+        case 11:  return "NPERR_NO_SECURITY_ERROR";
+        default:  return "UNKNOWN";
+    }
+}
+
+static int test_load_dll(void) {
+    printf("[TEST] Loading NPWLPG.dll...\n");
+    hNPWLPG = LoadLibraryA("NPWLPG.dll");
+    if (!hNPWLPG) {
+        printf("  FAIL: LoadLibrary failed (error %lu)\n", GetLastError());
+        return -1;
+    }
+    printf("  OK: hModule = 0x%p\n", hNPWLPG);
+    return 0;
+}
+
+static int test_get_exports(void) {
+    printf("[TEST] Resolving exports...\n");
+    if (!hNPWLPG) return -1;
+
+    FARPROC pInit = GetProcAddress(hNPWLPG, "NP_Initialize");
+    FARPROC pShutdown = GetProcAddress(hNPWLPG, "NP_Shutdown");
+    FARPROC pGetEP = GetProcAddress(hNPWLPG, "NP_GetEntryPoints");
+
+    printf("  NP_Initialize:    %s (0x%p)\n", pInit ? "FOUND" : "MISSING", pInit);
+    printf("  NP_Shutdown:      %s (0x%p)\n", pShutdown ? "FOUND" : "MISSING", pShutdown);
+    printf("  NP_GetEntryPoints: %s (0x%p)\n", pGetEP ? "FOUND" : "MISSING", pGetEP);
+
+    if (!pInit || !pShutdown || !pGetEP) return -1;
+    return 0;
+}
+
+static int test_np_initialize(void) {
+    printf("[TEST] Calling NP_Initialize()...\n");
+    if (!hNPWLPG) return -1;
+
+    NP_Initialize_t fn = (NP_Initialize_t)GetProcAddress(hNPWLPG, "NP_Initialize");
+    if (!fn) return -1;
+
+    int result = fn();
+    printf("  Result: %d (%s)\n", result, nperr_to_str(result));
+    return result;
+}
+
+static int test_np_shutdown(void) {
+    printf("[TEST] Calling NP_Shutdown()...\n");
+    if (!hNPWLPG) return -1;
+
+    NP_Shutdown_t fn = (NP_Shutdown_t)GetProcAddress(hNPWLPG, "NP_Shutdown");
+    if (!fn) return -1;
+
+    int result = fn();
+    printf("  Result: %d\n", result);
+    return 0;
+}
+
+static int test_pe_validation_via_exports(void) {
+    printf("[TEST] Checking PE characteristics of loaded module...\n");
+    if (!hNPWLPG) return -1;
+
+    PIMAGE_DOS_HEADER dos = (PIMAGE_DOS_HEADER)hNPWLPG;
+    if (dos->e_magic != IMAGE_DOS_SIGNATURE) {
+        printf("  FAIL: Not a valid DOS module\n");
+        return -1;
+    }
+
+    PIMAGE_NT_HEADERS nt = (PIMAGE_NT_HEADERS)((PBYTE)dos + dos->e_lfanew);
+    if (nt->Signature != IMAGE_NT_SIGNATURE) {
+        printf("  FAIL: Not a valid PE\n");
+        return -1;
+    }
+
+    printf("  Machine: 0x%X\n", nt->FileHeader.Machine);
+    printf("  Sections: %u\n", nt->FileHeader.NumberOfSections);
+    printf("  Timestamp: 0x%08X\n", nt->FileHeader.TimeDateStamp);
+    printf("  ImageBase: 0x%08X\n", nt->OptionalHeader.ImageBase);
+    printf("  EntryPoint: 0x%08X\n", nt->OptionalHeader.AddressOfEntryPoint);
+    printf("  Subsystem: %u\n", nt->OptionalHeader.Subsystem);
+    printf("  DLL Characteristics: 0x%X\n", nt->FileHeader.Characteristics);
+
+    /* Verify it's a DLL */
+    if (!(nt->FileHeader.Characteristics & IMAGE_FILE_DLL)) {
+        printf("  FAIL: Not marked as DLL\n");
+        return -1;
+    }
+
+    /* Verify it's 32-bit */
+    if (nt->OptionalHeader.Magic != IMAGE_NT_OPTIONAL_HDR32_MAGIC) {
+        printf("  FAIL: Not PE32\n");
+        return -1;
+    }
+
+    printf("  OK: Valid PE32 DLL\n");
+    return 0;
+}
+
+static void test_unload(void) {
+    printf("[TEST] Freeing NPWLPG.dll...\n");
+    if (hNPWLPG) {
+        FreeLibrary(hNPWLPG);
+        hNPWLPG = NULL;
+        printf("  OK: Unloaded\n");
+    }
+}
+
+int main(void) {
+    printf("=== NPWLPG.dll Test Harness ===\n\n");
+
+    int fails = 0;
+    fails += (test_load_dll() != 0);
+    fails += (test_get_exports() != 0);
+    fails += (test_pe_validation_via_exports() != 0);
+    fails += (test_np_initialize() != 0);
+    test_np_shutdown();
+    test_unload();
+
+    printf("\n=== Results: %d test(s) failed ===\n", fails);
+    return fails;
+}

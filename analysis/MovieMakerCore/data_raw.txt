@@ -1,0 +1,4 @@
+Microsoft (R) COFF/PE Dumper Version 14.44.35228.0
+Copyright (C) Microsoft Corporation.  All rights reserved.
+
+LINK : fatal error LNK1117: syntax error in option 'RAWDATA:.data'

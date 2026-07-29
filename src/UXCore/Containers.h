@@ -21,6 +21,7 @@ public:
 
     HWND GetRootHWND();
     HWNDElement* GetKeyFocusedElement();
+    void SetRootHWND(HWND hwnd) { m_hwnd = hwnd; }
 
 protected:
     HWND m_hwnd = nullptr;

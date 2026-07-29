@@ -1,6 +1,7 @@
 #include "Containers.h"
 #include "Element.h"
 #include "Value.h"
+#include <windowsx.h>
 
 namespace DirectUI {
 
@@ -15,13 +16,8 @@ static int g_Initialize_mark = 107;
 static int g_OnCreateRegion_mark = 108;
 static int g_OnUpdateFrame_mark = 109;
 static int g_OnDefaultFrameColorChanged_mark = 110;
-static int g_DoModal_mark = 111;
-static int g_DoModeless_mark = 112;
 static int g_ExitDialog_mark = 113;
 static int g_ShowDialog_mark = 114;
-static int g_GetDialogHWND_mark = 115;
-static int g_FindDialogElement_mark = 116;
-static int g_GetDUIParser_mark = 117;
 static int g_CreatePopupWindow_mark = 118;
 static int g_CreateSuperPopup_mark = 119;
 static int g_InsertItem_mark = 120;
@@ -29,6 +25,11 @@ static int g_SetNoPrefixOption_mark = 121;
 static int g_CreatePopupMenu_mark = 122;
 static int g_SetFocusOnChild_mark = 123;
 static int g_ResizeBorderSplitter_mark = 124;
+static int g_DoModal_mark = 111;
+static int g_DoModeless_mark = 112;
+static int g_GetDialogHWND_mark = 115;
+static int g_FindDialogElement_mark = 116;
+static int g_GetDUIParser_mark = 117;
 
 // PropertyInfo definitions
 PropertyInfo g_FrameTitleProp = { L"FrameTitle" };
@@ -102,6 +103,120 @@ HRESULT CFramelessHost::OnDefaultFrameColorChanged()
 }
 
 // ====================================================================
+// Static helpers and window procs for CDUIDialog
+// ====================================================================
+
+static Element* _FindChildById(Element* parent, int id)
+{
+    for (auto* child : parent->GetChildrenRef())
+    {
+        Value* idVal = child->GetValue(Element::IDProp);
+        if (idVal && idVal->GetType() == Value::Int && idVal->GetInt() == id)
+            return child;
+        Element* found = _FindChildById(child, id);
+        if (found)
+            return found;
+    }
+    return nullptr;
+}
+
+static LRESULT CALLBACK DUIWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
+{
+    CDUIDialog* dlg = nullptr;
+
+    if (msg == WM_NCCREATE)
+    {
+        CREATESTRUCT* cs = (CREATESTRUCT*)lParam;
+        dlg = (CDUIDialog*)cs->lpCreateParams;
+        SetWindowLongPtr(hwnd, GWLP_USERDATA, (LONG_PTR)dlg);
+        dlg->SetRootHWND(hwnd);
+    }
+    else
+    {
+        dlg = (CDUIDialog*)GetWindowLongPtr(hwnd, GWLP_USERDATA);
+    }
+
+    if (dlg)
+    {
+        LRESULT result = 0;
+        switch (msg)
+        {
+        case WM_CREATE:
+            dlg->OnCreate();
+            return 0;
+        case WM_DESTROY:
+            dlg->OnDestroy();
+            return 0;
+        case WM_PAINT:
+            dlg->OnPaint();
+            return 0;
+        case WM_SIZE:
+            dlg->OnSize((UINT)wParam, LOWORD(lParam), HIWORD(lParam));
+            return 0;
+        case WM_CLOSE:
+            dlg->OnClose();
+            DestroyWindow(hwnd);
+            return 0;
+        case WM_COMMAND:
+            dlg->OnCommand(LOWORD(wParam), HIWORD(wParam), (HWND)lParam);
+            return 0;
+        case WM_ACTIVATE:
+            dlg->OnActivate(LOWORD(wParam), (HWND)lParam, HIWORD(wParam) != 0);
+            return 0;
+        case WM_ERASEBKGND:
+            return 1;
+        default:
+        {
+            HRESULT hr = dlg->OnMessage(msg, wParam, lParam, &result);
+            if (hr == S_OK)
+                return result;
+        }
+        }
+    }
+
+    return DefWindowProc(hwnd, msg, wParam, lParam);
+}
+
+static INT_PTR CALLBACK DUIDialogProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
+{
+    CDUIDialog* dlg = nullptr;
+
+    if (msg == WM_INITDIALOG)
+    {
+        dlg = (CDUIDialog*)lParam;
+        SetWindowLongPtr(hwnd, DWLP_USER, (LONG_PTR)dlg);
+        dlg->SetRootHWND(hwnd);
+        dlg->OnInitDialog();
+        return TRUE;
+    }
+
+    dlg = (CDUIDialog*)GetWindowLongPtr(hwnd, DWLP_USER);
+    if (dlg)
+    {
+        switch (msg)
+        {
+        case WM_PAINT:
+            dlg->OnPaint();
+            return TRUE;
+        case WM_SIZE:
+            dlg->OnSize((UINT)wParam, LOWORD(lParam), HIWORD(lParam));
+            break;
+        case WM_CLOSE:
+            dlg->OnClose();
+            EndDialog(hwnd, IDCANCEL);
+            return TRUE;
+        case WM_COMMAND:
+            dlg->OnCommand(LOWORD(wParam), HIWORD(wParam), (HWND)lParam);
+            break;
+        case WM_ERASEBKGND:
+            return TRUE;
+        }
+    }
+
+    return FALSE;
+}
+
+// ====================================================================
 // CDUIDialog
 // ====================================================================
 CDUIDialog::CDUIDialog()
@@ -119,6 +234,9 @@ CDUIDialog::~CDUIDialog()
 
 HRESULT CDUIDialog::OnCreate()
 {
+    GetClientRect(m_hwnd, &m_rect);
+    _UpdateDesiredSize();
+    _UpdateLayoutSize();
     return S_OK;
 }
 
@@ -134,8 +252,6 @@ HRESULT CDUIDialog::OnPostCreateDialog()
 
 HRESULT CDUIDialog::OnClose()
 {
-    DestroyWindow(m_hwnd);
-    m_hwnd = nullptr;
     return S_OK;
 }
 
@@ -240,10 +356,37 @@ HRESULT CDUIDialog::OnLoadHiddenState()
 
 HRESULT CDUIDialog::OnMessage(UINT msg, WPARAM wParam, LPARAM lParam, LRESULT* pResult)
 {
-    UNREFERENCED_PARAMETER(msg);
-    UNREFERENCED_PARAMETER(wParam);
-    UNREFERENCED_PARAMETER(lParam);
-    if (pResult) *pResult = FALSE;
+    switch (msg)
+    {
+    case WM_MOUSEMOVE:
+    {
+        POINT pt = { GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam) };
+        for (auto* child : m_children)
+        {
+            if (PtInRect(&child->GetRect(), pt))
+                child->OnMouseMove(pt, wParam & MK_LBUTTON ? 1 : 0);
+        }
+        break;
+    }
+    case WM_LBUTTONDOWN:
+    {
+        POINT pt = { GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam) };
+        for (auto* child : m_children)
+        {
+            if (PtInRect(&child->GetRect(), pt))
+                child->OnMouseClick(pt, 1);
+        }
+        break;
+    }
+    case WM_KEYDOWN:
+    {
+        HWNDElement* focused = GetKeyFocusedElement();
+        if (focused)
+            focused->OnKeyDown((UINT)wParam);
+        break;
+    }
+    }
+    if (pResult) *pResult = 0;
     return S_OK;
 }
 

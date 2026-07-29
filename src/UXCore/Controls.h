@@ -1,17 +1,16 @@
 #pragma once
 #include "Element.h"
 
+#define CONTENTALIGN_LEFT   0
+#define CONTENTALIGN_CENTER 1
+#define CONTENTALIGN_RIGHT  2
+
 #pragma warning(push)
 #pragma warning(disable: 4251)
 
 namespace DirectUI {
 
 struct IClassInfo {};
-struct EventInfo {
-    const wchar_t* name;
-};
-
-typedef HRESULT (CALLBACK *EventCallback)(Element* sender, Value** args, int numArgs);
 
 class __declspec(dllexport) ControlBase : public Element {
 public:
@@ -33,8 +32,11 @@ class __declspec(dllexport) Button : public ControlBase {
 public:
     virtual ~Button();
 
+    HRESULT OnPaint(HDC hdc, RECT const* rcPaint) override;
+
     static IClassInfo* Class;
     static PropertyInfo* PressedProp;
+    static PropertyInfo* FontSizeProp;
     static EventInfo* Click;
 };
 
@@ -49,6 +51,8 @@ class __declspec(dllexport) Label : public ControlBase {
 public:
     virtual ~Label();
 
+    HRESULT OnPaint(HDC hdc, RECT const* rcPaint) override;
+
     static IClassInfo* Class;
     HRESULT ReLayout();
 };
@@ -56,6 +60,8 @@ public:
 class __declspec(dllexport) Edit : public ControlBase {
 public:
     virtual ~Edit();
+
+    HRESULT OnPaint(HDC hdc, RECT const* rcPaint) override;
 
     static IClassInfo* Class;
     static EventInfo* LostFocus;
@@ -66,6 +72,8 @@ class __declspec(dllexport) Checkbox : public ControlBase {
 public:
     virtual ~Checkbox();
 
+    HRESULT OnPaint(HDC hdc, RECT const* rcPaint) override;
+
     static IClassInfo* Class;
     static PropertyInfo* CheckedProp;
     static PropertyInfo* UpdateStateProp;
@@ -74,6 +82,8 @@ public:
 class __declspec(dllexport) ScrollBar : public ControlBase {
 public:
     virtual ~ScrollBar();
+
+    HRESULT OnPaint(HDC hdc, RECT const* rcPaint) override;
 
     static IClassInfo* Class;
     static PropertyInfo* LineProp;
@@ -84,6 +94,8 @@ public:
 class __declspec(dllexport) Slider : public ControlBase {
 public:
     virtual ~Slider();
+
+    HRESULT OnPaint(HDC hdc, RECT const* rcPaint) override;
 
     static IClassInfo* Class;
     static PropertyInfo* PositionProp;
@@ -104,6 +116,8 @@ public:
 class __declspec(dllexport) Thumb : public ControlBase {
 public:
     virtual ~Thumb();
+
+    HRESULT OnPaint(HDC hdc, RECT const* rcPaint) override;
 
     static IClassInfo* Class;
 };

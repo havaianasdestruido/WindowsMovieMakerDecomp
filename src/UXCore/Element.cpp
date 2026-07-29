@@ -5,12 +5,6 @@
 namespace DirectUI {
 
 // Unique markers to prevent COMDAT folding of identical stub bodies
-static int g_FireEvent_mark = 1;
-static int g_ExecCmd_mark = 2;
-static int g_EnsureVisible_mark = 3;
-static int g_FocusElement_mark = 4;
-static int g_MapElementPoint_mark = 5;
-static int g_FindDescendent_mark = 6;
 static int g_EnableElement_mark = 7;
 
 static int g_EndDefer_mark = 10;
@@ -108,6 +102,12 @@ PropertyInfo* Element::TemplateSourceProp = &g_TemplateSourceProp;
 PropertyInfo* Element::LayoutModeInterfaceProp = &g_LayoutModeInterfaceProp;
 PropertyInfo* Element::LayoutProp = &g_LayoutProp;
 
+// Focus tracking
+static Element* g_pFocusedElement = nullptr;
+static EventInfo g_FocusGainedEvent = { L"FocusGained" };
+static EventInfo g_FocusLostEvent = { L"FocusLost" };
+static EventInfo g_CommandEvent = { L"Command" };
+
 // Destructor
 Element::~Element()
 {
@@ -196,10 +196,56 @@ HRESULT Element::SetValue(PropertyInfo const* prop, Value* value)
 // Events
 HRESULT Element::FireEvent(int eventId, int numArgs, Value** args)
 {
+    for (auto* child : m_children)
+        child->FireEvent(eventId, numArgs, args);
     UNREFERENCED_PARAMETER(eventId);
-    UNREFERENCED_PARAMETER(numArgs);
-    UNREFERENCED_PARAMETER(args);
-    return (g_FireEvent_mark > 0) ? E_NOTIMPL : S_OK;
+    return S_OK;
+}
+
+HRESULT Element::AddEventListener(EventInfo* event, EventCallback callback)
+{
+    if (!event || !callback) return E_POINTER;
+    m_eventListeners.insert({event, callback});
+    return S_OK;
+}
+
+HRESULT Element::RemoveEventListener(EventInfo* event, EventCallback callback)
+{
+    if (!event || !callback) return E_POINTER;
+    auto range = m_eventListeners.equal_range(event);
+    for (auto it = range.first; it != range.second; )
+    {
+        if (it->second == callback)
+            it = m_eventListeners.erase(it);
+        else
+            ++it;
+    }
+    return S_OK;
+}
+
+HRESULT Element::FireEventInfo(EventInfo* event, int numArgs, Value** args)
+{
+    if (!event) return E_POINTER;
+    HRESULT hr = S_OK;
+    auto range = m_eventListeners.equal_range(event);
+    for (auto it = range.first; it != range.second; ++it)
+    {
+        HRESULT hrEntry = it->second(this, args, numArgs);
+        if (FAILED(hrEntry))
+            hr = hrEntry;
+    }
+    return hr;
+}
+
+void Element::SetID(int id)
+{
+    SetValue(IDProp, Value::CreateInt(id));
+}
+
+int Element::GetID()
+{
+    Value* v = GetValue(IDProp);
+    return (v && v->GetType() == Value::Int) ? v->GetInt() : 0;
 }
 
 // Lifecycle
@@ -224,8 +270,15 @@ HRESULT Element::EnableElement(bool enable)
 // Navigation
 Element* Element::FindDescendent(int id)
 {
-    UNREFERENCED_PARAMETER(id);
-    return (g_FindDescendent_mark > 0) ? nullptr : this;
+    if (GetID() == id)
+        return this;
+    for (auto* child : m_children)
+    {
+        Element* found = child->FindDescendent(id);
+        if (found)
+            return found;
+    }
+    return nullptr;
 }
 
 bool Element::IsDescendent(Element* ancestor)
@@ -242,7 +295,14 @@ bool Element::IsDescendent(Element* ancestor)
 
 HRESULT Element::EnsureVisible()
 {
-    return (g_EnsureVisible_mark > 0) ? E_NOTIMPL : S_OK;
+    if (!m_parent) return S_OK;
+    RECT parentRect = m_parent->m_rect;
+    if (m_rect.left < parentRect.left || m_rect.top < parentRect.top ||
+        m_rect.right > parentRect.right || m_rect.bottom > parentRect.bottom)
+    {
+        m_parent->InvalidateRect(&m_rect);
+    }
+    return m_parent->EnsureVisible();
 }
 
 // Layout
@@ -333,18 +393,67 @@ HRESULT Element::QIBehaviors(REFIID riid, void** ppv)
 // Commands
 HRESULT Element::ExecCmd(UINT cmdId, UINT cmdContext, Value* arg)
 {
-    UNREFERENCED_PARAMETER(cmdId);
+    Element* current = this;
+    while (current)
+    {
+        Value* cmdArgs[2] = {
+            Value::CreateInt(cmdId),
+            arg ? arg : Value::pvNull
+        };
+        HRESULT hr = current->FireEventInfo(&g_CommandEvent, 2, cmdArgs);
+        if (hr == S_OK)
+            return S_OK;
+        current = current->m_parent;
+    }
     UNREFERENCED_PARAMETER(cmdContext);
-    UNREFERENCED_PARAMETER(arg);
-    return (g_ExecCmd_mark > 0) ? E_NOTIMPL : S_OK;
+    return S_FALSE;
 }
 
 // Coordinate mapping
 HRESULT Element::MapElementPoint(Element* from, POINT* pt)
 {
-    UNREFERENCED_PARAMETER(from);
-    UNREFERENCED_PARAMETER(pt);
-    return (g_MapElementPoint_mark > 0) ? E_NOTIMPL : S_OK;
+    if (!from || !pt) return E_POINTER;
+    if (from == this) return S_OK;
+
+    std::vector<Element*> fromPath;
+    Element* cur = from;
+    while (cur) {
+        fromPath.push_back(cur);
+        cur = cur->m_parent;
+    }
+
+    std::vector<Element*> thisPath;
+    cur = this;
+    while (cur) {
+        thisPath.push_back(cur);
+        cur = cur->m_parent;
+    }
+
+    int commonIdx = -1;
+    int fromSize = (int)fromPath.size();
+    int thisSize = (int)thisPath.size();
+    for (int i = 0; i < fromSize && i < thisSize; i++) {
+        if (fromPath[fromSize - 1 - i] == thisPath[thisSize - 1 - i])
+            commonIdx = i;
+        else
+            break;
+    }
+    if (commonIdx == -1)
+        return E_FAIL;
+
+    int fromCommonIdx = fromSize - 1 - commonIdx;
+    for (int i = 0; i < fromCommonIdx; i++) {
+        pt->x += fromPath[i]->m_rect.left;
+        pt->y += fromPath[i]->m_rect.top;
+    }
+
+    int thisCommonIdx = thisSize - 1 - commonIdx;
+    for (int i = thisCommonIdx - 1; i >= 0; i--) {
+        pt->x -= thisPath[i]->m_rect.left;
+        pt->y -= thisPath[i]->m_rect.top;
+    }
+
+    return S_OK;
 }
 
 // Device context
@@ -399,7 +508,59 @@ HRESULT Element::ReleaseElementDC(HDC hdc)
 // Focus
 HRESULT Element::FocusElement()
 {
-    return (g_FocusElement_mark > 0) ? E_NOTIMPL : S_OK;
+    if (g_pFocusedElement == this)
+        return S_OK;
+
+    if (g_pFocusedElement)
+    {
+        g_pFocusedElement->SetValue(KeyFocusedProp, Value::CreateBool(false));
+        g_pFocusedElement->FireEventInfo(&g_FocusLostEvent, 0, nullptr);
+    }
+
+    g_pFocusedElement = this;
+    SetValue(KeyFocusedProp, Value::CreateBool(true));
+    FireEventInfo(&g_FocusGainedEvent, 0, nullptr);
+
+    return S_OK;
+}
+
+HRESULT Element::OnMouseMove(POINT pt, int mouseButton)
+{
+    UNREFERENCED_PARAMETER(pt);
+    UNREFERENCED_PARAMETER(mouseButton);
+    return S_FALSE;
+}
+
+HRESULT Element::OnMouseClick(POINT pt, int mouseButton)
+{
+    UNREFERENCED_PARAMETER(pt);
+    UNREFERENCED_PARAMETER(mouseButton);
+    return S_FALSE;
+}
+
+HRESULT Element::OnMouseDoubleClick(POINT pt, int mouseButton)
+{
+    UNREFERENCED_PARAMETER(pt);
+    UNREFERENCED_PARAMETER(mouseButton);
+    return S_FALSE;
+}
+
+HRESULT Element::OnKeyDown(UINT vk)
+{
+    UNREFERENCED_PARAMETER(vk);
+    return S_FALSE;
+}
+
+HRESULT Element::OnKeyUp(UINT vk)
+{
+    UNREFERENCED_PARAMETER(vk);
+    return S_FALSE;
+}
+
+HRESULT Element::OnChar(wchar_t ch)
+{
+    UNREFERENCED_PARAMETER(ch);
+    return S_FALSE;
 }
 
 // Rendering / painting

@@ -17,6 +17,14 @@ class Value;
 
 class Layout;
 
+class Element;
+
+struct EventInfo {
+    const wchar_t* name;
+};
+
+typedef HRESULT (CALLBACK *EventCallback)(Element* sender, Value** args, int numArgs);
+
 class __declspec(dllexport) Element {
 public:
     virtual ~Element();
@@ -71,6 +79,23 @@ public:
 
     // Focus
     HRESULT FocusElement();
+
+    // Event listener system
+    HRESULT AddEventListener(EventInfo* event, EventCallback callback);
+    HRESULT RemoveEventListener(EventInfo* event, EventCallback callback);
+    HRESULT FireEventInfo(EventInfo* event, int numArgs, Value** args);
+
+    // ID helpers
+    void SetID(int id);
+    int GetID();
+
+    // Input handling
+    virtual HRESULT OnMouseMove(POINT pt, int mouseButton);
+    virtual HRESULT OnMouseClick(POINT pt, int mouseButton);
+    virtual HRESULT OnMouseDoubleClick(POINT pt, int mouseButton);
+    virtual HRESULT OnKeyDown(UINT vk);
+    virtual HRESULT OnKeyUp(UINT vk);
+    virtual HRESULT OnChar(wchar_t ch);
 
     // Rendering / painting
     virtual HRESULT Paint(HDC hdc, RECT const* rcPaint);
@@ -146,6 +171,7 @@ protected:
     HBITMAP m_hbmCache = nullptr;
     SIZE m_cacheSize = {};
     RECT m_dirtyRect = {};
+    std::multimap<EventInfo*, EventCallback> m_eventListeners;
 };
 
 #pragma warning(pop)

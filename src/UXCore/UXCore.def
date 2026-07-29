@@ -1,0 +1,8 @@
+LIBRARY UXCore
+
+; UXCore export surface is controlled via __declspec(dllexport) on all classes
+; and individual __declspec(dllexport) on free function declarations.
+; No .def entries needed - C++ decorated names are auto-exported by the compiler.
+EXPORTS
+    ; Reserved for future explicit ordinal exports if needed
+    ; (see UXCore.cpp and individual source files for all exported symbols)

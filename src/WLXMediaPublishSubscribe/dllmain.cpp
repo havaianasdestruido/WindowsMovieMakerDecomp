@@ -31,7 +31,7 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD dwReason, LPVOID lpReserved)
         DisableThreadLibraryCalls(hModule);
 
         // COM required for RPC-based service communication
-        HRESULT hr = CoInitializeEx(NULL, COINIT_APARTMENTTHREADED | COINIT_DISABLE_OLE1DDE);
+        HRESULT hr = CoInitializeEx(NULL, COINIT_MULTITHREADED | COINIT_DISABLE_OLE1DDE);
         if (SUCCEEDED(hr))
             g_bComInit = true;
 

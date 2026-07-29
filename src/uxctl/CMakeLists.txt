@@ -1,6 +1,6 @@
 set(TARGET uxctl)
 
-add_library(${TARGET} SHARED dllmain.cpp uxctl.cpp)
+add_library(${TARGET} SHARED dllmain.cpp uxctl.cpp uxctl.def)
 
 set_target_properties(${TARGET} PROPERTIES
     OUTPUT_NAME "uxctl"

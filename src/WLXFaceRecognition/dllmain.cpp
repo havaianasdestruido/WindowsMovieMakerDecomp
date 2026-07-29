@@ -27,7 +27,7 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD dwReason, LPVOID lpReserved)
         g_hModule = hModule;
         DisableThreadLibraryCalls(hModule);
 
-        CoInitializeEx(NULL, COINIT_APARTMENTTHREADED | COINIT_DISABLE_OLE1DDE);
+        CoInitializeEx(NULL, COINIT_MULTITHREADED | COINIT_DISABLE_OLE1DDE);
         g_bComInit = true;
 
         Gdiplus::GdiplusStartupInput input;

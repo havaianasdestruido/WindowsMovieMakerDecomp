@@ -1,0 +1,6 @@
+LIBRARY "uxctl"
+
+EXPORTS
+    UxControlsInitProcess
+    UxControlsCreateObject
+    UxControlsUninitProcess

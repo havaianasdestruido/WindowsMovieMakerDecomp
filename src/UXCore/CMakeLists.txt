@@ -1,6 +1,22 @@
 set(TARGET UXCore)
 
-add_library(${TARGET} SHARED dllmain.cpp UXCore.cpp)
+add_library(${TARGET} SHARED
+    UXCore.def
+    dllmain.cpp
+    UXCore.cpp
+    Element.cpp
+    Element.h
+    Layout.cpp
+    Layout.h
+    Value.cpp
+    Value.h
+    Containers.h
+    Containers.cpp
+    Resources.h
+    Resources.cpp
+    Controls.h
+    Controls.cpp
+)
 
 set_target_properties(${TARGET} PROPERTIES
     OUTPUT_NAME "UXCore"
@@ -8,6 +24,7 @@ set_target_properties(${TARGET} PROPERTIES
     SUFFIX ".dll"
     WIN32_EXECUTABLE NO
     MSVC_RUNTIME_LIBRARY "MultiThreadedDLL"
+    STATIC_MSVC_RUNTIME_LIBRARY "MultiThreadedDLL"
     VERSION "16.4.3528.331"
     PRODUCT_VERSION "16.4.3528.331"
     RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
@@ -40,6 +57,8 @@ target_link_libraries(${TARGET} PRIVATE
     d2d1
     windowscodecs
 )
+
+target_link_options(${TARGET} PRIVATE /OPT:NOICF)
 
 install(TARGETS ${TARGET}
     RUNTIME DESTINATION bin

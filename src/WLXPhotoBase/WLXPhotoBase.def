@@ -5,13 +5,11 @@ EXPORTS
     ??0Exception@Base@@QAE@J@Z
     ??1Exception@Base@@UAE@XZ
     ??BException@Base@@QBEJXZ
-    ??RException@Base@@UAEPAXI@Z
+    ??4Exception@Base@@QAEAAV01@ABV01@@Z
 
-    ; Base::Throw / ThrowLastError
+    ; Base::Throw / ThrowLastError / GdiplusStatusToHresult
     ?Throw@Base@@SAXJ@Z
     ?ThrowLastError@Base@@SAXXZ
-
-    ; Base::GdiplusStatusToHresult
     ?GdiplusStatusToHresult@Base@@SAJW4Status@Gdiplus@@@Z
 
     ; Base::String
@@ -28,28 +26,8 @@ EXPORTS
     ; Base::CPU
     ?GetProcessorCount@CPU@Base@@SAHXZ
 
-    ; ATL::BaseAtlThrow
+    ; ATL
     ?BaseAtlThrow@ATL@@YAXJ@Z
-
-    ; Base::Exception virtual table
-    ??_7Exception@Base@@6B@
-
-    ; Base::RefCountBase stuff
-    ?AddRef@?$RefCountBase@VCriticalSection@ATL@@@@UAEXXZ
-    ?Release@?$RefCountBase@VCriticalSection@ATL@@@@UAEIXZ
-
-    ; Additional Base utilities
-    ?Format@?$CStringT@DV?$StrTraitMFC@DV?$ChTraitsCRT@D@ATL@@@ATL@@@@QBEIPBDZZ
-    ?GetBuffer@?$CStringT@DV?$StrTraitMFC@DV?$ChTraitsCRT@D@ATL@@@ATL@@@@QAEPADH@Z
-    ?ReleaseBuffer@?$CStringT@DV?$StrTraitMFC@DV?$ChTraitsCRT@D@ATL@@@ATL@@@@QAEXH@Z
-    ?FreeExtra@?$CSimpleStringT@D$0A@@ATL@@QAEXXZ
-
-    ; Base::Exception::operator= 
-    ??4Exception@Base@@QAEAAV01@ABV01@@Z
-
-    ; Base::String helpers
-    ?LoadString@?$CStringT@DV?$StrTraitMFC@DV?$ChTraitsCRT@D@ATL@@@ATL@@@@QAEHI@Z
-    ?CompareNoCase@?$CSimpleStringT@D$0A@@ATL@@QBEHPBD@Z
 
     ; Base::File
     ?GetFileName@File@Base@@QBE?AV?$CStringT@DV?$StrTraitMFC@DV?$ChTraitsCRT@D@ATL@@@ATL@@@@XZ
@@ -64,7 +42,7 @@ EXPORTS
 
     ; Base::Thread
     ?Start@Thread@Base@@QAEJXZ
-    ?Stop@Thread@Base@@QAEXXZ
+    ?Stop@Thread@Base@@QAEXK@Z
     ?Wait@Thread@Base@@QAEJK@Z
     ?IsRunning@Thread@Base@@QBE_NXZ
 
@@ -79,10 +57,9 @@ EXPORTS
     ??0GdiException@Base@@QAE@W4Status@Gdiplus@@@Z
     ?GetGdiplusStatus@GdiException@Base@@QBE?AW4Status@Gdiplus@@XZ
     ??1GdiException@Base@@UAE@XZ
-    ??_7GdiException@Base@@6B@
 
-    ; Base::DataStructs::IntSet
-    ?Add@DataStructs@Base@@QAEXH@Z
-    ?Remove@DataStructs@Base@@QAEXH@Z
-    ?Contains@DataStructs@Base@@QBE_NH@Z
-    ?GetCount@DataStructs@Base@@QBEIXZ
+    ; Base::IntSet
+    ?Add@IntSet@DataStructs@Base@@QAEXH@Z
+    ?Remove@IntSet@DataStructs@Base@@QAEXH@Z
+    ?Contains@IntSet@DataStructs@Base@@QBE_NH@Z
+    ?GetCount@IntSet@DataStructs@Base@@QBEIXZ

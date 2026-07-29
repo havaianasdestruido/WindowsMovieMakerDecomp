@@ -36,7 +36,7 @@ BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved)
     case DLL_PROCESS_ATTACH:
         g_hModule = hinstDLL;
         DisableThreadLibraryCalls(hinstDLL);
-        if (SUCCEEDED(CoInitializeEx(NULL, COINIT_APARTMENTTHREADED)))
+        if (SUCCEEDED(CoInitializeEx(NULL, COINIT_MULTITHREADED | COINIT_DISABLE_OLE1DDE)))
         {
             g_bComInit = true;
         }

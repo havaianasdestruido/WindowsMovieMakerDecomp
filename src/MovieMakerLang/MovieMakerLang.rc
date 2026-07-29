@@ -1,91 +1,560 @@
-/*
- * MovieMakerLang.rc
- *
- * Resource script for the MovieMakerLang satellite DLL.
- * Contains 201 RT_STRING tables, icons, cursors, PNG images, and UIFILE resources.
- *
- * NOTE: This is a minimal skeleton. The full resource binary would contain
- * the complete localized string tables for all supported languages.
- *
- * Copyright (c) Microsoft Corporation. All rights reserved.
- */
-
 #include <windows.h>
 #include "resource.h"
 
 // ============================================================================
-// Icons
+// RT_MANIFEST -- assembly identity
 // ============================================================================
-// IDI_MAIN_ICON         ICON    "resources\\icons\\MovieMaker.ico"
-// IDI_SMALL_ICON        ICON    "resources\\icons\\MovieMakerSmall.ico"
+IDR_MANIFEST RT_MANIFEST
+BEGIN
+    "<?xml version='1.0' encoding='UTF-8' standalone='yes'?>\n"
+    "<assembly xmlns='urn:schemas-microsoft-com:asm.v1' manifestVersion='1.0'>\n"
+    "  <assemblyIdentity\n"
+    "    name='Microsoft.Windows.personalMedia.MovieMaker'\n"
+    "    processorArchitecture='x86'\n"
+    "    type='win32'\n"
+    "    version='16.4.3528.331'/>\n"
+    "  <description>Windows Live Movie Maker</description>\n"
+    "</assembly>\n"
+END
 
 // ============================================================================
-// Cursors
+// RT_VERSION -- VERSIONINFO
 // ============================================================================
-// IDC_APPSTARTING       CURSOR  "resources\\cursors\\appstart.cur"
-// IDC_WAIT              CURSOR  "resources\\cursors\\wait.cur"
+IDR_VERSION VERSIONINFO
+FILEVERSION     16,4,3528,331
+PRODUCTVERSION  16,4,3528,331
+FILEFLAGSMASK   0x3fL
+FILEFLAGS       0x0L
+FILEOS          VOS_NT_WINDOWS32
+FILETYPE        VFT_DLL
+FILESUBTYPE     0x0L
+BEGIN
+    BLOCK "StringFileInfo"
+    BEGIN
+        BLOCK "040904b0"
+        BEGIN
+            VALUE "CompanyName",      "Microsoft Corporation"
+            VALUE "FileDescription",  "MovieMakerLang"
+            VALUE "FileVersion",      "16.4.3528.0331"
+            VALUE "InternalName",     "MovieMakerLang"
+            VALUE "LegalCopyright",   "\xa9 2012 Microsoft Corporation. All rights reserved."
+            VALUE "OriginalFilename", "MovieMakerLang.DLL"
+            VALUE "ProductName",      "Movie Maker"
+            VALUE "ProductVersion",   "16.4.3528.0331"
+        END
+    END
+    BLOCK "VarFileInfo"
+    BEGIN
+        VALUE "Translation", 0x409, 1200
+    END
+END
 
 // ============================================================================
-// UI Images (PNG)
+// Icons (commented out - resources not yet extracted from original DLL)
 // ============================================================================
-// IDB_SPLASH            BITMAP  "resources\\images\\splash.png"
-// IDB_TOOLBAR           BITMAP  "resources\\images\\toolbar.png"
+// IDI_MAIN_ICON   ICON    "resources\\icons\\MovieMaker.ico"
+// IDI_SMALL_ICON  ICON    "resources\\icons\\MovieMakerSmall.ico"
 
 // ============================================================================
-// UIFILE resources (DirectUI layouts)
+// Cursors (commented out - resources not yet extracted)
 // ============================================================================
-// RT_UIFILE             100     "resources\\uifile\\mainlayout.xml"
+// IDC_APPSTARTING CURSOR  "resources\\cursors\\appstart.cur"
+// IDC_WAIT        CURSOR  "resources\\cursors\\wait.cur"
 
 // ============================================================================
-// RT_STRING tables
+// Bitmaps / PNG images (commented out - resources not yet extracted)
 // ============================================================================
-// String Table 0 (IDs 0x0000-0x000F)
-// STRINGTABLE
-// BEGIN
-//     0x0000  "Windows Live Movie Maker"
-//     0x0001  "Untitled Project"
-//     0x0002  "Movie Maker"
-//     0x0003  "&File"
-//     0x0004  "&Edit"
-//     0x0005  "&View"
-//     0x0006  "&Tools"
-//     0x0007  "&Help"
-//     0x0008  "&New"
-//     0x0009  "&Open..."
-//     0x000A  "&Save"
-//     0x000B  "Save &As..."
-//     0x000C  "&Import media..."
-//     0x000D  "E&xit"
-//     0x000E  "&Undo"
-//     0x000F  "&Redo"
-// END
-//
-// String Table 1 (IDs 0x0010-0x001F)
-// STRINGTABLE
-// BEGIN
-//     0x0010  "Cu&t"
-//     0x0011  "&Copy"
-//     0x0012  "&Paste"
-//     0x0013  "&Delete"
-//     0x0014  "Select &All"
-//     0x0015  "&Options..."
-//     0x0016  "&About Movie Maker"
-//     0x0017  "&Home"
-//     0x0018  "&Animations"
-//     0x0019  "&Visual Effects"
-//     0x001A  "&Project"
-//     0x001B  "&View"
-//     0x001C  "Add &Videos and Photos"
-//     0x001D  "Add &Music"
-//     0x001E  "Add &Title"
-//     0x001F  "Add &Credits"
-// END
-//
-// ... (Tables 2-200 follow with all remaining UI strings)
-// ... The full binary contains 201 string table entries covering:
-// ...   - Menu items, toolbar labels, dialog text
-// ...   - Error messages, warning dialogs, confirmation prompts
-// ...   - Tooltip text, status bar messages
-// ...   - File format names, codec descriptions
-// ...   - Export profile names, quality settings
-// ...   - Multilingual strings for all supported locales
+// IDB_SPLASH           BITMAP  "resources\\images\\splash.png"
+// IDB_TOOLBAR          BITMAP  "resources\\images\\toolbar.png"
+// IDB_TOOLBAR_DARK     BITMAP  "resources\\images\\toolbar_dark.png"
+// IDB_WELCOME_BANNER   BITMAP  "resources\\images\\welcome_banner.png"
+
+// ============================================================================
+// UIFILE resources (commented out - not yet extracted)
+// ============================================================================
+// RT_UIFILE_RIBBON    UIFILE  "resources\\uifile\\ribbon.xml"
+// RT_UIFILE_MAIN      UIFILE  "resources\\uifile\\mainlayout.xml"
+// RT_UIFILE_DIALOGS   UIFILE  "resources\\uifile\\dialogs.xml"
+
+// ============================================================================
+// Dialog templates
+// ============================================================================
+
+IDD_OPTIONS DIALOGEX 0, 0, 320, 200
+STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "Movie Maker Options"
+FONT 8, "MS Shell Dlg", 400, 0, 0x1
+BEGIN
+    CONTROL "General tab", IDS_GENERAL_TAB, "SysTabControl32", WS_TABSTOP, 7, 7, 306, 156
+    DEFPUSHBUTTON "OK", IDS_OK, 137, 176, 50, 14
+    PUSHBUTTON "Cancel", IDS_CANCEL, 197, 176, 50, 14
+    PUSHBUTTON "Apply", IDS_APPLY, 257, 176, 50, 14
+END
+
+IDD_ABOUT DIALOGEX 0, 0, 260, 180
+STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "About Movie Maker"
+FONT 8, "MS Shell Dlg", 400, 0, 0x1
+BEGIN
+    LTEXT "Windows Live Movie Maker", IDS_APP_TITLE, 60, 10, 140, 12
+    LTEXT "Version 2012 (Build 16.4.3528.0331)", IDS_VERSION_STRING, 60, 26, 140, 12
+    LTEXT "", IDS_COPYRIGHT, 60, 42, 180, 24
+    DEFPUSHBUTTON "OK", IDS_OK, 105, 155, 50, 14
+END
+
+IDD_PROGRESS DIALOGEX 0, 0, 280, 60
+STYLE DS_SETFONT | DS_CENTER | WS_POPUP | WS_CAPTION
+CAPTION "Progress"
+FONT 8, "MS Shell Dlg", 400, 0, 0x1
+BEGIN
+    LTEXT "", IDS_STATUS_DETAILS, 10, 10, 260, 10
+    CONTROL "", IDS_STATUS_PROGRESS, "msctls_progress32", WS_BORDER, 10, 24, 260, 14
+    PUSHBUTTON "Cancel", IDS_STATUS_CANCEL, 115, 42, 50, 14
+END
+
+// ============================================================================
+// Menu resources
+// ============================================================================
+
+IDM_MAIN MENUEX
+BEGIN
+    POPUP "&File", 0
+    BEGIN
+        MENUITEM "&New project", IDS_NEW_PROJECT
+        MENUITEM "&Open project", IDS_OPEN_PROJECT
+        MENUITEM "&Save project", IDS_SAVE_PROJECT
+        MENUITEM "Save project &as", IDS_SAVE_PROJECT_AS
+        MENUITEM SEPARATOR
+        MENUITEM "&Publish movie", IDS_PUBLISH
+        MENUITEM "Burn a &DVD", IDS_PUBLISH_DVD
+        MENUITEM SEPARATOR
+        MENUITEM "E&xit", 101
+    END
+    POPUP "&Edit", 0
+    BEGIN
+        MENUITEM "&Undo", IDS_UNDO
+        MENUITEM "&Redo", IDS_REDO
+        MENUITEM SEPARATOR
+        MENUITEM "Cu&t", IDS_CUT
+        MENUITEM "&Copy", IDS_COPY
+        MENUITEM "&Paste", IDS_PASTE
+        MENUITEM "&Delete", IDS_DELETE
+        MENUITEM "Select &All", IDS_SELECT_ALL
+    END
+    POPUP "&View", 0
+    BEGIN
+        MENUITEM "&Home", IDS_HOME_TAB
+        MENUITEM "&Animations", IDS_ANIMATIONS_TAB
+        MENUITEM "&Visual Effects", IDS_VISUAL_EFFECTS_TAB
+        MENUITEM "&Project", IDS_PROJECT_TAB
+    END
+    POPUP "&Tools", 0
+    BEGIN
+        MENUITEM "&Options...", IDS_OPTIONS
+    END
+    POPUP "&Help", 0
+    BEGIN
+        MENUITEM "Online help (F1)", IDS_HELP
+        MENUITEM SEPARATOR
+        MENUITEM "Abo&ut Movie Maker", IDS_ABOUT
+    END
+END
+
+// ============================================================================
+// Accelerator tables
+// ============================================================================
+
+IDA_MAIN ACCELERATORS
+BEGIN
+    VK_F1,          IDS_HELP,          VIRTKEY, NOINVERT
+    "^N",           IDS_NEW_PROJECT,   ASCII, NOINVERT
+    "^O",           IDS_OPEN_PROJECT,  ASCII, NOINVERT
+    "^S",           IDS_SAVE_PROJECT,  ASCII, NOINVERT
+    "^Z",           IDS_UNDO,          ASCII, NOINVERT
+    "^Y",           IDS_REDO,          ASCII, NOINVERT
+    "^X",           IDS_CUT,           ASCII, NOINVERT
+    "^C",           IDS_COPY,          ASCII, NOINVERT
+    "^V",           IDS_PASTE,          ASCII, NOINVERT
+    "^A",           IDS_SELECT_ALL,    ASCII, NOINVERT
+END
+
+// ============================================================================
+// STRINGTABLE -- Application titles & main menu
+// ============================================================================
+STRINGTABLE
+BEGIN
+    IDS_APP_TITLE           "Windows Live Movie Maker"
+    IDS_UNTITLED_PROJECT    "Untitled Project"
+    IDS_WINDOW_TITLE        "Movie Maker"
+    IDS_FILE_MENU           "&File"
+    IDS_EDIT_MENU           "&Edit"
+    IDS_VIEW_MENU           "&View"
+    IDS_TOOLS_MENU          "&Tools"
+    IDS_HELP_MENU           "&Help"
+    IDS_NEW_PROJECT         "&New project"
+    IDS_OPEN_PROJECT        "&Open project"
+    IDS_SAVE_PROJECT        "&Save project"
+    IDS_SAVE_PROJECT_AS     "Save project &as"
+    IDS_UNDO                "&Undo"
+    IDS_REDO                "&Redo"
+    IDS_CUT                 "Cu&t"
+    IDS_COPY                "&Copy"
+END
+
+STRINGTABLE
+BEGIN
+    IDS_PASTE               "&Paste"
+    IDS_SELECT_ALL          "Select &All"
+    IDS_OPTIONS             "&Options"
+    IDS_ABOUT               "Abo&ut Movie Maker"
+    IDS_TIP_ADD_VIDEOS      "Add videos and photos to the project."
+    IDS_TIP_ADD_MUSIC       "Add music to the project."
+    IDS_TIP_ADD_NARRATION   "Add an audio file to use as narration or sound effects for your project."
+    IDS_TIP_TRIM            "Trim the selected video clip."
+    IDS_TIP_PUBLISH         "Publish your movie to an online service or burn to DVD."
+    IDS_TIP_EFFECTS         "Open the Add or Remove Effects dialog box so that you can apply more than one effect at the same time."
+    IDS_TIP_STABILIZE       "Reduce the appearance of shake in the selected video clip."
+    IDS_TIP_PREVIEW_FULL    "Play a preview of your movie full screen."
+    IDS_TIP_MENU_BAR        "Show the menu bar"
+    IDS_TIP_ZOOM            "Zoom time scale"
+END
+
+// ============================================================================
+// STRINGTABLE -- Dialog buttons
+// ============================================================================
+STRINGTABLE
+BEGIN
+    IDS_OK                  "OK"
+    IDS_CANCEL              "Cancel"
+    IDS_SAVE                "&Save"
+    IDS_DONT_SHOW_AGAIN     "&Don't show this message again"
+    IDS_ABORT               "&Abort"
+    IDS_RETRY               "&Retry"
+    IDS_IGNORE              "&Ignore"
+    IDS_YES                 "&Yes"
+    IDS_YES_ALL             "Y&es to all"
+    IDS_NO                  "&No"
+    IDS_NO_ALL              "N&o to all"
+    IDS_CLOSE               "&Close"
+    IDS_HELP                "Help"
+    IDS_TRY_AGAIN           "&Try again"
+    IDS_CONTINUE            "&Continue"
+    IDS_APPLY               "&Apply"
+END
+
+STRINGTABLE
+BEGIN
+    IDS_DOWNLOAD            "&Download"
+    IDS_REVERT              "&Revert"
+    IDS_RESTORE_PROJECT     "&Restore project"
+    IDS_FIX_ITEM            "&Fix item"
+END
+
+// ============================================================================
+// STRINGTABLE -- Transition & effect names
+// ============================================================================
+STRINGTABLE
+BEGIN
+    IDS_FX_FADE             "Fade"
+    IDS_FX_DISSOLVE         "Dissolve"
+    IDS_FX_WIPE             "Wipe"
+    IDS_FX_SLIDE            "Slide"
+    IDS_FX_ZOOM             "Zoom"
+    IDS_FX_CIRCLE           "Circle"
+    IDS_FX_DIAMOND          "Diamond"
+    IDS_FX_HEART            "Heart"
+    IDS_FX_STAR             "Star"
+    IDS_FX_WHEEL            "Wheel"
+    IDS_FX_PAGE_CURL        "Page curl"
+    IDS_FX_IRIS             "Iris"
+    IDS_FX_CROSSFADE        "Crossfade"
+    IDS_FX_CHECKERBOARD     "Checkerboard"
+    IDS_FX_FLIP             "Flip"
+    IDS_FX_ROLL             "Roll"
+END
+
+STRINGTABLE
+BEGIN
+    IDS_FX_SWING            "Swing"
+    IDS_FX_WARP             "Warp"
+    IDS_FX_BLUR             "Blur"
+    IDS_FX_SPLIT            "Split"
+    IDS_FX_CINEMATIC        "Cinematic"
+    IDS_FX_PAN_LEFT         "Pan left"
+    IDS_FX_PAN_RIGHT        "Pan right"
+    IDS_FX_PAN_UP           "Pan up"
+    IDS_FX_PAN_DOWN         "Pan down"
+    IDS_FX_ZOOM_IN_CENTER   "Zoom in center"
+    IDS_FX_ZOOM_OUT_CENTER  "Zoom out center"
+    IDS_FX_CONTEMPORARY_DROP   "Contemporary - drop down"
+    IDS_FX_CONTEMPORARY_FADE   "Contemporary - fade"
+    IDS_FX_CONTEMPORARY_FLY    "Contemporary - fly in left"
+    IDS_FX_CONTEMPORARY_SLIDE  "Contemporary - slide down"
+END
+
+// ============================================================================
+// STRINGTABLE -- Publishing targets
+// ============================================================================
+STRINGTABLE
+BEGIN
+    IDS_PUBLISH_ONEDRIVE       "OneDrive"
+    IDS_PUBLISH_FACEBOOK       "Faceboo&k"
+    IDS_PUBLISH_YOUTUBE        "YouT&ube"
+    IDS_PUBLISH_FLICKR         "Flick&r"
+    IDS_PUBLISH_VIMEO          "&Vimeo"
+    IDS_PUBLISH_BLIPTV         "&Blip.TV"
+    IDS_PUBLISH_MYSPACE        "MyS&pace"
+    IDS_PUBLISH_DAILYMOTION    "DailyMo&tion"
+    IDS_PUBLISH_DVD            "Burn a &DVD"
+    IDS_PUBLISH_WATCH_ONLINE   "&Watch online"
+    IDS_PUBLISH_EMAIL          "For &email"
+END
+
+// ============================================================================
+// STRINGTABLE -- Device profiles
+// ============================================================================
+STRINGTABLE
+BEGIN
+    IDS_DEV_WP_LARGE        "Windows Phone (lar&ge)"
+    IDS_DEV_WP_SMALL        "&Windows Phone (small)"
+    IDS_DEV_IPHONE          "Apple iPh&one"
+    IDS_DEV_IPAD            "Apple &iPad"
+    IDS_DEV_ANDROID_MED     "Android Phone (&medium)"
+    IDS_DEV_ANDROID_LARGE   "Android Pho&ne (large)"
+    IDS_DEV_ANDROID_1080P   "Android (&1080p)"
+    IDS_DEV_ANDROID_720P    "Android (72&0p)"
+    IDS_DEV_ZUNE_HD_720P    "Zune HD (for &720p display)"
+    IDS_DEV_ZUNE_HD_DEVICE  "&Zune HD (for device)"
+    IDS_DEV_FEATURE_SMALL   "Feature Phone (sma&ll)"
+    IDS_DEV_FEATURE_LARGE   "&Feature Phone (large)"
+    IDS_DEV_AUDIO_ONLY      "&Audio only"
+    IDS_DEV_WIN7_720P       "Windows 7 (7&20p)"
+    IDS_DEV_WIN8_1080P      "Windows &8 (1080p)"
+END
+
+// ============================================================================
+// STRINGTABLE -- Credit templates
+// ============================================================================
+STRINGTABLE
+BEGIN
+    IDS_CREDIT_DIRECTED_BY  "DIRECTED BY"
+    IDS_CREDIT_NAME         "[Enter your name here]"
+    IDS_CREDIT_STARRING     "STARRING"
+    IDS_CREDIT_CAST         "[Enter your cast here]"
+    IDS_CREDIT_LOCATION     "FILMED ON LOCATION"
+    IDS_CREDIT_LOC_TEXT     "[Enter location here]"
+    IDS_CREDIT_SOUNDTRACK   "SOUNDTRACK"
+    IDS_CREDIT_SOUND_TEXT   "[Enter soundtrack info here]"
+    IDS_CREDIT_PRODUCED_BY  "PRODUCED BY"
+    IDS_CREDIT_DIRECTOR     "&Director"
+END
+
+// ============================================================================
+// STRINGTABLE -- Generic UI labels
+// ============================================================================
+STRINGTABLE
+BEGIN
+    IDS_LOADING             "Loading..."
+    IDS_LOADING_AUDIO       "Loading audio data"
+    IDS_BROWSE              "Browse..."
+    IDS_APPLY_TO_ALL        "Apply to all"
+    IDS_FIT_TO_MUSIC        "Fit to music"
+    IDS_FIT_PHOTOS          "Fit photos to music"
+    IDS_SAVE_CLOSE          "Save and Close"
+    IDS_CLOSE_NO_SAVE       "Close without Saving"
+    IDS_NO_THANKS           "No Thanks"
+    IDS_DELETE              "&Delete"
+    IDS_REMOVE              "&Remove"
+    IDS_ADD_VIDEOS          "&Add videos and photos"
+    IDS_ADD_MUSIC           "&Add music..."
+    IDS_ADD_SOUND           "&Add sound..."
+    IDS_ADD_TITLE           "Add &Title"
+END
+
+STRINGTABLE
+BEGIN
+    IDS_ADD_CREDITS         "Add &Credits"
+    IDS_ADD_EFFECTS         "&Multiple effects..."
+    IDS_PUBLISH             "&Publish movie"
+END
+
+// ============================================================================
+// STRINGTABLE -- Ribbon & tab labels
+// ============================================================================
+STRINGTABLE
+BEGIN
+    IDS_HOME_TAB            "Home"
+    IDS_ANIMATIONS_TAB      "Animations"
+    IDS_VISUAL_EFFECTS_TAB  "Visual Effects"
+    IDS_PROJECT_TAB         "Project"
+    IDS_VIEW_TAB            "View"
+    IDS_FORMAT_TAB          "Format"
+    IDS_EDIT_TAB            "Edit"
+    IDS_VIDEO_TOOLS         "Video Tools"
+    IDS_MUSIC_TOOLS         "Music Tools"
+    IDS_NARRATION_TOOLS     "Narration Tools"
+    IDS_TEXT_TOOLS          "Text Tools"
+    IDS_CAPTIONS_TOOLS      "Captions"
+    IDS_AUDIO_VIDEO         "Audio and Video"
+    IDS_AUDIO_MUSIC         "Audio and Music"
+    IDS_GENERAL_TAB         "General tab"
+    IDS_ADVANCED_TAB        "Advanced tab"
+    IDS_CAPTIONS_TAB        "Captions tab"
+    IDS_TRUST_CENTER_TAB    "Trust Center tab"
+    IDS_AUDIO_VIDEO_TAB    "Audio and Video tab"
+END
+
+// ============================================================================
+// STRINGTABLE -- Error messages
+// ============================================================================
+STRINGTABLE
+BEGIN
+    IDS_ERR_CRASH           "Sorry, Movie Maker had to shut down unexpectedly. Please restart it, and then try again. (Error: 0x%1!08X!)"
+    IDS_ERR_CMDLINE         "Movie Maker can't use the command line."
+    IDS_ERR_FILE_TYPE       "Movie Maker doesn't support the selected file type."
+    IDS_ERR_OPEN_PROJECT    "Sorry, Movie Maker can't open this project file. The file might not be compatible with Movie Maker or be corrupted."
+    IDS_ERR_FILE_NOT_FOUND  "Movie Maker can't find the media file."
+    IDS_ERR_CODEC           "Movie Maker can't use the media file. The file might require a codec that's not installed on this computer or be corrupted."
+    IDS_ERR_NETWORK_FOLDER  "Files can't be added directly from a network folder into Movie Maker."
+    IDS_ERR_REMOVABLE_DRIVE "Files can't be added directly from a removable drive into Movie Maker."
+    IDS_ERR_DRM             "Movie Maker can't use files that are protected with digital rights management."
+    IDS_ERR_INTERNET        "Files can't be added directly from the Internet."
+    IDS_ERR_AUDIO_CODEC     "The required codec for the audio in the file isn't installed on your computer."
+    IDS_ERR_DIRECTSHOW_CODEC "The DirectShow audio or video codec that is required for the file isn't installed on your computer."
+    IDS_ERR_OLD_CODEC       "The selected file requires an older audio or video codec that is no longer supported."
+    IDS_ERR_MPEG2_CODEC     "An MPEG-2 codec needs to be installed in order to use this file."
+END
+
+STRINGTABLE
+BEGIN
+    IDS_ERR_CANT_START      "Sorry, Movie Maker can't start. Make sure your computer meets the minimum system requirements..."
+    IDS_ERR_PUBLISH_PLUGIN  "Movie Maker can't publish your movie on the selected site. Make sure that the plug-in is installed."
+    IDS_ERR_FILE_TOO_LARGE  "This file might be too large to successfully upload to %s. You can try shortening it..."
+    IDS_ERR_PUBLISH_FAILED  "Your movie wasn't published successfully. Sorry, please try again later."
+    IDS_ERR_SERVICE_UNAVAIL "Sorry, the service is not currently available."
+    IDS_ERR_NO_PERMISSION   "Sorry, you don't have the appropriate permissions to publish to the location."
+    IDS_ERR_SAVE_PERMISSION "You don't have permission to save to this location."
+    IDS_ERR_CONTACT_ADMIN   "Contact the administrator to obtain permission."
+    IDS_ERR_MISSING_FILES   "A problem has occurred. There are missing or unusable files in your Movie Maker project..."
+    IDS_ERR_TIMEOUT         "Sorry, this is taking longer than expected. Do you want to cancel and close Movie Maker?"
+    IDS_ERR_DISK_FULL       "Sorry, your movie can't be saved. Free some space on the disk drive..."
+    IDS_ERR_OUT_OF_MEMORY   "Out of memory"
+    IDS_ERR_INVALID_FORMAT  "Invalid format"
+    IDS_ERR_UNKNOWN         "An unknown error occurred."
+END
+
+// ============================================================================
+// STRINGTABLE -- Status bar strings
+// ============================================================================
+STRINGTABLE
+BEGIN
+    IDS_STATUS_READY        "Ready"
+    IDS_STATUS_RENDERING    "Rendering..."
+    IDS_STATUS_PUBLISHING   "Publishing..."
+    IDS_STATUS_SAVING       "Saving..."
+    IDS_STATUS_ENCODING     "Encoding..."
+    IDS_STATUS_CANCEL       "Cancel"
+    IDS_STATUS_PROGRESS     "Progress bar"
+    IDS_STATUS_DETAILS      "Progress Details"
+    IDS_STATUS_DURATION     "Trimmed duration: %1"
+    IDS_STATUS_EST_SIZE     "Estimated movie file size: %1!s! MB"
+    IDS_STATUS_FREE_SPACE   "Free disk space: %2!s! MB"
+END
+
+// ============================================================================
+// STRINGTABLE -- File type descriptions
+// ============================================================================
+STRINGTABLE
+BEGIN
+    IDS_PROJECT_DESC        "Movie Maker Project"
+    IDS_SETTINGS_DESC       "Movie Maker Video Settings File"
+    IDS_FILE_WMA            "Windows Media Audio File"
+    IDS_FILE_WMV            "Windows Media Video File"
+    IDS_FILE_MP4_AUDIO      "MPEG-4/AAC Audio File"
+    IDS_FILE_MP4_VIDEO      "MPEG-4/H.264 Video File"
+    IDS_FILE_ALL            "All Files"
+END
+
+// ============================================================================
+// STRINGTABLE -- Webcam / capture
+// ============================================================================
+STRINGTABLE
+BEGIN
+    IDS_CAP_DEVICES         "Select an audio device and webcam"
+    IDS_CAP_WEBCAMS         "Available webcams:"
+    IDS_CAP_AUDIO_DEVICES   "Available audio devices:"
+    IDS_CAP_PREVIEW         "Webcam preview"
+    IDS_CAP_RECORDING       "Webcam recording indicator"
+    IDS_CAP_START_VIDEO     "Start recording video"
+    IDS_CAP_STOP_VIDEO      "Stop recording video"
+    IDS_CAP_START_NARRATION "Start recording narration"
+    IDS_CAP_STOP_NARRATION  "Stop recording narration"
+    IDS_CAP_NO_WEBCAM       "No webcam was found."
+    IDS_CAP_NO_AUDIO        "No audio device was found."
+    IDS_CAP_MAX_TIME        "Recording has stopped because the maximum time for recording has been reached."
+    IDS_CAP_MAX_RES         "Maximum Resolution:"
+END
+
+// ============================================================================
+// STRINGTABLE -- Publish / save settings
+// ============================================================================
+STRINGTABLE
+BEGIN
+    IDS_PUB_RECOMMENDED     "Recommended for this pro&ject"
+    IDS_PUB_HD_DISPLAY      "For &high-definition display"
+    IDS_PUB_COMPUTER        "For &computer"
+    IDS_PUB_CUSTOM          "Create Custom Setting"
+    IDS_SAVEAS_PROJECT      "Save project as"
+END
+
+// ============================================================================
+// STRINGTABLE -- Miscellaneous
+// ============================================================================
+STRINGTABLE
+BEGIN
+    IDS_VERSION_STRING      "Version 2012 (Build 16.4.3528.0331)"
+    IDS_COPYRIGHT           "\xa9 2012 Microsoft Corporation. All rights reserved."
+    IDS_JPEG_ACK            "Portions of this software are based in part on the work of the Independent JPEG Group."
+    IDS_TELEMETRY           "Allowing Microsoft to collect data about your computer and how you use applications helps us improve..."
+    IDS_FONT                "Segoe UI"
+    IDS_HELP_URL            "http://g.msn.com/5meen_us/122"
+    IDS_WL_ID               "Windows Live ID"
+    IDS_ASPECT_WIDE         "Aspect ratio: widescreen"
+    IDS_ASPECT_STD          "Aspect ratio: standard"
+    IDS_OPTIONS_TITLE       "Movie Maker Options"
+    IDS_ABOUT_TITLE         "About Movie Maker"
+END
+
+// ============================================================================
+// STRINGTABLE -- UI automation / accessibility labels
+// ============================================================================
+STRINGTABLE
+BEGIN
+    IDS_AUTO_TIMELINE       "Timeline Pane"
+    IDS_AUTO_STORYBOARD     "Storyboard"
+    IDS_AUTO_PREVIEW        "Preview"
+    IDS_AUTO_TEXT_BOX       "Text Box"
+    IDS_AUTO_TEXT_TRACK     "Text Track"
+    IDS_AUTO_MUSIC_TRACK    "Music Track"
+    IDS_AUTO_VISUALS_TRACK  "Visuals Track"
+    IDS_AUTO_AUDIO_TRACK    "Audio Track"
+    IDS_AUTO_CAPTIONS       "Captions"
+    IDS_AUTO_PLAYBACK       "Playback indicator"
+    IDS_AUTO_SCRUB          "Preview Scrub Slider"
+    IDS_AUTO_WAVEFORM       "Waveforms"
+    IDS_AUTO_TIME_ZOOM      "Time Zoom"
+    IDS_AUTO_TRIM_MARKERS   "Trim markers"
+    IDS_AUTO_TRIM_TOOL      "Trim tool"
+END
+
+// ============================================================================
+// STRINGTABLE -- Dialog prompts
+// ============================================================================
+STRINGTABLE
+BEGIN
+    IDS_DLG_NEW_PROJECT     "Create a new project?"
+    IDS_DLG_SAVE_PROJECT    "Do you want to save your project?"
+    IDS_DLG_EXIT_CONFIRM    "Are you sure you want to exit Movie Maker?"
+    IDS_DLG_DISCARD_CHANGES "Do you want to discard the changes?"
+    IDS_DLG_OVERWRITE_FILE  "A file with this name already exists. Do you want to overwrite it?"
+END

@@ -1,6 +1,6 @@
 set(TARGET MetadataSys)
 
-add_library(${TARGET} SHARED dllmain.cpp MetadataSys.cpp)
+add_library(${TARGET} SHARED dllmain.cpp MetadataSys.cpp MetadataSys.def)
 
 set_target_properties(${TARGET} PROPERTIES
     OUTPUT_NAME "MetadataSys"

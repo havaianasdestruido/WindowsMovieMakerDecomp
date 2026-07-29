@@ -198,6 +198,8 @@ set(DELAY_LOAD_LIBS
     DmxBici
     MetadataSys
     wlidcli
+    UXCore
+    uxctl
 )
 
 foreach(_dll ${DELAY_LOAD_LIBS})
@@ -209,7 +211,7 @@ target_link_libraries(${TARGET} PRIVATE delayimp)
 
 # Subsystem: WINDOWS (GUI application, not console)
 set_target_properties(${TARGET} PROPERTIES
-    LINK_FLAGS "/SUBSYSTEM:WINDOWS /DELAYLOAD:WLXPhotoSqm.dll /DELAYLOAD:DmxBici.dll /DELAYLOAD:MetadataSys.dll /DELAYLOAD:wlidcli.dll"
+    LINK_FLAGS "/SUBSYSTEM:WINDOWS /DELAYLOAD:WLXPhotoSqm.dll /DELAYLOAD:DmxBici.dll /DELAYLOAD:MetadataSys.dll /DELAYLOAD:wlidcli.dll /DELAYLOAD:UXCore.dll /DELAYLOAD:uxctl.dll"
 )
 
 # Output to bin/

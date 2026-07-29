@@ -1,0 +1,3 @@
+LIBRARY WLXPipetran
+EXPORTS
+    GetTFXCreateFunctions @1

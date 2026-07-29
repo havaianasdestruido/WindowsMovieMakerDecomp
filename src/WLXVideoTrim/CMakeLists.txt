@@ -9,6 +9,7 @@ set(TARGET WLXVideoTrim)
 add_library(${TARGET} SHARED
     dllmain.cpp
     WLXVideoTrim.cpp
+    WLXVideoTrim.def
 )
 
 set_target_properties(${TARGET} PROPERTIES

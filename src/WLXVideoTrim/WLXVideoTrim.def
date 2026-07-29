@@ -1,0 +1,7 @@
+LIBRARY WLXVideoTrim
+EXPORTS
+    CreateAVICopierDirect @1
+    CreateVideoCopierFromMediaType @2
+    CreateVideoFormatContextTranscoder @3
+    CreateVideoPlayer @4
+    CreateVideoWMVTranscoder @5

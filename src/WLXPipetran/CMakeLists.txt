@@ -8,6 +8,7 @@ set(TARGET WLXPipetran)
 add_library(${TARGET} SHARED
     dllmain.cpp
     WLXPipetran.cpp
+    WLXPipetran.def
 )
 
 set_target_properties(${TARGET} PROPERTIES

@@ -60,6 +60,7 @@ public:
     HRESULT OnClose();
     HRESULT OnDestroy();
     HRESULT OnNCDestroy();
+    HRESULT OnPaint();
     HRESULT OnSize(UINT type, int cx, int cy);
     HRESULT OnCommand(UINT ctrlId, UINT notifyCode, HWND hwndCtrl);
     HRESULT OnActivate(UINT state, HWND hwndOther, bool minimized);

@@ -15,6 +15,8 @@ struct PropertyInfo {
 
 class Value;
 
+class Layout;
+
 class __declspec(dllexport) Element {
 public:
     virtual ~Element();
@@ -70,6 +72,12 @@ public:
     // Focus
     HRESULT FocusElement();
 
+    // Rendering / painting
+    virtual HRESULT Paint(HDC hdc, RECT const* rcPaint);
+    virtual HRESULT OnPaint(HDC hdc, RECT const* rcPaint);
+    HRESULT Invalidate();
+    HRESULT InvalidateRect(RECT const* rc);
+
     // Static property pointers
     static PropertyInfo* FontSizeProp;
     static PropertyInfo* LayoutPosProp;
@@ -117,6 +125,11 @@ public:
     static PropertyInfo* LayoutModeInterfaceProp;
     static PropertyInfo* LayoutProp;
 
+    const RECT& GetRect() const { return m_rect; }
+    void SetRect(const RECT& r) { m_rect = r; }
+    Layout* GetLayout();
+    std::vector<Element*>& GetChildrenRef() { return m_children; }
+
 protected:
     std::vector<Element*> m_children;
     Element* m_parent = nullptr;
@@ -124,6 +137,15 @@ protected:
     Value* m_dataContext = nullptr;
     int m_layer = 0;
     int m_deferCount = 0;
+    RECT m_rect = {};        // Bounding rectangle (position + size)
+    bool m_visible = true;   // Visibility flag
+    bool m_dirty = true;     // Needs repaint
+
+    void _DestroyDC();
+    HDC m_hdcCache = nullptr;
+    HBITMAP m_hbmCache = nullptr;
+    SIZE m_cacheSize = {};
+    RECT m_dirtyRect = {};
 };
 
 #pragma warning(pop)

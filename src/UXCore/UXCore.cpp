@@ -1,36 +1,43 @@
 #include <windows.h>
 #include <ole2.h>
 #include <unknwn.h>
+#include <d2d1.h>
+#include <dwrite.h>
+#include <wincodec.h>
 
 #ifndef UNREFERENCED_PARAMETER
 #define UNREFERENCED_PARAMETER(p) (void)(p)
 #endif
 
-// Unique markers to prevent COMDAT folding
-static int g_InitProcess_mark = 100;
-static int g_InitThread_mark = 101;
-static int g_UnInitProcess_mark = 102;
-static int g_UnInitThread_mark = 103;
+static ID2D1Factory* g_pD2DFactory = nullptr;
+static IDWriteFactory* g_pDWriteFactory = nullptr;
+static IWICImagingFactory* g_pWICFactory = nullptr;
 
 // Process/Thread lifecycle
 extern "C" __declspec(dllexport) HRESULT __stdcall UXCoreInitProcess(void)
 {
-    return (g_InitProcess_mark > 0) ? S_OK : E_FAIL;
+    HRESULT hr = D2D1CreateFactory(D2D1_FACTORY_TYPE_SINGLE_THREADED, &g_pD2DFactory);
+    if (SUCCEEDED(hr))
+        hr = DWriteCreateFactory(DWRITE_FACTORY_TYPE_SHARED, __uuidof(IDWriteFactory), reinterpret_cast<IUnknown**>(&g_pDWriteFactory));
+    if (SUCCEEDED(hr))
+        hr = CoCreateInstance(CLSID_WICImagingFactory, nullptr, CLSCTX_INPROC_SERVER, __uuidof(IWICImagingFactory), reinterpret_cast<void**>(&g_pWICFactory));
+    return hr;
 }
 
 extern "C" __declspec(dllexport) HRESULT __stdcall UXCoreInitThread(void)
 {
-    return (g_InitThread_mark > 0) ? S_OK : E_FAIL;
+    return S_OK;
 }
 
 extern "C" __declspec(dllexport) void __stdcall UXCoreUnInitProcess(void)
 {
-    if (g_UnInitProcess_mark < 0) g_InitProcess_mark = 0;
+    if (g_pWICFactory) { g_pWICFactory->Release(); g_pWICFactory = nullptr; }
+    if (g_pDWriteFactory) { g_pDWriteFactory->Release(); g_pDWriteFactory = nullptr; }
+    if (g_pD2DFactory) { g_pD2DFactory->Release(); g_pD2DFactory = nullptr; }
 }
 
 extern "C" __declspec(dllexport) void __stdcall UXCoreUnInitThread(void)
 {
-    if (g_UnInitThread_mark < 0) g_InitThread_mark = 0;
 }
 
 // Class factory

@@ -150,11 +150,40 @@ HRESULT CDUIDialog::OnNCDestroy()
     return S_OK;
 }
 
+HRESULT CDUIDialog::OnPaint()
+{
+    if (!m_hwnd)
+        return S_OK;
+
+    PAINTSTRUCT ps;
+    HDC hdc = BeginPaint(m_hwnd, &ps);
+    if (!hdc)
+        return E_FAIL;
+
+    RECT clientRect;
+    GetClientRect(m_hwnd, &clientRect);
+
+    Paint(hdc, &clientRect);
+
+    EndPaint(m_hwnd, &ps);
+
+    return S_OK;
+}
+
 HRESULT CDUIDialog::OnSize(UINT type, int cx, int cy)
 {
     UNREFERENCED_PARAMETER(type);
-    UNREFERENCED_PARAMETER(cx);
-    UNREFERENCED_PARAMETER(cy);
+
+    m_rect.left = 0;
+    m_rect.top = 0;
+    m_rect.right = cx;
+    m_rect.bottom = cy;
+
+    _UpdateDesiredSize();
+    _UpdateLayoutSize();
+    _UpdateLayoutPosition();
+    Invalidate();
+
     return S_OK;
 }
 

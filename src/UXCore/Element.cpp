@@ -1,5 +1,6 @@
 #include "Element.h"
 #include "Value.h"
+#include "Layout.h"
 
 namespace DirectUI {
 
@@ -11,12 +12,8 @@ static int g_FocusElement_mark = 4;
 static int g_MapElementPoint_mark = 5;
 static int g_FindDescendent_mark = 6;
 static int g_EnableElement_mark = 7;
-static int g_ReleaseElementDC_mark = 8;
-static int g_GetElementDC_mark = 9;
+
 static int g_EndDefer_mark = 10;
-static int g_UpdateDesiredSize_mark = 11;
-static int g_UpdateLayoutSize_mark = 12;
-static int g_UpdateLayoutPosition_mark = 13;
 
 // Property info definitions
 PropertyInfo g_FontSizeProp =        { L"FontSize" };
@@ -114,7 +111,23 @@ PropertyInfo* Element::LayoutProp = &g_LayoutProp;
 // Destructor
 Element::~Element()
 {
+    _DestroyDC();
     DestroyAll();
+}
+
+void Element::_DestroyDC()
+{
+    if (m_hbmCache)
+    {
+        DeleteObject(m_hbmCache);
+        m_hbmCache = nullptr;
+    }
+    if (m_hdcCache)
+    {
+        DeleteDC(m_hdcCache);
+        m_hdcCache = nullptr;
+    }
+    m_cacheSize = {};
 }
 
 // Child management
@@ -235,17 +248,59 @@ HRESULT Element::EnsureVisible()
 // Layout
 void Element::_UpdateDesiredSize()
 {
-    if (g_UpdateDesiredSize_mark < 0) m_deferCount = 0;
+    Layout* layout = GetLayout();
+    if (layout)
+    {
+        SIZE available;
+        available.cx = m_rect.right - m_rect.left;
+        available.cy = m_rect.bottom - m_rect.top;
+        SIZE desired = layout->_GetDesiredSize(this, available);
+        SetValue(DesiredSizeProp, Value::CreateSize(desired));
+        return;
+    }
+    SIZE total = {0, 0};
+    for (auto* child : m_children)
+    {
+        child->_UpdateDesiredSize();
+        Value* dv = child->GetValue(DesiredSizeProp);
+        if (dv && dv->GetType() == Value::Size)
+        {
+            SIZE cs = dv->GetSize();
+            if (cs.cx > total.cx) total.cx = cs.cx;
+            total.cy += cs.cy;
+        }
+    }
+    if (total.cx == 0 && total.cy == 0)
+    {
+        total.cx = m_rect.right - m_rect.left;
+        total.cy = m_rect.bottom - m_rect.top;
+    }
+    SetValue(DesiredSizeProp, Value::CreateSize(total));
 }
 
 void Element::_UpdateLayoutSize()
 {
-    if (g_UpdateLayoutSize_mark < 0) m_layer = 0;
+    Layout* layout = GetLayout();
+    if (layout)
+    {
+        SIZE size;
+        size.cx = m_rect.right - m_rect.left;
+        size.cy = m_rect.bottom - m_rect.top;
+        layout->_DoLayout(this, size);
+    }
 }
 
 void Element::_UpdateLayoutPosition()
 {
-    if (g_UpdateLayoutPosition_mark < 0) m_parent = nullptr;
+    Invalidate();
+}
+
+Layout* Element::GetLayout()
+{
+    Value* val = GetValue(LayoutProp);
+    if (val && val->GetType() == Value::LayoutPtr)
+        return val->GetLayout();
+    return nullptr;
 }
 
 // Data context
@@ -295,21 +350,135 @@ HRESULT Element::MapElementPoint(Element* from, POINT* pt)
 // Device context
 HDC Element::GetElementDC(HDC hdc, RECT* rect)
 {
-    UNREFERENCED_PARAMETER(hdc);
-    UNREFERENCED_PARAMETER(rect);
-    return (g_GetElementDC_mark > 0) ? nullptr : NULL;
+    if (!rect)
+        return nullptr;
+
+    int width = rect->right - rect->left;
+    int height = rect->bottom - rect->top;
+
+    if (width <= 0 || height <= 0)
+        return nullptr;
+
+    if (m_hdcCache && m_cacheSize.cx == width && m_cacheSize.cy == height)
+        return m_hdcCache;
+
+    _DestroyDC();
+
+    HDC refDC = hdc ? hdc : GetDC(nullptr);
+    m_hdcCache = CreateCompatibleDC(refDC);
+    if (m_hdcCache)
+    {
+        m_hbmCache = CreateCompatibleBitmap(refDC, width, height);
+        if (m_hbmCache)
+        {
+            SelectObject(m_hdcCache, m_hbmCache);
+            m_cacheSize.cx = width;
+            m_cacheSize.cy = height;
+        }
+        else
+        {
+            DeleteDC(m_hdcCache);
+            m_hdcCache = nullptr;
+        }
+    }
+
+    if (!hdc)
+        ReleaseDC(nullptr, refDC);
+
+    return m_hdcCache;
 }
 
 HRESULT Element::ReleaseElementDC(HDC hdc)
 {
+    if (hdc == m_hdcCache)
+        return S_OK;
     UNREFERENCED_PARAMETER(hdc);
-    return (g_ReleaseElementDC_mark > 0) ? S_OK : E_FAIL;
+    return S_OK;
 }
 
 // Focus
 HRESULT Element::FocusElement()
 {
     return (g_FocusElement_mark > 0) ? E_NOTIMPL : S_OK;
+}
+
+// Rendering / painting
+HRESULT Element::Paint(HDC hdc, RECT const* rcPaint)
+{
+    if (!m_visible)
+        return S_OK;
+
+    if (IsRectEmpty(&m_rect))
+        return S_OK;
+
+    RECT intersectRect;
+    if (!IntersectRect(&intersectRect, rcPaint, &m_rect))
+        return S_OK;
+
+    HDC bufferDC = GetElementDC(hdc, const_cast<RECT*>(&m_rect));
+    if (!bufferDC)
+        return E_FAIL;
+
+    OnPaint(bufferDC, &m_rect);
+
+    BitBlt(hdc, m_rect.left, m_rect.top,
+           m_rect.right - m_rect.left, m_rect.bottom - m_rect.top,
+           bufferDC, 0, 0, SRCCOPY);
+
+    for (auto* child : m_children)
+    {
+        child->Paint(hdc, rcPaint);
+    }
+
+    return S_OK;
+}
+
+HRESULT Element::OnPaint(HDC hdc, RECT const* rcPaint)
+{
+    Value* bg = GetValue(BackgroundProp);
+    if (bg && bg->GetType() == Value::Color)
+    {
+        HBRUSH brush = CreateSolidBrush(bg->GetColor());
+        if (brush)
+        {
+            FillRect(hdc, rcPaint, brush);
+            DeleteObject(brush);
+        }
+    }
+
+    Value* border = GetValue(BorderColorProp);
+    if (border && border->GetType() == Value::Color)
+    {
+        HPEN pen = CreatePen(PS_SOLID, 1, border->GetColor());
+        if (pen)
+        {
+            HGDIOBJ oldPen = SelectObject(hdc, pen);
+            HGDIOBJ oldBrush = SelectObject(hdc, GetStockObject(NULL_BRUSH));
+            Rectangle(hdc, rcPaint->left, rcPaint->top,
+                      rcPaint->right, rcPaint->bottom);
+            SelectObject(hdc, oldPen);
+            SelectObject(hdc, oldBrush);
+            DeleteObject(pen);
+        }
+    }
+
+    return S_OK;
+}
+
+HRESULT Element::Invalidate()
+{
+    m_dirty = true;
+    if (m_parent)
+        m_parent->InvalidateRect(&m_rect);
+    return S_OK;
+}
+
+HRESULT Element::InvalidateRect(RECT const* rc)
+{
+    UnionRect(&m_dirtyRect, &m_dirtyRect, rc);
+    if (m_parent)
+        m_parent->InvalidateRect(rc);
+    return S_OK;
 }
 
 } // namespace DirectUI

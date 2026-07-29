@@ -49,6 +49,8 @@ public:
 
 class __declspec(dllexport) GridLayout : public Layout {
 public:
+    static PropertyInfo* GridColumnsProp;
+
     HRESULT _DoLayout(Element* element, SIZE layoutSize) override;
     SIZE _GetDesiredSize(Element* element, SIZE availableSize) override;
 };

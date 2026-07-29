@@ -1,0 +1,10 @@
+LIBRARY wlidcli
+
+EXPORTS
+    DummyFunc2 @2
+    DummyFunc3 @3
+    DummyFunc8 @8
+    DummyFunc29 @29
+    DummyFunc41 @41
+    DummyFunc108 @108
+    DummyFunc113 @113

@@ -425,18 +425,27 @@ HRESULT PlaybackController::CreateSession()
     CComPtr<IMFTopology> spTopology;
     hr = MFCreateTopology(&spTopology);
     if (FAILED(hr))
+    {
+        ShutdownSession();
         return hr;
+    }
 
     // Get the presentation descriptor to determine the stream count
     CComPtr<IMFPresentationDescriptor> spPD;
     hr = m_spSource->CreatePresentationDescriptor(&spPD);
     if (FAILED(hr))
+    {
+        ShutdownSession();
         return hr;
+    }
 
     DWORD cStreams = 0;
     hr = spPD->GetStreamDescriptorCount(&cStreams);
     if (FAILED(hr))
+    {
+        ShutdownSession();
         return hr;
+    }
 
     for (DWORD i = 0; i < cStreams; ++i)
     {

@@ -261,6 +261,8 @@ ThemeMid::ThemeMid()
 
 ThemeMid::~ThemeMid()
 {
+    delete m_pDefaultEffectTemplate;
+    delete m_pDefaultTransition;
     for (size_t i = 0; i < m_arrTracks.GetCount(); ++i)
         delete m_arrTracks.GetAt(i);
     m_arrTracks.RemoveAll();
@@ -297,11 +299,11 @@ void ThemeMid::RemoveAllTracks()
 
 ThemeEffectTemplate* ThemeMid::GetDefaultEffectTemplate() { return m_pDefaultEffectTemplate; }
 const ThemeEffectTemplate* ThemeMid::GetDefaultEffectTemplate() const { return m_pDefaultEffectTemplate; }
-void ThemeMid::SetDefaultEffectTemplate(ThemeEffectTemplate* pTemplate) { m_pDefaultEffectTemplate = pTemplate; }
+void ThemeMid::SetDefaultEffectTemplate(ThemeEffectTemplate* pTemplate) { if (m_pDefaultEffectTemplate && m_pDefaultEffectTemplate != pTemplate) delete m_pDefaultEffectTemplate; m_pDefaultEffectTemplate = pTemplate; }
 
 ThemeTransition* ThemeMid::GetDefaultTransition() { return m_pDefaultTransition; }
 const ThemeTransition* ThemeMid::GetDefaultTransition() const { return m_pDefaultTransition; }
-void ThemeMid::SetDefaultTransition(ThemeTransition* pTransition) { m_pDefaultTransition = pTransition; }
+void ThemeMid::SetDefaultTransition(ThemeTransition* pTransition) { if (m_pDefaultTransition && m_pDefaultTransition != pTransition) delete m_pDefaultTransition; m_pDefaultTransition = pTransition; }
 
 bool ThemeMid::IsLooping() const throw() { return m_fLooping; }
 void ThemeMid::SetLooping(bool fLooping) throw() { m_fLooping = fLooping; }

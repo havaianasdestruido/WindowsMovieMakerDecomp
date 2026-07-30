@@ -199,8 +199,10 @@ bool SerializationReader::IsVersionSupported(const SerializationVersion& ver) co
 {
     static const SerializationVersion kMinVersion(1, 0);
     static const SerializationVersion kMaxVersion(2, 0);
-    return (ver >= kMinVersion) && !(ver >= kMaxVersion);
+    // Accept only [1.0, 2.0) inclusive lower bound, exclusive upper bound
+    return (ver >= kMinVersion) && (ver < kMaxVersion);
 }
+
 
 HRESULT SerializationReader::MigrateVersion(SerializationContext& ctx)
 {
@@ -432,6 +434,8 @@ HRESULT SerializationReader::ParseElement(IXmlReader* pReader, MovieProject* pPr
     else if (ctx.GetElementDepth() > 1)
     {
         SkipCurrentElement(pReader);
+        ctx.DecrementDepth();
+        return S_OK;
     }
 
     if (SUCCEEDED(hr))

@@ -166,6 +166,10 @@ SundanceAppMain::SundanceAppMain()
     , m_pSqmLogger(NULL)
     , m_pTelemetrySession(NULL)
     , m_pDataContext(NULL)
+    , m_pGPURenderer(NULL)
+    , m_pPlaybackEngine(NULL)
+    , m_pTimelineEngine(NULL)
+    , m_pTimelineDispatcher(NULL)
     , m_hSingleInstanceMutex(NULL)
 {
     ATLASSERT(g_pSundanceAppMain == NULL);
@@ -408,10 +412,21 @@ HRESULT SundanceAppMain::InitializeSubsystems()
 
     // New engine modules
     m_pGPURenderer = new (std::nothrow) DirectUI::GPURenderer();
+    if (!m_pGPURenderer)
+        return E_OUTOFMEMORY;
+
     m_pPlaybackEngine = new (std::nothrow) DirectUI::PlaybackEngine(m_pGPURenderer);
+    if (!m_pPlaybackEngine)
+        return E_OUTOFMEMORY;
+
     m_pTimelineEngine = new (std::nothrow) TimelineEngine();
+    if (!m_pTimelineEngine)
+        return E_OUTOFMEMORY;
+
     m_pTimelineDispatcher = new (std::nothrow) TimelineDispatcher(
         m_pTimelineEngine, m_pPlaybackEngine, nullptr);
+    if (!m_pTimelineDispatcher)
+        return E_OUTOFMEMORY;
 
     return S_OK;
 }
@@ -1215,6 +1230,8 @@ void SundanceAppMain::OnMainWindowCreated(HWND hWnd)
 
 void SundanceAppMain::OnMainWindowDestroyed()
 {
+    if (m_pMediaBrowser)
+        m_pMediaBrowser->SetOwnerWindow(NULL);
     m_hWndMain = NULL;
 }
 

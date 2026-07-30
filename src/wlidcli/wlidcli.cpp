@@ -1,7 +1,7 @@
 #include <windows.h>
 #include <ole2.h>
 
-static BOOL g_bSignedIn = FALSE;
+static volatile LONG g_bSignedIn = 0;
 static DWORD g_dwNextHandle = 0x1000;
 
 static const WCHAR g_wszTicket[] = L"ticket=st%3d1%26token%3dWLID_SIMULATED_TOKEN";

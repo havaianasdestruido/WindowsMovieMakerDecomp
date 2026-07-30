@@ -841,7 +841,7 @@ void PreviewPresenterWrapper::DoRenderLoop()
             continue;
         }
 
-        if (m_state == PreviewStatePlaying || m_state == PreviewStatePaused)
+        if (m_state == PreviewStatePlaying)
         {
             RenderCurrentFrame();
         }

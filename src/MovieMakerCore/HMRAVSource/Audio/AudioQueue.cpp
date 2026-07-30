@@ -51,7 +51,13 @@ HRESULT AudioQueue::Initialize(DWORD dwMaxItems)
     m_hEventShutdown = CreateEvent(nullptr, TRUE, FALSE, nullptr);
 
     if (!m_hEventItemAvailable || !m_hEventShutdown)
+    {
+        if (m_hEventItemAvailable) CloseHandle(m_hEventItemAvailable);
+        m_hEventItemAvailable = nullptr;
+        if (m_hEventShutdown) CloseHandle(m_hEventShutdown);
+        m_hEventShutdown = nullptr;
         return E_OUTOFMEMORY;
+    }
 
     m_fInitialized = true;
     return S_OK;
@@ -64,12 +70,16 @@ HRESULT AudioQueue::Shutdown()
 
     SignalShutdown();
 
+    EnterCriticalSection(&m_cs);
+
     if (m_hEventItemAvailable) { CloseHandle(m_hEventItemAvailable); m_hEventItemAvailable = nullptr; }
     if (m_hEventShutdown) { CloseHandle(m_hEventShutdown); m_hEventShutdown = nullptr; }
 
     m_arrItems.RemoveAll();
     m_dwCount = 0;
     m_fInitialized = false;
+
+    LeaveCriticalSection(&m_cs);
     return S_OK;
 }
 

@@ -154,6 +154,7 @@ HRESULT AudioDuckingProcessor::UpdateNarrationLevel(const float* pNarrationSampl
                                                      DWORD dwFrameCount)
 {
     if (!m_fInitialized) return E_FAIL;
+    if (!pNarrationSamples) return E_INVALIDARG;
 
     if (m_pDuckingSource)
     {

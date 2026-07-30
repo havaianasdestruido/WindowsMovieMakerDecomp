@@ -508,6 +508,8 @@ HRESULT PreviewPresenterWrapper::StopPreview()
     if (!m_fPreviewActive)
         return S_FALSE;
 
+    m_state = PreviewStateStopped;
+
     StopTimer();
 
     if (m_hStopEvent)

@@ -116,6 +116,8 @@ HRESULT TimelineController::GoToEnd()
 // ============================================================================
 HRESULT TimelineController::SetDuration(LONGLONG llDurationMs)
 {
+    std::lock_guard<std::recursive_mutex> lock(m_mutex);
+
     if (llDurationMs < 0)
         return E_INVALIDARG;
 
@@ -135,6 +137,8 @@ HRESULT TimelineController::SetDuration(LONGLONG llDurationMs)
 // ============================================================================
 HRESULT TimelineController::SetZoomLevel(float flZoomLevel)
 {
+    std::lock_guard<std::recursive_mutex> lock(m_mutex);
+
     if (flZoomLevel <= 0.0f)
         return E_INVALIDARG;
 
@@ -155,6 +159,8 @@ HRESULT TimelineController::SetZoomLevel(float flZoomLevel)
 // ============================================================================
 HRESULT TimelineController::ZoomIn(float flZoomFactor)
 {
+    std::lock_guard<std::recursive_mutex> lock(m_mutex);
+
     if (flZoomFactor <= 1.0f)
         return E_INVALIDARG;
 

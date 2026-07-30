@@ -1170,9 +1170,6 @@ void PreviewPresenterWrapper::OnTimer()
     }
 }
 
-    // Dead callback removed – SetTimer uses WM_TIMER message path
-    // void CALLBACK PreviewPresenterWrapper::OnPlaybackTimer(UINT, UINT, DWORD_PTR, DWORD_PTR, DWORD_PTR) {}
-
 
 DWORD PreviewPresenterWrapper::CalculateFrameIntervalMs() const
 {

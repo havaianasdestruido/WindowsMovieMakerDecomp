@@ -709,6 +709,21 @@ HRESULT SerializationReader::ReadMediaItems(IXmlReader* pReader, MovieProject* p
                 if (SUCCEEDED(hr) && pszValue)
                     item.SetFrameRate(_wtol(pszValue));
 
+                if (FAILED(hr))
+                    return hr; // propagate error for truncated/corrupt files
+
+                pProject->AddMediaItem(item);
+            }
+        }
+    }
+
+    return hr;
+}
+
+                hr = XmlReaderGetAttribute(pReader, L"frameRate", &pszValue);
+                if (SUCCEEDED(hr) && pszValue)
+                    item.SetFrameRate(_wtol(pszValue));
+
                 pProject->AddMediaItem(item);
             }
         }

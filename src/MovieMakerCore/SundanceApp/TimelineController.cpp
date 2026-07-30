@@ -45,6 +45,13 @@ HRESULT TimelineController::SeekTo(LONGLONG llPositionMs)
 // ============================================================================
 HRESULT TimelineController::SeekRelative(LONGLONG llOffsetMs)
 {
+    std::lock_guard<std::recursive_mutex> lock(m_mutex);
+
+    if (llOffsetMs > 0 && m_llCurrentPositionMs > LLONG_MAX - llOffsetMs)
+        return SeekTo(LLONG_MAX);
+    if (llOffsetMs < 0 && m_llCurrentPositionMs < LLONG_MIN - llOffsetMs)
+        return SeekTo(LLONG_MIN);
+
     return SeekTo(m_llCurrentPositionMs + llOffsetMs);
 }
 
@@ -56,16 +63,26 @@ HRESULT TimelineController::SeekRelative(LONGLONG llOffsetMs)
 // ============================================================================
 HRESULT TimelineController::StepForward(LONGLONG llStepMs)
 {
+    std::lock_guard<std::recursive_mutex> lock(m_mutex);
+
     if (llStepMs <= 0)
         return E_INVALIDARG;
+
+    if (m_llCurrentPositionMs > LLONG_MAX - llStepMs)
+        return SeekTo(LLONG_MAX);
 
     return SeekTo(m_llCurrentPositionMs + llStepMs);
 }
 
 HRESULT TimelineController::StepBackward(LONGLONG llStepMs)
 {
+    std::lock_guard<std::recursive_mutex> lock(m_mutex);
+
     if (llStepMs <= 0)
         return E_INVALIDARG;
+
+    if (m_llCurrentPositionMs < LLONG_MIN + llStepMs)
+        return SeekTo(0);
 
     return SeekTo(m_llCurrentPositionMs - llStepMs);
 }
@@ -77,12 +94,16 @@ HRESULT TimelineController::StepBackward(LONGLONG llStepMs)
 // ============================================================================
 HRESULT TimelineController::GoToStart()
 {
+    std::lock_guard<std::recursive_mutex> lock(m_mutex);
+
     m_llCurrentPositionMs = 0;
     return S_OK;
 }
 
 HRESULT TimelineController::GoToEnd()
 {
+    std::lock_guard<std::recursive_mutex> lock(m_mutex);
+
     m_llCurrentPositionMs = m_llDurationMs;
     return S_OK;
 }

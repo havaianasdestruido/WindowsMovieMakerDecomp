@@ -550,19 +550,18 @@ LONGLONG PlaybackController::GetCurrentPositionHns() const
     if (!m_spSession)
         return m_llPositionMs * 10000;
 
-    IMFClock* pClock = NULL;
-    HRESULT hr = m_spSession->GetClock(&pClock);
-    if (FAILED(hr) || !pClock)
+    CComPtr<IMFClock> spClock;
+    HRESULT hr = m_spSession->GetClock(&spClock);
+    if (FAILED(hr) || !spClock)
         return m_llPositionMs * 10000;
 
     MFCLOCK_STATE clockState;
-    hr = pClock->GetState(0, &clockState);
+    hr = spClock->GetState(0, &clockState);
     LONGLONG llTime = 0;
     if (SUCCEEDED(hr) && clockState == MFCLOCK_STATE_RUNNING)
     {
-        hr = pClock->GetCorrelatedTime(0, &llTime, nullptr);
+        hr = spClock->GetCorrelatedTime(0, &llTime, nullptr);
     }
-    pClock->Release();
 
     if (FAILED(hr))
         return m_llPositionMs * 10000;

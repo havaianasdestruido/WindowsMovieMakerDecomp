@@ -57,7 +57,7 @@ void CommandLineParser::Reset()
 // ============================================================================
 bool CommandLineParser::IsSwitch(LPCWSTR pszArg) const
 {
-    return pszArg && (pszArg[0] == L'/' || pszArg[0] == L'-');
+    return pszArg && pszArg[0] != L'\0' && (pszArg[0] == L'/' || pszArg[0] == L'-');
 }
 
 bool CommandLineParser::MatchSwitch(LPCWSTR pszArg, LPCWSTR pszSwitch) const

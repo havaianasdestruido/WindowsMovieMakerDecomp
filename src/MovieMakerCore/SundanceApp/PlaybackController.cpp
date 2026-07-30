@@ -79,6 +79,12 @@ HRESULT PlaybackController::OpenFile(LPCWSTR pszFilePath)
             m_spSource->Shutdown();
             m_spSource.Release();
         }
+        if (m_spSession)
+        {
+            m_spSession->Close();
+            m_spSession->Shutdown();
+            m_spSession.Release();
+        }
         return hr;
     }
 

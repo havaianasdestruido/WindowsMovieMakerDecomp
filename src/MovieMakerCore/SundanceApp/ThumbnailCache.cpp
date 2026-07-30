@@ -3,8 +3,16 @@
 
 extern IWICImagingFactory* MovieCore_GetWICFactory(void);
 
-ThumbnailCache::ThumbnailCache() {}
-ThumbnailCache::~ThumbnailCache() { Clear(); }
+ThumbnailCache::ThumbnailCache()
+{
+    InitializeCriticalSection(&m_cs);
+}
+
+ThumbnailCache::~ThumbnailCache()
+{
+    Clear();
+    DeleteCriticalSection(&m_cs);
+}
 
 HBITMAP ThumbnailCache::GetThumbnail(LPCWSTR pszPath)
 {
@@ -12,13 +20,60 @@ HBITMAP ThumbnailCache::GetThumbnail(LPCWSTR pszPath)
         return NULL;
 
     std::wstring key(pszPath);
-    std::map<std::wstring, HBITMAP>::iterator it = m_cache.find(key);
+
+    EnterCriticalSection(&m_cs);
+
+    std::map<std::wstring, CacheEntry>::iterator it = m_cache.find(key);
     if (it != m_cache.end())
-        return it->second;
+    {
+        if (!IsFileStale(pszPath, it->second.lastWriteTime))
+        {
+            m_lruOrder.erase(it->second.lruIter);
+            m_lruOrder.push_front(key);
+            it->second.lruIter = m_lruOrder.begin();
+            HBITMAP hBitmap = it->second.hBitmap;
+            LeaveCriticalSection(&m_cs);
+            return hBitmap;
+        }
+        DeleteObject(it->second.hBitmap);
+        m_lruOrder.erase(it->second.lruIter);
+        m_cache.erase(it);
+    }
+
+    LeaveCriticalSection(&m_cs);
 
     HBITMAP hBitmap = GenerateThumbnail(pszPath);
-    if (hBitmap)
-        m_cache[key] = hBitmap;
+    if (!hBitmap)
+        return NULL;
+
+    FILETIME ftWrite = {};
+    WIN32_FILE_ATTRIBUTE_DATA fad;
+    if (GetFileAttributesExW(pszPath, GetFileExInfoStandard, &fad))
+        ftWrite = fad.ftLastWriteTime;
+
+    EnterCriticalSection(&m_cs);
+
+    it = m_cache.find(key);
+    if (it != m_cache.end())
+    {
+        DeleteObject(hBitmap);
+        HBITMAP cached = it->second.hBitmap;
+        m_lruOrder.erase(it->second.lruIter);
+        m_lruOrder.push_front(key);
+        it->second.lruIter = m_lruOrder.begin();
+        LeaveCriticalSection(&m_cs);
+        return cached;
+    }
+
+    CacheEntry entry;
+    entry.hBitmap = hBitmap;
+    entry.lastWriteTime = ftWrite;
+    m_lruOrder.push_front(key);
+    entry.lruIter = m_lruOrder.begin();
+    m_cache[key] = entry;
+    EvictOldest();
+
+    LeaveCriticalSection(&m_cs);
 
     return hBitmap;
 }
@@ -30,17 +85,36 @@ HRESULT ThumbnailCache::AddThumbnail(LPCWSTR pszPath, HBITMAP hBitmap)
 
     std::wstring key(pszPath);
 
-    std::map<std::wstring, HBITMAP>::iterator it = m_cache.find(key);
+    FILETIME ftWrite = {};
+    WIN32_FILE_ATTRIBUTE_DATA fad;
+    if (GetFileAttributesExW(pszPath, GetFileExInfoStandard, &fad))
+        ftWrite = fad.ftLastWriteTime;
+
+    EnterCriticalSection(&m_cs);
+
+    std::map<std::wstring, CacheEntry>::iterator it = m_cache.find(key);
     if (it != m_cache.end())
     {
-        if (it->second)
-            DeleteObject(it->second);
-        it->second = hBitmap;
+        if (it->second.hBitmap)
+            DeleteObject(it->second.hBitmap);
+        it->second.hBitmap = hBitmap;
+        it->second.lastWriteTime = ftWrite;
+        m_lruOrder.erase(it->second.lruIter);
+        m_lruOrder.push_front(key);
+        it->second.lruIter = m_lruOrder.begin();
     }
     else
     {
-        m_cache[key] = hBitmap;
+        CacheEntry entry;
+        entry.hBitmap = hBitmap;
+        entry.lastWriteTime = ftWrite;
+        m_lruOrder.push_front(key);
+        entry.lruIter = m_lruOrder.begin();
+        m_cache[key] = entry;
+        EvictOldest();
     }
+
+    LeaveCriticalSection(&m_cs);
 
     return S_OK;
 }
@@ -51,25 +125,40 @@ HRESULT ThumbnailCache::RemoveThumbnail(LPCWSTR pszPath)
         return E_INVALIDARG;
 
     std::wstring key(pszPath);
-    std::map<std::wstring, HBITMAP>::iterator it = m_cache.find(key);
-    if (it == m_cache.end())
-        return S_FALSE;
 
-    if (it->second)
-        DeleteObject(it->second);
+    EnterCriticalSection(&m_cs);
+
+    std::map<std::wstring, CacheEntry>::iterator it = m_cache.find(key);
+    if (it == m_cache.end())
+    {
+        LeaveCriticalSection(&m_cs);
+        return S_FALSE;
+    }
+
+    if (it->second.hBitmap)
+        DeleteObject(it->second.hBitmap);
+    m_lruOrder.erase(it->second.lruIter);
     m_cache.erase(it);
+
+    LeaveCriticalSection(&m_cs);
+
     return S_OK;
 }
 
 void ThumbnailCache::Clear()
 {
-    for (std::map<std::wstring, HBITMAP>::iterator it = m_cache.begin();
+    EnterCriticalSection(&m_cs);
+
+    for (std::map<std::wstring, CacheEntry>::iterator it = m_cache.begin();
          it != m_cache.end(); ++it)
     {
-        if (it->second)
-            DeleteObject(it->second);
+        if (it->second.hBitmap)
+            DeleteObject(it->second.hBitmap);
     }
     m_cache.clear();
+    m_lruOrder.clear();
+
+    LeaveCriticalSection(&m_cs);
 }
 
 void ThumbnailCache::InvalidateAll()
@@ -79,7 +168,38 @@ void ThumbnailCache::InvalidateAll()
 
 size_t ThumbnailCache::GetCount() const throw()
 {
-    return m_cache.size();
+    EnterCriticalSection(&m_cs);
+    size_t count = m_cache.size();
+    LeaveCriticalSection(&m_cs);
+    return count;
+}
+
+void ThumbnailCache::EvictOldest()
+{
+    while (m_cache.size() > MAX_CACHE_SIZE && !m_lruOrder.empty())
+    {
+        std::wstring oldest = m_lruOrder.back();
+        m_lruOrder.pop_back();
+        std::map<std::wstring, CacheEntry>::iterator it = m_cache.find(oldest);
+        if (it != m_cache.end())
+        {
+            if (it->second.hBitmap)
+                DeleteObject(it->second.hBitmap);
+            m_cache.erase(it);
+        }
+    }
+}
+
+bool ThumbnailCache::IsFileStale(LPCWSTR pszPath, const FILETIME& cachedTime) const
+{
+    if (cachedTime.dwLowDateTime == 0 && cachedTime.dwHighDateTime == 0)
+        return false;
+
+    WIN32_FILE_ATTRIBUTE_DATA fad;
+    if (!GetFileAttributesExW(pszPath, GetFileExInfoStandard, &fad))
+        return true;
+
+    return CompareFileTime(&fad.ftLastWriteTime, &cachedTime) > 0;
 }
 
 HBITMAP ThumbnailCache::GenerateThumbnail(LPCWSTR pszPath)

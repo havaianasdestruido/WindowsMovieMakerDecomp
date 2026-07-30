@@ -485,7 +485,10 @@ HRESULT PlaybackController::CreateSession()
 
     hr = m_spSession->SetTopology(0, spTopology);
     if (FAILED(hr))
+    {
+        ShutdownSession();
         return hr;
+    }
 
     // Note: IMFSimpleAudioVolume is obtained from the audio output node
     // in the topology. For now, volume operations are tracked locally and

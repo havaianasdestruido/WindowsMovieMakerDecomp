@@ -15,7 +15,7 @@ HRESULT __stdcall WLClogin(HWND hwndParent, LPCWSTR szCred, DWORD dwFlags, LPVOI
     UNREFERENCED_PARAMETER(hwndParent);
     UNREFERENCED_PARAMETER(szCred);
     UNREFERENCED_PARAMETER(dwFlags);
-    g_bSignedIn = TRUE;
+    InterlockedExchange(&g_bSignedIn, 1);
     if (ppvAuthState)
         *ppvAuthState = &g_bSignedIn;
     return S_OK;
@@ -24,7 +24,7 @@ HRESULT __stdcall WLClogin(HWND hwndParent, LPCWSTR szCred, DWORD dwFlags, LPVOI
 HRESULT __stdcall WLCheckCredentials(LPCWSTR szCred)
 {
     UNREFERENCED_PARAMETER(szCred);
-    g_bSignedIn = TRUE;
+    InterlockedExchange(&g_bSignedIn, 1);
     return S_OK;
 }
 
@@ -48,7 +48,7 @@ HRESULT __stdcall WLGetTicket(DWORD dwHandle, LPWSTR* ppszTicket)
 BOOL __stdcall WLIsSignedIn(DWORD dwHandle)
 {
     UNREFERENCED_PARAMETER(dwHandle);
-    return g_bSignedIn ? TRUE : FALSE;
+    return InterlockedCompareExchange(&g_bSignedIn, 0, 0) ? TRUE : FALSE;
 }
 
 void __stdcall WLFreeMemory(LPVOID pv)

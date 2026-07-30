@@ -4,6 +4,7 @@
 
 #include "../pch.h"
 #include "../MovieMakerCore.h"
+#include <list>
 
 class ThumbnailCache
 {
@@ -24,8 +25,20 @@ private:
 
     HBITMAP GenerateThumbnail(LPCWSTR pszPath);
     static HBITMAP CreateHBitmapFromFrame(BYTE* pbFrameData, UINT uWidth, UINT uHeight);
+    void EvictOldest();
+    bool IsFileStale(LPCWSTR pszPath, const FILETIME& cachedTime) const;
 
-    std::map<std::wstring, HBITMAP> m_cache;
+    struct CacheEntry
+    {
+        HBITMAP hBitmap;
+        FILETIME lastWriteTime;
+        std::list<std::wstring>::iterator lruIter;
+    };
+
+    static const size_t MAX_CACHE_SIZE = 200;
+    mutable CRITICAL_SECTION m_cs;
+    std::map<std::wstring, CacheEntry> m_cache;
+    std::list<std::wstring> m_lruOrder;
 };
 
 #endif

@@ -325,12 +325,21 @@ HRESULT Theme::LoadFromStream(IStream* pStream)
     CComPtr<IXmlReader> spReader;
     HRESULT hr = CreateXmlReader(__uuidof(IXmlReader), reinterpret_cast<void**>(&spReader), nullptr);
     if (FAILED(hr))
+    {
+        m_loadState = ThemeLoadStateError;
         return hr;
+    }
 
-    spReader->SetInput(pStream);
+    hr = spReader->SetInput(pStream);
+    if (FAILED(hr))
+    {
+        m_loadState = ThemeLoadStateError;
+        return hr;
+    }
 
     XmlNodeType nodeType;
-    while (spReader->Read(&nodeType) == S_OK)
+    HRESULT hrRead = S_OK;
+    while ((hrRead = spReader->Read(&nodeType)) == S_OK)
     {
         if (nodeType == XmlNodeType_Element)
         {
@@ -395,34 +404,55 @@ HRESULT Theme::LoadFromStream(IStream* pStream)
             if (wcscmp(pwszLocalName, L"intro") == 0)
             {
                 ThemeIntro* pIntro = new ThemeIntro();
-                pIntro->LoadFromXml(spReader);
-                SetIntro(pIntro);
+                hr = pIntro->LoadFromXml(spReader);
+                if (SUCCEEDED(hr))
+                    SetIntro(pIntro);
+                else
+                    delete pIntro;
             }
             else if (wcscmp(pwszLocalName, L"mid") == 0)
             {
                 ThemeMid* pMid = new ThemeMid();
-                pMid->LoadFromXml(spReader);
-                SetMid(pMid);
+                hr = pMid->LoadFromXml(spReader);
+                if (SUCCEEDED(hr))
+                    SetMid(pMid);
+                else
+                    delete pMid;
             }
             else if (wcscmp(pwszLocalName, L"outro") == 0)
             {
                 ThemeOutro* pOutro = new ThemeOutro();
-                pOutro->LoadFromXml(spReader);
-                SetOutro(pOutro);
+                hr = pOutro->LoadFromXml(spReader);
+                if (SUCCEEDED(hr))
+                    SetOutro(pOutro);
+                else
+                    delete pOutro;
             }
             else if (wcscmp(pwszLocalName, L"effectTemplate") == 0)
             {
                 ThemeEffectTemplate* pEffTpl = new ThemeEffectTemplate();
-                pEffTpl->LoadFromXml(spReader);
-                AddEffectTemplate(pEffTpl);
+                hr = pEffTpl->LoadFromXml(spReader);
+                if (SUCCEEDED(hr))
+                    AddEffectTemplate(pEffTpl);
+                else
+                    delete pEffTpl;
             }
             else if (wcscmp(pwszLocalName, L"transition") == 0)
             {
                 ThemeTransition* pTrans = new ThemeTransition();
-                pTrans->LoadFromXml(spReader);
-                AddTransitionTemplate(pTrans);
+                hr = pTrans->LoadFromXml(spReader);
+                if (SUCCEEDED(hr))
+                    AddTransitionTemplate(pTrans);
+                else
+                    delete pTrans;
             }
         }
+    }
+
+    if (FAILED(hrRead))
+    {
+        m_loadState = ThemeLoadStateError;
+        return hrRead;
     }
 
     m_loadState = ThemeLoadStateLoaded;

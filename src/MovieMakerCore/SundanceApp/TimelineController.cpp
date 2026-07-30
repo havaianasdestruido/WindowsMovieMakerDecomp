@@ -169,6 +169,8 @@ HRESULT TimelineController::ZoomIn(float flZoomFactor)
 
 HRESULT TimelineController::ZoomOut(float flZoomFactor)
 {
+    std::lock_guard<std::recursive_mutex> lock(m_mutex);
+
     if (flZoomFactor <= 0.0f || flZoomFactor >= 1.0f)
         return E_INVALIDARG;
 
@@ -182,6 +184,8 @@ HRESULT TimelineController::ZoomOut(float flZoomFactor)
 // ============================================================================
 HRESULT TimelineController::ResetZoom()
 {
+    std::lock_guard<std::recursive_mutex> lock(m_mutex);
+
     m_flZoomLevel = 1.0f;
     return S_OK;
 }
@@ -194,6 +198,8 @@ HRESULT TimelineController::ResetZoom()
 // ============================================================================
 HRESULT TimelineController::SetZoomRange(float flMinZoom, float flMaxZoom)
 {
+    std::lock_guard<std::recursive_mutex> lock(m_mutex);
+
     if (flMinZoom <= 0.0f || flMaxZoom <= 0.0f)
         return E_INVALIDARG;
     if (flMinZoom > flMaxZoom)
@@ -213,18 +219,21 @@ HRESULT TimelineController::SetZoomRange(float flMinZoom, float flMaxZoom)
 // ============================================================================
 // GetCurrentPosition / GetDuration / GetZoomLevel
 // ============================================================================
-LONGLONG TimelineController::GetCurrentPosition() const throw()
+LONGLONG TimelineController::GetCurrentPosition() const
 {
+    std::lock_guard<std::recursive_mutex> lock(m_mutex);
     return m_llCurrentPositionMs;
 }
 
-LONGLONG TimelineController::GetDuration() const throw()
+LONGLONG TimelineController::GetDuration() const
 {
+    std::lock_guard<std::recursive_mutex> lock(m_mutex);
     return m_llDurationMs;
 }
 
-float TimelineController::GetZoomLevel() const throw()
+float TimelineController::GetZoomLevel() const
 {
+    std::lock_guard<std::recursive_mutex> lock(m_mutex);
     return m_flZoomLevel;
 }
 
@@ -235,8 +244,10 @@ float TimelineController::GetZoomLevel() const throw()
 // position. At 1.0x zoom the full duration is visible; higher zoom
 // levels show a narrower window centered on the cursor.
 // ============================================================================
-LONGLONG TimelineController::GetVisibleStartMs() const throw()
+LONGLONG TimelineController::GetVisibleStartMs() const
 {
+    std::lock_guard<std::recursive_mutex> lock(m_mutex);
+
     if (m_flZoomLevel <= 1.0f || m_llDurationMs <= 0)
         return 0;
 
@@ -250,8 +261,9 @@ LONGLONG TimelineController::GetVisibleStartMs() const throw()
     return llStart;
 }
 
-LONGLONG TimelineController::GetVisibleEndMs() const throw()
+LONGLONG TimelineController::GetVisibleEndMs() const
 {
+    std::lock_guard<std::recursive_mutex> lock(m_mutex);
     if (m_flZoomLevel <= 1.0f || m_llDurationMs <= 0)
         return m_llDurationMs;
 
@@ -264,8 +276,9 @@ LONGLONG TimelineController::GetVisibleEndMs() const throw()
     return llEnd;
 }
 
-LONGLONG TimelineController::GetVisibleRangeMs() const throw()
+LONGLONG TimelineController::GetVisibleRangeMs() const
 {
+    std::lock_guard<std::recursive_mutex> lock(m_mutex);
     return GetVisibleEndMs() - GetVisibleStartMs();
 }
 
@@ -275,8 +288,9 @@ LONGLONG TimelineController::GetVisibleRangeMs() const throw()
 // Converts between timeline positions and a normalized [0,1] value
 // used for UI scroll-bar and scrubber positioning.
 // ============================================================================
-float TimelineController::PositionToNormalized(LONGLONG llPositionMs) const throw()
+float TimelineController::PositionToNormalized(LONGLONG llPositionMs) const
 {
+    std::lock_guard<std::recursive_mutex> lock(m_mutex);
     if (m_llDurationMs <= 0)
         return 0.0f;
 
@@ -288,8 +302,9 @@ float TimelineController::PositionToNormalized(LONGLONG llPositionMs) const thro
     return flResult;
 }
 
-LONGLONG TimelineController::NormalizedToPosition(float flNormalized) const throw()
+LONGLONG TimelineController::NormalizedToPosition(float flNormalized) const
 {
+    std::lock_guard<std::recursive_mutex> lock(m_mutex);
     if (flNormalized < 0.0f) flNormalized = 0.0f;
     if (flNormalized > 1.0f) flNormalized = 1.0f;
 
@@ -303,6 +318,8 @@ LONGLONG TimelineController::NormalizedToPosition(float flNormalized) const thro
 // ============================================================================
 HRESULT TimelineController::SetTrackCount(size_t cTracks)
 {
+    std::lock_guard<std::recursive_mutex> lock(m_mutex);
+
     if (cTracks == 0)
         return E_INVALIDARG;
 
@@ -314,13 +331,16 @@ HRESULT TimelineController::SetTrackCount(size_t cTracks)
     return S_OK;
 }
 
-size_t TimelineController::GetTrackCount() const throw()
+size_t TimelineController::GetTrackCount() const
 {
+    std::lock_guard<std::recursive_mutex> lock(m_mutex);
     return m_cTracks;
 }
 
 HRESULT TimelineController::SetSelectedTrack(size_t nIndex)
 {
+    std::lock_guard<std::recursive_mutex> lock(m_mutex);
+
     if (nIndex >= m_cTracks)
         return E_INVALIDARG;
 
@@ -328,7 +348,8 @@ HRESULT TimelineController::SetSelectedTrack(size_t nIndex)
     return S_OK;
 }
 
-size_t TimelineController::GetSelectedTrack() const throw()
+size_t TimelineController::GetSelectedTrack() const
 {
+    std::lock_guard<std::recursive_mutex> lock(m_mutex);
     return m_nSelectedTrack;
 }

@@ -26,19 +26,19 @@ public:
     HRESULT ResetZoom();
     HRESULT SetZoomRange(float flMinZoom, float flMaxZoom);
 
-    LONGLONG GetCurrentPosition() const throw();
-    LONGLONG GetDuration() const throw();
-    float GetZoomLevel() const throw();
-    LONGLONG GetVisibleStartMs() const throw();
-    LONGLONG GetVisibleEndMs() const throw();
-    LONGLONG GetVisibleRangeMs() const throw();
-    float PositionToNormalized(LONGLONG llPositionMs) const throw();
-    LONGLONG NormalizedToPosition(float flNormalized) const throw();
+    LONGLONG GetCurrentPosition() const;
+    LONGLONG GetDuration() const;
+    float GetZoomLevel() const;
+    LONGLONG GetVisibleStartMs() const;
+    LONGLONG GetVisibleEndMs() const;
+    LONGLONG GetVisibleRangeMs() const;
+    float PositionToNormalized(LONGLONG llPositionMs) const;
+    LONGLONG NormalizedToPosition(float flNormalized) const;
 
     HRESULT SetTrackCount(size_t cTracks);
-    size_t  GetTrackCount() const throw();
+    size_t  GetTrackCount() const;
     HRESULT SetSelectedTrack(size_t nIndex);
-    size_t  GetSelectedTrack() const throw();
+    size_t  GetSelectedTrack() const;
 
 private:
     TimelineController(const TimelineController&);
@@ -51,7 +51,7 @@ private:
     float    m_flMaxZoom;
     size_t   m_cTracks;
     size_t   m_nSelectedTrack;
-    mutable std::mutex m_mutex;
+    mutable std::recursive_mutex m_mutex;
 };
 
 #endif

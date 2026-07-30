@@ -214,6 +214,12 @@ HRESULT SerializationReader::MigrateVersion(SerializationContext& ctx)
         return E_FAIL;
     }
 
+    if (ver.dwMajor >= 2)
+    {
+        ctx.SetHResult(E_FAIL);
+        return E_FAIL;
+    }
+
     if (ver.dwMajor == 1 && ver.dwMinor == 0)
     {
         ctx.SetVersion(1, 1);
@@ -720,18 +726,6 @@ HRESULT SerializationReader::ReadMediaItems(IXmlReader* pReader, MovieProject* p
     return hr;
 }
 
-                hr = XmlReaderGetAttribute(pReader, L"frameRate", &pszValue);
-                if (SUCCEEDED(hr) && pszValue)
-                    item.SetFrameRate(_wtol(pszValue));
-
-                pProject->AddMediaItem(item);
-            }
-        }
-    }
-
-    return S_OK;
-}
-
 HRESULT SerializationReader::ReadProperties(IXmlReader* pReader, MovieProject* pProject)
 {
     if (!pReader || !pProject)
@@ -767,7 +761,7 @@ HRESULT SerializationReader::ReadProperties(IXmlReader* pReader, MovieProject* p
     if (SUCCEEDED(hr) && pszValue)
         settings.SetFrameRate(_wtol(pszValue));
 
-    return S_OK;
+    return hr;
 }
 
 } // namespace StoryboardManager

@@ -43,6 +43,12 @@ typedef PROPSHEETHEADERW_V2 PROPSHEETW;
 #include "../UI/Ribbon/RibbonSites.h"
 #include "SundanceAppDataContext.h"
 
+// New engine modules
+#include "../../Renderer/Renderer.h"
+#include "../../Playback/PlaybackEngine.h"
+#include "../../Timeline/TimelineEngine.h"
+#include "../../Timeline/TimelineDispatcher.h"
+
 // ============================================================================
 // SundanceBehaviors namespace (DirectUI behavior registration)
 //
@@ -400,6 +406,13 @@ HRESULT SundanceAppMain::InitializeSubsystems()
     if (FAILED(hr))
         return hr;
 
+    // New engine modules
+    m_pGPURenderer = new (std::nothrow) DirectUI::GPURenderer();
+    m_pPlaybackEngine = new (std::nothrow) DirectUI::PlaybackEngine(m_pGPURenderer);
+    m_pTimelineEngine = new (std::nothrow) TimelineEngine();
+    m_pTimelineDispatcher = new (std::nothrow) TimelineDispatcher(
+        m_pTimelineEngine, m_pPlaybackEngine, nullptr);
+
     return S_OK;
 }
 
@@ -408,6 +421,18 @@ HRESULT SundanceAppMain::InitializeSubsystems()
 // ============================================================================
 void SundanceAppMain::ReleaseSubsystems()
 {
+    delete m_pTimelineDispatcher;
+    m_pTimelineDispatcher = NULL;
+
+    delete m_pTimelineEngine;
+    m_pTimelineEngine = NULL;
+
+    delete m_pPlaybackEngine;
+    m_pPlaybackEngine = NULL;
+
+    delete m_pGPURenderer;
+    m_pGPURenderer = NULL;
+
     delete m_pPlaybackController;
     m_pPlaybackController = NULL;
 
@@ -1183,6 +1208,9 @@ void SundanceAppMain::OnMainWindowCreated(HWND hWnd)
 
     if (m_pMediaBrowser)
         m_pMediaBrowser->SetOwnerWindow(hWnd);
+
+    if (m_pGPURenderer)
+        m_pGPURenderer->Initialize(hWnd);
 }
 
 void SundanceAppMain::OnMainWindowDestroyed()
@@ -1265,6 +1293,26 @@ ExportController* SundanceAppMain::GetExportController() const throw()
 ImportController* SundanceAppMain::GetImportController() const throw()
 {
     return m_pImportController;
+}
+
+DirectUI::GPURenderer* SundanceAppMain::GetGPURenderer() const throw()
+{
+    return m_pGPURenderer;
+}
+
+DirectUI::PlaybackEngine* SundanceAppMain::GetPlaybackEngine() const throw()
+{
+    return m_pPlaybackEngine;
+}
+
+TimelineEngine* SundanceAppMain::GetTimelineEngine() const throw()
+{
+    return m_pTimelineEngine;
+}
+
+TimelineDispatcher* SundanceAppMain::GetTimelineDispatcher() const throw()
+{
+    return m_pTimelineDispatcher;
 }
 
 // ============================================================================

@@ -523,7 +523,6 @@ HRESULT PreviewPresenterWrapper::StopPreview()
     }
 
     m_fPreviewActive = false;
-    m_state = PreviewStateStopped;
 
     EnterCriticalSection(&m_csLock);
     m_llCurrentPositionHns = 0;

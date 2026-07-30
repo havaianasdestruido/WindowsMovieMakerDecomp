@@ -27,6 +27,10 @@ typedef HRESULT (CALLBACK *EventCallback)(Element* sender, Value** args, int num
 
 class __declspec(dllexport) Element {
 public:
+    static Element* g_focusedElement;
+    static void SetFocusElement(Element* el);
+
+public:
     virtual ~Element();
 
     // Child management

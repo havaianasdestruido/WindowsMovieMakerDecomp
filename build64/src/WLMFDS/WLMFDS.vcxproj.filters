@@ -1,0 +1,24 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="17.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="C:\Users\mcmco\Desktop\WMMR\src\WLMFDS\dllmain.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\mcmco\Desktop\WMMR\src\WLMFDS\WLMFDS.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <CustomBuild Include="C:\Users\mcmco\Desktop\WMMR\src\WLMFDS\CMakeLists.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="C:\Users\mcmco\Desktop\WMMR\src\WLMFDS\WLMFDS.def">
+      <Filter>Source Files</Filter>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{7165FFE9-905E-3490-8CC5-FB0AB75F7E98}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>

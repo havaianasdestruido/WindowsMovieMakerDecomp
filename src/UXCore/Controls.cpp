@@ -70,7 +70,13 @@ static EventInfo g_ChangeEvent            = { L"Change" };
 static EventInfo g_SelectionChangeEvent   = { L"SelectionChange" };
 static EventInfo g_NavigateEvent          = { L"Navigate" };
 
-// ─── Button ─────────────────────────────────────────────────────────
+HRESULT Button::OnMouseClick(POINT pt, int mouseButton)
+{
+    UNREFERENCED_PARAMETER(pt);
+    UNREFERENCED_PARAMETER(mouseButton);
+    // fire click event
+    return FireEventInfo(Click, 0, nullptr);
+}
 
 Button::~Button() = default;
 IClassInfo* Button::Class = &g_ButtonClass;

@@ -76,7 +76,7 @@ add_compile_definitions(
 
 if(MSVC)
     add_compile_options(
-        /W4
+        /W4 /WX /wd4005 /wd4100 /wd4505 /wd4251 /WX
         /MP
         /GS
         /Gy

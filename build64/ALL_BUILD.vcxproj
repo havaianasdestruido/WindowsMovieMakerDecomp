@@ -1,0 +1,283 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="17.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <PreferredToolArchitecture>x64</PreferredToolArchitecture>
+  </PropertyGroup>
+  <PropertyGroup>
+    <ResolveNugetPackages>false</ResolveNugetPackages>
+  </PropertyGroup>
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|x64">
+      <Configuration>Debug</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|x64">
+      <Configuration>Release</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="MinSizeRel|x64">
+      <Configuration>MinSizeRel</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="RelWithDebInfo|x64">
+      <Configuration>RelWithDebInfo</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{F729A86C-9FBE-3695-B36F-AE8CACD3C269}</ProjectGuid>
+    <Keyword>Win32Proj</Keyword>
+    <WindowsTargetPlatformVersion>10.0.26100.0</WindowsTargetPlatformVersion>
+    <Platform>x64</Platform>
+    <ProjectName>ALL_BUILD</ProjectName>
+    <VCProjectUpgraderObjectName>NoUpgrade</VCProjectUpgraderObjectName>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
+    <ConfigurationType>Utility</ConfigurationType>
+    <CharacterSet>MultiByte</CharacterSet>
+    <PlatformToolset>v143</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
+    <ConfigurationType>Utility</ConfigurationType>
+    <CharacterSet>MultiByte</CharacterSet>
+    <PlatformToolset>v143</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'" Label="Configuration">
+    <ConfigurationType>Utility</ConfigurationType>
+    <CharacterSet>MultiByte</CharacterSet>
+    <PlatformToolset>v143</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'" Label="Configuration">
+    <ConfigurationType>Utility</ConfigurationType>
+    <CharacterSet>MultiByte</CharacterSet>
+    <PlatformToolset>v143</PlatformToolset>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup>
+    <_ProjectFileVersion>10.0.20506.1</_ProjectFileVersion>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(Platform)\$(Configuration)\$(ProjectName)\</IntDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(Platform)\$(Configuration)\$(ProjectName)\</IntDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">$(Platform)\$(Configuration)\$(ProjectName)\</IntDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">$(Platform)\$(Configuration)\$(ProjectName)\</IntDir>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <Midl>
+      <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <OutputDirectory>$(ProjectDir)/$(IntDir)</OutputDirectory>
+      <HeaderFileName>%(Filename).h</HeaderFileName>
+      <TypeLibraryName>%(Filename).tlb</TypeLibraryName>
+      <InterfaceIdentifierFileName>%(Filename)_i.c</InterfaceIdentifierFileName>
+      <ProxyFileName>%(Filename)_p.c</ProxyFileName>
+    </Midl>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <Midl>
+      <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <OutputDirectory>$(ProjectDir)/$(IntDir)</OutputDirectory>
+      <HeaderFileName>%(Filename).h</HeaderFileName>
+      <TypeLibraryName>%(Filename).tlb</TypeLibraryName>
+      <InterfaceIdentifierFileName>%(Filename)_i.c</InterfaceIdentifierFileName>
+      <ProxyFileName>%(Filename)_p.c</ProxyFileName>
+    </Midl>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">
+    <Midl>
+      <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <OutputDirectory>$(ProjectDir)/$(IntDir)</OutputDirectory>
+      <HeaderFileName>%(Filename).h</HeaderFileName>
+      <TypeLibraryName>%(Filename).tlb</TypeLibraryName>
+      <InterfaceIdentifierFileName>%(Filename)_i.c</InterfaceIdentifierFileName>
+      <ProxyFileName>%(Filename)_p.c</ProxyFileName>
+    </Midl>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">
+    <Midl>
+      <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <OutputDirectory>$(ProjectDir)/$(IntDir)</OutputDirectory>
+      <HeaderFileName>%(Filename).h</HeaderFileName>
+      <TypeLibraryName>%(Filename).tlb</TypeLibraryName>
+      <InterfaceIdentifierFileName>%(Filename)_i.c</InterfaceIdentifierFileName>
+      <ProxyFileName>%(Filename)_p.c</ProxyFileName>
+    </Midl>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <CustomBuild Include="C:\Users\mcmco\Desktop\WMMR\CMakeLists.txt">
+      <UseUtf8Encoding>Always</UseUtf8Encoding>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Building Custom Rule C:/Users/mcmco/Desktop/WMMR/CMakeLists.txt</Message>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">setlocal
+"C:\Program Files\CMake\bin\cmake.exe" -SC:/Users/mcmco/Desktop/WMMR -BC:/Users/mcmco/Desktop/WMMR/build64 --check-stamp-file C:/Users/mcmco/Desktop/WMMR/build64/CMakeFiles/generate.stamp
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">C:\Program Files\CMake\share\cmake-4.4\Modules\CMakeCXXInformation.cmake;C:\Program Files\CMake\share\cmake-4.4\Modules\CMakeCommonLanguageInclude.cmake;C:\Program Files\CMake\share\cmake-4.4\Modules\CMakeGenericSystem.cmake;C:\Program Files\CMake\share\cmake-4.4\Modules\CMakeInitializeConfigs.cmake;C:\Program Files\CMake\share\cmake-4.4\Modules\CMakeLanguageInformation.cmake;C:\Program Files\CMake\share\cmake-4.4\Modules\CMakeRCInformation.cmake;C:\Program Files\CMake\share\cmake-4.4\Modules\CMakeSystemSpecificInformation.cmake;C:\Program Files\CMake\share\cmake-4.4\Modules\CMakeSystemSpecificInitialize.cmake;C:\Program Files\CMake\share\cmake-4.4\Modules\Compiler\CMakeCommonCompilerMacros.cmake;C:\Program Files\CMake\share\cmake-4.4\Modules\Compiler\MSVC-CXX.cmake;C:\Program Files\CMake\share\cmake-4.4\Modules\Compiler\MSVC.cmake;C:\Program Files\CMake\share\cmake-4.4\Modules\Internal\CMakeCXXLinkerInformation.cmake;C:\Program Files\CMake\share\cmake-4.4\Modules\Internal\CMakeCommonLinkerInformation.cmake;C:\Program Files\CMake\share\cmake-4.4\Modules\Linker\MSVC-CXX.cmake;C:\Program Files\CMake\share\cmake-4.4\Modules\Linker\MSVC.cmake;C:\Program Files\CMake\share\cmake-4.4\Modules\Platform\Linker\Windows-MSVC-CXX.cmake;C:\Program Files\CMake\share\cmake-4.4\Modules\Platform\Linker\Windows-MSVC.cmake;C:\Program Files\CMake\share\cmake-4.4\Modules\Platform\Windows-Initialize.cmake;C:\Program Files\CMake\share\cmake-4.4\Modules\Platform\Windows-MSVC-CXX.cmake;C:\Program Files\CMake\share\cmake-4.4\Modules\Platform\Windows-MSVC.cmake;C:\Program Files\CMake\share\cmake-4.4\Modules\Platform\Windows.cmake;C:\Program Files\CMake\share\cmake-4.4\Modules\Platform\WindowsPaths.cmake;C:\Users\mcmco\Desktop\WMMR\build64\CMakeFiles\4.4.0\CMakeCXXCompiler.cmake;C:\Users\mcmco\Desktop\WMMR\build64\CMakeFiles\4.4.0\CMakeRCCompiler.cmake;C:\Users\mcmco\Desktop\WMMR\build64\CMakeFiles\4.4.0\CMakeSystem.cmake;%(AdditionalInputs)</AdditionalInputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">C:\Users\mcmco\Desktop\WMMR\build64\CMakeFiles\generate.stamp</Outputs>
+      <LinkObjects Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</LinkObjects>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Building Custom Rule C:/Users/mcmco/Desktop/WMMR/CMakeLists.txt</Message>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">setlocal
+"C:\Program Files\CMake\bin\cmake.exe" -SC:/Users/mcmco/Desktop/WMMR -BC:/Users/mcmco/Desktop/WMMR/build64 --check-stamp-file C:/Users/mcmco/Desktop/WMMR/build64/CMakeFiles/generate.stamp
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">C:\Program Files\CMake\share\cmake-4.4\Modules\CMakeCXXInformation.cmake;C:\Program Files\CMake\share\cmake-4.4\Modules\CMakeCommonLanguageInclude.cmake;C:\Program Files\CMake\share\cmake-4.4\Modules\CMakeGenericSystem.cmake;C:\Program Files\CMake\share\cmake-4.4\Modules\CMakeInitializeConfigs.cmake;C:\Program Files\CMake\share\cmake-4.4\Modules\CMakeLanguageInformation.cmake;C:\Program Files\CMake\share\cmake-4.4\Modules\CMakeRCInformation.cmake;C:\Program Files\CMake\share\cmake-4.4\Modules\CMakeSystemSpecificInformation.cmake;C:\Program Files\CMake\share\cmake-4.4\Modules\CMakeSystemSpecificInitialize.cmake;C:\Program Files\CMake\share\cmake-4.4\Modules\Compiler\CMakeCommonCompilerMacros.cmake;C:\Program Files\CMake\share\cmake-4.4\Modules\Compiler\MSVC-CXX.cmake;C:\Program Files\CMake\share\cmake-4.4\Modules\Compiler\MSVC.cmake;C:\Program Files\CMake\share\cmake-4.4\Modules\Internal\CMakeCXXLinkerInformation.cmake;C:\Program Files\CMake\share\cmake-4.4\Modules\Internal\CMakeCommonLinkerInformation.cmake;C:\Program Files\CMake\share\cmake-4.4\Modules\Linker\MSVC-CXX.cmake;C:\Program Files\CMake\share\cmake-4.4\Modules\Linker\MSVC.cmake;C:\Program Files\CMake\share\cmake-4.4\Modules\Platform\Linker\Windows-MSVC-CXX.cmake;C:\Program Files\CMake\share\cmake-4.4\Modules\Platform\Linker\Windows-MSVC.cmake;C:\Program Files\CMake\share\cmake-4.4\Modules\Platform\Windows-Initialize.cmake;C:\Program Files\CMake\share\cmake-4.4\Modules\Platform\Windows-MSVC-CXX.cmake;C:\Program Files\CMake\share\cmake-4.4\Modules\Platform\Windows-MSVC.cmake;C:\Program Files\CMake\share\cmake-4.4\Modules\Platform\Windows.cmake;C:\Program Files\CMake\share\cmake-4.4\Modules\Platform\WindowsPaths.cmake;C:\Users\mcmco\Desktop\WMMR\build64\CMakeFiles\4.4.0\CMakeCXXCompiler.cmake;C:\Users\mcmco\Desktop\WMMR\build64\CMakeFiles\4.4.0\CMakeRCCompiler.cmake;C:\Users\mcmco\Desktop\WMMR\build64\CMakeFiles\4.4.0\CMakeSystem.cmake;%(AdditionalInputs)</AdditionalInputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">C:\Users\mcmco\Desktop\WMMR\build64\CMakeFiles\generate.stamp</Outputs>
+      <LinkObjects Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</LinkObjects>
+      <Message Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">Building Custom Rule C:/Users/mcmco/Desktop/WMMR/CMakeLists.txt</Message>
+      <Command Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">setlocal
+"C:\Program Files\CMake\bin\cmake.exe" -SC:/Users/mcmco/Desktop/WMMR -BC:/Users/mcmco/Desktop/WMMR/build64 --check-stamp-file C:/Users/mcmco/Desktop/WMMR/build64/CMakeFiles/generate.stamp
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">C:\Program Files\CMake\share\cmake-4.4\Modules\CMakeCXXInformation.cmake;C:\Program Files\CMake\share\cmake-4.4\Modules\CMakeCommonLanguageInclude.cmake;C:\Program Files\CMake\share\cmake-4.4\Modules\CMakeGenericSystem.cmake;C:\Program Files\CMake\share\cmake-4.4\Modules\CMakeInitializeConfigs.cmake;C:\Program Files\CMake\share\cmake-4.4\Modules\CMakeLanguageInformation.cmake;C:\Program Files\CMake\share\cmake-4.4\Modules\CMakeRCInformation.cmake;C:\Program Files\CMake\share\cmake-4.4\Modules\CMakeSystemSpecificInformation.cmake;C:\Program Files\CMake\share\cmake-4.4\Modules\CMakeSystemSpecificInitialize.cmake;C:\Program Files\CMake\share\cmake-4.4\Modules\Compiler\CMakeCommonCompilerMacros.cmake;C:\Program Files\CMake\share\cmake-4.4\Modules\Compiler\MSVC-CXX.cmake;C:\Program Files\CMake\share\cmake-4.4\Modules\Compiler\MSVC.cmake;C:\Program Files\CMake\share\cmake-4.4\Modules\Internal\CMakeCXXLinkerInformation.cmake;C:\Program Files\CMake\share\cmake-4.4\Modules\Internal\CMakeCommonLinkerInformation.cmake;C:\Program Files\CMake\share\cmake-4.4\Modules\Linker\MSVC-CXX.cmake;C:\Program Files\CMake\share\cmake-4.4\Modules\Linker\MSVC.cmake;C:\Program Files\CMake\share\cmake-4.4\Modules\Platform\Linker\Windows-MSVC-CXX.cmake;C:\Program Files\CMake\share\cmake-4.4\Modules\Platform\Linker\Windows-MSVC.cmake;C:\Program Files\CMake\share\cmake-4.4\Modules\Platform\Windows-Initialize.cmake;C:\Program Files\CMake\share\cmake-4.4\Modules\Platform\Windows-MSVC-CXX.cmake;C:\Program Files\CMake\share\cmake-4.4\Modules\Platform\Windows-MSVC.cmake;C:\Program Files\CMake\share\cmake-4.4\Modules\Platform\Windows.cmake;C:\Program Files\CMake\share\cmake-4.4\Modules\Platform\WindowsPaths.cmake;C:\Users\mcmco\Desktop\WMMR\build64\CMakeFiles\4.4.0\CMakeCXXCompiler.cmake;C:\Users\mcmco\Desktop\WMMR\build64\CMakeFiles\4.4.0\CMakeRCCompiler.cmake;C:\Users\mcmco\Desktop\WMMR\build64\CMakeFiles\4.4.0\CMakeSystem.cmake;%(AdditionalInputs)</AdditionalInputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">C:\Users\mcmco\Desktop\WMMR\build64\CMakeFiles\generate.stamp</Outputs>
+      <LinkObjects Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">false</LinkObjects>
+      <Message Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">Building Custom Rule C:/Users/mcmco/Desktop/WMMR/CMakeLists.txt</Message>
+      <Command Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">setlocal
+"C:\Program Files\CMake\bin\cmake.exe" -SC:/Users/mcmco/Desktop/WMMR -BC:/Users/mcmco/Desktop/WMMR/build64 --check-stamp-file C:/Users/mcmco/Desktop/WMMR/build64/CMakeFiles/generate.stamp
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">C:\Program Files\CMake\share\cmake-4.4\Modules\CMakeCXXInformation.cmake;C:\Program Files\CMake\share\cmake-4.4\Modules\CMakeCommonLanguageInclude.cmake;C:\Program Files\CMake\share\cmake-4.4\Modules\CMakeGenericSystem.cmake;C:\Program Files\CMake\share\cmake-4.4\Modules\CMakeInitializeConfigs.cmake;C:\Program Files\CMake\share\cmake-4.4\Modules\CMakeLanguageInformation.cmake;C:\Program Files\CMake\share\cmake-4.4\Modules\CMakeRCInformation.cmake;C:\Program Files\CMake\share\cmake-4.4\Modules\CMakeSystemSpecificInformation.cmake;C:\Program Files\CMake\share\cmake-4.4\Modules\CMakeSystemSpecificInitialize.cmake;C:\Program Files\CMake\share\cmake-4.4\Modules\Compiler\CMakeCommonCompilerMacros.cmake;C:\Program Files\CMake\share\cmake-4.4\Modules\Compiler\MSVC-CXX.cmake;C:\Program Files\CMake\share\cmake-4.4\Modules\Compiler\MSVC.cmake;C:\Program Files\CMake\share\cmake-4.4\Modules\Internal\CMakeCXXLinkerInformation.cmake;C:\Program Files\CMake\share\cmake-4.4\Modules\Internal\CMakeCommonLinkerInformation.cmake;C:\Program Files\CMake\share\cmake-4.4\Modules\Linker\MSVC-CXX.cmake;C:\Program Files\CMake\share\cmake-4.4\Modules\Linker\MSVC.cmake;C:\Program Files\CMake\share\cmake-4.4\Modules\Platform\Linker\Windows-MSVC-CXX.cmake;C:\Program Files\CMake\share\cmake-4.4\Modules\Platform\Linker\Windows-MSVC.cmake;C:\Program Files\CMake\share\cmake-4.4\Modules\Platform\Windows-Initialize.cmake;C:\Program Files\CMake\share\cmake-4.4\Modules\Platform\Windows-MSVC-CXX.cmake;C:\Program Files\CMake\share\cmake-4.4\Modules\Platform\Windows-MSVC.cmake;C:\Program Files\CMake\share\cmake-4.4\Modules\Platform\Windows.cmake;C:\Program Files\CMake\share\cmake-4.4\Modules\Platform\WindowsPaths.cmake;C:\Users\mcmco\Desktop\WMMR\build64\CMakeFiles\4.4.0\CMakeCXXCompiler.cmake;C:\Users\mcmco\Desktop\WMMR\build64\CMakeFiles\4.4.0\CMakeRCCompiler.cmake;C:\Users\mcmco\Desktop\WMMR\build64\CMakeFiles\4.4.0\CMakeSystem.cmake;%(AdditionalInputs)</AdditionalInputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">C:\Users\mcmco\Desktop\WMMR\build64\CMakeFiles\generate.stamp</Outputs>
+      <LinkObjects Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">false</LinkObjects>
+    </CustomBuild>
+  </ItemGroup>
+  <ItemGroup>
+  </ItemGroup>
+  <ItemGroup />
+  <ItemGroup>
+    <ProjectReference Include="C:\Users\mcmco\Desktop\WMMR\build64\ZERO_CHECK.vcxproj">
+      <Project>{EA28A16D-AD4F-3F3F-B06E-9819FBA760EF}</Project>
+      <Name>ZERO_CHECK</Name>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </ProjectReference>
+    <ProjectReference Include="C:\Users\mcmco\Desktop\WMMR\build64\src\WLXPhotoBase\BaseTypes.vcxproj">
+      <Project>{156987F8-F377-3AE6-8A96-1485B2E6EB37}</Project>
+      <Name>BaseTypes</Name>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </ProjectReference>
+    <ProjectReference Include="C:\Users\mcmco\Desktop\WMMR\build64\src\DmxBici\DmxBici.vcxproj">
+      <Project>{4F3C36E9-FF70-3457-852A-B53CF3FA65C6}</Project>
+      <Name>DmxBici</Name>
+    </ProjectReference>
+    <ProjectReference Include="C:\Users\mcmco\Desktop\WMMR\build64\src\MetadataSys\MetadataSys.vcxproj">
+      <Project>{299D9D5E-F14E-393C-A485-FBBDEE7B6B00}</Project>
+      <Name>MetadataSys</Name>
+    </ProjectReference>
+    <ProjectReference Include="C:\Users\mcmco\Desktop\WMMR\build64\src\MovieMaker\MovieMaker.vcxproj">
+      <Project>{7737678A-9B3F-3866-8EFA-3AD75BFB2FDF}</Project>
+      <Name>MovieMaker</Name>
+    </ProjectReference>
+    <ProjectReference Include="C:\Users\mcmco\Desktop\WMMR\build64\src\MovieMakerCore\MovieMakerCore.vcxproj">
+      <Project>{BE4566CB-970B-3814-8E3F-B184272F0CAC}</Project>
+      <Name>MovieMakerCore</Name>
+    </ProjectReference>
+    <ProjectReference Include="C:\Users\mcmco\Desktop\WMMR\build64\src\MovieMakerLang\MovieMakerLang.vcxproj">
+      <Project>{CE4CAA73-1E1D-3FDD-B6FE-628D6BB0F69B}</Project>
+      <Name>MovieMakerLang</Name>
+    </ProjectReference>
+    <ProjectReference Include="C:\Users\mcmco\Desktop\WMMR\build64\src\MovieMakerPreviewClient\MovieMakerPreviewClient.vcxproj">
+      <Project>{2701DB3C-2245-3218-878B-06159487F132}</Project>
+      <Name>MovieMakerPreviewClient</Name>
+    </ProjectReference>
+    <ProjectReference Include="C:\Users\mcmco\Desktop\WMMR\build64\src\UXCore\UXCore.vcxproj">
+      <Project>{5A3A390C-18D7-366A-9AE3-65B5DA98052A}</Project>
+      <Name>UXCore</Name>
+    </ProjectReference>
+    <ProjectReference Include="C:\Users\mcmco\Desktop\WMMR\build64\src\WLMFDS\WLMFDS.vcxproj">
+      <Project>{2A721BFF-9C75-3E0C-85D9-B458DA6F26ED}</Project>
+      <Name>WLMFDS</Name>
+    </ProjectReference>
+    <ProjectReference Include="C:\Users\mcmco\Desktop\WMMR\build64\src\WLMFReadWrite\WLMFReadWrite.vcxproj">
+      <Project>{0BCBAB43-96DA-330A-BA12-9EF7BBFE8567}</Project>
+      <Name>WLMFReadWrite</Name>
+    </ProjectReference>
+    <ProjectReference Include="C:\Users\mcmco\Desktop\WMMR\build64\src\WLXCodecHost\WLXCodecHost.vcxproj">
+      <Project>{AB6BAFD8-A43E-3BD8-B24E-0774E818864D}</Project>
+      <Name>WLXCodecHost</Name>
+    </ProjectReference>
+    <ProjectReference Include="C:\Users\mcmco\Desktop\WMMR\build64\src\WLXFaceRecognition\WLXFaceRecognition.vcxproj">
+      <Project>{67BC2B18-6834-39A0-B84C-A0E2DC80E1F9}</Project>
+      <Name>WLXFaceRecognition</Name>
+    </ProjectReference>
+    <ProjectReference Include="C:\Users\mcmco\Desktop\WMMR\build64\src\WLXMP4Parser\WLXMP4Parser.vcxproj">
+      <Project>{F68BAD86-4430-3E90-98A2-2E3327A67D76}</Project>
+      <Name>WLXMP4Parser</Name>
+    </ProjectReference>
+    <ProjectReference Include="C:\Users\mcmco\Desktop\WMMR\build64\src\WLXMediaPublishSubscribe\WLXMediaPublishSubscribe.vcxproj">
+      <Project>{D1E277E8-ACF4-3AAC-8E78-A63120F2B001}</Project>
+      <Name>WLXMediaPublishSubscribe</Name>
+    </ProjectReference>
+    <ProjectReference Include="C:\Users\mcmco\Desktop\WMMR\build64\src\WLXMovieLibrary\WLXMovieLibrary.vcxproj">
+      <Project>{5DCC32F4-AF3F-304C-AFB9-96ACEADAC196}</Project>
+      <Name>WLXMovieLibrary</Name>
+    </ProjectReference>
+    <ProjectReference Include="C:\Users\mcmco\Desktop\WMMR\build64\src\WLXPhotoBase\WLXPhotoBase.vcxproj">
+      <Project>{BC1AD240-37A9-3E8F-85FA-B6DF730462EE}</Project>
+      <Name>WLXPhotoBase</Name>
+    </ProjectReference>
+    <ProjectReference Include="C:\Users\mcmco\Desktop\WMMR\build64\src\WLXPhotoCinematic\WLXPhotoCinematic.vcxproj">
+      <Project>{E7ED4304-8DDA-3D7D-954E-C70002FCB673}</Project>
+      <Name>WLXPhotoCinematic</Name>
+    </ProjectReference>
+    <ProjectReference Include="C:\Users\mcmco\Desktop\WMMR\build64\src\WLXPhotoSqm\WLXPhotoSqm.vcxproj">
+      <Project>{9F387265-854D-3744-B052-345D239B15A2}</Project>
+      <Name>WLXPhotoSqm</Name>
+    </ProjectReference>
+    <ProjectReference Include="C:\Users\mcmco\Desktop\WMMR\build64\src\WLXPipeline\WLXPipeline.vcxproj">
+      <Project>{160CF2CB-2B99-39AE-8D3A-FA0FC04735E4}</Project>
+      <Name>WLXPipeline</Name>
+    </ProjectReference>
+    <ProjectReference Include="C:\Users\mcmco\Desktop\WMMR\build64\src\WLXPipetran\WLXPipetran.vcxproj">
+      <Project>{D1BE5B8B-B27F-359E-95D5-7F882052A4FC}</Project>
+      <Name>WLXPipetran</Name>
+    </ProjectReference>
+    <ProjectReference Include="C:\Users\mcmco\Desktop\WMMR\build64\src\WLXSlideshow\WLXSlideshow.vcxproj">
+      <Project>{F3AD28B9-CC6D-3BEF-A4E1-CD01EEF99BCB}</Project>
+      <Name>WLXSlideshow</Name>
+    </ProjectReference>
+    <ProjectReference Include="C:\Users\mcmco\Desktop\WMMR\build64\src\WLXTranscode\WLXTranscode.vcxproj">
+      <Project>{C6B63CD4-2D97-3352-8D80-9CC51499D916}</Project>
+      <Name>WLXTranscode</Name>
+    </ProjectReference>
+    <ProjectReference Include="C:\Users\mcmco\Desktop\WMMR\build64\src\WLXVideoTrim\WLXVideoTrim.vcxproj">
+      <Project>{031194F5-AE5E-37F7-A8B0-9692DFC5AE81}</Project>
+      <Name>WLXVideoTrim</Name>
+    </ProjectReference>
+    <ProjectReference Include="C:\Users\mcmco\Desktop\WMMR\build64\src\uxctl\uxctl.vcxproj">
+      <Project>{E40D2C38-FB8A-336A-B9B9-52D042F09F85}</Project>
+      <Name>uxctl</Name>
+    </ProjectReference>
+    <ProjectReference Include="C:\Users\mcmco\Desktop\WMMR\build64\src\wlidcli\wlidcli.vcxproj">
+      <Project>{1734892C-4561-3D93-8ADE-1EB23EDEDFEE}</Project>
+      <Name>wlidcli</Name>
+    </ProjectReference>
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>

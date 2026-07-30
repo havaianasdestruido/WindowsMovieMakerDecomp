@@ -1,0 +1,10 @@
+^C:\USERS\MCMCO\DESKTOP\WMMR\SRC\WLXPHOTOSQM\CMAKELISTS.TXT
+setlocal
+"C:\Program Files\CMake\bin\cmake.exe" -SC:/Users/mcmco/Desktop/WMMR -BC:/Users/mcmco/Desktop/WMMR/build64 --check-stamp-file C:/Users/mcmco/Desktop/WMMR/build64/src/WLXPhotoSqm/CMakeFiles/generate.stamp
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal & call :cmErrorLevel %errorlevel% & goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd

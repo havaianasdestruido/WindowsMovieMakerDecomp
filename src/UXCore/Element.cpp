@@ -103,7 +103,27 @@ PropertyInfo* Element::LayoutModeInterfaceProp = &g_LayoutModeInterfaceProp;
 PropertyInfo* Element::LayoutProp = &g_LayoutProp;
 
 // Focus tracking
-static Element* g_pFocusedElement = nullptr;
++Element* Element::g_focusedElement = nullptr;
++
++void Element::SetFocusElement(Element* el)
++{
++    if (g_focusedElement == el)
++        return;
++
++    if (g_focusedElement)
++    {
++        g_focusedElement->SetValue(KeyFocusedProp, Value::CreateBool(false));
++        g_focusedElement->FireEventInfo(&g_FocusLostEvent, 0, nullptr);
++    }
++
++    g_focusedElement = el;
++    if (g_focusedElement)
++    {
++        g_focusedElement->SetValue(KeyFocusedProp, Value::CreateBool(true));
++        g_focusedElement->FireEventInfo(&g_FocusGainedEvent, 0, nullptr);
++    }
++}
+
 static EventInfo g_FocusGainedEvent = { L"FocusGained" };
 static EventInfo g_FocusLostEvent = { L"FocusLost" };
 static EventInfo g_CommandEvent = { L"Command" };
@@ -508,19 +528,7 @@ HRESULT Element::ReleaseElementDC(HDC hdc)
 // Focus
 HRESULT Element::FocusElement()
 {
-    if (g_pFocusedElement == this)
-        return S_OK;
-
-    if (g_pFocusedElement)
-    {
-        g_pFocusedElement->SetValue(KeyFocusedProp, Value::CreateBool(false));
-        g_pFocusedElement->FireEventInfo(&g_FocusLostEvent, 0, nullptr);
-    }
-
-    g_pFocusedElement = this;
-    SetValue(KeyFocusedProp, Value::CreateBool(true));
-    FireEventInfo(&g_FocusGainedEvent, 0, nullptr);
-
+    SetFocusElement(this);
     return S_OK;
 }
 

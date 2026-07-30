@@ -1,0 +1,16 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="17.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClInclude Include="C:\Users\mcmco\Desktop\WMMR\src\WLXPhotoBase\BaseTypes.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <CustomBuild Include="C:\Users\mcmco\Desktop\WMMR\src\WLXPhotoBase\CMakeLists.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{34EDB457-E50F-308A-96CF-109E72C3400F}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>

@@ -1,0 +1,378 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="17.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="C:\Users\mcmco\Desktop\WMMR\src\MovieMakerCore\dllmain.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\mcmco\Desktop\WMMR\src\MovieMakerCore\MovieMakerCore_new.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\mcmco\Desktop\WMMR\src\MovieMakerCore\pch.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\mcmco\Desktop\WMMR\src\MovieMakerCore\SundanceApp\SundanceAppMain.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\mcmco\Desktop\WMMR\src\MovieMakerCore\SundanceApp\SundanceAppDataContext.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\mcmco\Desktop\WMMR\src\MovieMakerCore\SundanceApp\CommandLineParser.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\mcmco\Desktop\WMMR\src\MovieMakerCore\SundanceApp\AutoSaveManager.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\mcmco\Desktop\WMMR\src\MovieMakerCore\SundanceApp\ClipboardManager.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\mcmco\Desktop\WMMR\src\MovieMakerCore\SundanceApp\MediaBrowser.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\mcmco\Desktop\WMMR\src\MovieMakerCore\SundanceApp\ThumbnailCache.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\mcmco\Desktop\WMMR\src\MovieMakerCore\SundanceApp\UndoManager.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\mcmco\Desktop\WMMR\src\MovieMakerCore\SundanceApp\TimelineController.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\mcmco\Desktop\WMMR\src\MovieMakerCore\SundanceApp\ProjectManager.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\mcmco\Desktop\WMMR\src\MovieMakerCore\SundanceApp\ExportController.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\mcmco\Desktop\WMMR\src\MovieMakerCore\SundanceApp\ImportController.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\mcmco\Desktop\WMMR\src\MovieMakerCore\SundanceApp\PlaybackController.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\mcmco\Desktop\WMMR\src\MovieMakerCore\StoryboardManager\StoryboardManager.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\mcmco\Desktop\WMMR\src\MovieMakerCore\StoryboardManager\MovieProject.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\mcmco\Desktop\WMMR\src\MovieMakerCore\StoryboardManager\MovieExtent.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\mcmco\Desktop\WMMR\src\MovieMakerCore\StoryboardManager\Extents.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\mcmco\Desktop\WMMR\src\MovieMakerCore\StoryboardManager\Templates.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\mcmco\Desktop\WMMR\src\MovieMakerCore\StoryboardManager\TimelineTrack.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\mcmco\Desktop\WMMR\src\MovieMakerCore\StoryboardManager\StoryboardManagerExceptions.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\mcmco\Desktop\WMMR\src\MovieMakerCore\StoryboardManager\Theme\Theme.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\mcmco\Desktop\WMMR\src\MovieMakerCore\StoryboardManager\Theme\ThemeTemplates.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\mcmco\Desktop\WMMR\src\MovieMakerCore\StoryboardManager\Theme\ThemeStructure.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\mcmco\Desktop\WMMR\src\MovieMakerCore\StoryboardManager\Theme\TextComposition.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\mcmco\Desktop\WMMR\src\MovieMakerCore\StoryboardManager\MovieEffect\MovieEffect.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\mcmco\Desktop\WMMR\src\MovieMakerCore\HMRAVSource\HMRAVSource.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\mcmco\Desktop\WMMR\src\MovieMakerCore\HMRAVSource\AVSource.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\mcmco\Desktop\WMMR\src\MovieMakerCore\HMRAVSource\MFSource.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\mcmco\Desktop\WMMR\src\MovieMakerCore\HMRAVSource\DShowSource.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\mcmco\Desktop\WMMR\src\MovieMakerCore\HMRAVSource\EncodeProfile.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\mcmco\Desktop\WMMR\src\MovieMakerCore\HMRAVSource\StreamSink.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\mcmco\Desktop\WMMR\src\MovieMakerCore\HMRAVSource\TranscodeManager.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\mcmco\Desktop\WMMR\src\MovieMakerCore\HMRAVSource\VideoCapture.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\mcmco\Desktop\WMMR\src\MovieMakerCore\HMRAVSource\AudioCapture.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\mcmco\Desktop\WMMR\src\MovieMakerCore\HMRAVSource\AVCaptureSession.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\mcmco\Desktop\WMMR\src\MovieMakerCore\HMRAVSource\CachedWFSection.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\mcmco\Desktop\WMMR\src\MovieMakerCore\HMRAVSource\AVSourceFactory.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\mcmco\Desktop\WMMR\src\MovieMakerCore\HMRAVSource\AVSourceProxy.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\mcmco\Desktop\WMMR\src\MovieMakerCore\HMRAVSource\AVSink.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\mcmco\Desktop\WMMR\src\MovieMakerCore\HMRAVSource\StreamSinkHost.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\mcmco\Desktop\WMMR\src\MovieMakerCore\HMRAVSource\StreamSinkHelper.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\mcmco\Desktop\WMMR\src\MovieMakerCore\HMRAVSource\SAXProfileBuilder.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\mcmco\Desktop\WMMR\src\MovieMakerCore\HMRAVSource\MFRateControlHelper.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\mcmco\Desktop\WMMR\src\MovieMakerCore\HMRAVSource\NativeMFSourceReaderBuilder.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\mcmco\Desktop\WMMR\src\MovieMakerCore\HMRAVSource\AsyncSourceResolver.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\mcmco\Desktop\WMMR\src\MovieMakerCore\HMRAVSource\DShowMFSourceReaderBuilder.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\mcmco\Desktop\WMMR\src\MovieMakerCore\HMRAVSource\MFSourceReaderBuilder.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\mcmco\Desktop\WMMR\src\MovieMakerCore\HMRAVSource\MFByteStreamOnStream.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\mcmco\Desktop\WMMR\src\MovieMakerCore\HMRAVSource\VideoProc.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\mcmco\Desktop\WMMR\src\MovieMakerCore\HMRAVSource\SyncVideoSource.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\mcmco\Desktop\WMMR\src\MovieMakerCore\HMRAVSource\TextureInterop.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\mcmco\Desktop\WMMR\src\MovieMakerCore\HMRAVSource\AuthProvider.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\mcmco\Desktop\WMMR\src\MovieMakerCore\HMRAVSource\ImageThumbnail.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\mcmco\Desktop\WMMR\src\MovieMakerCore\HMRAVSource\TranscodeMetadata.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\mcmco\Desktop\WMMR\src\MovieMakerCore\HMRAVSource\Audio\Waveform.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\mcmco\Desktop\WMMR\src\MovieMakerCore\HMRAVSource\Audio\AudioOutput.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\mcmco\Desktop\WMMR\src\MovieMakerCore\HMRAVSource\Audio\AudioQueue.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\mcmco\Desktop\WMMR\src\MovieMakerCore\HMRAVSource\Audio\Mixer.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\mcmco\Desktop\WMMR\src\MovieMakerCore\HMRAVSource\Audio\AudioBoost.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\mcmco\Desktop\WMMR\src\MovieMakerCore\HMRAVSource\Audio\AudioResampler.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\mcmco\Desktop\WMMR\src\MovieMakerCore\HMRAVSource\Audio\AudioAnalysis.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\mcmco\Desktop\WMMR\src\MovieMakerCore\HMRAVSource\Audio\AudioFadeProcessor.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\mcmco\Desktop\WMMR\src\MovieMakerCore\HMRAVSource\Audio\AudioDuckingProcessor.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\mcmco\Desktop\WMMR\src\MovieMakerCore\HMRAVSource\Audio\AudioChannelMapper.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\mcmco\Desktop\WMMR\src\MovieMakerCore\DataStructs\IntSet.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\mcmco\Desktop\WMMR\src\MovieMakerCore\DataStructs\StringSet.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\mcmco\Desktop\WMMR\src\MovieMakerCore\UI\Ribbon\RibbonApp.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\mcmco\Desktop\WMMR\src\MovieMakerCore\UI\Ribbon\RibbonSites.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\mcmco\Desktop\WMMR\src\MovieMakerCore\UI\UIBehaviorClasses.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\mcmco\Desktop\WMMR\src\MovieMakerCore\Preview\PreviewPresenter.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\mcmco\Desktop\WMMR\src\MovieMakerCore\Preview\PreviewDataContext.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\mcmco\Desktop\WMMR\src\MovieMakerCore\StoryboardManager\Serialization\SerializationContext.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\mcmco\Desktop\WMMR\src\MovieMakerCore\StoryboardManager\Serialization\SerializationReader.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\mcmco\Desktop\WMMR\src\MovieMakerCore\StoryboardManager\Serialization\SerializationWriter.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\mcmco\Desktop\WMMR\src\MovieMakerCore\StoryboardManager\Serialization\SerializationMemoryReaderWriter.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\mcmco\Desktop\WMMR\src\MovieMakerCore\StoryboardManager\Serialization\DatabasePropertyManager.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\mcmco\Desktop\WMMR\src\MovieMakerCore\StoryboardManager\Serialization\ModElements.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\mcmco\Desktop\WMMR\src\MovieMakerCore\StoryboardManager\Serialization\BoundPropertyDictionary.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\mcmco\Desktop\WMMR\src\MovieMakerCore\StoryboardManager\Serialization\TextProperty.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\mcmco\Desktop\WMMR\src\MovieMakerCore\StoryboardManager\Serialization\BoundPlaceholder.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\mcmco\Desktop\WMMR\src\MovieMakerCore\StoryboardManager\Serialization\SnapShot.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\mcmco\Desktop\WMMR\src\MovieMakerCore\StoryboardManager\Serialization\ValueVariantRef.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\mcmco\Desktop\WMMR\src\MovieMakerCore\StoryboardManager\Serialization\SerializationClasses.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\mcmco\Desktop\WMMR\src\MovieMakerCore\StoryboardManager\MediaItems\MediaItem.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\mcmco\Desktop\WMMR\src\MovieMakerCore\StoryboardManager\Background\BackgroundOrchestrator.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\mcmco\Desktop\WMMR\src\MovieMakerCore\StoryboardManager\Background\BackgroundRequests.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\mcmco\Desktop\WMMR\src\MovieMakerCore\StoryboardManager\Background\AutofitProcess.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\mcmco\Desktop\WMMR\src\MovieMakerCore\StoryboardManager\Background\Conductor.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\mcmco\Desktop\WMMR\src\MovieMakerCore\StoryboardManager\Transport\TransportBase.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\mcmco\Desktop\WMMR\src\MovieMakerCore\StoryboardManager\Transport\CommandBin.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\mcmco\Desktop\WMMR\src\MovieMakerCore\HMREngine\AsyncWorker.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\mcmco\Desktop\WMMR\src\MovieMakerCore\HMREngine\ErrHandler.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\mcmco\Desktop\WMMR\src\MovieMakerCore\HMREngine\InterpolatorImpl.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\mcmco\Desktop\WMMR\src\MovieMakerCore\HMREngine\X3DNodes.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\mcmco\Desktop\WMMR\src\MovieMakerCore\HMREngine\DXResources\EngineDX.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\mcmco\Desktop\WMMR\src\MovieMakerCore\HMREngine\DXResources\TextureResourceDX.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\mcmco\Desktop\WMMR\src\MovieMakerCore\HMREngine\DXResources\MeshResourceDX.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\mcmco\Desktop\WMMR\src\MovieMakerCore\HMREngine\DXResources\EffectResourceDX.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\mcmco\Desktop\WMMR\src\MovieMakerCore\HMREngine\DXResources\TextResourceDX.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\mcmco\Desktop\WMMR\src\MovieMakerCore\HMREngine\DXResources\RenderLoopDX.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\mcmco\Desktop\WMMR\src\MovieMakerCore\HMREngine\DXResources\ResourceCacheDX.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\mcmco\Desktop\WMMR\src\MovieMakerCore\HMREngine\DXResources\TextureCodecs.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\mcmco\Desktop\WMMR\src\MovieMakerCore\HMREngine\X3DNodeImpls\X3DNodeImplBase.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\mcmco\Desktop\WMMR\src\MovieMakerCore\HMREngine\X3DNodeImpls\X3DGroupingImpls.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\mcmco\Desktop\WMMR\src\MovieMakerCore\HMREngine\X3DNodeImpls\X3DAppearanceImpls.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\mcmco\Desktop\WMMR\src\MovieMakerCore\HMREngine\X3DNodeImpls\X3DLayerImpls.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\mcmco\Desktop\WMMR\src\MovieMakerCore\HMREngine\X3DNodeImpls\X3DSensorImpls.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\mcmco\Desktop\WMMR\src\MovieMakerCore\HMREngine\PatternMesh\PatternMesh.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\mcmco\Desktop\WMMR\src\MovieMakerCore\HMREngine\PatternMesh\PatternMeshFactory.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\mcmco\Desktop\WMMR\src\MovieMakerCore\HMREngine\TextRender\TextRenderPipeline.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\mcmco\Desktop\WMMR\src\MovieMakerCore\HMREngine\d3dx11compat.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\mcmco\Desktop\WMMR\src\MovieMakerCore\HMRAVSource\dxva2stubs.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\mcmco\Desktop\WMMR\src\MovieMakerCore\Publishing\PublishDialogs.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\mcmco\Desktop\WMMR\src\MovieMakerCore\Publishing\PublishItem.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\mcmco\Desktop\WMMR\src\MovieMakerCore\Publishing\PublishJob.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\mcmco\Desktop\WMMR\src\MovieMakerCore\Publishing\PublishClasses.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\mcmco\Desktop\WMMR\src\MovieMakerCore\Publishing\XmlManifest.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <CustomBuild Include="C:\Users\mcmco\Desktop\WMMR\src\MovieMakerCore\CMakeLists.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="C:\Users\mcmco\Desktop\WMMR\src\MovieMakerCore\MovieMakerCore.def">
+      <Filter>Source Files</Filter>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{7165FFE9-905E-3490-8CC5-FB0AB75F7E98}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>

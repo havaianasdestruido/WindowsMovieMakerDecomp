@@ -1,35 +1,12 @@
 #include "Containers.h"
-#include "Element.h"
+#include "Controls.h"
+
 #include "Value.h"
 #include <windowsx.h>
 
 namespace DirectUI {
 
-// Unique markers to prevent COMDAT folding of identical stub bodies
-static int g_CreateHWNDElement_mark = 101;
-static int g_GetRootHWND_mark = 102;
-static int g_GetKeyFocusedElement_mark = 103;
-static int g_Host_mark = 104;
-static int g_SetDefaultFocus_mark = 105;
-static int g_DestroyWindow_mark = 106;
-static int g_Initialize_mark = 107;
-static int g_OnCreateRegion_mark = 108;
-static int g_OnUpdateFrame_mark = 109;
-static int g_OnDefaultFrameColorChanged_mark = 110;
-static int g_ExitDialog_mark = 113;
-static int g_ShowDialog_mark = 114;
-static int g_CreatePopupWindow_mark = 118;
-static int g_CreateSuperPopup_mark = 119;
-static int g_InsertItem_mark = 120;
-static int g_SetNoPrefixOption_mark = 121;
-static int g_CreatePopupMenu_mark = 122;
-static int g_SetFocusOnChild_mark = 123;
-static int g_ResizeBorderSplitter_mark = 124;
-static int g_DoModal_mark = 111;
-static int g_DoModeless_mark = 112;
-static int g_GetDialogHWND_mark = 115;
-static int g_FindDialogElement_mark = 116;
-static int g_GetDUIParser_mark = 117;
+// Marker stubs removed – real implementations provided
 
 // PropertyInfo definitions
 PropertyInfo g_FrameTitleProp = { L"FrameTitle" };
@@ -53,8 +30,9 @@ HWND HWNDElement::GetRootHWND()
 
 HWNDElement* HWNDElement::GetKeyFocusedElement()
 {
-    return (g_GetKeyFocusedElement_mark > 0) ? nullptr : this;
+    return g_focusedElement ? static_cast<HWNDElement*>(g_focusedElement) : nullptr;
 }
+
 
 // ====================================================================
 // HWNDHost
@@ -398,23 +376,64 @@ HRESULT CDUIDialog::FilterMessage(MSG* msg)
 
 int CDUIDialog::DoModal(HWND hwndParent, HINSTANCE hInstance, int dlgId, Element* root)
 {
-    UNREFERENCED_PARAMETER(hwndParent);
-    UNREFERENCED_PARAMETER(hInstance);
-    UNREFERENCED_PARAMETER(dlgId);
-    UNREFERENCED_PARAMETER(root);
+    // Register class once
+    static bool s_registered = false;
+    if (!s_registered)
+    {
+        WNDCLASSW wc = {0};
+        wc.lpfnWndProc = DUIWndProc;
+        wc.hInstance = hInstance ? hInstance : GetModuleHandleW(nullptr);
+        wc.lpszClassName = L"CDUIDialog";
+        wc.hCursor = LoadCursorW(nullptr, IDC_ARROW);
+        RegisterClassW(&wc);
+        s_registered = true;
+    }
+    // Store root element if provided
+    if (root) m_root = root;
+    // Create window
+    DWORD style = WS_OVERLAPPEDWINDOW | WS_VISIBLE;
+    m_hwnd = CreateWindowExW(0, L"CDUIDialog", L"", style,
+        CW_USEDEFAULT, CW_USEDEFAULT, 800, 600,
+        hwndParent, nullptr, hInstance, this);
+    if (!m_hwnd) return 0;
     m_isModal = true;
-    m_result = IDOK;
-    return (g_DoModal_mark > 0) ? m_result : 0;
+    // Modal loop
+    MSG msg;
+    while (GetMessageW(&msg, nullptr, 0, 0))
+    {
+        if (!IsDialogMessage(m_hwnd, &msg))
+        {
+            TranslateMessage(&msg);
+            DispatchMessageW(&msg);
+        }
+        if (!IsWindow(m_hwnd)) break; // window destroyed
+    }
+    return m_result;
 }
 
 int CDUIDialog::DoModeless(HWND hwndParent, HINSTANCE hInstance, int dlgId, Element* root)
 {
-    UNREFERENCED_PARAMETER(hwndParent);
-    UNREFERENCED_PARAMETER(hInstance);
-    UNREFERENCED_PARAMETER(dlgId);
-    UNREFERENCED_PARAMETER(root);
+    // Ensure class registered (same static as DoModal)
+    static bool s_registered = false;
+    if (!s_registered)
+    {
+        WNDCLASSW wc = {0};
+        wc.lpfnWndProc = DUIWndProc;
+        wc.hInstance = hInstance ? hInstance : GetModuleHandleW(nullptr);
+        wc.lpszClassName = L"CDUIDialog";
+        wc.hCursor = LoadCursorW(nullptr, IDC_ARROW);
+        RegisterClassW(&wc);
+        s_registered = true;
+    }
+    if (root) m_root = root;
+    DWORD style = WS_OVERLAPPEDWINDOW;
+    m_hwnd = CreateWindowExW(0, L"CDUIDialog", L"", style,
+        CW_USEDEFAULT, CW_USEDEFAULT, 800, 600,
+        hwndParent, nullptr, hInstance, this);
+    if (!m_hwnd) return E_FAIL;
+    ShowWindow(m_hwnd, SW_SHOW);
     m_isModal = false;
-    return (g_DoModeless_mark > 0) ? S_OK : E_FAIL;
+    return S_OK;
 }
 
 HRESULT CDUIDialog::ExitDialog(int result)

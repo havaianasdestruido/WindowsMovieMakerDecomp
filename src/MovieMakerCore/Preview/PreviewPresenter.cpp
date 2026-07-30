@@ -1170,14 +1170,9 @@ void PreviewPresenterWrapper::OnTimer()
     }
 }
 
-void CALLBACK PreviewPresenterWrapper::OnPlaybackTimer(
-    UINT /*uTimerID*/, UINT /*uMsg*/, DWORD_PTR dwUser,
-    DWORD_PTR /*dw1*/, DWORD_PTR /*dw2*/)
-{
-    PreviewPresenterWrapper* pThis = reinterpret_cast<PreviewPresenterWrapper*>(dwUser);
-    if (pThis)
-        pThis->OnTimer();
-}
+    // Dead callback removed – SetTimer uses WM_TIMER message path
+    // void CALLBACK PreviewPresenterWrapper::OnPlaybackTimer(UINT, UINT, DWORD_PTR, DWORD_PTR, DWORD_PTR) {}
+
 
 DWORD PreviewPresenterWrapper::CalculateFrameIntervalMs() const
 {

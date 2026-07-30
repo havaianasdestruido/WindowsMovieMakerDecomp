@@ -25,12 +25,14 @@ TimelineController::~TimelineController() {}
 // ============================================================================
 HRESULT TimelineController::SeekTo(LONGLONG llPositionMs)
 {
+    std::lock_guard<std::recursive_mutex> lock(m_mutex);
+
     if (llPositionMs < 0)
         return E_INVALIDARG;
 
     m_llCurrentPositionMs = llPositionMs;
 
-    if (m_llDurationMs > 0 && m_llCurrentPositionMs > m_llDurationMs)
+    if (m_llCurrentPositionMs > m_llDurationMs)
         m_llCurrentPositionMs = m_llDurationMs;
 
     return S_OK;

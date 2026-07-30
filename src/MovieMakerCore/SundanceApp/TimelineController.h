@@ -4,6 +4,7 @@
 
 #include "../pch.h"
 #include "../MovieMakerCore.h"
+#include <mutex>
 
 class TimelineController
 {
@@ -50,6 +51,7 @@ private:
     float    m_flMaxZoom;
     size_t   m_cTracks;
     size_t   m_nSelectedTrack;
+    mutable std::mutex m_mutex;
 };
 
 #endif

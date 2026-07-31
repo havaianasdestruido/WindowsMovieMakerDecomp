@@ -119,7 +119,7 @@ private:
     StoryboardManager::MovieProject*      m_pProject;
 
     // -- Synchronization --
-    CRITICAL_SECTION m_csLock;
+    mutable CRITICAL_SECTION m_csLock;
 
     PreviewDataContext(const PreviewDataContext&);
     PreviewDataContext& operator=(const PreviewDataContext&);

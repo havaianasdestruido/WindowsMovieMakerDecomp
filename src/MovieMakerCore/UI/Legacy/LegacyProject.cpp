@@ -514,9 +514,9 @@ HRESULT LegacyProjectSupport::ReadLegacyExtent(
     if (SUCCEEDED(XmlReaderGetAttribute(pReader, L"muted", &pszValue)) && pszValue)
         pExtent->SetMuted(_wtoi(pszValue) != 0);
     if (SUCCEEDED(XmlReaderGetAttribute(pReader, L"fadeIn", &pszValue)) && pszValue)
-        pExtent->SetFadeInDurationHns(ConvertLegacyTimeToHns(static_cast<DWORD>(_wtoi64(pszValue))));
+        pExtent->SetFadeInDurationHns(ConvertLegacyTimeToHns(_wtoi64(pszValue)));
     if (SUCCEEDED(XmlReaderGetAttribute(pReader, L"fadeOut", &pszValue)) && pszValue)
-        pExtent->SetFadeOutDurationHns(ConvertLegacyTimeToHns(static_cast<DWORD>(_wtoi64(pszValue))));
+        pExtent->SetFadeOutDurationHns(ConvertLegacyTimeToHns(_wtoi64(pszValue)));
 
     return S_OK;
 }
@@ -527,10 +527,10 @@ HRESULT LegacyProjectSupport::ConvertLegacyMediaItem(
     if (!pOutItem)
         return E_POINTER;
 
-    pOutItem->SetSourcePath(strLegacyItem);
-
     if (strLegacyItem.IsEmpty())
         return E_INVALIDARG;
+
+    pOutItem->SetSourcePath(strLegacyItem);
 
     return S_OK;
 }
@@ -554,11 +554,11 @@ HRESULT LegacyProjectSupport::ConvertLegacyExtent(
     return S_OK;
 }
 
-LONGLONG LegacyProjectSupport::ConvertLegacyTimeToHns(DWORD dwLegacyTime)
+LONGLONG LegacyProjectSupport::ConvertLegacyTimeToHns(LONGLONG llLegacyTime)
 {
     // In the legacy format (2009/2010), time was stored in milliseconds.
     // Current format uses hundred-nanosecond intervals (1 ms = 10000 HNS).
-    return static_cast<LONGLONG>(dwLegacyTime) * 10000;
+    return llLegacyTime * 10000;
 }
 
 float LegacyProjectSupport::ConvertLegacyCoordToNormalized(DWORD dwLegacyCoord, DWORD dwContainerSize)
@@ -584,54 +584,109 @@ HRESULT LegacyProjectSupport::SaveAsLegacyFormat(
     if (FAILED(hr))
         return hr;
 
+    // Legacy 2010/2011 .wlmp files are UTF-16 encoded XML.
+    hr = spWriter->SetProperty(XmlWriterProperty_Encoding, L"utf-16");
+    if (FAILED(hr))
+        return hr;
+
     hr = spWriter->SetOutput(spStream);
     if (FAILED(hr))
         return hr;
 
-    spWriter->SetProperty(XmlWriterProperty_MethodDecl, XmlWriterMethod_Xml);
-    spWriter->WriteStartDocument(XmlStandalone_Omit);
+    hr = spWriter->SetProperty(XmlWriterProperty_MethodDecl, XmlWriterMethod_Xml);
+    if (FAILED(hr))
+        return hr;
+
+    hr = spWriter->WriteStartDocument(XmlStandalone_Omit);
+    if (FAILED(hr))
+        return hr;
 
     DWORD dwMajor = m_uVersionMajor ? m_uVersionMajor : 14;
     DWORD dwMinor = m_uVersionMinor ? m_uVersionMinor : 0;
 
-    spWriter->WriteStartElement(nullptr, L"project", nullptr);
-    spWriter->WriteAttributeString(nullptr, L"versionMajor", nullptr,
-        CW2T(CStringW().Format(L"%u", dwMajor)));
-    spWriter->WriteAttributeString(nullptr, L"versionMinor", nullptr,
-        CW2T(CStringW().Format(L"%u", dwMinor)));
+    LPCWSTR pszNamespace = (dwMajor >= 15) ? kLegacyNamespace2011 : kLegacyNamespace2010;
+
+    hr = spWriter->WriteStartElement(nullptr, L"project", pszNamespace);
+    if (FAILED(hr))
+        return hr;
+
+    CStringW strVal;
+    strVal.Format(L"%u", dwMajor);
+    hr = spWriter->WriteAttributeString(nullptr, L"versionMajor", nullptr, strVal);
+    if (FAILED(hr))
+        return hr;
+
+    strVal.Format(L"%u", dwMinor);
+    hr = spWriter->WriteAttributeString(nullptr, L"versionMinor", nullptr, strVal);
+    if (FAILED(hr))
+        return hr;
 
     CStringW strName;
     strName = pProject->GetProjectName();
     if (!strName.IsEmpty())
     {
-        spWriter->WriteAttributeString(nullptr, L"name", nullptr, CW2T(strName));
+        hr = spWriter->WriteAttributeString(nullptr, L"name", nullptr, strName);
+        if (FAILED(hr))
+            return hr;
     }
 
-    WriteLegacyMediaItems(spWriter, pProject);
+    hr = WriteLegacyMediaItems(spWriter, pProject);
+    if (FAILED(hr))
+        return hr;
 
-    WriteLegacyTimeline(spWriter, pProject);
+    hr = WriteLegacyTimeline(spWriter, pProject);
+    if (FAILED(hr))
+        return hr;
 
-    spWriter->WriteStartElement(nullptr, L"settings", nullptr);
-    {
-        CStringW strVal;
-        strVal.Format(L"%u", pProject->GetSettings().GetOutputWidth());
-        spWriter->WriteAttributeString(nullptr, L"outputWidth", nullptr, CW2T(strVal));
-        strVal.Format(L"%u", pProject->GetSettings().GetOutputHeight());
-        spWriter->WriteAttributeString(nullptr, L"outputHeight", nullptr, CW2T(strVal));
-        strVal.Format(L"%.2f", pProject->GetSettings().GetAspectRatio());
-        spWriter->WriteAttributeString(nullptr, L"aspectRatio", nullptr, CW2T(strVal));
-        strVal.Format(L"%u", pProject->GetSettings().GetVideoBitRate());
-        spWriter->WriteAttributeString(nullptr, L"videoBitRate", nullptr, CW2T(strVal));
-        strVal.Format(L"%u", pProject->GetSettings().GetAudioBitRate());
-        spWriter->WriteAttributeString(nullptr, L"audioBitRate", nullptr, CW2T(strVal));
-        strVal.Format(L"%u", pProject->GetSettings().GetFrameRate());
-        spWriter->WriteAttributeString(nullptr, L"frameRate", nullptr, CW2T(strVal));
-    }
-    spWriter->WriteEndElement();
+    hr = spWriter->WriteStartElement(nullptr, L"settings", nullptr);
+    if (FAILED(hr))
+        return hr;
 
-    spWriter->WriteEndElement();
-    spWriter->WriteEndDocument();
-    spWriter->Flush();
+    strVal.Format(L"%u", pProject->GetSettings().GetOutputWidth());
+    hr = spWriter->WriteAttributeString(nullptr, L"outputWidth", nullptr, strVal);
+    if (FAILED(hr))
+        return hr;
+
+    strVal.Format(L"%u", pProject->GetSettings().GetOutputHeight());
+    hr = spWriter->WriteAttributeString(nullptr, L"outputHeight", nullptr, strVal);
+    if (FAILED(hr))
+        return hr;
+
+    strVal.Format(L"%.2f", pProject->GetSettings().GetAspectRatio());
+    hr = spWriter->WriteAttributeString(nullptr, L"aspectRatio", nullptr, strVal);
+    if (FAILED(hr))
+        return hr;
+
+    strVal.Format(L"%u", pProject->GetSettings().GetVideoBitRate());
+    hr = spWriter->WriteAttributeString(nullptr, L"videoBitRate", nullptr, strVal);
+    if (FAILED(hr))
+        return hr;
+
+    strVal.Format(L"%u", pProject->GetSettings().GetAudioBitRate());
+    hr = spWriter->WriteAttributeString(nullptr, L"audioBitRate", nullptr, strVal);
+    if (FAILED(hr))
+        return hr;
+
+    strVal.Format(L"%u", pProject->GetSettings().GetFrameRate());
+    hr = spWriter->WriteAttributeString(nullptr, L"frameRate", nullptr, strVal);
+    if (FAILED(hr))
+        return hr;
+
+    hr = spWriter->WriteEndElement();
+    if (FAILED(hr))
+        return hr;
+
+    hr = spWriter->WriteEndElement();
+    if (FAILED(hr))
+        return hr;
+
+    hr = spWriter->WriteEndDocument();
+    if (FAILED(hr))
+        return hr;
+
+    hr = spWriter->Flush();
+    if (FAILED(hr))
+        return hr;
 
     return S_OK;
 }
@@ -642,7 +697,9 @@ HRESULT LegacyProjectSupport::WriteLegacyMediaItems(
     if (!pWriter || !pProject)
         return E_POINTER;
 
-    pWriter->WriteStartElement(nullptr, L"media", nullptr);
+    HRESULT hr = pWriter->WriteStartElement(nullptr, L"media", nullptr);
+    if (FAILED(hr))
+        return hr;
 
     for (size_t i = 0; i < pProject->GetMediaItemCount(); ++i)
     {
@@ -650,37 +707,58 @@ HRESULT LegacyProjectSupport::WriteLegacyMediaItems(
         if (!pItem)
             continue;
 
-        pWriter->WriteStartElement(nullptr, L"mediaItem", nullptr);
+        hr = pWriter->WriteStartElement(nullptr, L"mediaItem", nullptr);
+        if (FAILED(hr))
+            return hr;
 
         CStringW strVal;
         strVal.Format(L"%u", pItem->GetMediaId());
-        pWriter->WriteAttributeString(nullptr, L"id", nullptr, CW2T(strVal));
+        hr = pWriter->WriteAttributeString(nullptr, L"id", nullptr, strVal);
+        if (FAILED(hr))
+            return hr;
 
-        pWriter->WriteAttributeString(nullptr, L"filePath", nullptr,
-            CW2T(pItem->GetSourcePath()));
+        hr = pWriter->WriteAttributeString(nullptr, L"filePath", nullptr, pItem->GetSourcePath());
+        if (FAILED(hr))
+            return hr;
 
         strVal.Format(L"%u", pItem->GetMediaType());
-        pWriter->WriteAttributeString(nullptr, L"mediaType", nullptr, CW2T(strVal));
+        hr = pWriter->WriteAttributeString(nullptr, L"mediaType", nullptr, strVal);
+        if (FAILED(hr))
+            return hr;
 
         strVal.Format(L"%lld", pItem->GetDurationHns() / 10000);
-        pWriter->WriteAttributeString(nullptr, L"duration", nullptr, CW2T(strVal));
+        hr = pWriter->WriteAttributeString(nullptr, L"duration", nullptr, strVal);
+        if (FAILED(hr))
+            return hr;
 
         strVal.Format(L"%lld", pItem->GetStartTimeHns() / 10000);
-        pWriter->WriteAttributeString(nullptr, L"startTime", nullptr, CW2T(strVal));
+        hr = pWriter->WriteAttributeString(nullptr, L"startTime", nullptr, strVal);
+        if (FAILED(hr))
+            return hr;
 
         strVal.Format(L"%u", pItem->GetWidth());
-        pWriter->WriteAttributeString(nullptr, L"width", nullptr, CW2T(strVal));
+        hr = pWriter->WriteAttributeString(nullptr, L"width", nullptr, strVal);
+        if (FAILED(hr))
+            return hr;
 
         strVal.Format(L"%u", pItem->GetHeight());
-        pWriter->WriteAttributeString(nullptr, L"height", nullptr, CW2T(strVal));
+        hr = pWriter->WriteAttributeString(nullptr, L"height", nullptr, strVal);
+        if (FAILED(hr))
+            return hr;
 
         strVal.Format(L"%u", pItem->GetFrameRate());
-        pWriter->WriteAttributeString(nullptr, L"frameRate", nullptr, CW2T(strVal));
+        hr = pWriter->WriteAttributeString(nullptr, L"frameRate", nullptr, strVal);
+        if (FAILED(hr))
+            return hr;
 
-        pWriter->WriteEndElement();
+        hr = pWriter->WriteEndElement();
+        if (FAILED(hr))
+            return hr;
     }
 
-    pWriter->WriteEndElement();
+    hr = pWriter->WriteEndElement();
+    if (FAILED(hr))
+        return hr;
 
     return S_OK;
 }
@@ -691,7 +769,9 @@ HRESULT LegacyProjectSupport::WriteLegacyTimeline(
     if (!pWriter || !pProject)
         return E_POINTER;
 
-    pWriter->WriteStartElement(nullptr, L"timeline", nullptr);
+    HRESULT hr = pWriter->WriteStartElement(nullptr, L"timeline", nullptr);
+    if (FAILED(hr))
+        return hr;
 
     const StoryboardManager::ProjectTimeline* pTimeline =
         pProject->GetTimeline(StoryboardManager::TimelineTrackTypeVideo);
@@ -702,17 +782,25 @@ HRESULT LegacyProjectSupport::WriteLegacyTimeline(
         {
             DWORD dwExtentId = pTimeline->GetExtentIdAt(i);
 
-            pWriter->WriteStartElement(nullptr, L"extent", nullptr);
+            hr = pWriter->WriteStartElement(nullptr, L"extent", nullptr);
+            if (FAILED(hr))
+                return hr;
 
             CStringW strVal;
             strVal.Format(L"%u", dwExtentId);
-            pWriter->WriteAttributeString(nullptr, L"extentId", nullptr, CW2T(strVal));
+            hr = pWriter->WriteAttributeString(nullptr, L"extentId", nullptr, strVal);
+            if (FAILED(hr))
+                return hr;
 
-            pWriter->WriteEndElement();
+            hr = pWriter->WriteEndElement();
+            if (FAILED(hr))
+                return hr;
         }
     }
 
-    pWriter->WriteEndElement();
+    hr = pWriter->WriteEndElement();
+    if (FAILED(hr))
+        return hr;
 
     return S_OK;
 }

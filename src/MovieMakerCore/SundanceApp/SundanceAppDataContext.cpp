@@ -93,6 +93,254 @@ namespace
 }
 
 // ============================================================================
+// Connection-point enumerators
+// ============================================================================
+// Minimal, ref-counted enumerators used by the object's IConnectionPoint
+// support. Both snapshot their data at creation time so later Advise/Unadvise
+// calls cannot invalidate an in-progress enumeration.
+namespace
+{
+    class CEnumConnectionPoints : public IEnumConnectionPoints
+    {
+    public:
+        explicit CEnumConnectionPoints(IConnectionPoint* pCP) throw()
+            : m_cRef(1), m_pCP(pCP), m_bDone(false)
+        {
+            m_pCP->AddRef();
+        }
+
+        virtual ~CEnumConnectionPoints()
+        {
+            m_pCP->Release();
+        }
+
+        STDMETHOD(QueryInterface)(REFIID riid, void** ppv) override
+        {
+            if (!ppv)
+                return E_POINTER;
+
+            if (riid == IID_IUnknown || riid == IID_IEnumConnectionPoints)
+            {
+                *ppv = static_cast<IEnumConnectionPoints*>(this);
+                AddRef();
+                return S_OK;
+            }
+
+            *ppv = NULL;
+            return E_NOINTERFACE;
+        }
+
+        STDMETHOD_(ULONG, AddRef)() override
+        {
+            return static_cast<ULONG>(InterlockedIncrement(&m_cRef));
+        }
+
+        STDMETHOD_(ULONG, Release)() override
+        {
+            ULONG cRef = static_cast<ULONG>(InterlockedDecrement(&m_cRef));
+            if (cRef == 0)
+                delete this;
+            return cRef;
+        }
+
+        STDMETHOD(Next)(ULONG celt, IConnectionPoint** ppCP, ULONG* pceltFetched) override
+        {
+            if (!ppCP)
+                return E_POINTER;
+
+            ULONG cFetched = 0;
+            if (celt > 0 && !m_bDone)
+            {
+                m_bDone = true;
+                *ppCP = m_pCP;
+                m_pCP->AddRef();
+                cFetched = 1;
+            }
+
+            if (pceltFetched)
+                *pceltFetched = cFetched;
+
+            return (celt == 0 || cFetched == celt) ? S_OK : S_FALSE;
+        }
+
+        STDMETHOD(Skip)(ULONG celt) override
+        {
+            if (celt == 0)
+                return S_OK;
+
+            if (!m_bDone)
+            {
+                m_bDone = true;
+                return (celt == 1) ? S_OK : S_FALSE;
+            }
+
+            return S_FALSE;
+        }
+
+        STDMETHOD(Reset)() override
+        {
+            m_bDone = false;
+            return S_OK;
+        }
+
+        STDMETHOD(Clone)(IEnumConnectionPoints** ppEnum) override
+        {
+            if (!ppEnum)
+                return E_POINTER;
+
+            CEnumConnectionPoints* pClone = new (std::nothrow) CEnumConnectionPoints(m_pCP);
+            if (!pClone)
+                return E_OUTOFMEMORY;
+
+            pClone->m_bDone = m_bDone;
+            *ppEnum = pClone;
+            return S_OK;
+        }
+
+    private:
+        LONG                m_cRef;
+        IConnectionPoint*   m_pCP;
+        bool                m_bDone;
+    };
+
+    class CEnumConnections : public IEnumConnections
+    {
+    public:
+        CEnumConnections() throw()
+            : m_cRef(1), m_cElements(0), m_nIndex(0), m_pData(NULL)
+        {
+        }
+
+        virtual ~CEnumConnections()
+        {
+            for (ULONG i = 0; i < m_cElements; ++i)
+            {
+                if (m_pData[i].pUnk)
+                    m_pData[i].pUnk->Release();
+            }
+            delete[] m_pData;
+        }
+
+        // Copies the given (non-owning) snapshot, AddRef'ing each sink.
+        HRESULT InitCopy(const CONNECTDATA* pData, ULONG cElements) throw()
+        {
+            m_cElements = cElements;
+            m_pData = new (std::nothrow) CONNECTDATA[m_cElements ? m_cElements : 1];
+            if (!m_pData)
+            {
+                m_cElements = 0;
+                return E_OUTOFMEMORY;
+            }
+
+            for (ULONG i = 0; i < m_cElements; ++i)
+            {
+                m_pData[i].dwCookie = pData[i].dwCookie;
+                m_pData[i].pUnk = pData[i].pUnk;
+                if (m_pData[i].pUnk)
+                    m_pData[i].pUnk->AddRef();
+            }
+
+            return S_OK;
+        }
+
+        STDMETHOD(QueryInterface)(REFIID riid, void** ppv) override
+        {
+            if (!ppv)
+                return E_POINTER;
+
+            if (riid == IID_IUnknown || riid == IID_IEnumConnections)
+            {
+                *ppv = static_cast<IEnumConnections*>(this);
+                AddRef();
+                return S_OK;
+            }
+
+            *ppv = NULL;
+            return E_NOINTERFACE;
+        }
+
+        STDMETHOD_(ULONG, AddRef)() override
+        {
+            return static_cast<ULONG>(InterlockedIncrement(&m_cRef));
+        }
+
+        STDMETHOD_(ULONG, Release)() override
+        {
+            ULONG cRef = static_cast<ULONG>(InterlockedDecrement(&m_cRef));
+            if (cRef == 0)
+                delete this;
+            return cRef;
+        }
+
+        STDMETHOD(Next)(ULONG celt, CONNECTDATA* pcd, ULONG* pceltFetched) override
+        {
+            if (!pcd)
+                return E_POINTER;
+
+            ULONG cFetched = 0;
+            while (cFetched < celt && m_nIndex < m_cElements)
+            {
+                pcd[cFetched] = m_pData[m_nIndex];
+                if (pcd[cFetched].pUnk)
+                    pcd[cFetched].pUnk->AddRef();
+                ++m_nIndex;
+                ++cFetched;
+            }
+
+            if (pceltFetched)
+                *pceltFetched = cFetched;
+
+            return cFetched == celt ? S_OK : S_FALSE;
+        }
+
+        STDMETHOD(Skip)(ULONG celt) override
+        {
+            if (m_nIndex + celt > m_cElements)
+            {
+                m_nIndex = m_cElements;
+                return S_FALSE;
+            }
+
+            m_nIndex += celt;
+            return S_OK;
+        }
+
+        STDMETHOD(Reset)() override
+        {
+            m_nIndex = 0;
+            return S_OK;
+        }
+
+        STDMETHOD(Clone)(IEnumConnections** ppEnum) override
+        {
+            if (!ppEnum)
+                return E_POINTER;
+
+            CEnumConnections* pClone = new (std::nothrow) CEnumConnections();
+            if (!pClone)
+                return E_OUTOFMEMORY;
+
+            HRESULT hr = pClone->InitCopy(m_pData, m_cElements);
+            if (FAILED(hr))
+            {
+                delete pClone;
+                return hr;
+            }
+
+            pClone->m_nIndex = m_nIndex;
+            *ppEnum = pClone;
+            return S_OK;
+        }
+
+    private:
+        LONG        m_cRef;
+        ULONG       m_cElements;
+        ULONG       m_nIndex;
+        CONNECTDATA* m_pData;
+    };
+}
+
+// ============================================================================
 // Construction / destruction
 // ============================================================================
 SundanceAppDataContext::SundanceAppDataContext()
@@ -279,6 +527,7 @@ HRESULT SundanceAppDataContext::SetProperty(LPCWSTR pszName, const VARIANT* varV
             m_dTimelinePosition = varConverted.dblVal;
             FirePropertyChanged(kPropTimelinePosition);
         }
+        VariantClear(&varConverted);
         return hr;
     }
 
@@ -292,6 +541,7 @@ HRESULT SundanceAppDataContext::SetProperty(LPCWSTR pszName, const VARIANT* varV
             m_lSelectedTrack = varConverted.lVal;
             FirePropertyChanged(kPropSelectedTrack);
         }
+        VariantClear(&varConverted);
         return hr;
     }
 
@@ -306,6 +556,21 @@ void SundanceAppDataContext::RefreshAllProperties()
     RefreshProjectProperties();
     RefreshCommandProperties();
     RefreshPlaybackProperties();
+
+    FirePropertyChanged(kPropProjectName);
+    FirePropertyChanged(kPropIsProjectOpen);
+    FirePropertyChanged(kPropIsProjectDirty);
+    FirePropertyChanged(kPropCanUndo);
+    FirePropertyChanged(kPropCanRedo);
+    FirePropertyChanged(kPropCanCut);
+    FirePropertyChanged(kPropCanCopy);
+    FirePropertyChanged(kPropCanPaste);
+    FirePropertyChanged(kPropIsPlaying);
+    FirePropertyChanged(kPropIsPublishing);
+    FirePropertyChanged(kPropIsEncoding);
+    FirePropertyChanged(kPropTimelinePosition);
+    FirePropertyChanged(kPropTimelineDuration);
+    FirePropertyChanged(kPropSelectedTrack);
 }
 
 // ============================================================================
@@ -320,14 +585,24 @@ void SundanceAppDataContext::RefreshProjectProperties()
     m_bProjectOpen = pApp->IsProjectOpen();
     m_bProjectDirty = pApp->IsProjectDirty();
 
+    // Total duration in seconds; hns = 100-nanosecond units
+    const double dblHnsToSeconds = 1.0 / 10000000.0;
+
     StoryboardManagerNamespace::MovieProject* pProject = pApp->GetProject();
     if (pProject)
     {
         m_strProjectName = pProject->GetDisplayName();
+
+        StoryboardManagerNamespace::ProjectTimeline* pTimeline =
+            pProject->GetTimeline(StoryboardManagerNamespace::TimelineTrackTypeVideo);
+        m_dTimelineDuration = pTimeline
+            ? static_cast<double>(pTimeline->GetTotalDurationHns()) * dblHnsToSeconds
+            : 0.0;
     }
     else
     {
         m_strProjectName.Empty();
+        m_dTimelineDuration = 0.0;
     }
 }
 
@@ -342,11 +617,6 @@ void SundanceAppDataContext::RefreshCommandProperties()
 
     m_bCanUndo = pApp->CanUndo();
     m_bCanRedo = pApp->CanRedo();
-
-    // Update clipboard availability from model
-    FirePropertyChanged(L"CanCut");
-    FirePropertyChanged(L"CanCopy");
-    FirePropertyChanged(L"CanPaste");
 }
 
 // ============================================================================
@@ -420,6 +690,31 @@ void SundanceAppDataContext::OnProjectStateChanged()
 {
     RefreshProjectProperties();
     RefreshCommandProperties();
+    RefreshPlaybackProperties();
+
+    // Invalidate timeline-scoped state when no project is open so bound
+    // properties do not retain stale values after a project close.
+    if (!m_bProjectOpen)
+    {
+        m_dTimelinePosition = 0.0;
+        m_dTimelineDuration = 0.0;
+        m_lSelectedTrack = 0;
+    }
+
+    FirePropertyChanged(kPropProjectName);
+    FirePropertyChanged(kPropIsProjectOpen);
+    FirePropertyChanged(kPropIsProjectDirty);
+    FirePropertyChanged(kPropCanUndo);
+    FirePropertyChanged(kPropCanRedo);
+    FirePropertyChanged(kPropCanCut);
+    FirePropertyChanged(kPropCanCopy);
+    FirePropertyChanged(kPropCanPaste);
+    FirePropertyChanged(kPropIsPlaying);
+    FirePropertyChanged(kPropIsPublishing);
+    FirePropertyChanged(kPropIsEncoding);
+    FirePropertyChanged(kPropTimelinePosition);
+    FirePropertyChanged(kPropTimelineDuration);
+    FirePropertyChanged(kPropSelectedTrack);
 }
 
 void SundanceAppDataContext::OnTimelinePositionChanged(double dPosition)
@@ -431,6 +726,12 @@ void SundanceAppDataContext::OnTimelinePositionChanged(double dPosition)
 void SundanceAppDataContext::OnSelectionChanged()
 {
     RefreshCommandProperties();
+
+    FirePropertyChanged(kPropCanUndo);
+    FirePropertyChanged(kPropCanRedo);
+    FirePropertyChanged(kPropCanCut);
+    FirePropertyChanged(kPropCanCopy);
+    FirePropertyChanged(kPropCanPaste);
 }
 
 // ============================================================================

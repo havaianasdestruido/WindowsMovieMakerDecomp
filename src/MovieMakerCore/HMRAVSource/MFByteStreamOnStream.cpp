@@ -311,18 +311,6 @@ STDMETHODIMP MFByteStreamOnStream::Seek(
     case msoCurrent:
         llNewPosition = static_cast<LONGLONG>(m_qwPosition) + llSeekOffset;
         break;
-    case msoEnd:
-        {
-            QWORD qwLength = 0;
-            HRESULT hrLen = GetLength(&qwLength);
-            if (FAILED(hrLen))
-            {
-                LeaveCriticalSection(&m_csLock);
-                return hrLen;
-            }
-            llNewPosition = static_cast<LONGLONG>(qwLength) + llSeekOffset;
-        }
-        break;
     default:
         LeaveCriticalSection(&m_csLock);
         return E_INVALIDARG;

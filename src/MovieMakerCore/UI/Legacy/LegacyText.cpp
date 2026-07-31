@@ -14,6 +14,37 @@
 
 #include "LegacyText.h"
 
+namespace
+{
+// Creates a GDI+ font for the requested family. If the family does not exist
+// on the system (or is empty), falls back through well-known families so
+// measurement and rendering still succeed instead of silently failing.
+Gdiplus::Font CreateFontWithFallback(
+    LPCWSTR pszFamily, float flSize, Gdiplus::FontStyle style)
+{
+    Gdiplus::Font font(pszFamily && pszFamily[0] ? pszFamily : L"Segoe UI",
+                       flSize, style, Gdiplus::UnitPixel);
+    if (font.GetLastStatus() == Gdiplus::Ok)
+        return font;
+
+    static const LPCWSTR kFallbackFamilies[] = {
+        L"Arial",
+        L"Microsoft Sans Serif",
+        L"Segoe UI",
+    };
+
+    for (size_t i = 0; i < ARRAYSIZE(kFallbackFamilies); ++i)
+    {
+        Gdiplus::Font fallback(kFallbackFamilies[i], flSize, style, Gdiplus::UnitPixel);
+        if (fallback.GetLastStatus() == Gdiplus::Ok)
+            return fallback;
+    }
+
+    return Gdiplus::Font(Gdiplus::FontFamily::GenericSansSerif(),
+                         flSize, style, Gdiplus::UnitPixel);
+}
+}
+
 // ============================================================================
 // LegacyTransform implementation
 // ============================================================================

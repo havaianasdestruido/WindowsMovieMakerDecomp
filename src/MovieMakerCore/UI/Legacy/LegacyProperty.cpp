@@ -295,24 +295,24 @@ HRESULT ComplexProperty::SaveToStream(IStream* pStream)
 
     DWORD dwNameLen = static_cast<DWORD>(m_strName.GetLength());
     HRESULT hr = pStream->Write(&dwNameLen, sizeof(DWORD), &cbWritten);
-    if (FAILED(hr))
-        return hr;
+    if (FAILED(hr) || cbWritten != sizeof(DWORD))
+        return FAILED(hr) ? hr : E_FAIL;
     if (dwNameLen > 0)
     {
         hr = pStream->Write(static_cast<LPCWSTR>(m_strName),
             dwNameLen * sizeof(WCHAR), &cbWritten);
-        if (FAILED(hr))
-            return hr;
+        if (FAILED(hr) || cbWritten != dwNameLen * sizeof(WCHAR))
+            return FAILED(hr) ? hr : E_FAIL;
     }
 
     hr = pStream->Write(&m_dwType, sizeof(DWORD), &cbWritten);
-    if (FAILED(hr))
-        return hr;
+    if (FAILED(hr) || cbWritten != sizeof(DWORD))
+        return FAILED(hr) ? hr : E_FAIL;
 
     DWORD dwCount = static_cast<DWORD>(m_properties.size());
     hr = pStream->Write(&dwCount, sizeof(DWORD), &cbWritten);
-    if (FAILED(hr))
-        return hr;
+    if (FAILED(hr) || cbWritten != sizeof(DWORD))
+        return FAILED(hr) ? hr : E_FAIL;
 
     for (DWORD i = 0; i < dwCount; ++i)
     {
@@ -323,42 +323,56 @@ HRESULT ComplexProperty::SaveToStream(IStream* pStream)
         ATL::CString strPropName = pProp->GetName();
         DWORD dwPropNameLen = static_cast<DWORD>(strPropName.GetLength());
         hr = pStream->Write(&dwPropNameLen, sizeof(DWORD), &cbWritten);
-        if (FAILED(hr))
-            return hr;
+        if (FAILED(hr) || cbWritten != sizeof(DWORD))
+            return FAILED(hr) ? hr : E_FAIL;
         if (dwPropNameLen > 0)
         {
             hr = pStream->Write(static_cast<LPCWSTR>(strPropName),
                 dwPropNameLen * sizeof(WCHAR), &cbWritten);
-            if (FAILED(hr))
-                return hr;
+            if (FAILED(hr) || cbWritten != dwPropNameLen * sizeof(WCHAR))
+                return FAILED(hr) ? hr : E_FAIL;
         }
 
         PropertyValue val = pProp->GetValue();
         hr = pStream->Write(&val.type, sizeof(LegacyPropertyType), &cbWritten);
-        if (FAILED(hr))
-            return hr;
+        if (FAILED(hr) || cbWritten != sizeof(LegacyPropertyType))
+            return FAILED(hr) ? hr : E_FAIL;
 
         switch (val.type)
         {
         case LegacyPropertyTypeInteger:
             hr = pStream->Write(&val.nInt, sizeof(int), &cbWritten);
+            if (SUCCEEDED(hr) && cbWritten != sizeof(int))
+                hr = E_FAIL;
             break;
         case LegacyPropertyTypeFloat:
             hr = pStream->Write(&val.flFloat, sizeof(float), &cbWritten);
+            if (SUCCEEDED(hr) && cbWritten != sizeof(float))
+                hr = E_FAIL;
             break;
         case LegacyPropertyTypeBoolean:
             hr = pStream->Write(&val.bBool, sizeof(bool), &cbWritten);
+            if (SUCCEEDED(hr) && cbWritten != sizeof(bool))
+                hr = E_FAIL;
             break;
         case LegacyPropertyTypeColor:
             hr = pStream->Write(&val.crColor, sizeof(COLORREF), &cbWritten);
+            if (SUCCEEDED(hr) && cbWritten != sizeof(COLORREF))
+                hr = E_FAIL;
             break;
         case LegacyPropertyTypeString:
         {
             DWORD dwStrLen = static_cast<DWORD>(val.strValue.GetLength());
             hr = pStream->Write(&dwStrLen, sizeof(DWORD), &cbWritten);
+            if (SUCCEEDED(hr) && cbWritten != sizeof(DWORD))
+                hr = E_FAIL;
             if (SUCCEEDED(hr) && dwStrLen > 0)
+            {
                 hr = pStream->Write(static_cast<LPCWSTR>(val.strValue),
                     dwStrLen * sizeof(WCHAR), &cbWritten);
+                if (SUCCEEDED(hr) && cbWritten != dwStrLen * sizeof(WCHAR))
+                    hr = E_FAIL;
+            }
             break;
         }
         default:
@@ -377,12 +391,17 @@ HRESULT ComplexProperty::LoadFromStream(IStream* pStream)
         return E_POINTER;
 
     RemoveAllProperties();
+    m_strName.Empty();
+    m_dwType = 0;
 
     ULONG cbRead = 0;
     DWORD dwNameLen = 0;
     HRESULT hr = pStream->Read(&dwNameLen, sizeof(DWORD), &cbRead);
     if (FAILED(hr) || cbRead != sizeof(DWORD))
         return FAILED(hr) ? hr : E_FAIL;
+
+    if (dwNameLen > 0x100000)
+        return E_FAIL;
 
     if (dwNameLen > 0)
     {
@@ -403,12 +422,18 @@ HRESULT ComplexProperty::LoadFromStream(IStream* pStream)
     if (FAILED(hr) || cbRead != sizeof(DWORD))
         return FAILED(hr) ? hr : E_FAIL;
 
+    if (dwCount > 0x10000)
+        return E_FAIL;
+
     for (DWORD i = 0; i < dwCount; ++i)
     {
         DWORD dwPropNameLen = 0;
         hr = pStream->Read(&dwPropNameLen, sizeof(DWORD), &cbRead);
         if (FAILED(hr) || cbRead != sizeof(DWORD))
             return FAILED(hr) ? hr : E_FAIL;
+
+        if (dwPropNameLen > 0x100000)
+            return E_FAIL;
 
         CString strPropName;
         if (dwPropNameLen > 0)
@@ -467,6 +492,8 @@ HRESULT ComplexProperty::LoadFromStream(IStream* pStream)
         {
             DWORD dwStrLen = 0;
             hr = pStream->Read(&dwStrLen, sizeof(DWORD), &cbRead);
+            if (SUCCEEDED(hr) && cbRead == sizeof(DWORD) && dwStrLen > 0x100000)
+                hr = E_FAIL;
             if (SUCCEEDED(hr) && cbRead == sizeof(DWORD) && dwStrLen > 0)
             {
                 std::vector<WCHAR> strBuf(dwStrLen + 1);

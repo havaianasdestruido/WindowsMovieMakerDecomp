@@ -30,6 +30,7 @@ void GPURenderer::Cleanup() {
 
 HRESULT GPURenderer::Initialize(HWND hwnd) {
     Cleanup();
+    if (!hwnd) return E_INVALIDARG;
 
     D3D_FEATURE_LEVEL featureLevels[] = {
         D3D_FEATURE_LEVEL_11_1,
@@ -156,7 +157,10 @@ HRESULT GPURenderer::Initialize(HWND hwnd) {
 
 HRESULT GPURenderer::Resize(int width, int height) {
     if (!m_pSwapChain || !m_pDevice || !m_pD2DContext) return E_UNEXPECTED;
+    if (width < 1) width = 1;
+    if (height < 1) height = 1;
 
+    if (!m_pContext) return E_UNEXPECTED;
     m_pContext->OMSetRenderTargets(0, nullptr, nullptr);
     SafeRelease(m_pRenderTargetView);
     SafeRelease(m_pD2DTargetBitmap);
@@ -212,7 +216,8 @@ HRESULT GPURenderer::Present() {
 HRESULT GPURenderer::DrawVideoFrame(ID3D11Texture2D* pTexture, const RECT& destRect) {
     if (!m_pContext || !m_pRenderTargetView || !pTexture) return E_INVALIDARG;
 
-    m_pContext->OMSetRenderTargets(1, &m_pRenderTargetView, nullptr);
+    if (!m_pContext) return E_UNEXPECTED;
+    m_pContext->OMSetRenderTargets(0, nullptr, nullptr);
 
     D3D11_TEXTURE2D_DESC desc;
     pTexture->GetDesc(&desc);

@@ -179,8 +179,12 @@ public:
 
     void Invalidate(LPCWSTR pszPath)
     {
-        if (pszPath)
-            m_cache.erase(pszPath);
+        if (!pszPath) return;
+        auto it = m_cache.find(pszPath);
+        if (it != m_cache.end()) {
+            delete it->second;
+            m_cache.erase(it);
+        }
     }
 
     void Clear()

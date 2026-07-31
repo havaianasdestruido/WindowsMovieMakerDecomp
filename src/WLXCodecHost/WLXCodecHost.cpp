@@ -70,6 +70,7 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE /*hPrevInstance*/,
 
     // Create exit event
     g_hExitEvent = CreateEventW(NULL, TRUE, FALSE, NULL);
+    if (!g_hExitEvent) { hr = E_FAIL; goto Cleanup; }
 
     // Check command line for decode request
     int argc = 0;
@@ -99,6 +100,7 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE /*hPrevInstance*/,
         LocalFree(argv);
 
     // Cleanup
+Cleanup:
     if (g_hExitEvent)
     {
         CloseHandle(g_hExitEvent);
@@ -117,6 +119,7 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE /*hPrevInstance*/,
         CoUninitialize();
         g_bComInit = false;
     }
+
 
     return SUCCEEDED(hr) ? 0 : 3;
 }

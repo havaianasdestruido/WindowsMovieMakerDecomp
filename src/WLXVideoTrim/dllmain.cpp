@@ -29,8 +29,11 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD dwReason, LPVOID lpReserved)
 
         // COM required for DirectShow filter graph operations
         HRESULT hr = CoInitializeEx(NULL, COINIT_APARTMENTTHREADED | COINIT_DISABLE_OLE1DDE);
-        if (SUCCEEDED(hr))
+        if (SUCCEEDED(hr)) {
             g_bComInit = true;
+        } else {
+            return FALSE; // abort load on COM init failure
+        }
 
         break;
     }

@@ -26,6 +26,7 @@
 #include <strsafe.h>
 #include <vector>
 #include <string>
+#include <new>
 
 // ============================================================================
 // Forward declarations
@@ -86,14 +87,16 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE /*hPrevInstance*/,
             // Unknown command -- enter message loop for COM activation
             hr = RunMessageLoop();
         }
-
-        LocalFree(argv);
     }
     else
     {
         // No command-line args -- enter message loop for COM activation
         hr = RunMessageLoop();
     }
+
+    // CommandLineToArgvW succeeded; free the buffer in all cases
+    if (argv)
+        LocalFree(argv);
 
     // Cleanup
     if (g_hExitEvent)
@@ -157,7 +160,7 @@ static HRESULT ProcessDecodeRequest(LPCWSTR pszFilePath)
         return HRESULT_FROM_WIN32(ERROR_FILE_NOT_FOUND);
 
     // Load and decode the image using GDI+
-    Gdiplus::Bitmap* pBitmap = new Gdiplus::Bitmap(pszFilePath);
+    Gdiplus::Bitmap* pBitmap = new (std::nothrow) Gdiplus::Bitmap(pszFilePath);
     if (!pBitmap)
         return E_OUTOFMEMORY;
 

@@ -242,6 +242,12 @@ HRESULT TextureInterOpDX9::Initialize(const TextureInteropDesc& desc, IDirect3DD
         return hr;
 
     hr = CreateTextureFromDevice(pDevice);
+    if (FAILED(hr))
+    {
+        Shutdown();
+        return hr;
+    }
+
     return hr;
 }
 
@@ -392,6 +398,14 @@ HRESULT TextureInterOpDX11::Initialize(const TextureInteropDesc& desc, ID3D11Dev
     if (!pDevice)
         return E_POINTER;
 
+    // Release any context obtained by an earlier initialization. The
+    // immediate context reference is AddRef'd by GetImmediateContext, so
+    // re-initializing without releasing it leaks the D3D11 device.
+    if (m_pContext)
+    {
+        m_pContext->Release();
+        m_pContext = nullptr;
+    }
     m_pDevice = pDevice;
     m_pDevice->GetImmediateContext(&m_pContext);
 
@@ -400,6 +414,12 @@ HRESULT TextureInterOpDX11::Initialize(const TextureInteropDesc& desc, ID3D11Dev
         return hr;
 
     hr = CreateTextureFromDevice(pDevice);
+    if (FAILED(hr))
+    {
+        Shutdown();
+        return hr;
+    }
+
     return hr;
 }
 

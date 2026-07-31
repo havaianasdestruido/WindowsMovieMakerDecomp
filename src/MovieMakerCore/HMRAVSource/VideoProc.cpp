@@ -4,6 +4,28 @@
 #include "VideoProc.h"
 #include <algorithm>
 
+namespace
+{
+
+// Row pitch (in bytes) for the luma/RGB plane of the given MF video
+// subtype at the given width. Packed RGB formats use bytes-per-pixel
+// times the width; YUV planar / semi-planar formats (NV12, YV12, IYUV,
+// and other YUV420 variants) use a 16-byte aligned luma row. This keeps
+// the CPU copy paths from over-reading past the sample buffer and lets
+// them handle RGB32 input as well as YUV input.
+UINT ComputeRowPitchForSubtype(const GUID& guidSubtype, UINT width)
+{
+    if (guidSubtype == MFVideoFormat_RGB32 || guidSubtype == MFVideoFormat_ARGB32)
+        return width * 4;
+    if (guidSubtype == MFVideoFormat_RGB24)
+        return width * 3;
+    if (guidSubtype == MFVideoFormat_RGB555 || guidSubtype == MFVideoFormat_RGB565)
+        return width * 2;
+    return (width + 15) & ~15u;
+}
+
+} // namespace
+
 namespace HMRAVSource
 {
 
@@ -112,9 +134,19 @@ HRESULT XVideoProc::ProcessFrameToSurface(IMFSample* pInputSample, IDirect3DSurf
 
         UINT srcWidth = m_desc.uOutputWidth;
         UINT srcHeight = m_desc.uOutputHeight;
-        UINT srcPitch = srcWidth * 4;
+        UINT srcPitch = ComputeRowPitchForSubtype(m_desc.guidOutputSubtype, srcWidth);
 
-        for (UINT y = 0; y < srcHeight && y < desc.Height; ++y)
+        // Bound the number of rows by what is actually present in the
+        // sample buffer so we never read past the end of the data.
+        UINT srcRows = srcHeight;
+        if (srcPitch > 0)
+        {
+            UINT rowsInBuffer = cbLength / srcPitch;
+            if (rowsInBuffer < srcRows)
+                srcRows = rowsInBuffer;
+        }
+
+        for (UINT y = 0; y < srcRows && y < desc.Height; ++y)
         {
             BYTE* pSrc = pData + y * srcPitch;
             BYTE* pDst = static_cast<BYTE*>(lockedRect.pBits) + y * lockedRect.Pitch;
@@ -381,6 +413,10 @@ HRESULT DXVA2VideoProc::Initialize(const VideoProcDesc& desc, IDirect3DDevice9* 
     if (!pDevice)
         return E_POINTER;
 
+    // Release any resources from a previous initialization so the device
+    // and processor are not leaked when Initialize is called again.
+    Shutdown();
+
     m_pDevice = static_cast<IDirect3DDevice9Ex*>(pDevice);
 
     HRESULT hr = XVideoProc::Initialize(desc);
@@ -389,11 +425,17 @@ HRESULT DXVA2VideoProc::Initialize(const VideoProcDesc& desc, IDirect3DDevice9* 
 
     hr = CreateDXVA2Processor();
     if (FAILED(hr))
+    {
+        Shutdown();
         return hr;
+    }
 
     hr = CreateTempSurface();
     if (FAILED(hr))
+    {
+        Shutdown();
         return hr;
+    }
 
     return S_OK;
 }
@@ -518,15 +560,23 @@ HRESULT DXVA2VideoProc::CreateDXVA2Processor()
     if (FAILED(hr))
         return hr;
 
+    if (!m_spEnumerator)
+        return E_UNEXPECTED;
+
     hr = m_spEnumerator.p->GetVideoProcessorCaps(&m_vpcaps);
     if (FAILED(hr))
         return hr;
 
+    // Zero the output pointer before creation so a failed creation can
+    // never leave a stale or indeterminate processor behind.
+    m_pVideoProcessor = nullptr;
     hr = DXVA2CreateVideoProcessor(
         m_pDevice,
         m_spEnumerator,
         &m_vpcaps,
         &m_pVideoProcessor);
+    if (SUCCEEDED(hr) && !m_pVideoProcessor)
+        return E_UNEXPECTED;
 
     return hr;
 }
@@ -584,9 +634,18 @@ HRESULT DXVA2VideoProc::ProcessSampleDXVA2(IMFSample* pInput, IMFSample** ppOutp
         {
             UINT srcWidth = m_desc.uInputWidth;
             UINT srcHeight = m_desc.uInputHeight;
-            UINT srcPitch = srcWidth * 2;
+            UINT srcPitch = ComputeRowPitchForSubtype(m_desc.guidInputSubtype, srcWidth);
 
-            for (UINT y = 0; y < srcHeight; ++y)
+            // Bound the number of rows by the input buffer length.
+            UINT srcRows = srcHeight;
+            if (srcPitch > 0)
+            {
+                UINT rowsInBuffer = cbInputLength / srcPitch;
+                if (rowsInBuffer < srcRows)
+                    srcRows = rowsInBuffer;
+            }
+
+            for (UINT y = 0; y < srcRows; ++y)
             {
                 BYTE* pSrc = pInputData + y * srcPitch;
                 BYTE* pDst = static_cast<BYTE*>(lockedRect.pBits) + y * lockedRect.Pitch;
@@ -695,9 +754,18 @@ HRESULT DXVA2VideoProc::ConvertSampleToSurface(IMFSample* pSample, IDirect3DSurf
         UINT srcWidth = m_desc.uInputWidth;
         UINT srcHeight = m_desc.uInputHeight;
         UINT dstPitch = lockedRect.Pitch;
-        UINT srcPitch = srcWidth * 2;
+        UINT srcPitch = ComputeRowPitchForSubtype(m_desc.guidInputSubtype, srcWidth);
 
-        for (UINT y = 0; y < srcHeight && y < desc.Height; ++y)
+        // Bound the number of rows by the input buffer length.
+        UINT srcRows = srcHeight;
+        if (srcPitch > 0)
+        {
+            UINT rowsInBuffer = cbLength / srcPitch;
+            if (rowsInBuffer < srcRows)
+                srcRows = rowsInBuffer;
+        }
+
+        for (UINT y = 0; y < srcRows && y < desc.Height; ++y)
         {
             BYTE* pSrc = pData + y * srcPitch;
             BYTE* pDst = static_cast<BYTE*>(lockedRect.pBits) + y * dstPitch;

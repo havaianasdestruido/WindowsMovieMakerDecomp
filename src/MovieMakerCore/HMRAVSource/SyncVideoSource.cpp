@@ -3,6 +3,50 @@
 #include "pch.h"
 #include "SyncVideoSource.h"
 
+namespace
+{
+
+// Maximum frame duration (100 ns units) that can be stored without the
+// frame-index calculations overflowing 64-bit math. Cap is ~214 seconds
+// per frame (a minimum frame rate of about 0.0046 fps).
+const LONGLONG c_llMaxFrameDurationHns = 0x7FFFFFFF;
+const LONGLONG c_llMaxDwordValue = 0xFFFFFFFF;
+
+// Convert a target frame rate to a frame duration in 100 ns units,
+// clamping to the representable range. Returns 0 for invalid rates.
+LONGLONG ComputeFrameDurationHns(double dblFrameRate)
+{
+    if (!(dblFrameRate > 0.0))
+        return 0;
+
+    double dblDuration = 10000000.0 / dblFrameRate;
+
+    // Clamp NaN/Inf/oversized results so the cast to LONGLONG is well
+    // defined and subsequent multiplication/division cannot overflow.
+    if (!(dblDuration >= 1.0))
+        return 1;
+    if (dblDuration > static_cast<double>(c_llMaxFrameDurationHns))
+        return c_llMaxFrameDurationHns;
+
+    return static_cast<LONGLONG>(dblDuration);
+}
+
+// Convert a timestamp (100 ns units) to a frame index, saturating at the
+// DWORD range and treating negative timestamps as frame zero.
+DWORD FrameIndexFromTimestampHns(LONGLONG llTimestampHns, LONGLONG llFrameDurationHns)
+{
+    if (llTimestampHns <= 0 || llFrameDurationHns <= 0)
+        return 0;
+
+    LONGLONG llFrameIndex = llTimestampHns / llFrameDurationHns;
+    if (llFrameIndex > c_llMaxDwordValue)
+        return static_cast<DWORD>(c_llMaxDwordValue);
+
+    return static_cast<DWORD>(llFrameIndex);
+}
+
+} // namespace
+
 namespace HMRAVSource
 {
 
@@ -43,9 +87,7 @@ HRESULT SyncVideoSampleSource::Initialize(const SyncVideoSourceDesc& desc)
 
     m_desc = desc;
     m_dblFrameRate = desc.dblTargetFrameRate;
-
-    if (m_dblFrameRate > 0.0)
-        m_llFrameDurationHns = static_cast<LONGLONG>(10000000.0 / m_dblFrameRate);
+    m_llFrameDurationHns = ComputeFrameDurationHns(m_dblFrameRate);
 
     m_fInitialized = true;
     return S_OK;
@@ -92,21 +134,30 @@ HRESULT SyncVideoSampleSource::GetNextSample(IMFSample** ppSample)
         return MF_E_END_OF_STREAM;
 
     CComPtr<IMFSample> spSample;
-    HRESULT hr = ReadNextFrame(&spSample);
 
-    if (hr == MF_E_END_OF_STREAM)
+    // Iterate instead of recursing so long runs of duplicate frames
+    // (still video, VFR content, etc.) cannot overflow the stack.
+    for (;;)
     {
-        m_fEndOfStream = true;
-        return MF_E_END_OF_STREAM;
-    }
+        HRESULT hr = ReadNextFrame(&spSample);
 
-    if (FAILED(hr))
-        return hr;
+        if (hr == MF_E_END_OF_STREAM)
+        {
+            m_fEndOfStream = true;
+            return MF_E_END_OF_STREAM;
+        }
 
-    if (m_desc.fDropDuplicateFrames && IsDuplicateFrame(spSample))
-    {
-        m_dwFramesSkipped++;
-        return GetNextSample(ppSample);
+        if (FAILED(hr))
+            return hr;
+
+        if (m_desc.fDropDuplicateFrames && IsDuplicateFrame(spSample))
+        {
+            m_dwFramesSkipped++;
+            spSample = nullptr;
+            continue;
+        }
+
+        break;
     }
 
     CheckTimestampOrder(spSample);
@@ -138,8 +189,20 @@ HRESULT SyncVideoSampleSource::GetSampleAtPosition(LONGLONG llPositionHns, IMFSa
     hr = m_desc.pSource->ReadSample(ppSample, m_desc.dwVideoStreamIndex);
     if (SUCCEEDED(hr) && *ppSample)
     {
-        m_llCurrentPositionHns = llPositionHns;
-        m_llLastTimestampHns = llPositionHns;
+        // Track the actual sample timestamp (not the requested position)
+        // so the frame delivered here is not mistaken for a duplicate of
+        // the next one after the seek.
+        LONGLONG llSampleTime = 0;
+        if (SUCCEEDED((*ppSample)->GetSampleTime(&llSampleTime)) && llSampleTime >= 0)
+        {
+            m_llCurrentPositionHns = llSampleTime;
+            m_llLastTimestampHns = llSampleTime;
+        }
+        else
+        {
+            m_llCurrentPositionHns = llPositionHns;
+            m_llLastTimestampHns = llPositionHns;
+        }
     }
 
     return hr;
@@ -182,8 +245,7 @@ HRESULT SyncVideoSampleSource::Seek(LONGLONG llPositionHns)
             return hr;
 
         // Calculate frame index from position
-        if (m_llFrameDurationHns > 0)
-            m_dwCurrentFrameIndex = static_cast<DWORD>(llPositionHns / m_llFrameDurationHns);
+        m_dwCurrentFrameIndex = FrameIndexFromTimestampHns(llPositionHns, m_llFrameDurationHns);
     }
 
     return S_OK;
@@ -267,7 +329,7 @@ HRESULT SyncVideoSampleSource::SetTargetFrameRate(double dblFrameRate)
         return E_INVALIDARG;
 
     m_dblFrameRate = dblFrameRate;
-    m_llFrameDurationHns = static_cast<LONGLONG>(10000000.0 / m_dblFrameRate);
+    m_llFrameDurationHns = ComputeFrameDurationHns(m_dblFrameRate);
     return S_OK;
 }
 
@@ -346,9 +408,7 @@ void SyncVideoSampleSource::UpdateFrameCount(IMFSample* pSample)
     if (SUCCEEDED(pSample->GetSampleTime(&llTimestamp)))
     {
         m_llCurrentPositionHns = llTimestamp;
-
-        if (m_llFrameDurationHns > 0)
-            m_dwCurrentFrameIndex = static_cast<DWORD>(llTimestamp / m_llFrameDurationHns);
+        m_dwCurrentFrameIndex = FrameIndexFromTimestampHns(llTimestamp, m_llFrameDurationHns);
     }
 
     m_dwFrameCount++;

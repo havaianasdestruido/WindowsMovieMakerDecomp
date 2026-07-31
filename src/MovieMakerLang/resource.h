@@ -20,9 +20,9 @@
 #define IDB_WELCOME_BANNER             303
 
 // UIFILE (DirectUI layouts)
-#define RT_UIFILE_RIBBON               100
-#define RT_UIFILE_MAIN                 101
-#define RT_UIFILE_DIALOGS              102
+#define RT_UIFILE_RIBBON               10000
+#define RT_UIFILE_MAIN                 10001
+#define RT_UIFILE_DIALOGS              10002
 
 // Dialog templates
 #define IDD_OPTIONS                    500
@@ -83,7 +83,17 @@
 #define IDS_TIP_STABILIZE             1026
 #define IDS_TIP_PREVIEW_FULL          1027
 #define IDS_TIP_MENU_BAR              1028
-#define IDS_TIP_ZOOM                  1029
+#define IDS_GENERAL_TAB               2000
+#define IDS_VERSION_STRING            2001
+#define IDS_COPYRIGHT                 2002
+#define IDS_STATUS_DETAILS            2003
+#define IDS_STATUS_PROGRESS           2004
+#define IDS_STATUS_CANCEL             2005
+#define IDS_HOME_TAB                  2006
+#define IDS_ANIMATIONS_TAB            2007
+#define IDS_VISUAL_EFFECTS_TAB        2008
+#define IDS_PROJECT_TAB               2009
+#define IDS_EXIT                      2010
 
 // Dialog button text
 #define IDS_OK                        1030
@@ -98,7 +108,7 @@
 #define IDS_NO                        1039
 #define IDS_NO_ALL                    1040
 #define IDS_CLOSE                     1041
-#define IDS_HELP                      1042
+#define IDS_EXIT                      2010
 #define IDS_TRY_AGAIN                 1043
 #define IDS_CONTINUE                  1044
 #define IDS_APPLY                     1045

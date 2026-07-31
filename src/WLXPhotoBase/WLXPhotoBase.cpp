@@ -204,16 +204,8 @@ void Exception::operator delete(void* p) throw()
 // ============================================================================
 WLXPHOTOBASE_API void Throw(HRESULT hr)
 {
-    // Use Win32 structured exception handling to propagate the HRESULT.
-    // The Exception object is heap-allocated and will be destroyed by the
-    // SEH dispatch mechanism during stack unwinding.
-    Exception* pException = new Exception(hr);
+    // Directly raise SEH with HRESULT; no heap allocation, avoids leak.
     ::RaiseException(static_cast<DWORD>(hr), EXCEPTION_NONCONTINUABLE, 0, NULL);
-
-    // RaiseException doesn't throw in the C++ sense - it invokes SEH.
-    // We should never reach here, but provide a fallback.
-    // In practice, the __except filter in calling code catches this.
-    delete pException;
 }
 
 // ============================================================================

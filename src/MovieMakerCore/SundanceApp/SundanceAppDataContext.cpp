@@ -684,6 +684,140 @@ void SundanceAppDataContext::FirePropertyChanged(LPCWSTR pszPropertyName)
 }
 
 // ============================================================================
+// IConnectionPointContainer
+// ============================================================================
+HRESULT STDMETHODCALLTYPE SundanceAppDataContext::EnumConnectionPoints(
+    IEnumConnectionPoints** ppEnum)
+{
+    if (!ppEnum)
+        return E_POINTER;
+
+    *ppEnum = NULL;
+
+    CEnumConnectionPoints* pEnum = new (std::nothrow) CEnumConnectionPoints(
+        static_cast<IConnectionPoint*>(this));
+    if (!pEnum)
+        return E_OUTOFMEMORY;
+
+    *ppEnum = pEnum;
+    return S_OK;
+}
+
+HRESULT STDMETHODCALLTYPE SundanceAppDataContext::FindConnectionPoint(
+    REFIID riid,
+    IConnectionPoint** ppCP)
+{
+    if (!ppCP)
+        return E_POINTER;
+
+    *ppCP = NULL;
+
+    if (!InlineIsEqualGUID(riid, IID_IDispatch))
+        return E_NOINTERFACE;
+
+    return QueryInterface(IID_IConnectionPoint, (void**)ppCP);
+}
+
+// ============================================================================
+// IConnectionPoint
+// ============================================================================
+HRESULT STDMETHODCALLTYPE SundanceAppDataContext::GetConnectionInterface(IID* pIID)
+{
+    if (!pIID)
+        return E_POINTER;
+
+    *pIID = IID_IDispatch;
+    return S_OK;
+}
+
+HRESULT STDMETHODCALLTYPE SundanceAppDataContext::GetConnectionPointContainer(
+    IConnectionPointContainer** ppCPC)
+{
+    if (!ppCPC)
+        return E_POINTER;
+
+    return QueryInterface(IID_IConnectionPointContainer, (void**)ppCPC);
+}
+
+HRESULT STDMETHODCALLTYPE SundanceAppDataContext::Advise(IUnknown* pUnkSink, DWORD* pdwCookie)
+{
+    if (!pUnkSink || !pdwCookie)
+        return E_POINTER;
+
+    *pdwCookie = 0;
+
+    IDispatch* pSink = NULL;
+    HRESULT hr = pUnkSink->QueryInterface(IID_IDispatch, (void**)&pSink);
+    if (FAILED(hr))
+        return CONNECT_E_CANNOTCONNECT;
+
+    // Allocate a cookie that is unique among current connections
+    DWORD dwCookie = 1;
+    for (size_t i = 0; i < m_connectionSinks.size(); ++i)
+    {
+        if (m_connectionSinks[i].first >= dwCookie)
+            dwCookie = m_connectionSinks[i].first + 1;
+    }
+
+    CComPtr<IDispatch> spSink;
+    spSink.Attach(pSink); // takes ownership of the QI reference
+
+    m_connectionSinks.push_back(std::make_pair(dwCookie, spSink));
+
+    *pdwCookie = dwCookie;
+    return S_OK;
+}
+
+HRESULT STDMETHODCALLTYPE SundanceAppDataContext::Unadvise(DWORD dwCookie)
+{
+    for (size_t i = 0; i < m_connectionSinks.size(); ++i)
+    {
+        if (m_connectionSinks[i].first == dwCookie)
+        {
+            m_connectionSinks.erase(m_connectionSinks.begin() + i);
+            return S_OK;
+        }
+    }
+
+    return CONNECT_E_NOCONNECTION;
+}
+
+HRESULT STDMETHODCALLTYPE SundanceAppDataContext::EnumConnections(
+    IEnumConnections** ppEnum)
+{
+    if (!ppEnum)
+        return E_POINTER;
+
+    *ppEnum = NULL;
+
+    // Snapshot the current connections (borrowed references; InitCopy AddRef's)
+    std::vector<CONNECTDATA> snapshot;
+    snapshot.reserve(m_connectionSinks.size());
+    for (size_t i = 0; i < m_connectionSinks.size(); ++i)
+    {
+        CONNECTDATA cd;
+        cd.dwCookie = m_connectionSinks[i].first;
+        cd.pUnk = m_connectionSinks[i].second; // borrowed
+        snapshot.push_back(cd);
+    }
+
+    CEnumConnections* pEnum = new (std::nothrow) CEnumConnections();
+    if (!pEnum)
+        return E_OUTOFMEMORY;
+
+    HRESULT hr = pEnum->InitCopy(snapshot.empty() ? NULL : &snapshot[0],
+                                 static_cast<ULONG>(snapshot.size()));
+    if (FAILED(hr))
+    {
+        delete pEnum;
+        return hr;
+    }
+
+    *ppEnum = pEnum;
+    return S_OK;
+}
+
+// ============================================================================
 // Notification handlers
 // ============================================================================
 void SundanceAppDataContext::OnProjectStateChanged()

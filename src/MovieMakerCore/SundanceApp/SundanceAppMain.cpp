@@ -1190,7 +1190,11 @@ HRESULT SundanceAppMain::StartPlayback()
     if (!m_pPlaybackController)
         return E_NOTIMPL;
 
-    return m_pPlaybackController->Play();
+    HRESULT hr = m_pPlaybackController->Play();
+    if (SUCCEEDED(hr) && m_pDataContext)
+        m_pDataContext->OnProjectStateChanged();
+
+    return hr;
 }
 
 HRESULT SundanceAppMain::StopPlayback()
@@ -1198,7 +1202,11 @@ HRESULT SundanceAppMain::StopPlayback()
     if (!m_pPlaybackController)
         return E_NOTIMPL;
 
-    return m_pPlaybackController->Stop();
+    HRESULT hr = m_pPlaybackController->Stop();
+    if (SUCCEEDED(hr) && m_pDataContext)
+        m_pDataContext->OnProjectStateChanged();
+
+    return hr;
 }
 
 HRESULT SundanceAppMain::PausePlayback()
@@ -1206,7 +1214,11 @@ HRESULT SundanceAppMain::PausePlayback()
     if (!m_pPlaybackController)
         return E_NOTIMPL;
 
-    return m_pPlaybackController->Pause();
+    HRESULT hr = m_pPlaybackController->Pause();
+    if (SUCCEEDED(hr) && m_pDataContext)
+        m_pDataContext->OnProjectStateChanged();
+
+    return hr;
 }
 
 bool SundanceAppMain::IsPlaying() const throw()
@@ -1244,6 +1256,11 @@ void SundanceAppMain::UpdateCommandState()
 {
     if (m_hWndMain)
         ::SendMessage(m_hWndMain, WM_COMMAND, MAKEWPARAM(0, 0), 0);
+
+    // Push command availability (undo/redo/clipboard) to the data context
+    // so DirectUI bindings can re-read them. UI thread only.
+    if (m_pDataContext)
+        m_pDataContext->OnSelectionChanged();
 }
 
 void SundanceAppMain::NotifyUIRefresh()
@@ -1524,6 +1541,13 @@ void SundanceAppMain::SetDontShowPrompt(LPCWSTR pszPromptKey, bool bDontShow)
 void SundanceAppMain::OnProjectChanged()
 {
     NotifyUIRefresh();
+
+    // Push project state (open/close/new, dirty flag, name, timeline duration)
+    // to the data context. OnProjectStateChanged also resets timeline-scoped
+    // state when a project is closed, invalidating stale bindings. Runs on the
+    // UI thread; all project lifecycle callers (New/Open/Close) are UI thread.
+    if (m_pDataContext)
+        m_pDataContext->OnProjectStateChanged();
 }
 
 // ============================================================================

@@ -45,10 +45,18 @@ ATL::CString MovieEffect::GetName() const { return m_strName; }
 void MovieEffect::SetName(LPCWSTR pszName) { m_strName = pszName ? pszName : L""; }
 
 LONGLONG MovieEffect::GetDurationHns() const throw() { return m_llDurationHns; }
-void MovieEffect::SetDurationHns(LONGLONG llDuration) throw() { m_llDurationHns = llDuration; }
+void MovieEffect::SetDurationHns(LONGLONG llDuration) throw()
+{
+    if (llDuration < 0) llDuration = 0;
+    m_llDurationHns = llDuration;
+}
 
 LONGLONG MovieEffect::GetStartOffsetHns() const throw() { return m_llStartOffsetHns; }
-void MovieEffect::SetStartOffsetHns(LONGLONG llOffset) throw() { m_llStartOffsetHns = llOffset; }
+void MovieEffect::SetStartOffsetHns(LONGLONG llOffset) throw()
+{
+    if (llOffset < 0) llOffset = 0;
+    m_llStartOffsetHns = llOffset;
+}
 
 float MovieEffect::GetIntensity() const throw() { return m_flIntensity; }
 void MovieEffect::SetIntensity(float flIntensity) throw()
@@ -112,6 +120,8 @@ HRESULT MovieEffect::LoadFromXml(IXmlReader* pReader)
     if (!pReader)
         return E_POINTER;
 
+    m_arrParameters.RemoveAll();
+
     LPCWSTR pszValue = nullptr;
 
     if (SUCCEEDED(XmlReaderGetAttribute(pReader, L"id", &pszValue)) && pszValue)
@@ -127,7 +137,7 @@ HRESULT MovieEffect::LoadFromXml(IXmlReader* pReader)
         m_llStartOffsetHns = _wtoi64(pszValue);
 
     if (SUCCEEDED(XmlReaderGetAttribute(pReader, L"intensity", &pszValue)) && pszValue)
-        m_flIntensity = (float)_wtof(pszValue);
+        SetIntensity((float)_wtof(pszValue));
 
     if (SUCCEEDED(XmlReaderGetAttribute(pReader, L"enabled", &pszValue)) && pszValue)
         m_fEnabled = (_wtoi(pszValue) != 0);
@@ -240,7 +250,11 @@ ATL::CString TextEffect::GetFontFamily() const { return m_strFontFamily; }
 void TextEffect::SetFontFamily(LPCWSTR pszFontFamily) { m_strFontFamily = pszFontFamily ? pszFontFamily : L"Segoe UI"; }
 
 float TextEffect::GetFontSize() const throw() { return m_flFontSize; }
-void TextEffect::SetFontSize(float flSize) throw() { m_flFontSize = flSize; }
+void TextEffect::SetFontSize(float flSize) throw()
+{
+    if (flSize < 1.0f) flSize = 1.0f;
+    m_flFontSize = flSize;
+}
 
 DWORD TextEffect::GetFontColor() const throw() { return m_dwFontColor; }
 void TextEffect::SetFontColor(DWORD dwColor) throw() { m_dwFontColor = dwColor; }

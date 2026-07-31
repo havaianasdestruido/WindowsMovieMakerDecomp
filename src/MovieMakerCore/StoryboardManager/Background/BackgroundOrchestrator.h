@@ -75,12 +75,13 @@ private:
     BaseBackgroundRequest* DequeueNextRequest();
 
     // State
-    bool                    m_bInitialized;
+    volatile long           m_bInitialized;
     DWORD                   m_dwMaxThreads;
 
     // Thread pool
     std::vector<std::thread*> m_threads;
-    volatile long           m_lThreadCount;
+    CRITICAL_SECTION           m_csThreadPool;
+    volatile long              m_lThreadCount;
 
     // Request queue (protected by mutex)
     std::deque<BaseBackgroundRequest*> m_requestQueue;
@@ -95,7 +96,7 @@ private:
     volatile DWORD          m_dwNextRequestId;
 
     // Shutdown signal
-    bool                    m_bShutdownRequested;
+    volatile long           m_bShutdownRequested;
 
     // Condition variable for worker wake-up
     CONDITION_VARIABLE      m_cvWorkAvailable;

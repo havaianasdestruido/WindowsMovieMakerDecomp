@@ -21,6 +21,7 @@
 #include <vector>
 #include <string>
 #include <memory>
+#include <new>
 
 // ============================================================================
 // Internal state structures
@@ -236,6 +237,53 @@ public:
         return (status == Gdiplus::Ok);
     }
 
+    bool Capture(HWND hWnd)
+    {
+        if (!hWnd)
+            return false;
+
+        ClearFrame();
+
+        RECT rc;
+        if (!::GetClientRect(hWnd, &rc))
+            return false;
+
+        const int cx = rc.right - rc.left;
+        const int cy = rc.bottom - rc.top;
+        if (cx <= 0 || cy <= 0)
+            return false;
+
+        HDC hdcWindow = ::GetDC(hWnd);
+        if (!hdcWindow)
+            return false;
+
+        HDC hdcMem = ::CreateCompatibleDC(hdcWindow);
+        HBITMAP hbm = ::CreateCompatibleBitmap(hdcWindow, cx, cy);
+        if (!hbm)
+        {
+            ::DeleteDC(hdcMem);
+            ::ReleaseDC(hWnd, hdcWindow);
+            return false;
+        }
+
+        HGDIOBJ hOld = ::SelectObject(hdcMem, hbm);
+        ::BitBlt(hdcMem, 0, 0, cx, cy, hdcWindow, 0, 0, SRCCOPY);
+        ::SelectObject(hdcMem, hOld);
+
+        m_pGdiplusBitmap = Gdiplus::Bitmap::FromHBITMAP(hbm, NULL);
+        if (m_pGdiplusBitmap && m_pGdiplusBitmap->GetLastStatus() != Gdiplus::Ok)
+        {
+            delete m_pGdiplusBitmap;
+            m_pGdiplusBitmap = NULL;
+        }
+
+        ::DeleteObject(hbm);
+        ::DeleteDC(hdcMem);
+        ::ReleaseDC(hWnd, hdcWindow);
+
+        return (m_pGdiplusBitmap != NULL);
+    }
+
 private:
     Gdiplus::Bitmap* m_pGdiplusBitmap;
 };
@@ -350,10 +398,24 @@ public:
         }
 
         case PreviewCmd_Snapshot:
-            return E_NOTIMPL;
+            if (!m_window || !m_renderer)
+                return E_UNEXPECTED;
+            if (m_renderer->Capture(m_window->GetHWnd()))
+                return S_OK;
+            return E_FAIL;
 
         case PreviewCmd_LoadFile:
-            return E_NOTIMPL;
+        {
+            const wchar_t* pszPath = reinterpret_cast<const wchar_t*>(lParam);
+            if (!pszPath)
+                return E_INVALIDARG;
+            m_state->strFilePath = pszPath;
+            m_state->bFileLoaded = true;
+            m_state->eTransport = PreviewTransportStopped;
+            m_state->llPosition = 0;
+            m_state->llSeekTarget = 0;
+            return S_OK;
+        }
 
         case PreviewCmd_CloseFile:
             m_state->bFileLoaded = false;
@@ -402,6 +464,132 @@ private:
 // Module state
 // ============================================================================
 static HINSTANCE g_hModule = NULL;
+static volatile LONG g_cObjects = 0;
+static volatile LONG g_cLocks = 0;
+
+// CLSID of the preview client component.
+// {1BCE3B7B-DB2B-4013-AA4E-610640375A7B}
+static const CLSID CLSID_MovieMakerPreviewClient =
+{
+    0x1BCE3B7B, 0xDB2B, 0x4013,
+    { 0xAA, 0x4E, 0x61, 0x06, 0x40, 0x37, 0x5A, 0x7B }
+};
+
+// ============================================================================
+// Class factory -- creates instances of the preview client COM object
+// ============================================================================
+class PreviewClientObject : public IUnknown
+{
+public:
+    PreviewClientObject()
+        : m_cRef(1)
+    {
+        ::InterlockedIncrement(&g_cObjects);
+    }
+
+    ~PreviewClientObject()
+    {
+        ::InterlockedDecrement(&g_cObjects);
+    }
+
+    // IUnknown
+    STDMETHODIMP QueryInterface(REFIID riid, void** ppvObject)
+    {
+        if (!ppvObject)
+            return E_POINTER;
+        if (riid == IID_IUnknown)
+        {
+            *ppvObject = static_cast<IUnknown*>(this);
+            AddRef();
+            return S_OK;
+        }
+        *ppvObject = NULL;
+        return E_NOINTERFACE;
+    }
+
+    STDMETHODIMP_(ULONG) AddRef()
+    {
+        return static_cast<ULONG>(::InterlockedIncrement(&m_cRef));
+    }
+
+    STDMETHODIMP_(ULONG) Release()
+    {
+        ULONG cRef = static_cast<ULONG>(::InterlockedDecrement(&m_cRef));
+        if (cRef == 0)
+            delete this;
+        return cRef;
+    }
+
+private:
+    volatile LONG m_cRef;
+};
+
+class PreviewClientFactory : public IClassFactory
+{
+public:
+    PreviewClientFactory()
+        : m_cRef(1)
+    {
+    }
+
+    // IUnknown
+    STDMETHODIMP QueryInterface(REFIID riid, void** ppvObject)
+    {
+        if (!ppvObject)
+            return E_POINTER;
+        if (riid == IID_IUnknown || riid == IID_IClassFactory)
+        {
+            *ppvObject = static_cast<IClassFactory*>(this);
+            AddRef();
+            return S_OK;
+        }
+        *ppvObject = NULL;
+        return E_NOINTERFACE;
+    }
+
+    STDMETHODIMP_(ULONG) AddRef()
+    {
+        return static_cast<ULONG>(::InterlockedIncrement(&m_cRef));
+    }
+
+    STDMETHODIMP_(ULONG) Release()
+    {
+        ULONG cRef = static_cast<ULONG>(::InterlockedDecrement(&m_cRef));
+        if (cRef == 0)
+            delete this;
+        return cRef;
+    }
+
+    // IClassFactory
+    STDMETHODIMP CreateInstance(IUnknown* pUnkOuter, REFIID riid, void** ppvObject)
+    {
+        if (pUnkOuter != NULL)
+            return CLASS_E_NOAGGREGATION;
+        if (!ppvObject)
+            return E_POINTER;
+        *ppvObject = NULL;
+
+        PreviewClientObject* pObject = new (std::nothrow) PreviewClientObject();
+        if (!pObject)
+            return E_OUTOFMEMORY;
+
+        HRESULT hr = pObject->QueryInterface(riid, ppvObject);
+        pObject->Release();
+        return hr;
+    }
+
+    STDMETHODIMP LockServer(BOOL fLock)
+    {
+        if (fLock)
+            ::InterlockedIncrement(&g_cLocks);
+        else
+            ::InterlockedDecrement(&g_cLocks);
+        return S_OK;
+    }
+
+private:
+    volatile LONG m_cRef;
+};
 
 // ============================================================================
 // DllMain
@@ -438,24 +626,96 @@ extern "C"
 
 STDAPI DllCanUnloadNow()
 {
-    return S_OK;
+    return (g_cObjects == 0 && g_cLocks == 0) ? S_OK : S_FALSE;
 }
 
 STDAPI DllGetClassObject(REFCLSID rclsid, REFIID riid, LPVOID* ppv)
 {
-    UNREFERENCED_PARAMETER(rclsid);
-    UNREFERENCED_PARAMETER(riid);
-    UNREFERENCED_PARAMETER(ppv);
-    return CLASS_E_CLASSNOTAVAILABLE;
+    if (!ppv)
+        return E_POINTER;
+    *ppv = NULL;
+
+    if (rclsid != CLSID_MovieMakerPreviewClient)
+        return CLASS_E_CLASSNOTAVAILABLE;
+
+    PreviewClientFactory* pFactory = new (std::nothrow) PreviewClientFactory();
+    if (!pFactory)
+        return E_OUTOFMEMORY;
+
+    HRESULT hr = pFactory->QueryInterface(riid, ppv);
+    pFactory->Release();
+    return hr;
 }
 
 STDAPI DllRegisterServer()
 {
+    wchar_t szModule[MAX_PATH];
+    DWORD cch = ::GetModuleFileNameW(g_hModule, szModule, MAX_PATH);
+    if (cch == 0 || cch >= MAX_PATH)
+        return HRESULT_FROM_WIN32(::GetLastError());
+
+    wchar_t szClsid[64];
+    ::StringFromGUID2(CLSID_MovieMakerPreviewClient, szClsid, 64);
+
+    wchar_t szKey[160];
+    wsprintfW(szKey, L"CLSID\\%s", szClsid);
+
+    HKEY hKeyClsid = NULL;
+    LONG lResult = ::RegCreateKeyExW(HKEY_CLASSES_ROOT, szKey, 0, NULL,
+        REG_OPTION_NON_VOLATILE, KEY_WRITE, NULL, &hKeyClsid, NULL);
+    if (lResult != ERROR_SUCCESS)
+        return HRESULT_FROM_WIN32(lResult);
+
+    static const wchar_t szDesc[] = L"Movie Maker Preview Client";
+    lResult = ::RegSetValueExW(hKeyClsid, NULL, 0, REG_SZ,
+        reinterpret_cast<const BYTE*>(szDesc), (DWORD)sizeof(szDesc));
+
+    HKEY hKeyInproc = NULL;
+    if (lResult == ERROR_SUCCESS)
+    {
+        lResult = ::RegCreateKeyExW(hKeyClsid, L"InprocServer32", 0, NULL,
+            REG_OPTION_NON_VOLATILE, KEY_WRITE, NULL, &hKeyInproc, NULL);
+    }
+    if (lResult == ERROR_SUCCESS)
+    {
+        lResult = ::RegSetValueExW(hKeyInproc, NULL, 0, REG_SZ,
+            reinterpret_cast<const BYTE*>(szModule),
+            (DWORD)((wcslen(szModule) + 1) * sizeof(wchar_t)));
+    }
+    if (lResult == ERROR_SUCCESS)
+    {
+        static const wchar_t szModel[] = L"Apartment";
+        lResult = ::RegSetValueExW(hKeyInproc, L"ThreadingModel", 0, REG_SZ,
+            reinterpret_cast<const BYTE*>(szModel), (DWORD)sizeof(szModel));
+    }
+
+    if (hKeyInproc) ::RegCloseKey(hKeyInproc);
+    if (hKeyClsid)  ::RegCloseKey(hKeyClsid);
+
+    if (lResult != ERROR_SUCCESS)
+    {
+        DllUnregisterServer();
+        return HRESULT_FROM_WIN32(lResult);
+    }
     return S_OK;
 }
 
 STDAPI DllUnregisterServer()
 {
+    wchar_t szClsid[64];
+    ::StringFromGUID2(CLSID_MovieMakerPreviewClient, szClsid, 64);
+
+    wchar_t szKey[160];
+    wsprintfW(szKey, L"CLSID\\%s\\InprocServer32", szClsid);
+    LONG lResult = ::RegDeleteKeyW(HKEY_CLASSES_ROOT, szKey);
+    if (lResult != ERROR_SUCCESS && lResult != ERROR_FILE_NOT_FOUND)
+        return HRESULT_FROM_WIN32(lResult);
+
+    wsprintfW(szKey, L"CLSID\\%s", szClsid);
+    lResult = ::RegDeleteKeyW(HKEY_CLASSES_ROOT, szKey);
+    if (lResult != ERROR_SUCCESS && lResult != ERROR_FILE_NOT_FOUND)
+        return HRESULT_FROM_WIN32(lResult);
+
     return S_OK;
 }
 

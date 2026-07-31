@@ -83,6 +83,7 @@ PreviewDataContext::PreviewDataContext()
     , m_pPresenter(nullptr)
     , m_pProject(nullptr)
 {
+    InitializeCriticalSection(&m_csLock);
 }
 
 PreviewDataContext::~PreviewDataContext()
@@ -92,6 +93,8 @@ PreviewDataContext::~PreviewDataContext()
         SysFreeString(m_bstrCurrentFrameUrl);
         m_bstrCurrentFrameUrl = nullptr;
     }
+
+    DeleteCriticalSection(&m_csLock);
 }
 
 // ============================================================================
@@ -120,14 +123,27 @@ HRESULT CreatePreviewDataContext(PreviewDataContext** ppContext)
 // ============================================================================
 void PreviewDataContext::SetPresenter(PreviewPresenterWrapper* pPresenter)
 {
+    EnterCriticalSection(&m_csLock);
     m_pPresenter = pPresenter;
     m_fHasPreview = (pPresenter != nullptr);
-    RefreshAllProperties();
+    RefreshPlaybackState();
+    RefreshPositionState();
+    LeaveCriticalSection(&m_csLock);
+
+    FirePropertyChanged(kPropHasPreview);
+    FirePropertyChanged(kPropIsPlaying);
+    FirePropertyChanged(kPropIsPaused);
+    FirePropertyChanged(kPropIsStopped);
+    FirePropertyChanged(kPropCurrentPosition);
+    FirePropertyChanged(kPropTotalDuration);
 }
 
 PreviewPresenterWrapper* PreviewDataContext::GetPresenter() const throw()
 {
-    return m_pPresenter;
+    EnterCriticalSection(&m_csLock);
+    PreviewPresenterWrapper* pPresenter = m_pPresenter;
+    LeaveCriticalSection(&m_csLock);
+    return pPresenter;
 }
 
 // ============================================================================

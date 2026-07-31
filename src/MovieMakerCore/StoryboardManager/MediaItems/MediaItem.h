@@ -169,12 +169,17 @@ public:
     void SetProxyDimensions(UINT cx, UINT cy) throw();
 
     // -- Transcode state --
-    DWORD GetTranscodeState() const throw();
-    void SetTranscodeState(DWORD dwState) throw();
+    ExtentTranscodeState GetTranscodeState() const throw();
+    void SetTranscodeState(ExtentTranscodeState state) throw();
 
     // -- Source hash (for cache validation) --
     ATL::CString GetSourceHash() const;
     void SetSourceHash(LPCWSTR pszHash);
+
+    // -- State predicates --
+    bool IsTranscoding() const throw();
+    bool IsReady() const throw();
+    bool IsError() const throw();
 
     // -- Validity --
     bool IsValid() const throw();
@@ -184,7 +189,7 @@ private:
     ATL::CString m_strProxyPath;
     UINT        m_uProxyWidth;
     UINT        m_uProxyHeight;
-    DWORD       m_dwTranscodeState;
+    ExtentTranscodeState m_transcodeState;
     ATL::CString m_strSourceHash;
 };
 

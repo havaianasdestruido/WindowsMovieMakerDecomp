@@ -186,6 +186,9 @@ CMRUSite::~CMRUSite() {}
 
 HRESULT CMRUSite::Initialize(UINT uMaxItems)
 {
+    if (m_fInitialized)
+        return S_FALSE;
+
     m_uMaxItems = uMaxItems;
     m_fInitialized = true;
     return S_OK;
@@ -193,7 +196,11 @@ HRESULT CMRUSite::Initialize(UINT uMaxItems)
 
 HRESULT CMRUSite::Shutdown()
 {
+    if (!m_fInitialized)
+        return S_FALSE;
+
     m_arrItems.RemoveAll();
+    m_uMaxItems = 10;
     m_fInitialized = false;
     return S_OK;
 }
@@ -409,7 +416,15 @@ HRESULT CSpinnerSite::Initialize(UINT nCmdId, int nMin, int nMax, int nValue, in
     return S_OK;
 }
 
-HRESULT CSpinnerSite::Shutdown() { return S_OK; }
+HRESULT CSpinnerSite::Shutdown()
+{
+    m_nCmdId = 0;
+    m_nValue = 0;
+    m_nMin = 0;
+    m_nMax = 100;
+    m_nStep = 1;
+    return S_OK;
+}
 
 int CSpinnerSite::GetValue() const throw() { return m_nValue; }
 
@@ -452,7 +467,16 @@ HRESULT CGroupSite::Initialize(UINT nGroupId, LPCWSTR pszLabel)
     return S_OK;
 }
 
-HRESULT CGroupSite::Shutdown() { return S_OK; }
+HRESULT CGroupSite::Shutdown()
+{
+    m_nGroupId = 0;
+    m_strLabel.Empty();
+    m_fVisible = true;
+    m_fEnabled = true;
+    m_fContextual = false;
+    m_dwContextColor = 0;
+    return S_OK;
+}
 
 UINT CGroupSite::GetGroupId() const throw() { return m_nGroupId; }
 ATL::CString CGroupSite::GetLabel() const { return m_strLabel; }
@@ -489,7 +513,15 @@ HRESULT CFontSite::Initialize(UINT nCmdId)
     return S_OK;
 }
 
-HRESULT CFontSite::Shutdown() { return S_OK; }
+HRESULT CFontSite::Shutdown()
+{
+    m_nCmdId = 0;
+    m_strFontFamily.Empty();
+    m_flFontSize = 12.0f;
+    m_dwFontStyle = 0;
+    m_dwFontColor = 0xFF000000;
+    return S_OK;
+}
 
 ATL::CString CFontSite::GetFontFamily() const { return m_strFontFamily; }
 HRESULT CFontSite::SetFontFamily(LPCWSTR pszFamily) { m_strFontFamily = pszFamily ? pszFamily : L"Segoe UI"; return S_OK; }
@@ -528,7 +560,15 @@ HRESULT CColorPickerSite::Initialize(UINT nCmdId, DWORD dwDefaultColor)
     return S_OK;
 }
 
-HRESULT CColorPickerSite::Shutdown() { return S_OK; }
+HRESULT CColorPickerSite::Shutdown()
+{
+    m_nCmdId = 0;
+    m_dwColor = 0xFFFFFFFF;
+    m_dwAutomaticColor = 0xFF000000;
+    m_arrThemeColors.RemoveAll();
+    m_arrRecentColors.RemoveAll();
+    return S_OK;
+}
 
 DWORD CColorPickerSite::GetColor() const throw() { return m_dwColor; }
 HRESULT CColorPickerSite::SetColor(DWORD dwColor) { m_dwColor = dwColor; return S_OK; }
@@ -593,7 +633,16 @@ HRESULT CGenericSite::Initialize(UINT nCmdId, LPCWSTR pszLabel)
     return S_OK;
 }
 
-HRESULT CGenericSite::Shutdown() { return S_OK; }
+HRESULT CGenericSite::Shutdown()
+{
+    m_nCmdId = 0;
+    m_strLabel.Empty();
+    m_fEnabled = true;
+    m_fVisible = true;
+    m_fPressed = false;
+    m_dwUserData = 0;
+    return S_OK;
+}
 
 UINT CGenericSite::GetCommandId() const throw() { return m_nCmdId; }
 ATL::CString CGenericSite::GetLabel() const { return m_strLabel; }
@@ -633,7 +682,18 @@ HRESULT CGallerySite::Initialize(UINT nCmdId, UINT uItemWidth, UINT uItemHeight)
     return S_OK;
 }
 
-HRESULT CGallerySite::Shutdown() { return S_OK; }
+HRESULT CGallerySite::Shutdown()
+{
+    m_list.RemoveAllItems();
+    m_list.RemoveAllCategories();
+    m_list.ClearSelection();
+    m_nCmdId = 0;
+    m_uItemWidth = 80;
+    m_uItemHeight = 80;
+    m_uColumns = 4;
+    m_fDropdown = false;
+    return S_OK;
+}
 
 RibbonList* CGallerySite::GetItemList() { return &m_list; }
 const RibbonList* CGallerySite::GetItemList() const { return &m_list; }
@@ -673,7 +733,14 @@ HRESULT ToggleSite::Initialize(UINT nCmdId, LPCWSTR pszLabelOn, LPCWSTR pszLabel
     return S_OK;
 }
 
-HRESULT ToggleSite::Shutdown() { return S_OK; }
+HRESULT ToggleSite::Shutdown()
+{
+    m_nCmdId = 0;
+    m_strLabelOn.Empty();
+    m_strLabelOff.Empty();
+    m_fChecked = false;
+    return S_OK;
+}
 
 bool ToggleSite::IsChecked() const throw() { return m_fChecked; }
 

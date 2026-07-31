@@ -110,12 +110,17 @@ public:
     HRESULT GetAsyncResult(HRESULT* phr);
     void Reset();
 
+    // Transfer tracking
+    HRESULT SetBytesTransferred(ULONG cbTransferred);
+    ULONG GetBytesTransferred() const throw();
+
     // Callback invocation
     HRESULT InvokeCallback();
 
 private:
     LONG                m_cRef;
     HRESULT             m_hrStatus;
+    ULONG               m_cbTransferred;
     CComPtr<IUnknown>   m_spObject;
     CComPtr<IUnknown>   m_spState;
     IMFAsyncCallback*   m_pCallback;

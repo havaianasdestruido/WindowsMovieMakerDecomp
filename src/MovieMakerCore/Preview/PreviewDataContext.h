@@ -118,6 +118,9 @@ private:
     PreviewPresenterWrapper*              m_pPresenter;
     StoryboardManager::MovieProject*      m_pProject;
 
+    // -- Synchronization --
+    CRITICAL_SECTION m_csLock;
+
     PreviewDataContext(const PreviewDataContext&);
     PreviewDataContext& operator=(const PreviewDataContext&);
 };

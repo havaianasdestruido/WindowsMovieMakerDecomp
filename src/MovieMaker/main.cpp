@@ -41,6 +41,10 @@ int WINAPI WinMain(HINSTANCE /*hInstance*/, HINSTANCE /*hPrevInstance*/,
         __try { WLXPhotoBase_Init(); } __except(EXCEPTION_EXECUTE_HANDLER) {
         }
     }
+    else
+    {
+        OutputDebugStringW(L"[WMMR] WinMain: WLXPhotoBase.dll not loaded (optional)\n");
+    }
 
     // -- Step 2: Load MovieMakerCore.dll --
     HMODULE hCore = LoadLibraryExA(
@@ -57,6 +61,7 @@ int WINAPI WinMain(HINSTANCE /*hInstance*/, HINSTANCE /*hPrevInstance*/,
 
     if (!hCore)
     {
+        OutputDebugStringW(L"[WMMR] WinMain: failed to load MovieMakerCore.dll\n");
         return 1;
     }
 
@@ -66,22 +71,29 @@ int WINAPI WinMain(HINSTANCE /*hInstance*/, HINSTANCE /*hPrevInstance*/,
 
     if (!pfnMain)
     {
+        OutputDebugStringW(L"[WMMR] WinMain: MovieMakerMain export not found\n");
         return 2;
     }
 
     // -- Step 4: Call with VEH protecting against C++ exceptions --
     int ret = 0;
+    int argc = 0;
+    wchar_t** argv = NULL;
 
     PVOID veh = AddVectoredExceptionHandler(0, VexHandler);
 
     __try
     {
-        int argc;
-        wchar_t** argv = CommandLineToArgvW(GetCommandLineW(), &argc);
-
-        ret = pfnMain(argc, argv);
-
-        LocalFree(argv);
+        argv = CommandLineToArgvW(GetCommandLineW(), &argc);
+        if (!argv)
+        {
+            OutputDebugStringW(L"[WMMR] WinMain: CommandLineToArgvW failed\n");
+            ret = 4;
+        }
+        else
+        {
+            ret = pfnMain(argc, argv);
+        }
     }
     __except (EXCEPTION_EXECUTE_HANDLER)
     {
@@ -89,6 +101,20 @@ int WINAPI WinMain(HINSTANCE /*hInstance*/, HINSTANCE /*hPrevInstance*/,
     }
 
     RemoveVectoredExceptionHandler(veh);
+
+    // -- Step 5: Shutdown -- release all acquired resources --
+    if (argv)
+    {
+        LocalFree(argv);
+    }
+    if (hCore)
+    {
+        FreeLibrary(hCore);
+    }
+    if (hPhotoBase)
+    {
+        FreeLibrary(hPhotoBase);
+    }
 
     return ret;
 }

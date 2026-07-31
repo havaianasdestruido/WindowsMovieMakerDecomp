@@ -35,6 +35,7 @@ BackgroundOrchestrator::BackgroundOrchestrator()
     InitializeCriticalSection(&m_csQueue);
     InitializeCriticalSection(&m_csActive);
     InitializeCriticalSection(&m_csIdGen);
+    InitializeCriticalSection(&m_csThreadPool);
     InitializeConditionVariable(&m_cvWorkAvailable);
 }
 
@@ -44,6 +45,7 @@ BackgroundOrchestrator::~BackgroundOrchestrator()
     DeleteCriticalSection(&m_csQueue);
     DeleteCriticalSection(&m_csActive);
     DeleteCriticalSection(&m_csIdGen);
+    DeleteCriticalSection(&m_csThreadPool);
 }
 
 HRESULT BackgroundOrchestrator::Initialize(DWORD dwMaxThreads)
@@ -52,17 +54,19 @@ HRESULT BackgroundOrchestrator::Initialize(DWORD dwMaxThreads)
         return S_FALSE;
 
     m_dwMaxThreads = std::max((DWORD)1, std::min(dwMaxThreads, (DWORD)16));
-    m_bShutdownRequested = false;
+    InterlockedExchange(&m_bShutdownRequested, 0);
 
     // Create worker threads
+    EnterCriticalSection(&m_csThreadPool);
     for (DWORD i = 0; i < m_dwMaxThreads; i++)
     {
         std::thread* pThread = new std::thread(&BackgroundOrchestrator::WorkerLoop, this);
         m_threads.push_back(pThread);
         InterlockedIncrement(&m_lThreadCount);
     }
+    LeaveCriticalSection(&m_csThreadPool);
 
-    m_bInitialized = true;
+    InterlockedExchange(&m_bInitialized, 1);
     g_pBackgroundOrchestrator = this;
 
     return S_OK;
@@ -73,7 +77,17 @@ void BackgroundOrchestrator::Shutdown()
     if (!m_bInitialized)
         return;
 
-    m_bShutdownRequested = true;
+    InterlockedExchange(&m_bShutdownRequested, 1);
+
+    // Cancel in-flight work so workers can stop promptly instead of
+    // letting Shutdown block until long-running requests finish.
+    EnterCriticalSection(&m_csActive);
+    for (auto& pair : m_activeRequests)
+    {
+        pair.second->m_bCancelled = true;
+        pair.second->m_status = RequestStatusCancelled;
+    }
+    LeaveCriticalSection(&m_csActive);
 
     // Wake all waiting threads
     WakeAllConditionVariable(&m_cvWorkAvailable);
@@ -86,6 +100,7 @@ void BackgroundOrchestrator::Shutdown()
     LeaveCriticalSection(&m_csQueue);
 
     // Wait for all threads to exit
+    EnterCriticalSection(&m_csThreadPool);
     for (auto pThread : m_threads)
     {
         if (pThread->joinable())
@@ -94,6 +109,7 @@ void BackgroundOrchestrator::Shutdown()
     }
     m_threads.clear();
     m_lThreadCount = 0;
+    LeaveCriticalSection(&m_csThreadPool);
 
     // Release active requests
     EnterCriticalSection(&m_csActive);
@@ -102,7 +118,7 @@ void BackgroundOrchestrator::Shutdown()
     m_activeRequests.clear();
     LeaveCriticalSection(&m_csActive);
 
-    m_bInitialized = false;
+    InterlockedExchange(&m_bInitialized, 0);
     g_pBackgroundOrchestrator = nullptr;
 }
 
@@ -114,19 +130,24 @@ bool BackgroundOrchestrator::IsInitialized() const throw()
 constexpr size_t MAX_QUEUE=1024;
 HRESULT BackgroundOrchestrator::QueueRequest(BaseBackgroundRequest* pRequest)
 {
-    if (!m_bInitialized) return E_UNEXPECTED;
+    if (!m_bInitialized) { delete pRequest; return E_UNEXPECTED; }
     if (!pRequest) return E_POINTER;
-    // overflow guard
-    EnterCriticalSection(&m_csQueue);
-    if (m_requestQueue.size()>=MAX_QUEUE) { LeaveCriticalSection(&m_csQueue); return E_FAIL; }
+
     // Assign ID
-    LeaveCriticalSection(&m_csQueue);
     EnterCriticalSection(&m_csIdGen);
-    pRequest->m_dwRequestId=m_dwNextRequestId++;
+    pRequest->m_dwRequestId = m_dwNextRequestId++;
     LeaveCriticalSection(&m_csIdGen);
-    pRequest->m_status=RequestStatusPending;
-    // priority insert
+    pRequest->m_status = RequestStatusPending;
+
+    // Priority insert (with overflow guard). The caller hands ownership to
+    // this queue, so a rejected request must be released here.
     EnterCriticalSection(&m_csQueue);
+    if (m_requestQueue.size() >= MAX_QUEUE)
+    {
+        LeaveCriticalSection(&m_csQueue);
+        delete pRequest;
+        return E_FAIL;
+    }
     bool bInserted=false;
     for(auto it=m_requestQueue.begin();it!=m_requestQueue.end();++it){
         if((*it)->m_priority<pRequest->m_priority){m_requestQueue.insert(it,pRequest);bInserted=true;break;}
@@ -327,12 +348,14 @@ HRESULT BackgroundOrchestrator::SetMaxThreads(DWORD dwMaxThreads)
     m_dwMaxThreads = std::max((DWORD)1, std::min(dwMaxThreads, (DWORD)16));
 
     // If we have fewer threads than desired, spawn more
+    EnterCriticalSection(&m_csThreadPool);
     while (static_cast<DWORD>(m_threads.size()) < m_dwMaxThreads)
     {
         std::thread* pThread = new std::thread(&BackgroundOrchestrator::WorkerLoop, this);
         m_threads.push_back(pThread);
         InterlockedIncrement(&m_lThreadCount);
     }
+    LeaveCriticalSection(&m_csThreadPool);
 
     return S_OK;
 }
@@ -384,22 +407,41 @@ void BackgroundOrchestrator::WorkerLoop()
             // Move to active set
             EnterCriticalSection(&m_csActive);
             m_activeRequests[pRequest->m_dwRequestId] = pRequest;
+            pRequest->m_status = RequestStatusInProgress;
             LeaveCriticalSection(&m_csActive);
 
-            pRequest->m_status = RequestStatusInProgress;
+            // A shutdown may have been requested while this request was
+            // being dequeued; do not start new work after shutdown.
+            if (m_bShutdownRequested)
+            {
+                EnterCriticalSection(&m_csActive);
+                pRequest->m_bCancelled = true;
+                pRequest->m_status = RequestStatusCancelled;
+                m_activeRequests.erase(pRequest->m_dwRequestId);
+                LeaveCriticalSection(&m_csActive);
+
+                pRequest->m_hrResult = E_ABORT;
+                InterlockedIncrement(&m_dwCompletedCount);
+                pRequest->OnCompleted(E_ABORT);
+                if (!pRequest->m_bPersistent)
+                    delete pRequest;
+                continue;
+            }
 
             // Execute the request
             HRESULT hr = pRequest->Execute();
-
-            pRequest->m_status = SUCCEEDED(hr)
-                ? RequestStatusCompleted
-                : RequestStatusFailed;
-            pRequest->m_hrResult = hr;
-
             InterlockedIncrement(&m_dwCompletedCount);
 
-            // Remove from active set
+            // Update status and remove from active set while holding the
+            // lock so concurrent cancellation observes a consistent state.
             EnterCriticalSection(&m_csActive);
+            if (pRequest->m_bCancelled)
+                pRequest->m_status = RequestStatusCancelled;
+            else if (SUCCEEDED(hr))
+                pRequest->m_status = RequestStatusCompleted;
+            else
+                pRequest->m_status = RequestStatusFailed;
+            pRequest->m_hrResult = hr;
             m_activeRequests.erase(pRequest->m_dwRequestId);
             LeaveCriticalSection(&m_csActive);
 

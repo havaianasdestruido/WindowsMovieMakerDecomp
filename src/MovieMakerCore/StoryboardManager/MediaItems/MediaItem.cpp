@@ -223,7 +223,7 @@ void Metadata::SetGenre(LPCWSTR pszGenre)
 ProxyInfo::ProxyInfo()
     : m_uProxyWidth(0)
     , m_uProxyHeight(0)
-    , m_dwTranscodeState(0)
+    , m_transcodeState(ExtentTranscodeStateNone)
 {
 }
 
@@ -257,14 +257,15 @@ void ProxyInfo::SetProxyDimensions(UINT cx, UINT cy) throw()
     m_uProxyHeight = cy;
 }
 
-DWORD ProxyInfo::GetTranscodeState() const throw()
+ExtentTranscodeState ProxyInfo::GetTranscodeState() const throw()
 {
-    return m_dwTranscodeState;
+    return m_transcodeState;
 }
 
-void ProxyInfo::SetTranscodeState(DWORD dwState) throw()
+void ProxyInfo::SetTranscodeState(ExtentTranscodeState state) throw()
 {
-    m_dwTranscodeState = dwState;
+    if (state >= ExtentTranscodeStateNone && state <= ExtentTranscodeStateCancelled)
+        m_transcodeState = state;
 }
 
 ATL::CString ProxyInfo::GetSourceHash() const
@@ -277,9 +278,26 @@ void ProxyInfo::SetSourceHash(LPCWSTR pszHash)
     m_strSourceHash = pszHash ? pszHash : L"";
 }
 
+bool ProxyInfo::IsTranscoding() const throw()
+{
+    return m_transcodeState == ExtentTranscodeStatePending ||
+           m_transcodeState == ExtentTranscodeStateInProgress;
+}
+
+bool ProxyInfo::IsReady() const throw()
+{
+    return m_transcodeState == ExtentTranscodeStateComplete;
+}
+
+bool ProxyInfo::IsError() const throw()
+{
+    return m_transcodeState == ExtentTranscodeStateFailed;
+}
+
 bool ProxyInfo::IsValid() const throw()
 {
-    return !m_strProxyPath.IsEmpty() && m_dwTranscodeState == 3;
+    return !m_strProxyPath.IsEmpty() &&
+           m_transcodeState == ExtentTranscodeStateComplete;
 }
 
 bool ProxyInfo::ProxyFileExists() const
@@ -336,9 +354,10 @@ void MediaItemBase::SetSourcePath(LPCWSTR pszPath)
             m_strDisplayName = pszFileName;
 
             // Strip extension for display
+            LPCWSTR pszBase = (LPCWSTR)m_strDisplayName;
             LPWSTR pszDot = PathFindExtensionW(m_strDisplayName);
-            if (pszDot && pszDot[0] == L'.')
-                m_strDisplayName.SetAt((int)(pszDot - (LPCWSTR)m_strDisplayName), L'\0');
+            if (pszDot && pszDot > pszBase && pszDot[0] == L'.')
+                m_strDisplayName.SetAt((int)(pszDot - pszBase), L'\0');
         }
     }
 }

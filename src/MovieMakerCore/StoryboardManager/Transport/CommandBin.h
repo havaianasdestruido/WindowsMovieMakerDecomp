@@ -99,6 +99,11 @@ public:
     void SetPriority(DWORD dwPriority);
     DWORD GetPriority() const throw();
 
+    // -- Error handling --
+    // Returns the last error encountered while enqueuing commands
+    // (e.g. E_OUTOFMEMORY). Resets to S_OK on Clear or successful Flush.
+    HRESULT GetLastError() const throw();
+
 protected:
     bool ShouldCoalesce(const CommandEntry& existing, const CommandEntry& incoming);
 
@@ -106,6 +111,8 @@ protected:
     bool                      m_bCoalesceEnabled;
     bool                      m_bDirty;
     DWORD                     m_dwPriority;
+    HRESULT                   m_hrLastError;
+    mutable CRITICAL_SECTION  m_csLock;
 };
 
 // ============================================================================

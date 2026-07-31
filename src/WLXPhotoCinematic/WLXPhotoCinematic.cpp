@@ -40,9 +40,9 @@ class EasingFunction
 public:
     static DOUBLE Evaluate(EasingType eType, DOUBLE dT)
     {
-        // Clamp to [0, 1]
-        if (dT <= 0.0) return 0.0;
-        if (dT >= 1.0) return 1.0;
+        // Clamp to [0, 1]; inverted comparisons also map NaN to 0
+        if (!(dT > 0.0)) return 0.0;
+        if (!(dT < 1.0)) return 1.0;
 
         switch (eType)
         {
@@ -189,12 +189,14 @@ public:
 
         for (UINT32 i = 0; i < uTotalFrames; ++i)
         {
-            DOUBLE dProgress = static_cast<DOUBLE>(i) / static_cast<DOUBLE>(uTotalFrames - 1);
+            DOUBLE dProgress = (uTotalFrames > 1) ? (static_cast<DOUBLE>(i) / static_cast<DOUBLE>(uTotalFrames - 1)) : 0.0;
             HRESULT hr = RenderFrame(pSource, pParams, dProgress, &(*ppFrames)[i]);
             if (FAILED(hr))
             {
                 // Clean up on failure
-                for (UINT32 j = 0; j <= i; ++j)
+                // Clean up on failure
+            for (UINT32 j = 0; j < i; ++j) // use < i to avoid double delete
+                delete (*ppFrames)[j];
                     delete (*ppFrames)[j];
                 delete[] *ppFrames;
                 *ppFrames = NULL;

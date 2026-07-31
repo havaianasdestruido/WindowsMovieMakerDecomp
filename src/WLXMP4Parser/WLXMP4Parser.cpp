@@ -42,22 +42,34 @@ struct BoxHeader
 
     UINT32 GetType() const
     {
-        // Convert from big-endian to little-endian
-        return ((uType & 0xFF) << 24) | ((uType >> 8) & 0xFF) |
-               ((uType & 0xFF00) << 8) | ((uType >> 8) & 0xFF00);
+        // big-endian to host (little-endian)
+        return ((uType & 0xFF) << 24) |
+               ((uType >> 8) & 0xFF) << 16 |
+               ((uType >> 16) & 0xFF) << 8 |
+               ((uType >> 24) & 0xFF);
     }
 
-    UINT64 GetSize() const
+    UINT64 GetSize(const BYTE* extPtr = nullptr) const
     {
         UINT32 sizeBE = uSize;
-        UINT32 sizeLE = ((sizeBE & 0xFF) << 24) | ((sizeBE >> 8) & 0xFF) |
-                        ((sizeBE & 0xFF00) << 8) | ((sizeBE >> 8) & 0xFF00);
-        if (sizeLE == 1)
+        UINT32 size = ((sizeBE & 0xFF) << 24) |
+                      ((sizeBE >> 8) & 0xFF) << 16 |
+                      ((sizeBE >> 16) & 0xFF) << 8 |
+                      ((sizeBE >> 24) & 0xFF);
+        if (size == 1 && extPtr)
         {
-            // Extended size (next 8 bytes)
-            return 16; // Caller reads the actual 64-bit size
+            // extended 64-bit size follows header
+            UINT64 extSize = ((UINT64)extPtr[0] << 56) |
+                             ((UINT64)extPtr[1] << 48) |
+                             ((UINT64)extPtr[2] << 40) |
+                             ((UINT64)extPtr[3] << 32) |
+                             ((UINT64)extPtr[4] << 24) |
+                             ((UINT64)extPtr[5] << 16) |
+                             ((UINT64)extPtr[6] << 8)  |
+                             ((UINT64)extPtr[7]);
+            return extSize;
         }
-        return static_cast<UINT64>(sizeLE);
+        return static_cast<UINT64>(size);
     }
 };
 #pragma pack(pop)
@@ -73,14 +85,14 @@ public:
     {
     }
 
-    HRESULT Parse(BYTE* pData, UINT64 cbData)
-    {
-        // Parse child boxes: stsd, stts, stsc, stsz, stco
-        // For this skeleton, extract sample count from stsz
+if (!pData || cbData == 0)
+        {
+            return E_INVALIDARG;
+        }
+        // TODO: actual parsing of child boxes
         UNREFERENCED_PARAMETER(pData);
         UNREFERENCED_PARAMETER(cbData);
         return S_OK;
-    }
 
     UINT32 GetSampleCount() const { return m_uSampleCount; }
 
@@ -195,11 +207,11 @@ public:
         {
             BoxHeader* pHeader = reinterpret_cast<BoxHeader*>(buffer.data() + offset);
             UINT32 boxType = pHeader->GetType();
-            UINT64 boxSize = pHeader->GetSize();
+            // Determine size, handling extended size if needed
+            UINT64 boxSize = pHeader->GetSize((offset + 8 + 8 <= cbRead) ? buffer.data() + offset + 8 : nullptr);
 
             if (boxType == MP4_BOX_FTYP && boxSize >= 8)
             {
-                // Parse ftyp
                 if (offset + 12 <= cbRead)
                 {
                     UINT32* pBrand = reinterpret_cast<UINT32*>(buffer.data() + offset + 8);
@@ -210,7 +222,6 @@ public:
             {
                 m_bFastStart = true; // moov before mdat
                 m_moov.reset(new MoovBox());
-                // Parse moov contents
                 m_moov->Parse(buffer.data() + offset + 8, boxSize - 8);
             }
 

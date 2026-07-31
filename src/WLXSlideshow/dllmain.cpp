@@ -29,7 +29,7 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD dwReason, LPVOID lpReserved)
         if (SUCCEEDED(CoInitializeEx(NULL, COINIT_MULTITHREADED | COINIT_DISABLE_OLE1DDE)))
             g_bComInit = true;
 
-        Gdiplus::GdiplusStartupInput input;
+        Gdiplus::GdiplusStartupInput input = {0}; input.GdiplusVersion = 1;
         if (Gdiplus::GdiplusStartup(&g_gdipToken, &input, NULL) == Gdiplus::Ok)
             g_bGdipInit = true;
 

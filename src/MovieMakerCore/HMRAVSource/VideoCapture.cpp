@@ -155,7 +155,8 @@ HRESULT VideoCapture::StartPreview(HWND hWnd)
 {
     if (m_fPreviewing)
         return S_FALSE;
-
+    if (!hWnd)
+        return E_POINTER;
     m_hPreviewWnd = hWnd;
     m_fPreviewing = true;
     m_state = CaptureStatePreviewing;

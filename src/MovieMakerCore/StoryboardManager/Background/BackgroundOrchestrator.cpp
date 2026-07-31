@@ -111,41 +111,29 @@ bool BackgroundOrchestrator::IsInitialized() const throw()
     return m_bInitialized;
 }
 
+constexpr size_t MAX_QUEUE=1024;
 HRESULT BackgroundOrchestrator::QueueRequest(BaseBackgroundRequest* pRequest)
 {
-    if (!m_bInitialized)
-        return E_UNEXPECTED;
-
-    if (!pRequest)
-        return E_POINTER;
-
-    // Assign a unique request ID
-    EnterCriticalSection(&m_csIdGen);
-    pRequest->m_dwRequestId = m_dwNextRequestId++;
-    LeaveCriticalSection(&m_csIdGen);
-
-    pRequest->m_status = RequestStatusPending;
-
-    // Insert into queue in priority order
+    if (!m_bInitialized) return E_UNEXPECTED;
+    if (!pRequest) return E_POINTER;
+    // overflow guard
     EnterCriticalSection(&m_csQueue);
-    bool bInserted = false;
-    for (auto it = m_requestQueue.begin(); it != m_requestQueue.end(); ++it)
-    {
-        if ((*it)->m_priority < pRequest->m_priority)
-        {
-            m_requestQueue.insert(it, pRequest);
-            bInserted = true;
-            break;
-        }
-    }
-    if (!bInserted)
-        m_requestQueue.push_back(pRequest);
-
+    if (m_requestQueue.size()>=MAX_QUEUE) { LeaveCriticalSection(&m_csQueue); return E_FAIL; }
+    // Assign ID
     LeaveCriticalSection(&m_csQueue);
-
-    // Wake a worker thread
+    EnterCriticalSection(&m_csIdGen);
+    pRequest->m_dwRequestId=m_dwNextRequestId++;
+    LeaveCriticalSection(&m_csIdGen);
+    pRequest->m_status=RequestStatusPending;
+    // priority insert
+    EnterCriticalSection(&m_csQueue);
+    bool bInserted=false;
+    for(auto it=m_requestQueue.begin();it!=m_requestQueue.end();++it){
+        if((*it)->m_priority<pRequest->m_priority){m_requestQueue.insert(it,pRequest);bInserted=true;break;}
+    }
+    if(!bInserted) m_requestQueue.push_back(pRequest);
+    LeaveCriticalSection(&m_csQueue);
     WakeConditionVariable(&m_cvWorkAvailable);
-
     return S_OK;
 }
 

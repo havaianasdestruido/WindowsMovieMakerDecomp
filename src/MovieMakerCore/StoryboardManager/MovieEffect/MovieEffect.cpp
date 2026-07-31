@@ -131,10 +131,10 @@ HRESULT MovieEffect::LoadFromXml(IXmlReader* pReader)
         m_strName = pszValue;
 
     if (SUCCEEDED(XmlReaderGetAttribute(pReader, L"duration", &pszValue)) && pszValue)
-        m_llDurationHns = _wtoi64(pszValue);
+        SetDurationHns(_wtoi64(pszValue));
 
     if (SUCCEEDED(XmlReaderGetAttribute(pReader, L"offset", &pszValue)) && pszValue)
-        m_llStartOffsetHns = _wtoi64(pszValue);
+        SetStartOffsetHns(_wtoi64(pszValue));
 
     if (SUCCEEDED(XmlReaderGetAttribute(pReader, L"intensity", &pszValue)) && pszValue)
         SetIntensity((float)_wtof(pszValue));
@@ -264,10 +264,23 @@ void TextEffect::SetFontStyle(DWORD dwStyle) throw() { m_dwFontStyle = dwStyle; 
 
 float TextEffect::GetPositionX() const throw() { return m_flPositionX; }
 float TextEffect::GetPositionY() const throw() { return m_flPositionY; }
-void TextEffect::SetPosition(float x, float y) throw() { m_flPositionX = x; m_flPositionY = y; }
+void TextEffect::SetPosition(float x, float y) throw()
+{
+    if (x < 0.0f) x = 0.0f;
+    if (x > 1.0f) x = 1.0f;
+    if (y < 0.0f) y = 0.0f;
+    if (y > 1.0f) y = 1.0f;
+    m_flPositionX = x;
+    m_flPositionY = y;
+}
 
 TextEffect::TextEffectAlignment TextEffect::GetAlignment() const throw() { return m_alignment; }
-void TextEffect::SetAlignment(TextEffectAlignment align) throw() { m_alignment = align; }
+void TextEffect::SetAlignment(TextEffectAlignment align) throw()
+{
+    if (align < TextEffectAlignLeft) align = TextEffectAlignLeft;
+    if (align > TextEffectAlignRight) align = TextEffectAlignRight;
+    m_alignment = align;
+}
 
 bool TextEffect::HasBackground() const throw() { return m_fBackground; }
 void TextEffect::SetBackground(bool fBackground) throw() { m_fBackground = fBackground; }
@@ -295,7 +308,7 @@ HRESULT TextEffect::LoadFromXml(IXmlReader* pReader)
         m_strFontFamily = pszValue;
 
     if (SUCCEEDED(XmlReaderGetAttribute(pReader, L"fontSize", &pszValue)) && pszValue)
-        m_flFontSize = (float)_wtof(pszValue);
+        SetFontSize((float)_wtof(pszValue));
 
     if (SUCCEEDED(XmlReaderGetAttribute(pReader, L"fontColor", &pszValue)) && pszValue)
         m_dwFontColor = (DWORD)_wtol(pszValue);
@@ -309,8 +322,10 @@ HRESULT TextEffect::LoadFromXml(IXmlReader* pReader)
     if (SUCCEEDED(XmlReaderGetAttribute(pReader, L"posY", &pszValue)) && pszValue)
         m_flPositionY = (float)_wtof(pszValue);
 
+    SetPosition(m_flPositionX, m_flPositionY);
+
     if (SUCCEEDED(XmlReaderGetAttribute(pReader, L"alignment", &pszValue)) && pszValue)
-        m_alignment = static_cast<TextEffectAlignment>(_wtoi(pszValue));
+        SetAlignment(static_cast<TextEffectAlignment>(_wtoi(pszValue)));
 
     if (SUCCEEDED(XmlReaderGetAttribute(pReader, L"background", &pszValue)) && pszValue)
         m_fBackground = (_wtoi(pszValue) != 0);
@@ -434,6 +449,16 @@ float PanAndZoomShapeEffect::GetStartBottom() const throw() { return m_flStartBo
 
 void PanAndZoomShapeEffect::SetStartRect(float left, float top, float right, float bottom) throw()
 {
+    if (left < 0.0f) left = 0.0f;
+    if (left > 1.0f) left = 1.0f;
+    if (top < 0.0f) top = 0.0f;
+    if (top > 1.0f) top = 1.0f;
+    if (right < 0.0f) right = 0.0f;
+    if (right > 1.0f) right = 1.0f;
+    if (bottom < 0.0f) bottom = 0.0f;
+    if (bottom > 1.0f) bottom = 1.0f;
+    if (left > right) { float tmp = left; left = right; right = tmp; }
+    if (top > bottom) { float tmp = top; top = bottom; bottom = tmp; }
     m_flStartLeft = left;
     m_flStartTop = top;
     m_flStartRight = right;
@@ -447,6 +472,16 @@ float PanAndZoomShapeEffect::GetEndBottom() const throw() { return m_flEndBottom
 
 void PanAndZoomShapeEffect::SetEndRect(float left, float top, float right, float bottom) throw()
 {
+    if (left < 0.0f) left = 0.0f;
+    if (left > 1.0f) left = 1.0f;
+    if (top < 0.0f) top = 0.0f;
+    if (top > 1.0f) top = 1.0f;
+    if (right < 0.0f) right = 0.0f;
+    if (right > 1.0f) right = 1.0f;
+    if (bottom < 0.0f) bottom = 0.0f;
+    if (bottom > 1.0f) bottom = 1.0f;
+    if (left > right) { float tmp = left; left = right; right = tmp; }
+    if (top > bottom) { float tmp = top; top = bottom; bottom = tmp; }
     m_flEndLeft = left;
     m_flEndTop = top;
     m_flEndRight = right;
@@ -454,10 +489,20 @@ void PanAndZoomShapeEffect::SetEndRect(float left, float top, float right, float
 }
 
 PanZoomShape PanAndZoomShapeEffect::GetShape() const throw() { return m_shape; }
-void PanAndZoomShapeEffect::SetShape(PanZoomShape shape) throw() { m_shape = shape; }
+void PanAndZoomShapeEffect::SetShape(PanZoomShape shape) throw()
+{
+    if (shape < PanZoomShapeNone) shape = PanZoomShapeNone;
+    if (shape > PanZoomShapeCustom) shape = PanZoomShapeCustom;
+    m_shape = shape;
+}
 
 PanAndZoomShapeEffect::EasingType PanAndZoomShapeEffect::GetEasing() const throw() { return m_easing; }
-void PanAndZoomShapeEffect::SetEasing(EasingType easing) throw() { m_easing = easing; }
+void PanAndZoomShapeEffect::SetEasing(EasingType easing) throw()
+{
+    if (easing < EasingLinear) easing = EasingLinear;
+    if (easing > EasingEaseInOut) easing = EasingEaseInOut;
+    m_easing = easing;
+}
 
 bool PanAndZoomShapeEffect::IsRandomStartPosition() const throw() { return m_fRandomStartPosition; }
 void PanAndZoomShapeEffect::SetRandomStartPosition(bool fRandom) throw() { m_fRandomStartPosition = fRandom; }
@@ -484,6 +529,8 @@ HRESULT PanAndZoomShapeEffect::LoadFromXml(IXmlReader* pReader)
     if (SUCCEEDED(XmlReaderGetAttribute(pReader, L"startBottom", &pszValue)) && pszValue)
         m_flStartBottom = (float)_wtof(pszValue);
 
+    SetStartRect(m_flStartLeft, m_flStartTop, m_flStartRight, m_flStartBottom);
+
     if (SUCCEEDED(XmlReaderGetAttribute(pReader, L"endLeft", &pszValue)) && pszValue)
         m_flEndLeft = (float)_wtof(pszValue);
     if (SUCCEEDED(XmlReaderGetAttribute(pReader, L"endTop", &pszValue)) && pszValue)
@@ -493,10 +540,12 @@ HRESULT PanAndZoomShapeEffect::LoadFromXml(IXmlReader* pReader)
     if (SUCCEEDED(XmlReaderGetAttribute(pReader, L"endBottom", &pszValue)) && pszValue)
         m_flEndBottom = (float)_wtof(pszValue);
 
+    SetEndRect(m_flEndLeft, m_flEndTop, m_flEndRight, m_flEndBottom);
+
     if (SUCCEEDED(XmlReaderGetAttribute(pReader, L"shape", &pszValue)) && pszValue)
-        m_shape = static_cast<PanZoomShape>(_wtoi(pszValue));
+        SetShape(static_cast<PanZoomShape>(_wtoi(pszValue)));
     if (SUCCEEDED(XmlReaderGetAttribute(pReader, L"easing", &pszValue)) && pszValue)
-        m_easing = static_cast<EasingType>(_wtoi(pszValue));
+        SetEasing(static_cast<EasingType>(_wtoi(pszValue)));
     if (SUCCEEDED(XmlReaderGetAttribute(pReader, L"randomStart", &pszValue)) && pszValue)
         m_fRandomStartPosition = (_wtoi(pszValue) != 0);
     if (SUCCEEDED(XmlReaderGetAttribute(pReader, L"holdStart", &pszValue)) && pszValue)
@@ -637,7 +686,7 @@ HRESULT AudioDuckingProperties::LoadFromXml(IXmlReader* pReader)
         m_fEnabled = (_wtoi(pszValue) != 0);
 
     if (SUCCEEDED(XmlReaderGetAttribute(pReader, L"duckLevel", &pszValue)) && pszValue)
-        m_flDuckLevel = (float)_wtof(pszValue);
+        SetDuckLevel((float)_wtof(pszValue));
 
     if (SUCCEEDED(XmlReaderGetAttribute(pReader, L"fadeInMs", &pszValue)) && pszValue)
         m_dwFadeInMs = (DWORD)_wtol(pszValue);

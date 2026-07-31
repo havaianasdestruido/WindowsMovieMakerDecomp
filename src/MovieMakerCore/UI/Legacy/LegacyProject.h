@@ -114,7 +114,7 @@ public:
     // -- Conversion helpers --
     HRESULT ConvertLegacyMediaItem(const ATL::CString& strLegacyItem, StoryboardManager::ProjectMediaItem* pOutItem);
     HRESULT ConvertLegacyExtent(const ATL::CString& strLegacyExtent, StoryboardManager::MovieExtent* pOutExtent);
-    LONGLONG ConvertLegacyTimeToHns(DWORD dwLegacyTime);
+    LONGLONG ConvertLegacyTimeToHns(LONGLONG llLegacyTime);
     float ConvertLegacyCoordToNormalized(DWORD dwLegacyCoord, DWORD dwContainerSize);
 
     // -- Writing legacy format --

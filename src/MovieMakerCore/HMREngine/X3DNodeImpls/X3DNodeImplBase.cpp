@@ -201,6 +201,14 @@ HRESULT X3DChildNodeImpl::Initialize(X3DChildNode* node)
 
 void X3DChildNodeImpl::Shutdown()
 {
+    for (X3DChildNodeImpl* child : m_children)
+    {
+        if (child)
+        {
+            child->SetParent(nullptr);
+            delete child;
+        }
+    }
     m_children.clear();
     m_parent = nullptr;
     m_childNode = nullptr;
@@ -228,7 +236,14 @@ void X3DChildNodeImpl::Traverse(std::function<void(X3DChildNodeImpl*, int)> visi
 
 void X3DChildNodeImpl::AddChild(X3DChildNodeImpl* child)
 {
-    if (!child) return;
+    if (!child || child == this) return;
+
+    for (X3DChildNodeImpl* existing : m_children)
+        if (existing == child) return;
+
+    if (child->GetParent() && child->GetParent() != this)
+        child->GetParent()->RemoveChild(child);
+
     child->SetParent(this);
     m_children.push_back(child);
 }

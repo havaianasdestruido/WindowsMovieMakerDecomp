@@ -15,6 +15,22 @@
 #include "LegacyProject.h"
 #include <shlwapi.h>
 
+namespace
+{
+// Legacy media types (0 = photo, 1 = video, 2 = audio) use a different
+// numbering than the current project format (0 = video, 1 = photo, 2 = audio).
+DWORD ConvertLegacyMediaType(DWORD dwLegacyType)
+{
+    switch (dwLegacyType)
+    {
+    case 0: return 1;
+    case 1: return 0;
+    case 2: return 2;
+    default: return 0;
+    }
+}
+}
+
 static HRESULT SkipCurrentElement(IXmlReader* pReader)
 {
     if (!pReader)
@@ -79,7 +95,7 @@ bool LegacyProjectSupport::IsLegacyProjectFormat(LPCWSTR pszFilePath)
         return false;
 
     DWORD dwVersion = DetectProjectVersion(pszFilePath);
-    return (dwVersion < 16);
+    return (dwVersion != 0 && dwVersion < 16);
 }
 
 bool LegacyProjectSupport::IsLegacyNamespace(IXmlReader* pReader)
@@ -217,7 +233,7 @@ HRESULT LegacyProjectSupport::ReadLegacyProject(
         return hr;
 
     XmlNodeType nodeType;
-    while (SUCCEEDED(spReader->Read(&nodeType)))
+    while ((hr = spReader->Read(&nodeType)) == S_OK)
     {
         if (nodeType == XmlNodeType_Element)
         {
@@ -288,6 +304,9 @@ HRESULT LegacyProjectSupport::ReadLegacyProject(
         }
     }
 
+    if (FAILED(hr))
+        return hr;
+
     // Convert legacy media items to current format
     for (size_t i = 0; i < m_mediaItems.size(); ++i)
     {
@@ -296,9 +315,9 @@ HRESULT LegacyProjectSupport::ReadLegacyProject(
         if (SUCCEEDED(hr))
         {
             convertedItem.SetMediaId(m_mediaItems[i].dwId);
-            convertedItem.SetMediaType(m_mediaItems[i].dwMediaType);
-            convertedItem.SetDurationHns(ConvertLegacyTimeToHns(static_cast<DWORD>(m_mediaItems[i].llDurationMs)));
-            convertedItem.SetStartTimeHns(ConvertLegacyTimeToHns(static_cast<DWORD>(m_mediaItems[i].llStartTimeMs)));
+            convertedItem.SetMediaType(ConvertLegacyMediaType(m_mediaItems[i].dwMediaType));
+            convertedItem.SetDurationHns(ConvertLegacyTimeToHns(m_mediaItems[i].llDurationMs));
+            convertedItem.SetStartTimeHns(ConvertLegacyTimeToHns(m_mediaItems[i].llStartTimeMs));
             convertedItem.SetDimensions(m_mediaItems[i].uWidth, m_mediaItems[i].uHeight);
             convertedItem.SetFrameRate(m_mediaItems[i].dwFrameRate);
             pOutProject->AddMediaItem(convertedItem);
@@ -317,7 +336,7 @@ HRESULT LegacyProjectSupport::ReadLegacyMediaItems(
     XmlNodeType nodeType;
     HRESULT hr;
 
-    while (SUCCEEDED(pReader->Read(&nodeType)))
+    while ((hr = pReader->Read(&nodeType)) == S_OK)
     {
         if (nodeType == XmlNodeTypeEndElement)
             break;
@@ -369,6 +388,9 @@ HRESULT LegacyProjectSupport::ReadLegacyMediaItems(
         }
     }
 
+    if (FAILED(hr))
+        return hr;
+
     return S_OK;
 }
 
@@ -385,7 +407,7 @@ HRESULT LegacyProjectSupport::ReadLegacyTimeline(
     StoryboardManager::ProjectTimeline* pTimeline =
         pProject->GetTimeline(StoryboardManager::TimelineTrackTypeVideo);
 
-    while (SUCCEEDED(pReader->Read(&nodeType)))
+    while ((hr = pReader->Read(&nodeType)) == S_OK)
     {
         if (nodeType == XmlNodeTypeEndElement)
             break;
@@ -432,16 +454,16 @@ HRESULT LegacyProjectSupport::ReadLegacyTimeline(
                 if (SUCCEEDED(XmlReaderGetAttribute(pReader, L"muted", &pszValue)) && pszValue)
                     fMuted = (_wtoi(pszValue) != 0);
                 if (SUCCEEDED(XmlReaderGetAttribute(pReader, L"fadeIn", &pszValue)) && pszValue)
-                    llFadeIn = ConvertLegacyTimeToHns(static_cast<DWORD>(_wtoi64(pszValue)));
+                    llFadeIn = ConvertLegacyTimeToHns(_wtoi64(pszValue));
                 if (SUCCEEDED(XmlReaderGetAttribute(pReader, L"fadeOut", &pszValue)) && pszValue)
-                    llFadeOut = ConvertLegacyTimeToHns(static_cast<DWORD>(_wtoi64(pszValue)));
+                    llFadeOut = ConvertLegacyTimeToHns(_wtoi64(pszValue));
 
                 if (pTimeline)
                     pTimeline->AddExtent(dwExtentId);
 
                 StoryboardManager::MovieExtent extent(dwExtentId, dwMediaId);
-                extent.SetStartTimeHns(ConvertLegacyTimeToHns(static_cast<DWORD>(llStartTime)));
-                extent.SetEndTimeHns(ConvertLegacyTimeToHns(static_cast<DWORD>(llEndTime)));
+                extent.SetStartTimeHns(ConvertLegacyTimeToHns(llStartTime));
+                extent.SetEndTimeHns(ConvertLegacyTimeToHns(llEndTime));
                 extent.SetSpeedFactor(dblSpeed);
                 extent.SetVolume(dblVolume);
                 extent.SetPan(dblPan);
@@ -449,7 +471,6 @@ HRESULT LegacyProjectSupport::ReadLegacyTimeline(
                 extent.SetMuted(fMuted);
                 extent.SetFadeInDurationHns(llFadeIn);
                 extent.SetFadeOutDurationHns(llFadeOut);
-                pProject->AddExtent(extent);
 
                 SkipCurrentElement(pReader);
             }
@@ -460,8 +481,8 @@ HRESULT LegacyProjectSupport::ReadLegacyTimeline(
         }
     }
 
-    if (pTimeline)
-        pTimeline->SetTotalDurationHns(0);
+    if (FAILED(hr))
+        return hr;
 
     return S_OK;
 }
@@ -479,9 +500,9 @@ HRESULT LegacyProjectSupport::ReadLegacyExtent(
     if (SUCCEEDED(XmlReaderGetAttribute(pReader, L"mediaId", &pszValue)) && pszValue)
         pExtent->SetMediaId(_wtoi(pszValue));
     if (SUCCEEDED(XmlReaderGetAttribute(pReader, L"startTime", &pszValue)) && pszValue)
-        pExtent->SetStartTimeHns(ConvertLegacyTimeToHns(static_cast<DWORD>(_wtoi64(pszValue))));
+        pExtent->SetStartTimeHns(ConvertLegacyTimeToHns(_wtoi64(pszValue)));
     if (SUCCEEDED(XmlReaderGetAttribute(pReader, L"endTime", &pszValue)) && pszValue)
-        pExtent->SetEndTimeHns(ConvertLegacyTimeToHns(static_cast<DWORD>(_wtoi64(pszValue))));
+        pExtent->SetEndTimeHns(ConvertLegacyTimeToHns(_wtoi64(pszValue)));
     if (SUCCEEDED(XmlReaderGetAttribute(pReader, L"speed", &pszValue)) && pszValue)
         pExtent->SetSpeedFactor(_wtof(pszValue));
     if (SUCCEEDED(XmlReaderGetAttribute(pReader, L"volume", &pszValue)) && pszValue)

@@ -20,30 +20,57 @@ CommandBin::CommandBin()
     : m_bCoalesceEnabled(true)
     , m_bDirty(false)
     , m_dwPriority(0)
+    , m_hrLastError(S_OK)
 {
+    InitializeCriticalSection(&m_csLock);
 }
 
 CommandBin::~CommandBin()
 {
     Clear();
+    DeleteCriticalSection(&m_csLock);
 }
 
 void CommandBin::AddCommand(const CommandEntry& entry)
 {
+    EnterCriticalSection(&m_csLock);
+
+    bool bHandled = false;
     if (m_bCoalesceEnabled)
     {
         for (auto& existing : m_commands)
         {
             if (ShouldCoalesce(existing, entry))
             {
-                existing = entry;
-                m_bDirty = true;
-                return;
+                try
+                {
+                    existing = entry;
+                    m_bDirty = true;
+                }
+                catch (const std::bad_alloc&)
+                {
+                    m_hrLastError = E_OUTOFMEMORY;
+                }
+                bHandled = true;
+                break;
             }
         }
     }
-    m_commands.push_back(entry);
-    m_bDirty = true;
+
+    if (!bHandled)
+    {
+        try
+        {
+            m_commands.push_back(entry);
+            m_bDirty = true;
+        }
+        catch (const std::bad_alloc&)
+        {
+            m_hrLastError = E_OUTOFMEMORY;
+        }
+    }
+
+    LeaveCriticalSection(&m_csLock);
 }
 
 void CommandBin::AddCommand(CommandType cmdType, DWORD dwTargetId, DWORD dwFlags)
@@ -78,14 +105,27 @@ void CommandBin::AddCommand(CommandType cmdType, DWORD dwTargetId, LPCWSTR pszAr
     CommandEntry entry;
     entry.cmdType = cmdType;
     entry.dwTargetId = dwTargetId;
-    entry.strArgument = pszArgument ? pszArgument : L"";
+    try
+    {
+        entry.strArgument = pszArgument ? pszArgument : L"";
+    }
+    catch (const std::bad_alloc&)
+    {
+        m_hrLastError = E_OUTOFMEMORY;
+        return;
+    }
     AddCommand(entry);
 }
 
 HRESULT CommandBin::Flush()
 {
+    EnterCriticalSection(&m_csLock);
+
     if (!m_bDirty)
+    {
+        LeaveCriticalSection(&m_csLock);
         return S_FALSE;
+    }
 
     HRESULT hrOverall = S_OK;
 
@@ -150,45 +190,81 @@ HRESULT CommandBin::Flush()
             hrOverall = hr;
     }
 
-    m_commands.clear();
-    m_bDirty = false;
+    // Transactional commit/rollback: only clear the buffer when every
+    // command validated. On failure keep the batch intact so the caller
+    // can fix or discard it, and mark the bin dirty for a retry.
+    if (SUCCEEDED(hrOverall))
+    {
+        m_commands.clear();
+        m_bDirty = false;
+        m_hrLastError = S_OK;
+    }
+
+    LeaveCriticalSection(&m_csLock);
     return hrOverall;
 }
 
 void CommandBin::Clear()
 {
+    EnterCriticalSection(&m_csLock);
     m_commands.clear();
     m_bDirty = false;
+    m_hrLastError = S_OK;
+    LeaveCriticalSection(&m_csLock);
 }
 
 size_t CommandBin::GetCommandCount() const throw()
 {
-    return m_commands.size();
+    EnterCriticalSection(&m_csLock);
+    size_t cCount = m_commands.size();
+    LeaveCriticalSection(&m_csLock);
+    return cCount;
 }
 
 bool CommandBin::IsDirty() const throw()
 {
-    return m_bDirty;
+    EnterCriticalSection(&m_csLock);
+    bool bDirty = m_bDirty;
+    LeaveCriticalSection(&m_csLock);
+    return bDirty;
 }
 
 void CommandBin::EnableCoalescing(bool bEnable)
 {
+    EnterCriticalSection(&m_csLock);
     m_bCoalesceEnabled = bEnable;
+    LeaveCriticalSection(&m_csLock);
 }
 
 bool CommandBin::IsCoalescingEnabled() const throw()
 {
-    return m_bCoalesceEnabled;
+    EnterCriticalSection(&m_csLock);
+    bool bEnabled = m_bCoalesceEnabled;
+    LeaveCriticalSection(&m_csLock);
+    return bEnabled;
 }
 
 void CommandBin::SetPriority(DWORD dwPriority)
 {
+    EnterCriticalSection(&m_csLock);
     m_dwPriority = dwPriority;
+    LeaveCriticalSection(&m_csLock);
 }
 
 DWORD CommandBin::GetPriority() const throw()
 {
-    return m_dwPriority;
+    EnterCriticalSection(&m_csLock);
+    DWORD dwPriority = m_dwPriority;
+    LeaveCriticalSection(&m_csLock);
+    return dwPriority;
+}
+
+HRESULT CommandBin::GetLastError() const throw()
+{
+    EnterCriticalSection(&m_csLock);
+    HRESULT hr = m_hrLastError;
+    LeaveCriticalSection(&m_csLock);
+    return hr;
 }
 
 bool CommandBin::ShouldCoalesce(const CommandEntry& existing, const CommandEntry& incoming)
@@ -220,13 +296,18 @@ RenderCommandBin::~RenderCommandBin()
 
 void RenderCommandBin::SetRenderTarget(DWORD dwTargetId)
 {
+    EnterCriticalSection(&m_csLock);
     m_dwRenderTargetId = dwTargetId;
-    AddCommand(CommandTypeUnknown, dwTargetId, static_cast<DWORD>(0));
+    m_bDirty = true;
+    LeaveCriticalSection(&m_csLock);
 }
 
 void RenderCommandBin::SetViewport(const RECT& rcViewport)
 {
+    EnterCriticalSection(&m_csLock);
     m_rcViewport = rcViewport;
+    m_bDirty = true;
+    LeaveCriticalSection(&m_csLock);
 }
 
 void RenderCommandBin::SetShaderParameter(DWORD dwParamId, const float* pValues, DWORD dwCount)
@@ -236,9 +317,19 @@ void RenderCommandBin::SetShaderParameter(DWORD dwParamId, const float* pValues,
 
     ShaderParamEntry entry;
     entry.dwParamId = dwParamId;
-    entry.values.assign(pValues, pValues + dwCount);
-    m_shaderParams.push_back(std::move(entry));
-    m_bDirty = true;
+
+    EnterCriticalSection(&m_csLock);
+    try
+    {
+        entry.values.assign(pValues, pValues + dwCount);
+        m_shaderParams.push_back(std::move(entry));
+        m_bDirty = true;
+    }
+    catch (const std::bad_alloc&)
+    {
+        m_hrLastError = E_OUTOFMEMORY;
+    }
+    LeaveCriticalSection(&m_csLock);
 }
 
 void RenderCommandBin::BindTexture(DWORD dwTextureId, DWORD dwSlot)
@@ -246,29 +337,46 @@ void RenderCommandBin::BindTexture(DWORD dwTextureId, DWORD dwSlot)
     TextureBinding binding;
     binding.dwTextureId = dwTextureId;
     binding.dwSlot = dwSlot;
-    m_textureBindings.push_back(binding);
-    m_bDirty = true;
+
+    EnterCriticalSection(&m_csLock);
+    try
+    {
+        m_textureBindings.push_back(binding);
+        m_bDirty = true;
+    }
+    catch (const std::bad_alloc&)
+    {
+        m_hrLastError = E_OUTOFMEMORY;
+    }
+    LeaveCriticalSection(&m_csLock);
 }
 
 void RenderCommandBin::SetClearColor(float flR, float flG, float flB, float flA)
 {
+    EnterCriticalSection(&m_csLock);
     m_flClearColorR = flR;
     m_flClearColorG = flG;
     m_flClearColorB = flB;
     m_flClearColorA = flA;
     m_bDirty = true;
+    LeaveCriticalSection(&m_csLock);
 }
 
 HRESULT RenderCommandBin::Flush()
 {
     HRESULT hr = CommandBin::Flush();
+    EnterCriticalSection(&m_csLock);
     m_hrLastRenderResult = hr;
+    LeaveCriticalSection(&m_csLock);
     return hr;
 }
 
 HRESULT RenderCommandBin::GetLastRenderResult() const throw()
 {
-    return m_hrLastRenderResult;
+    EnterCriticalSection(&m_csLock);
+    HRESULT hr = m_hrLastRenderResult;
+    LeaveCriticalSection(&m_csLock);
+    return hr;
 }
 
 // ============================================================================
@@ -294,14 +402,24 @@ HRESULT DynamicRouteManager::AddRoute(
         return E_POINTER;
 
     RouteEntry entry;
-    entry.dwRouteId = m_dwNextRouteId++;
     entry.dwSourceNodeId = dwSourceNodeId;
-    entry.strSourceField = pszSourceField;
     entry.dwTargetNodeId = dwTargetNodeId;
-    entry.strTargetField = pszTargetField;
     entry.bConnected = false;
 
-    m_routes.push_back(entry);
+    try
+    {
+        entry.strSourceField = pszSourceField;
+        entry.strTargetField = pszTargetField;
+        m_routes.push_back(entry);
+    }
+    catch (const std::bad_alloc&)
+    {
+        return E_OUTOFMEMORY;
+    }
+
+    // Assign the route ID only after a successful insert so a failed
+    // insert does not consume (and lose) a route ID.
+    m_routes.back().dwRouteId = m_dwNextRouteId++;
     return S_OK;
 }
 

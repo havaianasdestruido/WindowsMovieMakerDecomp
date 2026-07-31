@@ -63,7 +63,9 @@ HRESULT X3DShapeNodeImpl::Initialize(X3DShapeNode* node)
 
 void X3DShapeNodeImpl::Shutdown()
 {
+    delete m_geometry;
     m_geometry = nullptr;
+    delete m_appearance;
     m_appearance = nullptr;
     m_shapeNode = nullptr;
     X3DChildNodeImpl::Shutdown();
@@ -71,12 +73,16 @@ void X3DShapeNodeImpl::Shutdown()
 
 void X3DShapeNodeImpl::SetGeometry(X3DGeometryNodeImpl* geo)
 {
+    if (m_geometry == geo) return;
+    delete m_geometry;
     m_geometry = geo;
     MarkDirty();
 }
 
 void X3DShapeNodeImpl::SetAppearance(X3DAppearanceNodeImpl* app)
 {
+    if (m_appearance == app) return;
+    delete m_appearance;
     m_appearance = app;
     MarkDirty();
 }

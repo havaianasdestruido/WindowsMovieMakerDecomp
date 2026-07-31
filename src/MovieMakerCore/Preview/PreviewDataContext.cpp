@@ -151,13 +151,21 @@ PreviewPresenterWrapper* PreviewDataContext::GetPresenter() const throw()
 // ============================================================================
 void PreviewDataContext::SetProject(StoryboardManager::MovieProject* pProject)
 {
+    EnterCriticalSection(&m_csLock);
     m_pProject = pProject;
     RefreshPositionState();
+    LeaveCriticalSection(&m_csLock);
+
+    FirePropertyChanged(kPropCurrentPosition);
+    FirePropertyChanged(kPropTotalDuration);
 }
 
 StoryboardManager::MovieProject* PreviewDataContext::GetProject() const throw()
 {
-    return m_pProject;
+    EnterCriticalSection(&m_csLock);
+    StoryboardManager::MovieProject* pProject = m_pProject;
+    LeaveCriticalSection(&m_csLock);
+    return pProject;
 }
 
 // ============================================================================
@@ -170,77 +178,69 @@ HRESULT PreviewDataContext::GetProperty(LPCWSTR pszName, VARIANT* pvarValue)
 
     VariantInit(pvarValue);
 
+    EnterCriticalSection(&m_csLock);
+
+    HRESULT hr = S_OK;
+
     if (wcscmp(pszName, kPropCurrentPosition) == 0)
     {
         RefreshPositionState();
         pvarValue->vt = VT_R8;
         pvarValue->dblVal = m_dblCurrentPosition;
-        return S_OK;
     }
-
-    if (wcscmp(pszName, kPropTotalDuration) == 0)
+    else if (wcscmp(pszName, kPropTotalDuration) == 0)
     {
         RefreshPositionState();
         pvarValue->vt = VT_R8;
         pvarValue->dblVal = m_dblTotalDuration;
-        return S_OK;
     }
-
-    if (wcscmp(pszName, kPropIsPlaying) == 0)
+    else if (wcscmp(pszName, kPropIsPlaying) == 0)
     {
         RefreshPlaybackState();
         pvarValue->vt = VT_BOOL;
         pvarValue->boolVal = m_fIsPlaying ? VARIANT_TRUE : VARIANT_FALSE;
-        return S_OK;
     }
-
-    if (wcscmp(pszName, kPropIsPaused) == 0)
+    else if (wcscmp(pszName, kPropIsPaused) == 0)
     {
         RefreshPlaybackState();
         pvarValue->vt = VT_BOOL;
         pvarValue->boolVal = m_fIsPaused ? VARIANT_TRUE : VARIANT_FALSE;
-        return S_OK;
     }
-
-    if (wcscmp(pszName, kPropIsStopped) == 0)
+    else if (wcscmp(pszName, kPropIsStopped) == 0)
     {
         RefreshPlaybackState();
         pvarValue->vt = VT_BOOL;
         pvarValue->boolVal = m_fIsStopped ? VARIANT_TRUE : VARIANT_FALSE;
-        return S_OK;
     }
-
-    if (wcscmp(pszName, kPropVolume) == 0)
+    else if (wcscmp(pszName, kPropVolume) == 0)
     {
         pvarValue->vt = VT_R8;
         pvarValue->dblVal = m_dblVolume;
-        return S_OK;
     }
-
-    if (wcscmp(pszName, kPropPlaybackSpeed) == 0)
+    else if (wcscmp(pszName, kPropPlaybackSpeed) == 0)
     {
         pvarValue->vt = VT_R8;
         pvarValue->dblVal = m_dblPlaybackSpeed;
-        return S_OK;
     }
-
-    if (wcscmp(pszName, kPropCurrentFrameUrl) == 0)
+    else if (wcscmp(pszName, kPropCurrentFrameUrl) == 0)
     {
         pvarValue->vt = VT_BSTR;
         pvarValue->bstrVal = SysAllocString(m_bstrCurrentFrameUrl ? m_bstrCurrentFrameUrl : L"");
         if (!pvarValue->bstrVal)
-            return E_OUTOFMEMORY;
-        return S_OK;
+            hr = E_OUTOFMEMORY;
     }
-
-    if (wcscmp(pszName, kPropHasPreview) == 0)
+    else if (wcscmp(pszName, kPropHasPreview) == 0)
     {
         pvarValue->vt = VT_BOOL;
         pvarValue->boolVal = m_fHasPreview ? VARIANT_TRUE : VARIANT_FALSE;
-        return S_OK;
+    }
+    else
+    {
+        hr = DISP_E_UNKNOWNNAME;
     }
 
-    return DISP_E_UNKNOWNNAME;
+    LeaveCriticalSection(&m_csLock);
+    return hr;
 }
 
 // ============================================================================
@@ -251,37 +251,42 @@ HRESULT PreviewDataContext::SetProperty(LPCWSTR pszName, const VARIANT* varValue
     if (!pszName || !varValue)
         return E_INVALIDARG;
 
+    HRESULT hr = DISP_E_MEMBERNOTFOUND;
+
     if (wcscmp(pszName, kPropVolume) == 0)
     {
         VARIANT varConverted;
         VariantInit(&varConverted);
-        HRESULT hr = VariantChangeType(&varConverted, const_cast<VARIANT*>(varValue), 0, VT_R8);
+        hr = VariantChangeType(&varConverted, const_cast<VARIANT*>(varValue), 0, VT_R8);
         if (SUCCEEDED(hr))
         {
+            EnterCriticalSection(&m_csLock);
             m_dblVolume = varConverted.dblVal;
             if (m_pPresenter)
                 m_pPresenter->SetVolume(m_dblVolume);
+            LeaveCriticalSection(&m_csLock);
+
             FirePropertyChanged(kPropVolume);
         }
-        return hr;
     }
-
-    if (wcscmp(pszName, kPropPlaybackSpeed) == 0)
+    else if (wcscmp(pszName, kPropPlaybackSpeed) == 0)
     {
         VARIANT varConverted;
         VariantInit(&varConverted);
-        HRESULT hr = VariantChangeType(&varConverted, const_cast<VARIANT*>(varValue), 0, VT_R8);
+        hr = VariantChangeType(&varConverted, const_cast<VARIANT*>(varValue), 0, VT_R8);
         if (SUCCEEDED(hr))
         {
+            EnterCriticalSection(&m_csLock);
             m_dblPlaybackSpeed = varConverted.dblVal;
             if (m_pPresenter)
                 m_pPresenter->SetPlaybackSpeed(m_dblPlaybackSpeed);
+            LeaveCriticalSection(&m_csLock);
+
             FirePropertyChanged(kPropPlaybackSpeed);
         }
-        return hr;
     }
 
-    return DISP_E_MEMBERNOTFOUND;
+    return hr;
 }
 
 // ============================================================================
@@ -289,8 +294,10 @@ HRESULT PreviewDataContext::SetProperty(LPCWSTR pszName, const VARIANT* varValue
 // ============================================================================
 void PreviewDataContext::RefreshAllProperties()
 {
+    EnterCriticalSection(&m_csLock);
     RefreshPlaybackState();
     RefreshPositionState();
+    LeaveCriticalSection(&m_csLock);
 }
 
 // ============================================================================
@@ -319,17 +326,19 @@ void PreviewDataContext::RefreshPositionState()
 {
     if (!m_pPresenter)
     {
+        m_llCurrentPositionHns = 0;
+        m_llTotalDurationHns = 0;
         m_dblCurrentPosition = 0.0;
         m_dblTotalDuration = 0.0;
         return;
     }
 
-    LONGLONG llCurrentHns = m_pPresenter->GetCurrentPositionHns();
-    LONGLONG llTotalHns = m_pPresenter->GetTotalDurationHns();
+    m_llCurrentPositionHns = m_pPresenter->GetCurrentPositionHns();
+    m_llTotalDurationHns = m_pPresenter->GetTotalDurationHns();
 
     static const double hnsToSeconds = 1.0 / 10000000.0;
-    m_dblCurrentPosition = static_cast<double>(llCurrentHns) * hnsToSeconds;
-    m_dblTotalDuration = static_cast<double>(llTotalHns) * hnsToSeconds;
+    m_dblCurrentPosition = static_cast<double>(m_llCurrentPositionHns) * hnsToSeconds;
+    m_dblTotalDuration = static_cast<double>(m_llTotalDurationHns) * hnsToSeconds;
 }
 
 // ============================================================================
@@ -337,9 +346,12 @@ void PreviewDataContext::RefreshPositionState()
 // ============================================================================
 LONGLONG PreviewDataContext::GetCurrentPositionHns() const throw()
 {
-    if (m_pPresenter)
-        return m_pPresenter->GetCurrentPositionHns();
-    return m_llCurrentPositionHns;
+    EnterCriticalSection(&m_csLock);
+    LONGLONG llPosition = m_pPresenter
+        ? m_pPresenter->GetCurrentPositionHns()
+        : m_llCurrentPositionHns;
+    LeaveCriticalSection(&m_csLock);
+    return llPosition;
 }
 
 // ============================================================================
@@ -347,9 +359,12 @@ LONGLONG PreviewDataContext::GetCurrentPositionHns() const throw()
 // ============================================================================
 LONGLONG PreviewDataContext::GetTotalDurationHns() const throw()
 {
-    if (m_pPresenter)
-        return m_pPresenter->GetTotalDurationHns();
-    return m_llTotalDurationHns;
+    EnterCriticalSection(&m_csLock);
+    LONGLONG llDuration = m_pPresenter
+        ? m_pPresenter->GetTotalDurationHns()
+        : m_llTotalDurationHns;
+    LeaveCriticalSection(&m_csLock);
+    return llDuration;
 }
 
 // ============================================================================
@@ -357,15 +372,25 @@ LONGLONG PreviewDataContext::GetTotalDurationHns() const throw()
 // ============================================================================
 void PreviewDataContext::SetCurrentPositionHns(LONGLONG llPositionHns)
 {
-    m_llCurrentPositionHns = llPositionHns;
+    if (llPositionHns < 0)
+        llPositionHns = 0;
 
+    bool fNotify = false;
+
+    EnterCriticalSection(&m_csLock);
+    m_llCurrentPositionHns = llPositionHns;
     if (m_pPresenter)
+    {
         m_pPresenter->SeekTo(llPositionHns);
+        fNotify = true;
+    }
 
     static const double hnsToSeconds = 1.0 / 10000000.0;
     m_dblCurrentPosition = static_cast<double>(llPositionHns) * hnsToSeconds;
+    LeaveCriticalSection(&m_csLock);
 
-    FirePropertyChanged(kPropCurrentPosition);
+    if (fNotify)
+        FirePropertyChanged(kPropCurrentPosition);
 }
 
 // ============================================================================
@@ -373,7 +398,19 @@ void PreviewDataContext::SetCurrentPositionHns(LONGLONG llPositionHns)
 // ============================================================================
 void PreviewDataContext::OnPlaybackStateChanged()
 {
-    RefreshPlaybackState();
+    bool fNotify = false;
+
+    EnterCriticalSection(&m_csLock);
+    if (m_pPresenter)
+    {
+        fNotify = true;
+        RefreshPlaybackState();
+    }
+    LeaveCriticalSection(&m_csLock);
+
+    if (!fNotify)
+        return;
+
     FirePropertyChanged(kPropIsPlaying);
     FirePropertyChanged(kPropIsPaused);
     FirePropertyChanged(kPropIsStopped);
@@ -381,14 +418,43 @@ void PreviewDataContext::OnPlaybackStateChanged()
 
 void PreviewDataContext::OnPositionChanged(LONGLONG llPositionHns)
 {
-    UNREFERENCED_PARAMETER(llPositionHns);
-    RefreshPositionState();
+    if (llPositionHns < 0)
+        llPositionHns = 0;
+
+    bool fNotify = false;
+
+    EnterCriticalSection(&m_csLock);
+    if (m_pPresenter)
+    {
+        fNotify = true;
+        m_llCurrentPositionHns = llPositionHns;
+
+        static const double hnsToSeconds = 1.0 / 10000000.0;
+        m_dblCurrentPosition = static_cast<double>(llPositionHns) * hnsToSeconds;
+    }
+    LeaveCriticalSection(&m_csLock);
+
+    if (!fNotify)
+        return;
+
     FirePropertyChanged(kPropCurrentPosition);
 }
 
 void PreviewDataContext::OnVolumeChanged(double dblVolume)
 {
-    m_dblVolume = dblVolume;
+    bool fNotify = false;
+
+    EnterCriticalSection(&m_csLock);
+    if (m_pPresenter)
+    {
+        fNotify = true;
+        m_dblVolume = dblVolume;
+    }
+    LeaveCriticalSection(&m_csLock);
+
+    if (!fNotify)
+        return;
+
     FirePropertyChanged(kPropVolume);
 }
 
@@ -532,59 +598,69 @@ HRESULT STDMETHODCALLTYPE PreviewDataContext::Invoke(
         }
     }
 
+    EnterCriticalSection(&m_csLock);
+
+    HRESULT hr = S_OK;
+
     switch (dispIdMember)
     {
     case dispidCurrentPosition:
         RefreshPositionState();
         pVarResult->vt = VT_R8;
         pVarResult->dblVal = m_dblCurrentPosition;
-        return S_OK;
+        break;
 
     case dispidTotalDuration:
         RefreshPositionState();
         pVarResult->vt = VT_R8;
         pVarResult->dblVal = m_dblTotalDuration;
-        return S_OK;
+        break;
 
     case dispidIsPlaying:
         RefreshPlaybackState();
         pVarResult->vt = VT_BOOL;
         pVarResult->boolVal = m_fIsPlaying ? VARIANT_TRUE : VARIANT_FALSE;
-        return S_OK;
+        break;
 
     case dispidIsPaused:
         RefreshPlaybackState();
         pVarResult->vt = VT_BOOL;
         pVarResult->boolVal = m_fIsPaused ? VARIANT_TRUE : VARIANT_FALSE;
-        return S_OK;
+        break;
 
     case dispidIsStopped:
         RefreshPlaybackState();
         pVarResult->vt = VT_BOOL;
         pVarResult->boolVal = m_fIsStopped ? VARIANT_TRUE : VARIANT_FALSE;
-        return S_OK;
+        break;
 
     case dispidVolume:
         pVarResult->vt = VT_R8;
         pVarResult->dblVal = m_dblVolume;
-        return S_OK;
+        break;
 
     case dispidPlaybackSpeed:
         pVarResult->vt = VT_R8;
         pVarResult->dblVal = m_dblPlaybackSpeed;
-        return S_OK;
+        break;
 
     case dispidCurrentFrameUrl:
         pVarResult->vt = VT_BSTR;
         pVarResult->bstrVal = SysAllocString(m_bstrCurrentFrameUrl ? m_bstrCurrentFrameUrl : L"");
-        return pVarResult->bstrVal ? S_OK : E_OUTOFMEMORY;
+        if (!pVarResult->bstrVal)
+            hr = E_OUTOFMEMORY;
+        break;
 
     case dispidHasPreview:
         pVarResult->vt = VT_BOOL;
         pVarResult->boolVal = m_fHasPreview ? VARIANT_TRUE : VARIANT_FALSE;
-        return S_OK;
+        break;
 
     default:
-        return DISP_E_MEMBERNOTFOUND;
+        hr = DISP_E_MEMBERNOTFOUND;
+        break;
     }
+
+    LeaveCriticalSection(&m_csLock);
+    return hr;
 }

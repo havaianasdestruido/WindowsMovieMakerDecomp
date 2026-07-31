@@ -324,34 +324,31 @@ HRESULT ImageThumbnail::SaveThumbnail(LPCWSTR pszOutputPath, UINT uQuality)
         return hr;
 
     CComPtr<IWICBitmapFrameEncode> spFrameEncode;
-    IPropertyBag2* pPropertyBag = nullptr;
-    hr = spEncoder->CreateNewFrame(&spFrameEncode, &pPropertyBag);
+    CComPtr<IPropertyBag2> spPropertyBag;
+    hr = spEncoder->CreateNewFrame(&spFrameEncode, &spPropertyBag);
     if (FAILED(hr))
         return hr;
 
-    if (pPropertyBag)
+    if (spPropertyBag)
     {
         PROPBAG2 var = {};
         var.pstrName = const_cast<LPOLESTR>(L"ImageQuality");
+        var.vt = VT_R4;
         VARIANT varValue;
         VariantInit(&varValue);
         varValue.vt = VT_R4;
         varValue.fltVal = static_cast<float>(uQuality) / 100.0f;
-        pPropertyBag->Write(1, &var, &varValue);
+        spPropertyBag->Write(1, &var, &varValue);
+        VariantClear(&varValue);
     }
 
-    hr = spFrameEncode->Initialize(pPropertyBag);
+    hr = spFrameEncode->Initialize(spPropertyBag);
     if (SUCCEEDED(hr))
-    {
         hr = spFrameEncode->WriteSource(m_spThumbnailBitmap, nullptr);
-        if (SUCCEEDED(hr))
-            hr = spFrameEncode->Commit();
-    }
-
-    hr = spEncoder->Commit();
-
-    if (pPropertyBag)
-        delete pPropertyBag;
+    if (SUCCEEDED(hr))
+        hr = spFrameEncode->Commit();
+    if (SUCCEEDED(hr))
+        hr = spEncoder->Commit();
 
     return hr;
 }
@@ -573,10 +570,16 @@ HRESULT ImageThumbnail::ScaleImage(UINT uMaxWidth, UINT uMaxHeight, bool fPreser
     if (!m_spBitmapSource)
         return E_UNEXPECTED;
 
+    if (uMaxWidth == 0 || uMaxHeight == 0)
+        return E_INVALIDARG;
+
     UINT uOrigWidth = 0, uOrigHeight = 0;
     HRESULT hr = m_spBitmapSource->GetSize(&uOrigWidth, &uOrigHeight);
     if (FAILED(hr))
         return hr;
+
+    if (uOrigWidth == 0 || uOrigHeight == 0)
+        return E_FAIL;
 
     UINT uNewWidth = uOrigWidth;
     UINT uNewHeight = uOrigHeight;

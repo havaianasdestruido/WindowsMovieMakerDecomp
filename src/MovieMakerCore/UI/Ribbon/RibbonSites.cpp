@@ -334,7 +334,7 @@ HRESULT CMRUSite::LoadFromRegistry(LPCWSTR pszRegKey)
     }
 
     // Read each MRU item
-    for (DWORD i = 0; i < dwCount && i < m_uMaxItems; ++i)
+    for (size_t i = 0; i < dwCount && i < m_uMaxItems; ++i)
     {
         WCHAR szValueName[64];
         WCHAR szFilePath[MAX_PATH] = { 0 };

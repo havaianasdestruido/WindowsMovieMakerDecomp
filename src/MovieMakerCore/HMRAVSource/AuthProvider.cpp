@@ -149,11 +149,26 @@ bool AuthCredentials::IsEmpty() const throw()
 
 HRESULT AuthCredentials::Validate() const
 {
-    if (m_type == AuthCredentialNone)
+    switch (m_type)
+    {
+    case AuthCredentialNone:
         return E_INVALIDARG;
-
-    if (m_type == AuthCredentialUserName && m_strUserName.IsEmpty())
-        return E_INVALIDARG;
+    case AuthCredentialUserName:
+        if (m_strUserName.IsEmpty())
+            return E_INVALIDARG;
+        break;
+    case AuthCredentialPassword:
+        if (m_strPassword.IsEmpty())
+            return E_INVALIDARG;
+        break;
+    case AuthCredentialToken:
+    case AuthCredentialOAuth:
+        if (m_strToken.IsEmpty())
+            return E_INVALIDARG;
+        break;
+    default:
+        break;
+    }
 
     return S_OK;
 }
@@ -253,6 +268,8 @@ HRESULT AuthProvider::Authenticate(LPCWSTR pszUrl, AuthCredentials* pCredentials
 
             return S_OK;
         }
+
+        m_credentialCache.erase(it);
     }
 
     HRESULT hr = E_FAIL;
@@ -279,6 +296,11 @@ HRESULT AuthProvider::Authenticate(LPCWSTR pszUrl, AuthCredentials* pCredentials
     {
         m_fAuthenticated = true;
         StoreCredentials(pszUrl, *pCredentials);
+    }
+    else
+    {
+        m_fAuthenticated = false;
+        SetLastError(L"Authentication failed.");
     }
 
     if (m_completeCb)

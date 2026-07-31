@@ -112,9 +112,16 @@ HRESULT TranscodeMetadataParser::GetDuration(LPCWSTR pszFilePath, LONGLONG* pllD
         MF_PD_DURATION,
         &var);
 
-    if (SUCCEEDED(hr) && var.vt == VT_UI8)
+    if (SUCCEEDED(hr))
     {
-        *pllDurationHns = static_cast<LONGLONG>(var.uhVal.QuadPart);
+        if (var.vt == VT_UI8)
+        {
+            *pllDurationHns = static_cast<LONGLONG>(var.uhVal.QuadPart);
+        }
+        else
+        {
+            hr = MF_E_ATTRIBUTENOTFOUND;
+        }
     }
 
     PropVariantClear(&var);
@@ -210,11 +217,27 @@ HRESULT TranscodeMetadataParser::GetPropertyString(LPCWSTR pszFilePath, REFPROPE
     hr = spStore->GetValue(key, &var);
     if (SUCCEEDED(hr))
     {
-        if (var.vt == VT_LPWSTR && var.pwszVal)
-            *pstrValue = var.pwszVal;
-        PropVariantClear(&var);
+        switch (var.vt)
+        {
+        case VT_LPWSTR:
+            if (var.pwszVal)
+                *pstrValue = var.pwszVal;
+            break;
+        case VT_LPSTR:
+            if (var.pszVal)
+                *pstrValue = CString(var.pszVal);
+            break;
+        case VT_BSTR:
+            if (var.bstrVal)
+                *pstrValue = var.bstrVal;
+            break;
+        default:
+            hr = MF_E_ATTRIBUTENOTFOUND;
+            break;
+        }
     }
 
+    PropVariantClear(&var);
     return hr;
 }
 

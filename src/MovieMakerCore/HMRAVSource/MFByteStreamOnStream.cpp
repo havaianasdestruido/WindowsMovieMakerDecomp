@@ -188,19 +188,23 @@ STDMETHODIMP MFByteStreamOnStream::BeginRead(BYTE* pb, ULONG cb, IMFAsyncCallbac
     if (!pCallback)
         return E_POINTER;
 
+    if (!pb || cb == 0)
+        return E_INVALIDARG;
+
     // Synchronous fallback - read immediately and post completion
     ULONG cbRead = 0;
     HRESULT hr = Read(pb, cb, &cbRead);
 
     CComPtr<MFAsyncResult> spResult;
     HRESULT hrCreate = MFAsyncResult::CreateInstance(nullptr, punkState, pCallback, &spResult);
-    if (SUCCEEDED(hrCreate))
-    {
-        spResult->SetStatus(hr);
-        spResult->InvokeCallback();
-    }
+    if (FAILED(hrCreate))
+        return hrCreate;
 
-    return hr;
+    spResult->SetStatus(hr);
+    spResult->SetBytesTransferred(cbRead);
+    spResult->InvokeCallback();
+
+    return S_OK;
 }
 
 STDMETHODIMP MFByteStreamOnStream::EndRead(IMFAsyncResult* pResult, ULONG* pcbRead)
@@ -208,8 +212,9 @@ STDMETHODIMP MFByteStreamOnStream::EndRead(IMFAsyncResult* pResult, ULONG* pcbRe
     if (!pResult || !pcbRead)
         return E_POINTER;
 
-    *pcbRead = 0;
-    return pResult->GetStatus();
+    MFAsyncResult* pAsyncResult = static_cast<MFAsyncResult*>(pResult);
+    *pcbRead = pAsyncResult->GetBytesTransferred();
+    return pAsyncResult->GetStatus();
 }
 
 STDMETHODIMP MFByteStreamOnStream::Write(const BYTE* pb, ULONG cb, ULONG* pcbWritten)
@@ -241,10 +246,11 @@ STDMETHODIMP MFByteStreamOnStream::Write(const BYTE* pb, ULONG cb, ULONG* pcbWri
 
 STDMETHODIMP MFByteStreamOnStream::BeginWrite(const BYTE* pb, ULONG cb, IMFAsyncCallback* pCallback, IUnknown* punkState)
 {
-    UNREFERENCED_PARAMETER(punkState);
-
     if (!pb || cb == 0)
         return E_INVALIDARG;
+
+    if (!pCallback)
+        return E_POINTER;
 
     if (!m_spStream)
         return E_UNEXPECTED;
@@ -259,29 +265,27 @@ STDMETHODIMP MFByteStreamOnStream::BeginWrite(const BYTE* pb, ULONG cb, IMFAsync
         LeaveCriticalSection(&m_csLock);
     }
 
-    if (pCallback)
-    {
-        CComPtr<MFAsyncResult> spResult;
-        HRESULT hr = MFAsyncResult::CreateInstance(
-            static_cast<IUnknown*>(this), punkState, pCallback, &spResult);
-        if (SUCCEEDED(hr))
-        {
-            spResult->SetAsyncResult(hrWrite);
-            hr = spResult->InvokeCallback();
-            return hr;
-        }
-    }
+    CComPtr<MFAsyncResult> spResult;
+    HRESULT hrCreate = MFAsyncResult::CreateInstance(
+        static_cast<IUnknown*>(this), punkState, pCallback, &spResult);
+    if (FAILED(hrCreate))
+        return hrCreate;
 
-    return hrWrite;
+    spResult->SetAsyncResult(hrWrite);
+    spResult->SetBytesTransferred(cbWritten);
+    return spResult->InvokeCallback();
 }
 
 STDMETHODIMP MFByteStreamOnStream::EndWrite(IMFAsyncResult* pResult, ULONG* pcbWritten)
 {
-    if (pcbWritten)
-        *pcbWritten = 0;
-
     if (!pResult)
         return E_POINTER;
+
+    if (pcbWritten)
+    {
+        MFAsyncResult* pAsyncResult = static_cast<MFAsyncResult*>(pResult);
+        *pcbWritten = pAsyncResult->GetBytesTransferred();
+    }
 
     return pResult->GetStatus();
 }
@@ -297,27 +301,42 @@ STDMETHODIMP MFByteStreamOnStream::Seek(
 
     EnterCriticalSection(&m_csLock);
 
-    QWORD qwNewPosition = 0;
+    LONGLONG llNewPosition = 0;
 
     switch (SeekOrigin)
     {
     case msoBegin:
-        qwNewPosition = static_cast<QWORD>(llSeekOffset);
+        llNewPosition = llSeekOffset;
         break;
     case msoCurrent:
-        qwNewPosition = m_qwPosition + static_cast<QWORD>(llSeekOffset);
+        llNewPosition = static_cast<LONGLONG>(m_qwPosition) + llSeekOffset;
+        break;
+    case msoEnd:
+        {
+            QWORD qwLength = 0;
+            HRESULT hrLen = GetLength(&qwLength);
+            if (FAILED(hrLen))
+            {
+                LeaveCriticalSection(&m_csLock);
+                return hrLen;
+            }
+            llNewPosition = static_cast<LONGLONG>(qwLength) + llSeekOffset;
+        }
         break;
     default:
         LeaveCriticalSection(&m_csLock);
         return E_INVALIDARG;
     }
 
-    m_qwPosition = qwNewPosition;
+    if (llNewPosition < 0)
+        llNewPosition = 0;
+
+    m_qwPosition = static_cast<QWORD>(llNewPosition);
 
     if (m_spStream)
     {
         LARGE_INTEGER li;
-        li.QuadPart = static_cast<LONGLONG>(qwNewPosition);
+        li.QuadPart = llNewPosition;
         m_spStream->Seek(li, STREAM_SEEK_SET, nullptr);
     }
 
@@ -367,6 +386,7 @@ HRESULT MFByteStreamOnStream::EnsureStream()
 MFAsyncResult::MFAsyncResult()
     : m_cRef(1)
     , m_hrStatus(E_PENDING)
+    , m_cbTransferred(0)
     , m_pCallback(nullptr)
     , m_hEvent(nullptr)
     , m_fCompleted(false)
@@ -482,6 +502,17 @@ HRESULT MFAsyncResult::SetAsyncResult(HRESULT hr)
     return S_OK;
 }
 
+HRESULT MFAsyncResult::SetBytesTransferred(ULONG cbTransferred)
+{
+    m_cbTransferred = cbTransferred;
+    return S_OK;
+}
+
+ULONG MFAsyncResult::GetBytesTransferred() const throw()
+{
+    return m_cbTransferred;
+}
+
 HRESULT MFAsyncResult::Wait(DWORD dwTimeoutMs)
 {
     if (!m_hEvent)
@@ -507,6 +538,7 @@ HRESULT MFAsyncResult::GetAsyncResult(HRESULT* phr)
 void MFAsyncResult::Reset()
 {
     m_hrStatus = E_PENDING;
+    m_cbTransferred = 0;
     m_fCompleted = false;
 
     if (m_hEvent)

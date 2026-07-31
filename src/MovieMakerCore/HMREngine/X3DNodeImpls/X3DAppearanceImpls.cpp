@@ -145,26 +145,35 @@ HRESULT X3DAppearanceNodeImpl::Initialize(X3DChildNode* node)
 
 void X3DAppearanceNodeImpl::Shutdown()
 {
+    delete m_texture;
     m_texture = nullptr;
+    delete m_material;
     m_material = nullptr;
+    delete m_textureTransform;
     m_textureTransform = nullptr;
     X3DChildNodeImpl::Shutdown();
 }
 
 void X3DAppearanceNodeImpl::SetTexture(X3DTextureNodeImpl* tex)
 {
+    if (m_texture == tex) return;
+    delete m_texture;
     m_texture = tex;
     MarkDirty();
 }
 
 void X3DAppearanceNodeImpl::SetMaterial(X3DMaterialNodeImpl* mat)
 {
+    if (m_material == mat) return;
+    delete m_material;
     m_material = mat;
     MarkDirty();
 }
 
 void X3DAppearanceNodeImpl::SetTextureTransform(TextureTransformContainerImpl* tt)
 {
+    if (m_textureTransform == tt) return;
+    delete m_textureTransform;
     m_textureTransform = tt;
     MarkDirty();
 }
@@ -242,13 +251,18 @@ HRESULT ShaderSetNodeImpl::Initialize(X3DNode* node)
 
 void ShaderSetNodeImpl::Shutdown()
 {
+    for (X3DShaderNodeImpl* shader : m_shaders)
+        delete shader;
     m_shaders.clear();
     X3DNodeImpl::Shutdown();
 }
 
 void ShaderSetNodeImpl::AddShader(X3DShaderNodeImpl* shader)
 {
-    if (shader) m_shaders.push_back(shader);
+    if (!shader) return;
+    for (X3DShaderNodeImpl* existing : m_shaders)
+        if (existing == shader) return;
+    m_shaders.push_back(shader);
 }
 
 X3DShaderNodeImpl* ShaderSetNodeImpl::GetShader(UINT index) const

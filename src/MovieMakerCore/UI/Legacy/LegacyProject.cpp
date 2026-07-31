@@ -267,6 +267,7 @@ HRESULT LegacyProjectSupport::ReadLegacyProject(
             else if (wcscmp(pszLocalName, L"settings") == 0)
             {
                 // Read project settings
+                LPCWSTR pszAttrValue = nullptr;
                 if (SUCCEEDED(XmlReaderGetAttribute(spReader, L"outputWidth", &pszAttrValue)) && pszAttrValue)
                 {
                     pOutProject->GetSettings().SetOutputDimensions(
@@ -584,16 +585,11 @@ HRESULT LegacyProjectSupport::SaveAsLegacyFormat(
     if (FAILED(hr))
         return hr;
 
-    // Legacy 2010/2011 .wlmp files are UTF-16 encoded XML.
-    hr = spWriter->SetProperty(XmlWriterProperty_Encoding, L"utf-16");
-    if (FAILED(hr))
-        return hr;
-
+    // Legacy 2010/2011 .wlmp files are UTF-16 encoded XML. XmlLite's default
+    // writer encoding is UTF-16 when no encoding property is specified, and the
+    // default method is Xml (both enum values were removed from the Win10 SDK).
+    // The XML method/encoding properties are therefore not set explicitly.
     hr = spWriter->SetOutput(spStream);
-    if (FAILED(hr))
-        return hr;
-
-    hr = spWriter->SetProperty(XmlWriterProperty_MethodDecl, XmlWriterMethod_Xml);
     if (FAILED(hr))
         return hr;
 

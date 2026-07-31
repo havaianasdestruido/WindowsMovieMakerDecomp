@@ -35,6 +35,10 @@ public:
     LegacyTransform();
     ~LegacyTransform();
 
+    // GDI+ Matrix is non-copyable, so copying is done element-wise.
+    LegacyTransform(const LegacyTransform& other);
+    LegacyTransform& operator=(const LegacyTransform& other);
+
     // -- Translation --
     void SetOffsetX(float flX);
     float GetOffsetX() const throw();

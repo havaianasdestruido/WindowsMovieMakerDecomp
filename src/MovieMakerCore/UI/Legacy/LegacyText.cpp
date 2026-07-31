@@ -16,15 +16,28 @@
 
 namespace
 {
+// GDI+ Font/Matrix are non-copyable, so helpers must return/heap-allocate or
+// copy matrix elements explicitly.
+//
+// Copies the six affine elements from src into dst (no copy assignment exists
+// on Gdiplus::Matrix).
+void CopyMatrixElements(const Gdiplus::Matrix& src, Gdiplus::Matrix& dst)
+{
+    Gdiplus::REAL elements[6];
+    src.GetElements(elements);
+    dst.SetElements(elements[0], elements[1], elements[2], elements[3], elements[4], elements[5]);
+}
+
 // Creates a GDI+ font for the requested family. If the family does not exist
 // on the system (or is empty), falls back through well-known families so
 // measurement and rendering still succeed instead of silently failing.
-Gdiplus::Font CreateFontWithFallback(
+std::unique_ptr<Gdiplus::Font> CreateFontWithFallback(
     LPCWSTR pszFamily, float flSize, Gdiplus::FontStyle style)
 {
-    Gdiplus::Font font(pszFamily && pszFamily[0] ? pszFamily : L"Segoe UI",
-                       flSize, style, Gdiplus::UnitPixel);
-    if (font.GetLastStatus() == Gdiplus::Ok)
+    std::unique_ptr<Gdiplus::Font> font(new Gdiplus::Font(
+        pszFamily && pszFamily[0] ? pszFamily : L"Segoe UI",
+        flSize, style, Gdiplus::UnitPixel));
+    if (font->GetLastStatus() == Gdiplus::Ok)
         return font;
 
     static const LPCWSTR kFallbackFamilies[] = {
@@ -35,13 +48,14 @@ Gdiplus::Font CreateFontWithFallback(
 
     for (size_t i = 0; i < ARRAYSIZE(kFallbackFamilies); ++i)
     {
-        Gdiplus::Font fallback(kFallbackFamilies[i], flSize, style, Gdiplus::UnitPixel);
-        if (fallback.GetLastStatus() == Gdiplus::Ok)
-            return fallback;
+        font.reset(new Gdiplus::Font(kFallbackFamilies[i], flSize, style, Gdiplus::UnitPixel));
+        if (font->GetLastStatus() == Gdiplus::Ok)
+            return font;
     }
 
-    return Gdiplus::Font(Gdiplus::FontFamily::GenericSansSerif(),
-                         flSize, style, Gdiplus::UnitPixel);
+    font.reset(new Gdiplus::Font(Gdiplus::FontFamily::GenericSansSerif(),
+                                 flSize, style, Gdiplus::UnitPixel));
+    return font;
 }
 }
 
@@ -58,24 +72,44 @@ LegacyTransform::~LegacyTransform()
 {
 }
 
+LegacyTransform::LegacyTransform(const LegacyTransform& other)
+{
+    CopyMatrixElements(other.m_matrix, m_matrix);
+}
+
+LegacyTransform& LegacyTransform::operator=(const LegacyTransform& other)
+{
+    if (this != &other)
+        CopyMatrixElements(other.m_matrix, m_matrix);
+    return *this;
+}
+
 void LegacyTransform::SetOffsetX(float flX)
 {
-    m_matrix.SetOffsetX(flX);
+    Gdiplus::REAL elements[6];
+    m_matrix.GetElements(elements);
+    m_matrix.SetElements(elements[0], elements[1], elements[2], elements[3], flX, elements[5]);
 }
 
 float LegacyTransform::GetOffsetX() const throw()
 {
-    return m_matrix.GetOffsetX();
+    Gdiplus::REAL elements[6];
+    m_matrix.GetElements(elements);
+    return elements[4];
 }
 
 void LegacyTransform::SetOffsetY(float flY)
 {
-    m_matrix.SetOffsetY(flY);
+    Gdiplus::REAL elements[6];
+    m_matrix.GetElements(elements);
+    m_matrix.SetElements(elements[0], elements[1], elements[2], elements[3], elements[4], flY);
 }
 
 float LegacyTransform::GetOffsetY() const throw()
 {
-    return m_matrix.GetOffsetY();
+    Gdiplus::REAL elements[6];
+    m_matrix.GetElements(elements);
+    return elements[5];
 }
 
 void LegacyTransform::SetRotation(float flDegrees)
@@ -94,10 +128,12 @@ float LegacyTransform::GetRotation() const throw()
 
 void LegacyTransform::SetScale(float flScaleX, float flScaleY)
 {
+    Gdiplus::REAL elements[6];
+    m_matrix.GetElements(elements);
     m_matrix.SetElements(
-        flScaleX, m_matrix.GetOffsetY(),
-        m_matrix.GetOffsetX(), flScaleY,
-        m_matrix.GetOffsetX(), m_matrix.GetOffsetY());
+        elements[0] * flScaleX, elements[1],
+        elements[2], elements[3] * flScaleY,
+        elements[4], elements[5]);
 }
 
 float LegacyTransform::GetScaleX() const throw()
@@ -117,7 +153,7 @@ float LegacyTransform::GetScaleY() const throw()
 POINT LegacyTransform::TransformPoint(const POINT& ptSrc) const
 {
     Gdiplus::PointF pt(static_cast<Gdiplus::REAL>(ptSrc.x), static_cast<Gdiplus::REAL>(ptSrc.y));
-    m_matrix.Transform(&pt);
+    m_matrix.TransformPoints(&pt, 1);
     POINT ptDst;
     ptDst.x = static_cast<LONG>(pt.X);
     ptDst.y = static_cast<LONG>(pt.Y);
@@ -137,7 +173,7 @@ RECT LegacyTransform::TransformRect(const RECT& rcSrc) const
         Gdiplus::PointF(rc.GetLeft(), rc.GetBottom())
     };
 
-    m_matrix.Transform(pts, 4);
+    m_matrix.TransformPoints(pts, 4);
 
     RECT rcDst;
     rcDst.left = static_cast<LONG>(std::min(std::min(pts[0].X, pts[1].X), std::min(pts[2].X, pts[3].X)));
@@ -149,11 +185,15 @@ RECT LegacyTransform::TransformRect(const RECT& rcSrc) const
 
 POINT LegacyTransform::InverseTransformPoint(const POINT& ptSrc) const
 {
-    Gdiplus::Matrix inv;
-    m_matrix.Invert(&inv);
-
     Gdiplus::PointF pt(static_cast<Gdiplus::REAL>(ptSrc.x), static_cast<Gdiplus::REAL>(ptSrc.y));
-    inv.Transform(&pt);
+
+    Gdiplus::Matrix* pInv = m_matrix.Clone();
+    if (pInv)
+    {
+        pInv->Invert();
+        pInv->TransformPoints(&pt, 1);
+        delete pInv;
+    }
 
     POINT ptDst;
     ptDst.x = static_cast<LONG>(pt.X);
@@ -168,7 +208,7 @@ const Gdiplus::Matrix& LegacyTransform::GetMatrix() const throw()
 
 void LegacyTransform::SetMatrix(const Gdiplus::Matrix& matrix)
 {
-    m_matrix = matrix;
+    CopyMatrixElements(matrix, m_matrix);
 }
 
 // ============================================================================
@@ -308,8 +348,10 @@ bool LegacyExtent::operator==(const LegacyExtent& other) const
 {
     return (m_flX == other.m_flX &&
             m_flY == other.m_flY &&
+            m_flZ == other.m_flZ &&
             m_flWidth == other.m_flWidth &&
-            m_flHeight == other.m_flHeight);
+            m_flHeight == other.m_flHeight &&
+            m_flDepth == other.m_flDepth);
 }
 
 bool LegacyExtent::operator!=(const LegacyExtent& other) const
@@ -322,7 +364,8 @@ bool LegacyExtent::operator!=(const LegacyExtent& other) const
 // ============================================================================
 
 LegacyParagraph::LegacyParagraph()
-    : m_flFontSize(18.0f)
+    : m_strFontFamily(L"Segoe UI")
+    , m_flFontSize(18.0f)
     , m_fontStyle(Gdiplus::FontStyleRegular)
     , m_crForeColor(RGB(255, 255, 255))
     , m_crBackColor(RGB(0, 0, 0))
@@ -443,28 +486,30 @@ SIZE LegacyParagraph::Measure(Gdiplus::Graphics* pGraphics) const
     if (!pGraphics || m_strText.IsEmpty())
         return sz;
 
-    Gdiplus::Font font(
-        m_strFontFamily,
-        m_flFontSize,
-        m_fontStyle,
-        Gdiplus::UnitPixel);
+    std::unique_ptr<Gdiplus::Font> font = CreateFontWithFallback(m_strFontFamily, m_flFontSize, m_fontStyle);
+
+    Gdiplus::REAL flLayoutWidth = m_bWordWrap
+        ? static_cast<Gdiplus::REAL>(m_rcLayout.right - m_rcLayout.left)
+        : 10000.0f;
+    if (flLayoutWidth <= 0.0f)
+        flLayoutWidth = 10000.0f;
 
     Gdiplus::RectF rcLayout(
         static_cast<Gdiplus::REAL>(m_rcLayout.left),
         static_cast<Gdiplus::REAL>(m_rcLayout.top),
-        m_bWordWrap ? static_cast<Gdiplus::REAL>(m_rcLayout.right - m_rcLayout.left) : 10000.0f,
+        flLayoutWidth,
         static_cast<Gdiplus::REAL>(m_rcLayout.bottom - m_rcLayout.top));
 
     Gdiplus::RectF rcBounds;
     Gdiplus::StringFormat format;
-    if (m_bWordWrap)
+    if (!m_bWordWrap)
         format.SetFormatFlags(Gdiplus::StringFormatFlagsNoWrap);
     format.SetAlignment(Gdiplus::StringAlignmentNear);
 
     pGraphics->MeasureString(
         m_strText,
         m_strText.GetLength(),
-        &font,
+        font.get(),
         rcLayout,
         &format,
         &rcBounds);
@@ -479,18 +524,18 @@ float LegacyParagraph::MeasureHeight(Gdiplus::Graphics* pGraphics, float flMaxWi
     if (!pGraphics || m_strText.IsEmpty())
         return 0.0f;
 
-    Gdiplus::Font font(m_strFontFamily, m_flFontSize, m_fontStyle, Gdiplus::UnitPixel);
+    std::unique_ptr<Gdiplus::Font> font = CreateFontWithFallback(m_strFontFamily, m_flFontSize, m_fontStyle);
 
     Gdiplus::RectF rcLayout(0, 0, flMaxWidth, 10000.0f);
     Gdiplus::RectF rcBounds;
     Gdiplus::StringFormat format;
-    if (m_bWordWrap)
+    if (!m_bWordWrap)
         format.SetFormatFlags(Gdiplus::StringFormatFlagsNoWrap);
 
     pGraphics->MeasureString(
         m_strText,
         m_strText.GetLength(),
-        &font,
+        font.get(),
         rcLayout,
         &format,
         &rcBounds);
@@ -503,7 +548,7 @@ void LegacyParagraph::Draw(Gdiplus::Graphics* pGraphics, const RECT& rcBounds)
     if (!pGraphics || m_strText.IsEmpty())
         return;
 
-    Gdiplus::Font font(m_strFontFamily, m_flFontSize, m_fontStyle, Gdiplus::UnitPixel);
+    std::unique_ptr<Gdiplus::Font> font = CreateFontWithFallback(m_strFontFamily, m_flFontSize, m_fontStyle);
 
     // Fill background
     Gdiplus::SolidBrush backBrush(Gdiplus::Color(
@@ -547,7 +592,7 @@ void LegacyParagraph::Draw(Gdiplus::Graphics* pGraphics, const RECT& rcBounds)
     pGraphics->DrawString(
         m_strText,
         m_strText.GetLength(),
-        &font,
+        font.get(),
         Gdiplus::PointF(static_cast<Gdiplus::REAL>(x), static_cast<Gdiplus::REAL>(y)),
         &foreBrush);
 }
@@ -557,7 +602,8 @@ void LegacyParagraph::Draw(Gdiplus::Graphics* pGraphics, const RECT& rcBounds)
 // ============================================================================
 
 LegacyTextExtent::LegacyTextExtent()
-    : m_flFontSize(18.0f)
+    : m_strFontName(L"Segoe UI")
+    , m_flFontSize(18.0f)
     , m_bBold(false)
     , m_bItalic(false)
     , m_bUnderline(false)
@@ -690,7 +736,7 @@ SIZE LegacyTextExtent::Measure(const Gdiplus::Graphics* pGraphics) const
     if (m_bStrikethrough)
         style = static_cast<Gdiplus::FontStyle>(style | Gdiplus::FontStyleStrikeout);
 
-    Gdiplus::Font font(m_strFontName, m_flFontSize, style, Gdiplus::UnitPixel);
+    std::unique_ptr<Gdiplus::Font> font = CreateFontWithFallback(m_strFontName, m_flFontSize, style);
 
     float flMaxW = (m_flMaxWidth > 0.0f) ? m_flMaxWidth : 10000.0f;
     float flMaxH = (m_flMaxHeight > 0.0f) ? m_flMaxHeight : 10000.0f;
@@ -699,7 +745,7 @@ SIZE LegacyTextExtent::Measure(const Gdiplus::Graphics* pGraphics) const
     Gdiplus::RectF rcBounds;
 
     const_cast<Gdiplus::Graphics*>(pGraphics)->MeasureString(
-        m_strText, m_strText.GetLength(), &font, rcLayout, &rcBounds);
+        m_strText, m_strText.GetLength(), font.get(), rcLayout, &rcBounds);
 
     sz.cx = static_cast<LONG>(rcBounds.Width + 0.5f);
     sz.cy = static_cast<LONG>(rcBounds.Height + 0.5f);

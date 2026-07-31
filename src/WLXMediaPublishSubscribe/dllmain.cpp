@@ -44,7 +44,7 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD dwReason, LPVOID lpReserved)
     {
         if (g_bWinInetInit)
         {
-            InternetCloseHandle(NULL);  // Cleanup WinInet state
+            // No per-process WinInet cleanup required
             g_bWinInetInit = false;
         }
 

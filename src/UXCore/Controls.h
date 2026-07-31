@@ -33,6 +33,7 @@ public:
     virtual ~Button();
 
     HRESULT OnPaint(HDC hdc, RECT const* rcPaint) override;
+    HRESULT OnMouseClick(POINT pt, int mouseButton) override;
 
     static IClassInfo* Class;
     static PropertyInfo* PressedProp;

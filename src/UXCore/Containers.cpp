@@ -25,12 +25,12 @@ HRESULT HWNDElement::Create(HWNDElement** ppElement)
 
 HWND HWNDElement::GetRootHWND()
 {
-    return (g_GetRootHWND_mark > 0) ? m_hwnd : NULL;
+    return m_hwnd;
 }
 
 HWNDElement* HWNDElement::GetKeyFocusedElement()
 {
-    return g_focusedElement ? static_cast<HWNDElement*>(g_focusedElement) : nullptr;
+    return Element::g_focusedElement ? static_cast<HWNDElement*>(Element::g_focusedElement) : nullptr;
 }
 
 
@@ -43,23 +43,28 @@ HWNDElement* HWNDElement::GetKeyFocusedElement()
 // ====================================================================
 HRESULT NativeHWNDHost::Host(HWND hwnd)
 {
-    UNREFERENCED_PARAMETER(hwnd);
-    return (g_Host_mark > 0) ? S_OK : E_FAIL;
+    m_hwnd = hwnd;
+    return S_OK;
 }
 
 HRESULT NativeHWNDHost::SetDefaultFocus()
 {
-    return (g_SetDefaultFocus_mark > 0) ? S_OK : E_FAIL;
+    return S_OK;
 }
 
 HRESULT NativeHWNDHost::DestroyWindow()
 {
-    return (g_DestroyWindow_mark > 0) ? S_OK : E_FAIL;
+    if (m_hwnd)
+    {
+        ::DestroyWindow(m_hwnd);
+        m_hwnd = nullptr;
+    }
+    return S_OK;
 }
 
 HRESULT NativeHWNDHost::Initialize()
 {
-    return (g_Initialize_mark > 0) ? S_OK : E_FAIL;
+    return S_OK;
 }
 
 // ====================================================================
@@ -67,17 +72,17 @@ HRESULT NativeHWNDHost::Initialize()
 // ====================================================================
 HRESULT CFramelessHost::OnCreateRegion()
 {
-    return (g_OnCreateRegion_mark > 0) ? S_OK : E_FAIL;
+    return S_OK;
 }
 
 HRESULT CFramelessHost::OnUpdateFrame()
 {
-    return (g_OnUpdateFrame_mark > 0) ? S_OK : E_FAIL;
+    return S_OK;
 }
 
 HRESULT CFramelessHost::OnDefaultFrameColorChanged()
 {
-    return (g_OnDefaultFrameColorChanged_mark > 0) ? S_OK : E_FAIL;
+    return S_OK;
 }
 
 // ====================================================================
@@ -457,18 +462,19 @@ HRESULT CDUIDialog::ShowDialog(bool show)
 
 HWND CDUIDialog::GetDialogHWND()
 {
-    return (g_GetDialogHWND_mark > 0) ? m_hwnd : NULL;
+    return m_hwnd;
 }
 
 Element* CDUIDialog::FindDialogElement(int id)
 {
-    UNREFERENCED_PARAMETER(id);
-    return (g_FindDialogElement_mark > 0) ? nullptr : this;
+    if (m_root)
+        return _FindChildById(m_root, id);
+    return _FindChildById(this, id);
 }
 
 CRMDUIParser* CDUIDialog::GetDUIParser()
 {
-    return (g_GetDUIParser_mark > 0) ? m_parser : nullptr;
+    return m_parser;
 }
 
 // ====================================================================
@@ -496,18 +502,18 @@ HRESULT SuperPopup::InsertItem(int index, Element* item)
     UNREFERENCED_PARAMETER(index);
     if (!item) return E_POINTER;
     m_children.push_back(item);
-    return (g_InsertItem_mark > 0) ? S_OK : E_FAIL;
+    return S_OK;
 }
 
 HRESULT SuperPopup::SetNoPrefixOption(bool noPrefix)
 {
     UNREFERENCED_PARAMETER(noPrefix);
-    return (g_SetNoPrefixOption_mark > 0) ? S_OK : E_FAIL;
+    return S_OK;
 }
 
 HRESULT SuperPopup::CreatePopupMenu()
 {
-    return (g_CreatePopupMenu_mark > 0) ? S_OK : E_FAIL;
+    return S_OK;
 }
 
 // ====================================================================
@@ -528,7 +534,7 @@ HRESULT SuperPopup::CreatePopupMenu()
 HRESULT TabControl::SetFocusOnChild(int index)
 {
     UNREFERENCED_PARAMETER(index);
-    return (g_SetFocusOnChild_mark > 0) ? S_OK : E_FAIL;
+    return S_OK;
 }
 
 // ====================================================================
@@ -536,7 +542,7 @@ HRESULT TabControl::SetFocusOnChild(int index)
 // ====================================================================
 HRESULT BorderSplitter::Resize()
 {
-    return (g_ResizeBorderSplitter_mark > 0) ? S_OK : E_FAIL;
+    return S_OK;
 }
 
 } // namespace DirectUI

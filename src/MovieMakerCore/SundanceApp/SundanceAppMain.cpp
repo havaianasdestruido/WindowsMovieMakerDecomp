@@ -423,7 +423,7 @@ HRESULT SundanceAppMain::InitializeSubsystems()
     if (!m_pTimelineEngine)
         return E_OUTOFMEMORY;
 
-    m_pTimelineDispatcher = new (std::nothrow) TimelineDispatcher(
+    m_pTimelineDispatcher = new (std::nothrow) DirectUI::TimelineDispatcher(
         m_pTimelineEngine, m_pPlaybackEngine, nullptr);
     if (!m_pTimelineDispatcher)
         return E_OUTOFMEMORY;
@@ -1344,7 +1344,8 @@ TimelineEngine* SundanceAppMain::GetTimelineEngine() const throw()
     return m_pTimelineEngine;
 }
 
-TimelineDispatcher* SundanceAppMain::GetTimelineDispatcher() const throw()
+DirectUI::TimelineDispatcher* SundanceAppMain::GetTimelineDispatcher() 
+const throw()
 {
     return m_pTimelineDispatcher;
 }

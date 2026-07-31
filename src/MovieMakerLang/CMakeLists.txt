@@ -5,9 +5,25 @@
 
 set(TARGET MovieMakerLang)
 
-# Resource-only DLL: no source files, only an .rc resource script.
+# Compile the .rc manually. CMake's VS generator passes the escaped
+# CMAKE_INTDIR define to rc.exe, which mangles through the build tracker
+# and fails with RC1107. The resource script does not need that define.
+set(RC_OUT ${CMAKE_CURRENT_BINARY_DIR}/${TARGET}.res)
+add_custom_command(
+    OUTPUT ${RC_OUT}
+    COMMAND rc.exe /D WIN32 /D _DEBUG /D ${TARGET}_EXPORTS
+        /I${CMAKE_CURRENT_SOURCE_DIR}
+        /fo${RC_OUT}
+        ${CMAKE_CURRENT_SOURCE_DIR}/MovieMakerLang.rc
+    DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/MovieMakerLang.rc
+            ${CMAKE_CURRENT_SOURCE_DIR}/resource.h
+    MAIN_DEPENDENCY ${CMAKE_CURRENT_SOURCE_DIR}/MovieMakerLang.rc
+    COMMENT "Compiling resources (MovieMakerLang.rc)"
+)
+
+# Resource-only DLL: no source files, only the compiled .res.
 add_library(${TARGET} SHARED
-    MovieMakerLang.rc
+    ${RC_OUT}
 )
 
 set_target_properties(${TARGET} PROPERTIES

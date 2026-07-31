@@ -190,6 +190,10 @@ target_link_libraries(${TARGET} PRIVATE
     dwrite
     wininet
     WLXPhotoBase
+    GPURenderer
+    PlaybackEngine
+    TimelineEngine
+    MediaCatalog
 )
 
 # Delay-loaded DLLs (resolved at runtime on first call)

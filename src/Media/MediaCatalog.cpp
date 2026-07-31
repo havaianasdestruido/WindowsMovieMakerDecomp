@@ -1,11 +1,11 @@
 #include "MediaCatalog.h"
+#include <objbase.h>
 #include <mfapi.h>
-#include <mfreadwrite.h>
 #include <mfobjects.h>
 #include <mfidl.h>
+#include <mfreadwrite.h>
 #include <mferror.h>
 #include <wrl/client.h>
-#include <objbase.h>
 
 using Microsoft::WRL::ComPtr;
 
@@ -47,7 +47,7 @@ std::vector<std::wstring> MediaCatalog::ImportFiles(const std::vector<std::wstri
         if (SUCCEEDED(hr) && reader) {
             // Get media source
             ComPtr<IMFMediaSource> mediaSource;
-            reader->GetService(MF_SOURCE_READER_MEDIASOURCE, IID_PPV_ARGS(&mediaSource));
+            reader->GetServiceForStream(MF_SOURCE_READER_MEDIASOURCE, GUID_NULL, IID_PPV_ARGS(&mediaSource));
             if (mediaSource) {
                 ComPtr<IMFPresentationDescriptor> pd;
                 if (SUCCEEDED(mediaSource->CreatePresentationDescriptor(&pd))) {

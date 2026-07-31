@@ -1,6 +1,10 @@
 #pragma once
 #include <windows.h>
+#include <mfapi.h>
+#include <mfobjects.h>
+#include <mfidl.h>
 #include <mfreadwrite.h>
+#include <d3d11.h>
 #include <string>
 
 namespace DirectUI {

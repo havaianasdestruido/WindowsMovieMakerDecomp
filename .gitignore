@@ -16,6 +16,7 @@ cool/
 # build artifacts
 build/
 out/
+build_clean/
 *.obj
 *.o
 *.ilk

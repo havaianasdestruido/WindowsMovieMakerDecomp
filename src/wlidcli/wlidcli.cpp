@@ -17,7 +17,7 @@ HRESULT __stdcall WLClogin(HWND hwndParent, LPCWSTR szCred, DWORD dwFlags, LPVOI
     UNREFERENCED_PARAMETER(dwFlags);
     InterlockedExchange(&g_bSignedIn, 1);
     if (ppvAuthState)
-        *ppvAuthState = &g_bSignedIn;
+        *ppvAuthState = const_cast<LONG*>(&g_bSignedIn);
     return S_OK;
 }
 

@@ -32,9 +32,8 @@ class PlaybackController;
 class ThumbnailCache;
 
 // New engine modules (Phase 5-6)
-namespace DirectUI { class GPURenderer; class PlaybackEngine; }
+namespace DirectUI { class GPURenderer; class PlaybackEngine; class TimelineDispatcher; }
 class TimelineEngine;
-class TimelineDispatcher;
 class CommandLineParser;
 class AutoSaveManager;
 class ClipboardManager;
@@ -173,7 +172,8 @@ public:
     DirectUI::GPURenderer*      GetGPURenderer() const throw();
     DirectUI::PlaybackEngine*   GetPlaybackEngine() const throw();
     TimelineEngine*             GetTimelineEngine() const throw();
-    TimelineDispatcher*         GetTimelineDispatcher() const throw();
+    DirectUI::TimelineDispatcher*  GetTimelineDispatcher() const 
+throw();
 
     // -- Application options --
     void ShowApplicationOptionsDialog(HWND hWndParent);
@@ -268,7 +268,7 @@ private:
     DirectUI::GPURenderer*      m_pGPURenderer;
     DirectUI::PlaybackEngine*   m_pPlaybackEngine;
     TimelineEngine*             m_pTimelineEngine;
-    TimelineDispatcher*         m_pTimelineDispatcher;
+    DirectUI::TimelineDispatcher*    m_pTimelineDispatcher;
 
     // Single-instance mutex
     HANDLE              m_hSingleInstanceMutex;

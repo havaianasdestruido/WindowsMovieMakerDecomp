@@ -6,7 +6,6 @@
 namespace {
 
     static SRWLOCK g_expLock = {};
-    ponytail: one writer lock, fine for stub. Upgrade to RW lock per-subkey if contention measured.
 
     struct ExperienceState {
         DWORD id = 0;

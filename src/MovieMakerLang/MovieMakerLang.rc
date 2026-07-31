@@ -116,9 +116,9 @@ END
 // Menu resources
 // ============================================================================
 
-IDM_MAIN MENUEX
+IDM_MAIN MENU
 BEGIN
-    POPUP "&File", 0
+    POPUP "&File"
     BEGIN
         MENUITEM "&New project", IDS_NEW_PROJECT
         MENUITEM "&Open project", IDS_OPEN_PROJECT
@@ -130,7 +130,7 @@ BEGIN
         MENUITEM SEPARATOR
         MENUITEM "E&xit", 101
     END
-    POPUP "&Edit", 0
+    POPUP "&Edit"
     BEGIN
         MENUITEM "&Undo", IDS_UNDO
         MENUITEM "&Redo", IDS_REDO
@@ -141,18 +141,18 @@ BEGIN
         MENUITEM "&Delete", IDS_DELETE
         MENUITEM "Select &All", IDS_SELECT_ALL
     END
-    POPUP "&View", 0
+    POPUP "&View"
     BEGIN
         MENUITEM "&Home", IDS_HOME_TAB
         MENUITEM "&Animations", IDS_ANIMATIONS_TAB
         MENUITEM "&Visual Effects", IDS_VISUAL_EFFECTS_TAB
         MENUITEM "&Project", IDS_PROJECT_TAB
     END
-    POPUP "&Tools", 0
+    POPUP "&Tools"
     BEGIN
         MENUITEM "&Options...", IDS_OPTIONS
     END
-    POPUP "&Help", 0
+    POPUP "&Help"
     BEGIN
         MENUITEM "Online help (F1)", IDS_HELP
         MENUITEM SEPARATOR

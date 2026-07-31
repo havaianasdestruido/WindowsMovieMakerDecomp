@@ -38,6 +38,9 @@ public:
     HRESULT SetDefaultFocus();
     HRESULT DestroyWindow();
     HRESULT Initialize();
+
+protected:
+    HWND m_hwnd = nullptr;
 };
 
 class __declspec(dllexport) CFramelessHost : public HWNDElement {
@@ -91,6 +94,7 @@ protected:
     int m_result = 0;
     bool m_isModal = false;
     CRMDUIParser* m_parser = nullptr;
+    Element* m_root = nullptr;
 };
 
 class __declspec(dllexport) PopupWindow : public HWNDElement {

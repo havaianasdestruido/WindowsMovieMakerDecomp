@@ -5,6 +5,10 @@ add_library(${TARGET} STATIC
     PlaybackEngine.h
 )
 
+set_target_properties(${TARGET} PROPERTIES
+    MSVC_RUNTIME_LIBRARY "MultiThreadedDLL"
+)
+
 target_include_directories(${TARGET} PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}
     ${CMAKE_SOURCE_DIR}/src/Renderer

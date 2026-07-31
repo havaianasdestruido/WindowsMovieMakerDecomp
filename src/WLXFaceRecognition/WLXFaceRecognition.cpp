@@ -41,6 +41,7 @@
 #include <cmath>
 #include <algorithm>
 #include <cstring>
+#include <limits>
 
 // ============================================================================
 // Internal ML implementation (LiveLabs namespace)
@@ -115,8 +116,10 @@ public:
             }
         }
 
-        // Normalize histogram
         float fTotal = static_cast<float>(uWidth * uHeight);
+
+        // Guard division by zero: if dimensions zero, reject early
+        if (uWidth == 0 || uHeight == 0) return E_INVALIDARG;
         if (fTotal > 0.0f)
         {
             for (UINT32 i = 0; i < uHistSize; ++i)

@@ -28,7 +28,7 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD dwReason, LPVOID lpReserved)
         DisableThreadLibraryCalls(hModule);
 
         HRESULT hr = CoInitializeEx(NULL, COINIT_MULTITHREADED);
-        if (SUCCEEDED(hr))
+        if (hr == S_OK)
             g_bComInit = true;
 
         break;

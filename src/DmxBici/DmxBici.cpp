@@ -72,6 +72,17 @@ extern "C" LONG __stdcall BiciWrapper_EndExperience()
     if (g_exp.refCount == 0)
         g_exp.active = false;
     LONG result = static_cast<LONG>(g_exp.refCount);
+    if (g_exp.refCount == 0) {
+        // Release all allocated resources
+        g_exp.values.clear();
+        g_exp.strings.clear();
+        g_exp.dataPoints.clear();
+        g_exp.timerStarts.clear();
+        g_exp.timerAccums.clear();
+        g_exp.avgSums.clear();
+        g_exp.avgCounts.clear();
+        g_exp.streamTuples.clear();
+    }
     ReleaseSRWLockExclusive(&g_expLock);
     return result;
 }
@@ -189,6 +200,8 @@ extern "C" BOOL __stdcall BiciWrapper_TimerStart(DWORD timerId)
 
 extern "C" BOOL __stdcall BiciWrapper_TransferExperienceToApp(wchar_t*** outNames)
 {
+    if (outNames)
+        *outNames = NULL;
     return TRUE;
 }
 
@@ -199,6 +212,8 @@ extern "C" BOOL __stdcall BiciWrapper_TransferExperienceToAppId(DWORD appId)
 
 extern "C" BOOL __stdcall BiciWrapper_TransferExperienceToWeb(const wchar_t* url, wchar_t*** outParams)
 {
+    if (outParams)
+        *outParams = NULL;
     if (url) {
         OutputDebugStringW(L"[DmxBici] TransferExperienceToWeb: ");
         OutputDebugStringW(url);

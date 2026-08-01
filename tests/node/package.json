@@ -1,9 +1,0 @@
-{
-  "name": "wmmr-node-tests",
-  "version": "1.0.0",
-  "private": true,
-  "dependencies": {
-    "ffi-napi": "^4.0.3",
-    "ref-napi": "^3.0.3"
-  }
-}

@@ -1,7 +1,0 @@
-[package]
-name = "movie_maker_test"
-version = "0.1.0"
-edition = "2021"
-
-[dependencies]
-libloading = "0.8"

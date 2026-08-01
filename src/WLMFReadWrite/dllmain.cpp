@@ -26,8 +26,8 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD dwReason, LPVOID lpReserved)
         g_hModule = hModule;
         DisableThreadLibraryCalls(hModule);
 
-        CoInitializeEx(NULL, COINIT_MULTITHREADED | COINIT_DISABLE_OLE1DDE);
-        g_bComInit = true;
+        if (SUCCEEDED(CoInitializeEx(NULL, COINIT_MULTITHREADED | COINIT_DISABLE_OLE1DDE)))
+            g_bComInit = true;
 
         if (SUCCEEDED(MFStartup(MF_VERSION, MFSTARTUP_LITE)))
             g_bMFInit = true;

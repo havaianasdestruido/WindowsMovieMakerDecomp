@@ -24,7 +24,7 @@
 #include <map>
 #include <string>
 #include <memory>
-#include <functional>
+#include <mutex>
 #include <cmath>
 #include <algorithm>
 
@@ -356,6 +356,8 @@ DEFINE_EFFECT_CLASS(GrayscaleEffect,      L"Grayscale",      L"Grayscale")
 class TransformRegistry
 {
 public:
+    // Thread‑safe factory access – mutex guards map lookups
+    std::mutex m_mutex;
     typedef std::function<TransitionBase*()> TransitionFactory;
     typedef std::function<EffectBase*()> EffectFactory;
 

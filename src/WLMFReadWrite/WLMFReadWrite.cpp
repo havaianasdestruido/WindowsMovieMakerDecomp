@@ -78,10 +78,12 @@ public:
             pProps->bHasVideo = TRUE;
 
             UINT32 uW = 0, uH = 0;
-            pVideoType->GetUINT32(MF_MT_FRAME_SIZE, &uW);
-            // MF_MT_FRAME_SIZE encodes width in high word, height in low word
-            pProps->uVideoWidth = uW >> 16;
-            pProps->uVideoHeight = uW & 0xFFFF;
+            // Correctly retrieve width/height using MFGetAttributeSize
+            HRESULT sizeHr = MFGetAttributeSize(pVideoType, MF_MT_FRAME_SIZE, &uW, &uH);
+            if (SUCCEEDED(sizeHr)) {
+                pProps->uVideoWidth = uW;
+                pProps->uVideoHeight = uH;
+            }
 
             MFGetAttributeRatio(pVideoType, MF_MT_FRAME_RATE,
                 &pProps->uFrameRateNumerator, &pProps->uFrameRateDenominator);
@@ -121,16 +123,18 @@ public:
         if (SUCCEEDED(hr))
         {
             pProps->llDuration = var.uhVal.QuadPart;
-            PropVariantClear(&var);
         }
+        PropVariantClear(&var);
 
-        return S_OK;
+        return hr;
     }
 
     HRESULT ReadFrame(LONGLONG llTimeMs, BYTE* pBuffer, UINT32 cbBuffer, UINT32* pcbRead)
     {
         if (!m_pReader)
             return E_UNEXPECTED;
+        if (!pBuffer || cbBuffer == 0)
+            return E_INVALIDARG;
 
         // Seek to the requested time
         LONGLONG llHns = llTimeMs * 10000; // ms to 100ns units
@@ -204,6 +208,7 @@ public:
     {
         if (!m_bFinalized && m_pWriter)
             Finalize();
+        Release();
     }
 
     HRESULT Create(LPCWSTR pszOutputPath, const WLMediaProperties* pProps)
@@ -232,7 +237,7 @@ public:
             return E_UNEXPECTED;
 
         HRESULT hr = m_pWriter->Finalize();
-        m_bFinalized = true;
+        m_bFinalized = SUCCEEDED(hr);
         return hr;
     }
 
@@ -253,11 +258,6 @@ private:
 } // namespace MFReadWrite
 
 // ============================================================================
-// Module state
-// ============================================================================
-static HINSTANCE g_hModule = NULL;
-
-// ============================================================================
 // Exported functions -- COM exports + MF reader/writer functions
 // ============================================================================
 
@@ -266,7 +266,7 @@ extern "C"
 
 STDAPI DllCanUnloadNow()
 {
-    return S_OK;
+    return S_FALSE;
 }
 
 STDAPI DllGetClassObject(REFCLSID rclsid, REFIID riid, LPVOID* ppv)

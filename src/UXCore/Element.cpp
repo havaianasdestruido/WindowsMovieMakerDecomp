@@ -206,10 +206,17 @@ Value* Element::GetValue(PropertyInfo const* prop)
 HRESULT Element::SetValue(PropertyInfo const* prop, Value* value)
 {
     if (!prop) return E_POINTER;
-    if (value)
+    // Release existing value to avoid leak
+    auto it = m_properties.find(prop);
+    if (it != m_properties.end()) {
+        if (it->second) it->second->Release();
+    }
+    if (value) {
+        value->AddRef();
         m_properties[prop] = value;
-    else
+    } else {
         m_properties.erase(prop);
+    }
     return S_OK;
 }
 

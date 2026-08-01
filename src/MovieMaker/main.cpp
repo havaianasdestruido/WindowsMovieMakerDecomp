@@ -81,6 +81,7 @@ int WINAPI WinMain(HINSTANCE /*hInstance*/, HINSTANCE /*hPrevInstance*/,
     wchar_t** argv = NULL;
 
     PVOID veh = AddVectoredExceptionHandler(0, VexHandler);
+    if (!veh) OutputDebugStringW(L"[WMMR] WinMain: AddVectoredExceptionHandler failed\n");
 
     __try
     {
@@ -100,7 +101,7 @@ int WINAPI WinMain(HINSTANCE /*hInstance*/, HINSTANCE /*hPrevInstance*/,
         ret = 3;
     }
 
-    RemoveVectoredExceptionHandler(veh);
+    if (veh) RemoveVectoredExceptionHandler(veh);
 
     // -- Step 5: Shutdown -- release all acquired resources --
     if (argv)
@@ -109,11 +110,11 @@ int WINAPI WinMain(HINSTANCE /*hInstance*/, HINSTANCE /*hPrevInstance*/,
     }
     if (hCore)
     {
-        FreeLibrary(hCore);
+        if (hCore) FreeLibrary(hCore);
     }
     if (hPhotoBase)
     {
-        FreeLibrary(hPhotoBase);
+        if (hPhotoBase) FreeLibrary(hPhotoBase);
     }
 
     return ret;

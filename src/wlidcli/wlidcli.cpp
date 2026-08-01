@@ -67,6 +67,7 @@ HRESULT __stdcall WLGetEnvironment(LPCWSTR* ppszEnvironment)
     if (!*ppszEnvironment)
         return E_OUTOFMEMORY;
     CopyMemory((LPWSTR)*ppszEnvironment, g_wszEnvProduction, len * sizeof(WCHAR));
+    return S_OK;
 }
 
 }

@@ -7,3 +7,33 @@
 [submodule "mmr-python"]
 	path = tests/mmr-python
 	url = https://github.com/havaianasdestruido/mmr-python.git
+[submodule "apps/photoviewer"]
+	path = apps/photoviewer
+	url = https://github.com/havaianasdestruido/photoviewer.git
+[submodule "apps/transition-plugin"]
+	path = apps/transition-plugin
+	url = https://github.com/havaianasdestruido/transition-plugin.git
+[submodule "apps/moviemaker-launcher"]
+	path = apps/moviemaker-launcher
+	url = https://github.com/havaianasdestruido/moviemaker-launcher.git
+[submodule "apps/mediapublisher"]
+	path = apps/mediapublisher
+	url = https://github.com/havaianasdestruido/mediapublisher.git
+[submodule "apps/video-trimmer"]
+	path = apps/video-trimmer
+	url = https://github.com/havaianasdestruido/video-trimmer.git
+[submodule "apps/metadata-editor"]
+	path = apps/metadata-editor
+	url = https://github.com/havaianasdestruido/metadata-editor.git
+[submodule "apps/slideshow-studio"]
+	path = apps/slideshow-studio
+	url = https://github.com/havaianasdestruido/slideshow-studio.git
+[submodule "apps/face-tagger"]
+	path = apps/face-tagger
+	url = https://github.com/havaianasdestruido/face-tagger.git
+[submodule "apps/movielibrary"]
+	path = apps/movielibrary
+	url = https://github.com/havaianasdestruido/movielibrary.git
+[submodule "apps/pipeline-graph"]
+	path = apps/pipeline-graph
+	url = https://github.com/havaianasdestruido/pipeline-graph.git

@@ -1,0 +1,9 @@
+[submodule "mmr-cli"]
+	path = mmr-cli
+	url = file:///C:/Users/mcmco/Desktop/WMMR-submodules/mmr-cli
+[submodule "mmr-gui"]
+	path = mmr-gui
+	url = file:///C:/Users/mcmco/Desktop/WMMR-submodules/mmr-gui
+[submodule "mmr-python"]
+	path = mmr-python
+	url = file:///C:/Users/mcmco/Desktop/WMMR-submodules/mmr-python

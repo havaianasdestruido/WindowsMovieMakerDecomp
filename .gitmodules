@@ -1,9 +1,9 @@
 [submodule "mmr-cli"]
-	path = mmr-cli
+	path = tests/mmr-cli
 	url = https://github.com/havaianasdestruido/mmr-cli.git
 [submodule "mmr-gui"]
-	path = mmr-gui
+	path = tests/mmr-gui
 	url = https://github.com/havaianasdestruido/mmr-gui.git
 [submodule "mmr-python"]
-	path = mmr-python
+	path = tests/mmr-python
 	url = https://github.com/havaianasdestruido/mmr-python.git

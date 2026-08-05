@@ -77,6 +77,26 @@ struct PipelineConfig
 };
 
 // ============================================================================
+// Pipeline factory function table
+// ============================================================================
+typedef void* PIPELINE_INSTANCE;
+
+typedef HRESULT (STDAPICALLTYPE* PFN_PIPELINE_CREATE)(const PipelineConfig* pConfig, void** ppInstance);
+typedef void    (STDAPICALLTYPE* PFN_PIPELINE_DESTROY)(void* pInstance);
+typedef HRESULT (STDAPICALLTYPE* PFN_PIPELINE_PROCESS)(void* pInstance, Gdiplus::Bitmap* pInput, Gdiplus::Bitmap** ppOutput);
+typedef HRESULT (STDAPICALLTYPE* PFN_PIPELINE_GETINFO)(void* pInstance, PipelineConfig* pConfig);
+
+typedef struct tagPipelineCreateFunctions
+{
+    UINT32                  uVersion;       // pipeline ABI version
+    UINT32                  uStructSize;    // size of this struct
+    PFN_PIPELINE_CREATE     pfnCreate;
+    PFN_PIPELINE_DESTROY    pfnDestroy;
+    PFN_PIPELINE_PROCESS    pfnProcess;
+    PFN_PIPELINE_GETINFO    pfnGetInfo;
+} PipelineCreateFunctions;
+
+// ============================================================================
 // Exported functions -- GetPipelineCreateFunctions + DllRegisterServer
 // ============================================================================
 extern "C"

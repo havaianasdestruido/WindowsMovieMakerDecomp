@@ -100,20 +100,20 @@ namespace MP4Parser
 }
 
 // ============================================================================
-// MP4 box types (common ISOBMFF box identifiers)
+// MP4 box types (common ISOBMFF box identifiers, big-endian fourcc)
 // ============================================================================
-#define MP4_BOX_FTYP    0x74797066  // 'ftyp'
-#define MP4_BOX_MOOV    0x766F6F6D  // 'moov'
-#define MP4_BOX_MVHD    0x6468766D  // 'mvhd'
-#define MP4_BOX_TRAK    0x6B617274  // 'trak'
-#define MP4_BOX_MDIA    0x6169646D  // 'mdia'
-#define MP4_BOX_STBL    0x6C627473  // 'stbl'
-#define MP4_BOX_MDAT    0x7461646D  // 'mdat'
-#define MP4_BOX_EDTS    0x73746465  // 'edts'
-#define MP4_BOX_ELST    0x74736C65  // 'elst'
-#define MP4_BOX_UDTA    0x61746475  // 'udta'
-#define MP4_BOX_CHAP    0x70616863  // 'chap'
-#define MP4_BOX_ILST    0x74736C69  // 'ilst'
+#define MP4_BOX_FTYP    0x66747970  // 'ftyp'
+#define MP4_BOX_MOOV    0x6D6F6F76  // 'moov'
+#define MP4_BOX_MVHD    0x6D766864  // 'mvhd'
+#define MP4_BOX_TRAK    0x7472616B  // 'trak'
+#define MP4_BOX_MDIA    0x6D646961  // 'mdia'
+#define MP4_BOX_STBL    0x7374626C  // 'stbl'
+#define MP4_BOX_MDAT    0x6D646174  // 'mdat'
+#define MP4_BOX_EDTS    0x65647473  // 'edts'
+#define MP4_BOX_ELST    0x656C7374  // 'elst'
+#define MP4_BOX_UDTA    0x75647461  // 'udta'
+#define MP4_BOX_CHAP    0x63686170  // 'chap'
+#define MP4_BOX_ILST    0x696C7374  // 'ilst'
 
 // ============================================================================
 // Exported functions -- DirectShow filter factory functions + COM exports

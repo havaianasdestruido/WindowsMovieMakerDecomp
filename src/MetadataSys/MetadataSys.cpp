@@ -577,7 +577,6 @@ void CMediaMetadataStore::LoadMediaAttributes()
         if (SUCCEEDED(spVideoType->GetUINT32(MF_MT_AVG_BITRATE, &uBitrate)) &&
             uBitrate > 0)
         {
-            AddUInt32Prop(PKEY_Media_EncodingBitrate, uBitrate);
             AddUInt32Prop(PKEY_Video_EncodingBitrate, uBitrate);
         }
 

@@ -47,6 +47,8 @@ target_link_libraries(${TARGET} PRIVATE
     oleaut32
     strmiids
     strmbase
+    mfplat
+    mfuuid
     winmm
     gdiplus
     shlwapi

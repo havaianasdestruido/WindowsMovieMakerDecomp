@@ -1389,7 +1389,7 @@ HRESULT ThumbnailCache::CopyRgb32BufferToBitmap(
         pBuffer->Unlock();
     }
 
-    Gdiplus::Bitmap* pBitmap = new (std::nothrow) Gdiplus::Bitmap(
+    Gdiplus::Bitmap* pBitmap = new Gdiplus::Bitmap(
         (INT)uWidth, (INT)uHeight, lStride, PixelFormat32bppARGB, &vec[0]);
     if (!pBitmap || pBitmap->GetLastStatus() != Gdiplus::Ok)
     {

@@ -21,6 +21,7 @@
 
 #include <dshow.h>
 #include <mfapi.h>
+#include <mferror.h>
 #include <mfidl.h>
 #include <mfobjects.h>
 #include <evr.h>
@@ -606,7 +607,7 @@ public:
     }
 
     // Bridge helper: convert an MF sample and push it downstream.
-    HRESULT DeliverSample(IMFMediaSample* pMFSample)
+    HRESULT DeliverSample(IMFSample* pMFSample)
     {
         if (!pMFSample) return E_INVALIDARG;
         if (!m_bConnected || !m_pConnected) return VFW_E_NOT_CONNECTED;
@@ -649,7 +650,11 @@ public:
             m_bSampleTypeSent = TRUE;
         }
 
-        return m_pConnected->Receive(spAdapter);
+        ComPtr<IMemInputPin> spMemInputPin;
+        HRESULT hrRecv = m_pConnected->QueryInterface(IID_IMemInputPin,
+            reinterpret_cast<void**>(&spMemInputPin));
+        if (FAILED(hrRecv)) return hrRecv;
+        return spMemInputPin->Receive(spAdapter);
     }
 
     // IUnknown
@@ -975,11 +980,7 @@ public:
         return S_OK;
     }
 
-    STDMETHODIMP Receive(IMediaSample* pSample)
-    {
-        if (!m_pStream) return E_UNEXPECTED;
-        return m_pStream->DeliverDShowSample(pSample);
-    }
+    STDMETHODIMP Receive(IMediaSample* pSample);
 
     STDMETHODIMP ReceiveMultiple(IMediaSample** pSamples, long nSamples, long* nSamplesProcessed)
     {
@@ -1551,6 +1552,12 @@ STDMETHODIMP CDShowPullSink::NewSegment(REFERENCE_TIME /*tStart*/, REFERENCE_TIM
     return S_OK;
 }
 
+STDMETHODIMP CDShowPullSink::Receive(IMediaSample* pSample)
+{
+    if (!m_pStream) return E_UNEXPECTED;
+    return m_pStream->DeliverDShowSample(pSample);
+}
+
 // ----------------------------------------------------------------------------
 // DShow source creation -- resolves pszDShowFilter as one of:
 //   1. a registered filter CLSID string ("{...}"),
@@ -1723,9 +1730,17 @@ public:
             ComPtr<IMFSourceResolver> spResolver;
             if (SUCCEEDED(MFCreateSourceResolver(&spResolver)))
             {
-                spResolver->CreateObjectFromURL(
+                MF_OBJECT_TYPE objType = MF_OBJECT_INVALID;
+                IUnknown* pUnk = NULL;
+                HRESULT hrResolve = spResolver->CreateObjectFromURL(
                     pszDShowFilter, MF_RESOLUTION_MEDIASOURCE,
-                    IID_IMFMediaSource, reinterpret_cast<void**>(&spMediaSource));
+                    NULL, &objType, &pUnk);
+                if (SUCCEEDED(hrResolve) && pUnk != NULL)
+                {
+                    pUnk->QueryInterface(IID_IMFMediaSource,
+                        reinterpret_cast<void**>(&spMediaSource));
+                    pUnk->Release();
+                }
             }
         }
 
@@ -1763,7 +1778,7 @@ public:
 
                 if (dir == PINDIR_OUTPUT)
                 {
-                    ComPtr<CDShowPullSink> spSink = new CDShowPullSink();
+                    ComPtr<CDShowPullSink> spSink(new CDShowPullSink());
                     HRESULT hrConnect = pPin->Connect(spSink, NULL);
                     if (FAILED(hrConnect) && spGraph)
                     {
@@ -1812,13 +1827,13 @@ public:
             if (FAILED(hr))
                 return hr;
 
-            ComPtr<CDShowMediaSource> spBridgeSource =
-                new CDShowMediaSource(spGraph, spSource, spPresentation);
+            ComPtr<CDShowMediaSource> spBridgeSource(
+                new CDShowMediaSource(spGraph, spSource, spPresentation));
 
             for (size_t i = 0; i < sinks.size(); i++)
             {
-                ComPtr<CDShowMediaStream> spStream =
-                    new CDShowMediaStream(spBridgeSource, descriptors[i], sinks[i]);
+                ComPtr<CDShowMediaStream> spStream(
+                    new CDShowMediaStream(spBridgeSource, descriptors[i], sinks[i]));
                 spBridgeSource->AddStream(spStream);
             }
 
@@ -1920,7 +1935,7 @@ public:
     }
 
     // MF -> DS: deliver a decoded MF video sample into the connected EVR.
-    HRESULT DeliverVideoFrame(IMFMediaSample* pSample)
+    HRESULT DeliverVideoFrame(IMFSample* pSample)
     {
         if (!pSample) return E_INVALIDARG;
         if (!m_spEVRVideoOutput) return VFW_E_NOT_CONNECTED;

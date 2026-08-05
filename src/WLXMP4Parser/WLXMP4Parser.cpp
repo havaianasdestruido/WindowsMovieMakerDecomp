@@ -85,7 +85,9 @@ public:
     {
     }
 
-if (!pData || cbData == 0)
+    HRESULT ParseChildBoxes(const BYTE* pData, DWORD cbData)
+    {
+        if (!pData || cbData == 0)
         {
             return E_INVALIDARG;
         }
@@ -93,6 +95,7 @@ if (!pData || cbData == 0)
         UNREFERENCED_PARAMETER(pData);
         UNREFERENCED_PARAMETER(cbData);
         return S_OK;
+    }
 
     UINT32 GetSampleCount() const { return m_uSampleCount; }
 

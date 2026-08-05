@@ -31,11 +31,17 @@ target_link_libraries(${TARGET} PRIVATE
     kernel32
     user32
     gdi32
+    gdiplus
     advapi32
     ole32
     oleaut32
     shlwapi
+    shell32
     propsys
+    mfplat
+    mf
+    mfreadwrite
+    mfuuid
     WLXPhotoBase
 )
 

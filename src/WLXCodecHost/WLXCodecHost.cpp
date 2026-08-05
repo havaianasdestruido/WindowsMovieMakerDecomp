@@ -163,7 +163,7 @@ static HRESULT ProcessDecodeRequest(LPCWSTR pszFilePath)
         return HRESULT_FROM_WIN32(ERROR_FILE_NOT_FOUND);
 
     // Load and decode the image using GDI+
-    Gdiplus::Bitmap* pBitmap = new (std::nothrow) Gdiplus::Bitmap(pszFilePath);
+    Gdiplus::Bitmap* pBitmap = new Gdiplus::Bitmap(pszFilePath);
     if (!pBitmap)
         return E_OUTOFMEMORY;
 

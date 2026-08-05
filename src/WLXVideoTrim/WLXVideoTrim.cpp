@@ -350,7 +350,7 @@ public:
     }
 
     // Derived classes delegate QI to the engine instance they wrap.
-    virtual HRESULT QueryInterfaceInternal(REFIID riid, void** ppv)
+    virtual STDMETHODIMP QueryInterfaceInternal(REFIID riid, void** ppv)
     {
         return E_NOINTERFACE;
     }

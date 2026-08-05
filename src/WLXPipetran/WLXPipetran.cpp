@@ -26,6 +26,7 @@
 #include <memory>
 #include <mutex>
 #include <cmath>
+#include <functional>
 #include <algorithm>
 
 // ============================================================================

@@ -217,7 +217,7 @@ public:
     // full-screen quad behavior). The crop is clamped to the image bounds;
     // the original let the quad slide slightly off-screen, this recreation
     // keeps the crop fully inside the source.
-    bool GetSourceRect(const Gdiplus::Bitmap* pSource, DOUBLE dT,
+    bool GetSourceRect(Gdiplus::Bitmap* pSource, DOUBLE dT,
         INT& iX, INT& iY, INT& iW, INT& iH) const
     {
         if (!pSource)
@@ -440,7 +440,7 @@ public:
         if (!kb.GetSourceRect(pSource, dProgress, srcX, srcY, srcW, srcH))
             return E_INVALIDARG;
 
-        Gdiplus::Bitmap* pBitmap = new(std::nothrow) Gdiplus::Bitmap(
+        Gdiplus::Bitmap* pBitmap = new Gdiplus::Bitmap(
             pParams->uOutputWidth, pParams->uOutputHeight, PixelFormat32bppARGB);
         if (!pBitmap)
             return E_OUTOFMEMORY;
@@ -601,7 +601,7 @@ const IID IID_IdentityPanZoomTransform =
 // Common reference-counted base. Each live object (including class
 // factories) contributes to g_cActiveObjects so DllCanUnloadNow() can
 // report whether the DLL is safely unloadable.
-class CComObjectBase
+class CComObjectBase : public IUnknown
 {
 public:
     CComObjectBase() : m_cRef(1)
@@ -614,12 +614,28 @@ public:
         InterlockedDecrement(&g_cActiveObjects);
     }
 
-    ULONG AddRef()
+    STDMETHODIMP QueryInterface(REFIID riid, void** ppv) override
+    {
+        if (!ppv)
+            return E_POINTER;
+        *ppv = NULL;
+
+        if (IsEqualIID(riid, IID_IUnknown))
+        {
+            *ppv = static_cast<IUnknown*>(this);
+            AddRef();
+            return S_OK;
+        }
+
+        return E_NOINTERFACE;
+    }
+
+    STDMETHODIMP_(ULONG) AddRef() override
     {
         return static_cast<ULONG>(InterlockedIncrement(&m_cRef));
     }
 
-    ULONG Release()
+    STDMETHODIMP_(ULONG) Release() override
     {
         ULONG cRef = static_cast<ULONG>(InterlockedDecrement(&m_cRef));
         if (cRef == 0)
@@ -634,7 +650,7 @@ protected:
 class CinematicFullScreenObject : public CComObjectBase
 {
 public:
-    HRESULT QueryInterface(REFIID riid, void** ppv)
+    STDMETHODIMP QueryInterface(REFIID riid, void** ppv) override
     {
         if (!ppv)
             return E_POINTER;
@@ -657,7 +673,7 @@ public:
 class PanZoomTransformObject : public CComObjectBase
 {
 public:
-    HRESULT QueryInterface(REFIID riid, void** ppv)
+    STDMETHODIMP QueryInterface(REFIID riid, void** ppv) override
     {
         if (!ppv)
             return E_POINTER;

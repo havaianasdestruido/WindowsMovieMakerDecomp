@@ -536,7 +536,6 @@ private:
         pInputType->SetUINT32(MF_MT_AUDIO_SAMPLES_PER_SECOND, pProps->uAudioSampleRate);
         pInputType->SetUINT32(MF_MT_AUDIO_NUM_CHANNELS, pProps->uAudioChannels);
         pInputType->SetUINT32(MF_MT_AUDIO_BITS_PER_SAMPLE, 16);
-        pInputType->SetUINT32(MF_MT_AUDIO_SAMPLE_TYPE, MFAudioSampleType_Int);
 
         hr = m_pWriter->SetInputMediaType(m_dwStreamIndex, pInputType, NULL);
         pInputType->Release();

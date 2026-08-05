@@ -42,6 +42,23 @@ namespace Sundance
 {
 
 // ============================================================================
+// AppCommandIds -- accelerator and WM_COMMAND identifiers
+// ============================================================================
+enum AppCommandIds
+{
+    ID_APP_IMPORT     = 0xE101,
+    ID_APP_SAVE       = 0xE103,
+    ID_APP_UNDO       = 0xE12B,
+    ID_APP_REDO       = 0xE12C,
+    ID_APP_COPY       = 0xE122,
+    ID_APP_PASTE      = 0xE125,
+    ID_APP_DELETE     = 0xE200,
+    ID_APP_PLAY_PAUSE = 0xE201,
+    ID_APP_REMOVE     = 0xE202,
+    ID_APP_EXPORT     = 0xE203,
+};
+
+// ============================================================================
 // ApplicationOptions -- command-line and configuration state
 // ============================================================================
 class ApplicationOptions

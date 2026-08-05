@@ -77,7 +77,9 @@ HRESULT Win32ErrorToHresult(DWORD dwError)
         return E_INVALIDARG;
 
     case ERROR_NOT_SUPPORTED:
-        return E_NOTIMPL;
+        // Preserve the Win32 facility code: E_NOTIMPL (0x80004001) conflates
+        // "object lacks this method" with "OS does not support the operation".
+        return HRESULT_FROM_WIN32(ERROR_NOT_SUPPORTED);
 
     case ERROR_FILE_EXISTS:
     case ERROR_ALREADY_EXISTS:
@@ -204,8 +206,12 @@ void Exception::operator delete(void* p) throw()
 // ============================================================================
 WLXPHOTOBASE_API void Throw(HRESULT hr)
 {
-    // Directly raise SEH with HRESULT; no heap allocation, avoids leak.
-    ::RaiseException(static_cast<DWORD>(hr), EXCEPTION_NONCONTINUABLE, 0, NULL);
+    // Construct a real Base::Exception. The private operator new routes the
+    // exception object through the process heap (QUIRKS.md #8) and the MSVC
+    // throw machinery dispatches it as SEH 0xe06d7363, which the app launcher
+    // filters on (QUIRKS.md #1) and which C++ catch(Base::Exception&) sites
+    // can handle. ATL throws (via _ATLAtlThrowImpl) funnel through here too.
+    throw Exception(hr);
 }
 
 // ============================================================================
@@ -244,13 +250,20 @@ WLXPHOTOBASE_API HRESULT GdiplusStatusToHresult(Gdiplus::Status status)
         return HRESULT_FROM_WIN32(ERROR_INSUFFICIENT_BUFFER);
 
     case Gdiplus::NotImplemented:
-        return E_NOTIMPL;
+        return HRESULT_FROM_WIN32(ERROR_CALL_NOT_IMPLEMENTED);
+
+    case Gdiplus::Win32Error:
+    {
+        // GDI+ sets the last Win32 error code for this status; recover it.
+        DWORD dwErr = ::GetLastError();
+        return dwErr != ERROR_SUCCESS ? HRESULT_FROM_WIN32(dwErr) : E_FAIL;
+    }
 
     case Gdiplus::PropertyNotFound:
         return HRESULT_FROM_WIN32(ERROR_NOT_FOUND);
 
     case Gdiplus::PropertyNotSupported:
-        return E_NOTIMPL;
+        return HRESULT_FROM_WIN32(ERROR_NOT_SUPPORTED);
 
     case Gdiplus::FontFamilyNotFound:
         return HRESULT_FROM_WIN32(ERROR_NOT_FOUND);
@@ -262,7 +275,7 @@ WLXPHOTOBASE_API HRESULT GdiplusStatusToHresult(Gdiplus::Status status)
         return E_UNEXPECTED;
 
     case Gdiplus::UnsupportedGdiplusVersion:
-        return E_NOTIMPL;
+        return HRESULT_FROM_WIN32(ERROR_NOT_SUPPORTED);
 
     case Gdiplus::GdiplusNotInitialized:
         return E_UNEXPECTED;
@@ -954,4 +967,15 @@ int IntSet::GetAt(size_t index) const
 // ============================================================================
 extern "C" WLXPHOTOBASE_API void __stdcall WLXPhotoBase_Init(void)
 {
+    // Bring up GDI+ once for the process lifetime so every consumer DLL can
+    // perform image work immediately. GDI+ is reference-counted, so the
+    // per-DLL GdiplusStartup calls made by component DllMains are unaffected.
+    // There is no matching shutdown export in the public surface, so the token
+    // is deliberately process-lifetime (GDI+ releases everything at exit).
+    static ULONG_PTR s_gdipToken = 0;
+    if (s_gdipToken == 0)
+    {
+        Gdiplus::GdiplusStartupInput startupInput;
+        Gdiplus::GdiplusStartup(&s_gdipToken, &startupInput, NULL);
+    }
 }

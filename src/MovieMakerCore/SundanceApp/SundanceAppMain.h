@@ -46,6 +46,10 @@ namespace SundanceUI
     class RibbonApp;
 }
 
+// Add-in / plugin hosting (contract in ../AddIn/SundanceAddInContract.h)
+class SundanceAddInManager;
+class SundanceAddInHost;
+
 namespace StoryboardManager {
     class MovieProject;
     class MovieExtent;
@@ -218,6 +222,7 @@ protected:
 
     // -- Add-in / Plugin loading --
     HRESULT LoadAddIns();
+    void    ShutdownAddIns();
 
     // -- Error reporting --
     void    ReportError(HRESULT hr, LPCWSTR pszContext);
@@ -275,6 +280,10 @@ private:
 
     // Recent files list
     std::vector<ATL::CString> m_recentFiles;
+
+    // Add-in / plugin hosting (owned)
+    SundanceAddInManager*   m_pAddInManager;
+    SundanceAddInHost*      m_pAddInHost;
 
     // Prevent copy
     SundanceAppMain(const SundanceAppMain&);

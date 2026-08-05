@@ -45,6 +45,7 @@ target_link_libraries(${TARGET} PRIVATE
     oleaut32
     mfplat
     mf
+    mfreadwrite
     mfuuid
     d3d9
     d3d11

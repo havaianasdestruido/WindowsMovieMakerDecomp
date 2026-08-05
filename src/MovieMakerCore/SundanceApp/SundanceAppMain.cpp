@@ -49,6 +49,10 @@ typedef PROPSHEETHEADERW_V2 PROPSHEETW;
 #include "../../Timeline/TimelineEngine.h"
 #include "../../Timeline/TimelineDispatcher.h"
 
+// Add-in / plugin hosting
+#include "../AddIn/SundanceAddInContract.h"
+#include "../AddIn/SundanceAddInManager.h"
+
 // ============================================================================
 // SundanceBehaviors namespace (DirectUI behavior registration)
 //
@@ -130,10 +134,75 @@ public:
 // ============================================================================
 
 // ============================================================================
+// SundanceAddInHost — ISundanceAddInHost implementation
+//
+// Bridges the add-in contract to the running SundanceAppMain. Kept free of
+// app-internal types on the interface surface so the ABI stays stable; all
+// state is resolved lazily through the app back-pointer.
+// ============================================================================
+class SundanceAddInHost : public ISundanceAddInHost
+{
+public:
+    explicit SundanceAddInHost(SundanceAppMain* pApp) throw()
+        : m_pApp(pApp)
+    {
+    }
+
+    virtual HRESULT WINAPI GetMainWindow(HWND* pHwnd) throw()
+    {
+        if (!pHwnd)
+            return E_POINTER;
+        *pHwnd = (m_pApp) ? m_pApp->GetMainWindow() : NULL;
+        return S_OK;
+    }
+
+    virtual HRESULT WINAPI GetVersion(
+        DWORD* pdwMajor,
+        DWORD* pdwMinor,
+        DWORD* pdwBuild,
+        DWORD* pdwRevision) throw()
+    {
+        if (!pdwMajor || !pdwMinor || !pdwBuild || !pdwRevision)
+            return E_POINTER;
+        *pdwMajor    = SUNDANCE_VERSION_MAJOR;
+        *pdwMinor    = SUNDANCE_VERSION_MINOR;
+        *pdwBuild    = SUNDANCE_VERSION_BUILD;
+        *pdwRevision = SUNDANCE_VERSION_REVISION;
+        return S_OK;
+    }
+
+    virtual HRESULT WINAPI GetDataDirectory(LPWSTR pszPath, DWORD cchPath) throw()
+    {
+        if (!pszPath)
+            return E_POINTER;
+
+        WCHAR szLocalAppData[MAX_PATH] = { 0 };
+        HRESULT hr = ::SHGetFolderPathW(NULL, CSIDL_LOCAL_APPDATA, NULL, 0, szLocalAppData);
+        if (FAILED(hr))
+            return hr;
+
+        if (FAILED(::StringCchCopyW(pszPath, cchPath, szLocalAppData)) ||
+            !::PathAppendW(pszPath, L"Microsoft\\Windows Live\\Movie Maker"))
+        {
+            return E_FAIL;
+        }
+        return S_OK;
+    }
+
+    virtual void WINAPI Log(LPCWSTR pszMessage) throw()
+    {
+        if (pszMessage)
+            ::OutputDebugStringW(pszMessage);
+    }
+
+private:
+    SundanceAppMain* m_pApp;
+};
+
+// ============================================================================
 // Module-level singleton
 // ============================================================================
 static SundanceAppMain* g_pSundanceAppMain = NULL;
-
 SundanceAppMain* GetSundanceAppMain()
 {
     return g_pSundanceAppMain;
@@ -171,6 +240,8 @@ SundanceAppMain::SundanceAppMain()
     , m_pTimelineEngine(NULL)
     , m_pTimelineDispatcher(NULL)
     , m_hSingleInstanceMutex(NULL)
+    , m_pAddInManager(NULL)
+    , m_pAddInHost(NULL)
 {
     ATLASSERT(g_pSundanceAppMain == NULL);
     g_pSundanceAppMain = this;
@@ -328,6 +399,10 @@ void SundanceAppMain::Shutdown()
 
     // Shutdown SQM / telemetry
     ShutdownSqmSession();
+
+    // Unload add-ins before subsystems are torn down so add-ins can
+    // never touch partially-destroyed subsystem state.
+    ShutdownAddIns();
 
     ReleaseSubsystems();
 
@@ -639,6 +714,10 @@ HRESULT SundanceAppMain::OpenProject(LPCWSTR pszFilePath)
     // Report telemetry event (stubbed)
     ReportTelemetryEvent(L"ProjectOpened");
 
+    // Notify add-ins that a project was opened
+    if (m_pAddInManager)
+        m_pAddInManager->NotifyProjectOpened(pszFilePath);
+
     OnProjectChanged();
     return S_OK;
 }
@@ -705,6 +784,10 @@ HRESULT SundanceAppMain::CloseProject()
     m_bProjectDirty = false;
 
     ReportTelemetryEvent(L"ProjectClosed");
+
+    // Notify add-ins that the project is being closed
+    if (m_pAddInManager)
+        m_pAddInManager->NotifyProjectClosed();
 
     OnProjectChanged();
     return S_OK;
@@ -1731,7 +1814,15 @@ HRESULT SundanceAppMain::OnRibbonCommand(UINT nCmdId)
     }
 
     default:
-        // Unknown command - let the UI refresh
+        // Unknown command - offer it to add-ins first; add-ins that
+        // handle it return S_OK and the host does nothing further.
+        if (m_pAddInManager)
+        {
+            HRESULT hrAddIn = m_pAddInManager->NotifyCommand(nCmdId);
+            if (hrAddIn == S_OK)
+                return S_OK;
+        }
+        // Unhandled by add-ins too - let the UI refresh
         NotifyUIRefresh();
         return S_OK;
     }
@@ -2118,83 +2209,61 @@ void SundanceAppMain::ReportTelemetryEvent(LPCWSTR pszEvent)
 // ============================================================================
 // LoadAddIns
 //
-// Scans the application's AddIns directory for plugin DLLs and loads
-// any that export a recognized entry point (SundanceAddInInitialize).
-// The original binary looked for SundanceAddInInitialize /
-// SundanceAddInShutdown exports and called Initialize on each loaded
-// add-in DLL. In the decompilation we enumerate the directory and
-// load any matching DLLs, calling their init entry points.
+// Scans the application's AddIns directory for plugin DLLs and loads any
+// that export a recognized entry point. Uses SundanceAddInManager, which
+// negotiates the versioned contract (SundanceAddInContract) and instantiates
+// each add-in via ISundanceAddIn::OnInitialize.
+//
+// The directory is the same one the original binary used:
+//   %LOCALAPPDATA%\Microsoft\Windows Live\Movie Maker\AddIns
+//
+// Safe mode (/safe) disables add-in loading entirely, matching the help
+// text "Start in safe mode (no add-ins)".
 // ============================================================================
 HRESULT SundanceAppMain::LoadAddIns()
 {
-    // Build the AddIns directory path:
-    //   %LOCALAPPDATA%\Microsoft\Windows Live\Movie Maker\AddIns
-    WCHAR szLocalAppData[MAX_PATH] = { 0 };
-    HRESULT hr = ::SHGetFolderPathW(NULL, CSIDL_LOCAL_APPDATA, NULL, 0, szLocalAppData);
+    // Safe mode: do not load any add-ins
+    if (m_pCommandLineParser && m_pCommandLineParser->IsSafeMode())
+        return S_OK;
+
+    if (m_pAddInManager)
+        return S_OK; // Already loaded
+
+    m_pAddInHost = new (std::nothrow) SundanceAddInHost(this);
+    if (!m_pAddInHost)
+        return E_OUTOFMEMORY;
+
+    m_pAddInManager = new (std::nothrow) SundanceAddInManager();
+    if (!m_pAddInManager)
+        return E_OUTOFMEMORY;
+
+    HRESULT hr = m_pAddInManager->Initialize(m_pAddInHost);
     if (FAILED(hr))
-        return S_OK; // Non-fatal: app can run without add-ins
+        return hr;
 
-    ATL::CString strAddInsDir;
-    strAddInsDir.Format(L"%s\\Microsoft\\Windows Live\\Movie Maker\\AddIns", szLocalAppData);
-
-    // Ensure directory exists (first-run creates the folder)
-    ::CreateDirectoryW(strAddInsDir, NULL);
-
-    ATL::CString strPattern;
-    strPattern.Format(L"%s\\*.dll", strAddInsDir.GetString());
-
-    WIN32_FIND_DATAW fd = { 0 };
-    HANDLE hFind = ::FindFirstFileW(strPattern, &fd);
-    if (hFind == INVALID_HANDLE_VALUE)
-        return S_OK; // No add-ins found — not an error
-
-    do
-    {
-        if (fd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)
-            continue;
-
-        ATL::CString strDllPath;
-        strDllPath.Format(L"%s\\%s", strAddInsDir.GetString(), fd.cFileName);
-
-        HMODULE hMod = ::LoadLibraryW(strDllPath);
-        if (!hMod)
-            continue;
-
-        // Look for the SundanceAddInInitialize entry point
-        typedef HRESULT (WINAPI *PFN_ADDIN_INIT)(SundanceAppMain*);
-        typedef void (WINAPI *PFN_ADDIN_SHUTDOWN)();
-
-        PFN_ADDIN_INIT pfnInit = reinterpret_cast<PFN_ADDIN_INIT>(
-            ::GetProcAddress(hMod, "SundanceAddInInitialize"));
-        PFN_ADDIN_SHUTDOWN pfnShutdown = reinterpret_cast<PFN_ADDIN_SHUTDOWN>(
-            ::GetProcAddress(hMod, "SundanceAddInShutdown"));
-
-        if (pfnInit)
-        {
-            HRESULT hrInit = pfnInit(this);
-            if (SUCCEEDED(hrInit))
-            {
-                // Add-in initialized successfully. Store shutdown
-                // callback if available. The original binary tracked
-                // loaded add-ins in a vector for shutdown enumeration.
-            }
-            else
-            {
-                // Add-in rejected initialization — unload it
-                ::FreeLibrary(hMod);
-            }
-        }
-        else
-        {
-            // DLL does not export the expected entry point — skip
-            ::FreeLibrary(hMod);
-        }
-
-    } while (::FindNextFileW(hFind, &fd));
-
-    ::FindClose(hFind);
+    // Non-fatal: the app can run without add-ins. Individual failures are
+    // already isolated by the manager (the scan continues past bad DLLs).
+    m_pAddInManager->LoadFromDefaultDirectory();
 
     return S_OK;
+}
+
+// ============================================================================
+// ShutdownAddIns
+//
+// Calls ISundanceAddIn::OnShutdown on every loaded add-in, frees each
+// add-in DLL in reverse load order, then releases the manager and host.
+// ============================================================================
+void SundanceAppMain::ShutdownAddIns()
+{
+    if (m_pAddInManager)
+        m_pAddInManager->Shutdown();
+
+    delete m_pAddInManager;
+    m_pAddInManager = NULL;
+
+    delete m_pAddInHost;
+    m_pAddInHost = NULL;
 }
 
 // ============================================================================

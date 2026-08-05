@@ -83,17 +83,8 @@
 #define IDS_TIP_STABILIZE             1026
 #define IDS_TIP_PREVIEW_FULL          1027
 #define IDS_TIP_MENU_BAR              1028
-#define IDS_GENERAL_TAB               2000
-#define IDS_VERSION_STRING            2001
-#define IDS_COPYRIGHT                 2002
-#define IDS_STATUS_DETAILS            2003
-#define IDS_STATUS_PROGRESS           2004
-#define IDS_STATUS_CANCEL             2005
-#define IDS_HOME_TAB                  2006
-#define IDS_ANIMATIONS_TAB            2007
-#define IDS_VISUAL_EFFECTS_TAB        2008
-#define IDS_PROJECT_TAB               2009
-#define IDS_EXIT                      2010
+#define IDS_TIP_ZOOM                  1029
+#define IDS_HELP                      1042
 
 // Dialog button text
 #define IDS_OK                        1030

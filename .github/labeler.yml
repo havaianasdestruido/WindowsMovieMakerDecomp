@@ -1,0 +1,472 @@
+# GitHub Labeler Configuration for WindowsMovieMakerDecomp
+# Comprehensive labeling rules for this massive Windows Movie Maker decompilation project
+
+# Core Application Components
+"component:moviemaker-core":
+  - src/MovieMakerCore/**/*
+  - src/MovieMaker/**/*
+
+"component:ui-ux":
+  - src/UXCore/**/*
+  - src/uxctl/**/*
+
+"component:media-library":
+  - src/WLXMovieLibrary/**/*
+  - src/Media/**/*
+
+"component:rendering":
+  - src/Renderer/**/*
+  - src/Playback/**/*
+
+"component:timeline":
+  - src/Timeline/**/*
+  - src/Project/**/*
+
+"component:preview":
+  - src/MovieMakerPreviewClient/**/*
+
+# Plugin & Extension Components
+"component:codec-host":
+  - src/WLXCodecHost/**/*
+  - analysis/WLXCodecHost/**/*
+  - analysis/WLXCodecHostPS/**/*
+
+"component:transcode":
+  - src/WLXTranscode/**/*
+  - analysis/WLXTranscode/**/*
+  - analysis/WLXImageTranscode/**/*
+
+"component:slideshow":
+  - src/WLXSlideshow/**/*
+  - analysis/WLXSlideshow/**/*
+
+"component:photo-system":
+  - src/WLXPhotoBase/**/*
+  - src/WLXPhotoCinematic/**/*
+  - src/WLXPhotoSqm/**/*
+  - analysis/WLXPhotoBase/**/*
+  - analysis/WLXPhotoCinematic/**/*
+  - analysis/WLXPhotoClassic/**/*
+  - analysis/WLXPhotoCinematic/**/*
+  - analysis/WLXPhotoAcq/**/*
+  - analysis/WLXPhotoViewer/**/*
+  - analysis/WLXPhotoVoyager/**/*
+  - analysis/WLXPhotoGallery/**/*
+  - analysis/WLXPhotoLibrary*/**/*
+
+"component:video-editing":
+  - src/WLXVideoTrim/**/*
+  - analysis/WLXVideoTrim/**/*
+  - analysis/WLXVideoAcquireWizard/**/*
+
+"component:media-publish":
+  - src/WLXMediaPublishSubscribe/**/*
+  - analysis/WLXMediaPublishSubscribe/**/*
+  - analysis/PublishPlugins/**/*
+  - analysis/PublishPluginsInterop/**/*
+
+"component:pipeline":
+  - src/WLXPipeline/**/*
+  - src/WLXPipetran/**/*
+  - analysis/WLXPipeline/**/*
+  - analysis/WLXPipetran/**/*
+
+"component:metadata":
+  - src/MetadataSys/**/*
+  - analysis/MetadataSys/**/*
+
+"component:mp4-parser":
+  - src/WLXMP4Parser/**/*
+  - analysis/WLXMP4Parser/**/*
+
+"component:face-recognition":
+  - src/WLXFaceRecognition/**/*
+  - analysis/WLXFaceRecognition/**/*
+
+"component:wlmf":
+  - src/WLMFDS/**/*
+  - src/WLMFReadWrite/**/*
+  - analysis/WLMFDS/**/*
+  - analysis/WLMFReadWrite/**/*
+
+"component:dmx-bici":
+  - src/DmxBici/**/*
+  - analysis/DmxBici/**/*
+
+"component:wli-cli":
+  - src/wlidcli/**/*
+
+# Integrated Applications/Sub-projects
+"subproject:face-tagger":
+  - apps/face-tagger/**/*
+
+"subproject:media-publisher":
+  - apps/mediapublisher/**/*
+
+"subproject:metadata-editor":
+  - apps/metadata-editor/**/*
+
+"subproject:movie-library":
+  - apps/movielibrary/**/*
+
+"subproject:moviemaker-launcher":
+  - apps/moviemaker-launcher/**/*
+
+"subproject:photo-viewer":
+  - apps/photoviewer/**/*
+
+"subproject:pipeline-graph":
+  - apps/pipeline-graph/**/*
+
+"subproject:slideshow-studio":
+  - apps/slideshow-studio/**/*
+
+"subproject:transition-plugin":
+  - apps/transition-plugin/**/*
+
+"subproject:video-trimmer":
+  - apps/video-trimmer/**/*
+
+# Analysis & Research
+"type:analysis":
+  - analysis/**/*
+
+"analysis:architecture":
+  - analysis/ArchitectureSynthesis/**/*
+  - analysis/FINAL_SYNTHESIS.md
+  - analysis/CROSS_BINARY_MASTER.md
+
+"analysis:binary-research":
+  - analysis/BinaryDiff/**/*
+  - analysis/CrossDllImports/**/*
+
+"analysis:com-interop":
+  - analysis/COMGuids/**/*
+  - analysis/D3DCOMPILER_46/**/*
+
+"analysis:protocols":
+  - analysis/AlbumDownloadProtocolHandler/**/*
+
+"analysis:plugin-system":
+  - analysis/WLFacebookPlugin/**/*
+  - analysis/WLFlickrPlugin/**/*
+  - analysis/WLVimeoPlugin/**/*
+
+"analysis:utilities":
+  - analysis/RegRes/**/*
+  - analysis/Shared/**/*
+  - analysis/SharedMFDlls/**/*
+  - analysis/ThreadModel/**/*
+  - analysis/E_NOTIMPL/**/*
+
+# Third-party & External Components
+"external:wtl":
+  - src/WTL/**/*
+
+"external:imaging":
+  - analysis/Imaging/**/*
+
+"external:photo-viewer-shim":
+  - analysis/PhotoViewerShim/**/*
+  - analysis/PhotoViewerShimx64/**/*
+
+# Build & Infrastructure
+"build:cmake":
+  - CMakeLists.txt
+  - src/**/CMakeLists.txt
+  - tools/CMakeLists.txt
+
+"build:powershell":
+  - "*.ps1"
+  - tools/build.ps1
+
+"build:output":
+  - build64/**/*
+
+# Tools & Scripts
+"tools:analysis":
+  - tools/analysis/**/*
+  - tools/pe_analyzer.py
+  - tools/rtti_extractor.py
+  - tools/string_analyzer.py
+  - tools/diff_exports.py
+
+"tools:extraction":
+  - tools/resource_extractor.cpp
+
+"tools:testing":
+  - tools/test_all.py
+
+# Testing
+"type:test":
+  - tests/**/*
+
+# Documentation & Reference
+"type:documentation":
+  - README.md
+  - ROADMAP.md
+  - THINKING_PROCESS.md
+  - QUIRKS.md
+  - "*.md"
+
+# Repository Configuration
+"repo:config":
+  - .github/**/*
+  - .gitignore
+  - .gitmodules
+
+# Language-based Labels
+"lang:cpp":
+  - "**/*.cpp"
+  - "**/*.hpp"
+  - "**/*.h"
+  - "**/*.cc"
+  - "**/*.cxx"
+
+"lang:python":
+  - "**/*.py"
+
+"lang:cmake":
+  - "**/CMakeLists.txt"
+  - "**/*.cmake"
+
+"lang:powershell":
+  - "**/*.ps1"
+
+"lang:csharp":
+  - "**/*.cs"
+
+"lang:batch":
+  - "**/*.bat"
+  - "**/*.cmd"
+
+"lang:c":
+  - "**/*.c"
+
+# Size & Impact Labels
+"size:large":
+  - src/Movie*/**/*
+  - analysis/Movie*/**/*
+
+"size:medium":
+  - src/WLX*/**/*
+  - analysis/WLX*/**/*
+
+"size:small":
+  - "**/*.md"
+  - "*.ps1"
+
+# Feature Categories
+"feature:video-editing":
+  - src/Timeline/**/*
+  - src/Renderer/**/*
+  - src/Playback/**/*
+  - src/Project/**/*
+
+"feature:photo-management":
+  - src/WLXPhoto*/**/*
+  - analysis/WLXPhoto*/**/*
+
+"feature:media-codec":
+  - src/WLXCodecHost/**/*
+  - src/WLXTranscode/**/*
+  - analysis/WLXCodecHost*/**/*
+
+"feature:export-publish":
+  - src/WLXMediaPublishSubscribe/**/*
+  - analysis/PublishPlugins/**/*
+
+"feature:library-management":
+  - src/WLXMovieLibrary/**/*
+  - src/Media/**/*
+
+"feature:ui-framework":
+  - src/UXCore/**/*
+  - src/uxctl/**/*
+
+"feature:file-format":
+  - src/WLMF*/**/*
+  - src/WLXMP4Parser/**/*
+  - analysis/WLMF*/**/*
+
+"feature:ai-analysis":
+  - src/WLXFaceRecognition/**/*
+  - analysis/WLXFaceRecognition/**/*
+
+"feature:language-support":
+  - src/MovieMakerLang/**/*
+  - analysis/MovieMakerLang/**/*
+
+# Issue Classification
+"area:core-engine":
+  - src/MovieMakerCore/**/*
+  - src/DmxBici/**/*
+
+"area:plugin-system":
+  - src/WLX*/**/*
+  - analysis/WLX*/**/*
+
+"area:user-interface":
+  - src/UXCore/**/*
+  - src/uxctl/**/*
+
+"area:interoperability":
+  - analysis/COMGuids/**/*
+  - analysis/D3DCOMPILER_46/**/*
+  - analysis/SharedMFDlls/**/*
+
+"area:documentation":
+  - README.md
+  - ROADMAP.md
+  - THINKING_PROCESS.md
+  - QUIRKS.md
+
+# Priority & Status Hints
+"status:under-analysis":
+  - analysis/**/*
+
+"status:codebase":
+  - src/**/*
+
+"status:subproject":
+  - apps/**/*
+
+"status:tooling":
+  - tools/**/*
+
+# Hardware & Platform Support
+"platform:x64":
+  - build64/**/*
+  - "**/*x64*"
+
+"platform:x86":
+  - "**/*x86*"
+  - "**/*32*"
+
+# Media Format Support
+"format:video":
+  - src/WLXVideoTrim/**/*
+  - src/Renderer/**/*
+  - analysis/WLXVideoTrim/**/*
+
+"format:photo-image":
+  - src/WLXPhoto*/**/*
+  - analysis/WLXPhoto*/**/*
+  - analysis/WLXImageTranscode/**/*
+
+"format:audio":
+  - src/Media/**/*
+  - analysis/SharedMFDlls/**/*
+
+"format:mp4":
+  - src/WLXMP4Parser/**/*
+  - analysis/WLXMP4Parser/**/*
+
+"format:wlmf":
+  - src/WLMFReadWrite/**/*
+  - analysis/WLMFReadWrite/**/*
+
+# Reverse Engineering & Documentation Focus
+"research:binary-analysis":
+  - analysis/BinaryDiff/**/*
+  - tools/pe_analyzer.py
+  - tools/rtti_extractor.py
+
+"research:architecture":
+  - analysis/ArchitectureSynthesis/**/*
+  - analysis/CROSS_BINARY_MASTER.md
+  - analysis/FINAL_SYNTHESIS.md
+
+"research:knowledge-base":
+  - analysis/KNOWLEDGE_BASE.md
+
+"research:com-interfaces":
+  - analysis/COMGuids/**/*
+
+# Advanced Features
+"feature:3d-effects":
+  - src/WLXPipeline/**/*
+  - analysis/D3DCOMPILER_46/**/*
+
+"feature:scheduling":
+  - analysis/WLXGrinderScheduler/**/*
+
+"feature:social-media":
+  - analysis/WLFacebookPlugin/**/*
+  - analysis/WLFlickrPlugin/**/*
+  - analysis/WLVimeoPlugin/**/*
+
+"feature:streaming":
+  - analysis/WLXQuickTime/**/*
+  - analysis/WLXSendMail/**/*
+
+"feature:album-support":
+  - analysis/AlbumDownloadProtocolHandler/**/*
+  - analysis/WLXAlbumDownloadWizard/**/*
+
+# Module Dependencies
+"depends:media-framework":
+  - src/Media/**/*
+  - analysis/SharedMFDlls/**/*
+
+"depends:direct3d":
+  - src/Renderer/**/*
+  - analysis/D3DCOMPILER_46/**/*
+
+"depends:windows-api":
+  - analysis/RegRes/**/*
+  - analysis/PhotoViewerShim*/**/*
+
+# Complexity & Risk Levels
+"complexity:high":
+  - src/MovieMakerCore/**/*
+  - src/Renderer/**/*
+  - src/Timeline/**/*
+
+"complexity:medium":
+  - src/WLX*/**/*
+  - src/UXCore/**/*
+
+"complexity:low":
+  - tools/**/*
+  - "*.ps1"
+
+# Stability Labels
+"stability:core":
+  - src/MovieMakerCore/**/*
+  - src/DmxBici/**/*
+
+"stability:experimental":
+  - analysis/**/*
+
+"stability:plugin":
+  - src/WLX*/**/*
+  - apps/**/*
+
+# Review Focus Areas
+"review:critical-path":
+  - src/MovieMakerCore/**/*
+  - src/Timeline/**/*
+  - src/Renderer/**/*
+
+"review:architecture":
+  - analysis/ArchitectureSynthesis/**/*
+
+"review:interop":
+  - analysis/COMGuids/**/*
+  - analysis/SharedMFDlls/**/*
+
+# Documentation Metadata
+"docs:architecture":
+  - THINKING_PROCESS.md
+  - analysis/FINAL_SYNTHESIS.md
+  - analysis/CROSS_BINARY_MASTER.md
+
+"docs:roadmap":
+  - ROADMAP.md
+
+"docs:implementation-quirks":
+  - QUIRKS.md
+
+"docs:knowledge":
+  - analysis/KNOWLEDGE_BASE.md

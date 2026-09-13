@@ -1,6 +1,10 @@
 LIBRARY WLXMP4Parser
 EXPORTS
-    DllCanUnloadNow
-    DllGetClassObject
-    DllRegisterServer
-    DllUnregisterServer
+    _AddMP4SourceFilter@12          @1
+    _BuildMP4FilterGraph@8          @2
+    _BuildMP4PlayBack@8             @3
+    DllCanUnloadNow                 @4
+    DllGetClassObject               @5
+    DllRegisterServer               @6
+    DllUnregisterServer             @7
+    _IsMP4FilePlayable@4            @8

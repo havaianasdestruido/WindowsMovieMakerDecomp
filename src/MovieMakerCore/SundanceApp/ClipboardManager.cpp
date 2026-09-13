@@ -242,9 +242,11 @@ HRESULT ClipboardManager::CopySelection()
     if (m_clipboardData.empty())
         return S_FALSE;
 
-    // Compute total size: DWORD count header + per-entry serialized data
-    DWORD dwCount = static_cast<DWORD>(m_clipboardData.size());
-    DWORD cbTotal = sizeof(DWORD); // item count header
+    const ULONGLONG kMaxClipboardBytes = (256ULL * 1024ULL * 1024ULL);
+    const ULONGLONG kDwordMax = 0xFFFFFFFFULL;
+
+    // Compute total size using 64-bit arithmetic to avoid DWORD overflow
+    ULONGLONG ullTotal = sizeof(DWORD); // item count header
 
     for (size_t i = 0; i < m_clipboardData.size(); ++i)
     {
@@ -252,12 +254,18 @@ HRESULT ClipboardManager::CopySelection()
         //            sourceFileLen(4) + sourceFileBytes + dataLen(4) + dataBytes
         const ClipboardEntry& entry = m_clipboardData[i];
         int cchFile = entry.strSourceFile.GetLength();
-        cbTotal += sizeof(DWORD) * 4;                      // id, track, pos, dur
-        cbTotal += sizeof(DWORD);                           // sourceFileLen
-        cbTotal += static_cast<DWORD>(cchFile * sizeof(WCHAR)); // sourceFileBytes
-        cbTotal += sizeof(DWORD);                           // dataLen
-        cbTotal += static_cast<DWORD>(entry.serializedData.size()); // dataBytes
+        ullTotal += sizeof(DWORD) * 4;                              // id, track, pos, dur
+        ullTotal += sizeof(DWORD);                                   // sourceFileLen
+        ullTotal += static_cast<ULONGLONG>(cchFile) * sizeof(WCHAR); // sourceFileBytes
+        ullTotal += sizeof(DWORD);                                   // dataLen
+        ullTotal += entry.serializedData.size();                     // dataBytes
     }
+
+    if (ullTotal > kMaxClipboardBytes || ullTotal > kDwordMax)
+        return E_FAIL;
+
+    DWORD dwCount = static_cast<DWORD>(m_clipboardData.size());
+    DWORD cbTotal = static_cast<DWORD>(ullTotal);
 
     HGLOBAL hMem = ::GlobalAlloc(GMEM_MOVEABLE | GMEM_ZEROINIT, cbTotal);
     if (!hMem)
@@ -270,52 +278,73 @@ HRESULT ClipboardManager::CopySelection()
         return E_OUTOFMEMORY;
     }
 
+    SIZE_T remaining = cbTotal;
+    BYTE* cur = pDst;
+
+    auto Write = [&](const void* p, SIZE_T n)
+    {
+        if (remaining < n)
+        {
+            ::SetLastError(ERROR_INVALID_DATA);
+            return false;
+        }
+        ::memcpy(cur, p, n);
+        cur += n;
+        remaining -= n;
+        return true;
+    };
+
     // Write header
-    ::memcpy(pDst, &dwCount, sizeof(DWORD));
-    pDst += sizeof(DWORD);
+    bool bOk = Write(&dwCount, sizeof(DWORD));
 
     // Write each entry
-    for (size_t i = 0; i < m_clipboardData.size(); ++i)
+    for (size_t i = 0; bOk && i < m_clipboardData.size(); ++i)
     {
         const ClipboardEntry& entry = m_clipboardData[i];
 
-        ::memcpy(pDst, &entry.dwItemId, sizeof(DWORD));
-        pDst += sizeof(DWORD);
+        bOk = Write(&entry.dwItemId, sizeof(DWORD));
+        if (!bOk) break;
 
         DWORD dwTrack = static_cast<DWORD>(entry.track);
-        ::memcpy(pDst, &dwTrack, sizeof(DWORD));
-        pDst += sizeof(DWORD);
+        bOk = Write(&dwTrack, sizeof(DWORD));
+        if (!bOk) break;
 
-        ::memcpy(pDst, &entry.dwPosition, sizeof(DWORD));
-        pDst += sizeof(DWORD);
+        bOk = Write(&entry.dwPosition, sizeof(DWORD));
+        if (!bOk) break;
 
-        ::memcpy(pDst, &entry.dwDuration, sizeof(DWORD));
-        pDst += sizeof(DWORD);
+        bOk = Write(&entry.dwDuration, sizeof(DWORD));
+        if (!bOk) break;
 
         int cchFile = entry.strSourceFile.GetLength();
         DWORD cchFileDw = static_cast<DWORD>(cchFile);
-        ::memcpy(pDst, &cchFileDw, sizeof(DWORD));
-        pDst += sizeof(DWORD);
+        bOk = Write(&cchFileDw, sizeof(DWORD));
+        if (!bOk) break;
 
         if (cchFile > 0)
         {
-            ::memcpy(pDst, static_cast<LPCWSTR>(entry.strSourceFile),
-                     cchFile * sizeof(WCHAR));
-            pDst += cchFile * sizeof(WCHAR);
+            bOk = Write(static_cast<LPCWSTR>(entry.strSourceFile),
+                        static_cast<SIZE_T>(cchFile) * sizeof(WCHAR));
+            if (!bOk) break;
         }
 
         DWORD cbData = static_cast<DWORD>(entry.serializedData.size());
-        ::memcpy(pDst, &cbData, sizeof(DWORD));
-        pDst += sizeof(DWORD);
+        bOk = Write(&cbData, sizeof(DWORD));
+        if (!bOk) break;
 
         if (cbData > 0)
         {
-            ::memcpy(pDst, entry.serializedData.data(), cbData);
-            pDst += cbData;
+            bOk = Write(entry.serializedData.data(), cbData);
+            if (!bOk) break;
         }
     }
 
     ::GlobalUnlock(hMem);
+
+    if (!bOk)
+    {
+        ::GlobalFree(hMem);
+        return E_FAIL;
+    }
 
     // Place data on the system clipboard
     if (!::OpenClipboard(m_pAppMain->GetMainWindow()))
@@ -369,80 +398,109 @@ HRESULT ClipboardManager::PasteSelection()
         return E_FAIL;
     }
 
-    DWORD cbSize = static_cast<DWORD>(::GlobalSize(hData));
+    const DWORD kMaxClipboardItemCount = 10000;
+    const DWORD kMaxClipboardPathChars = 32768;
+
+    SIZE_T cbBuf = ::GlobalSize(hData);
+    SIZE_T cbOffset = 0;
+
+    bool bValid = true;
+    std::vector<ClipboardEntry> entries;
 
     // Read header: item count
-    if (cbSize < sizeof(DWORD))
-    {
-        ::GlobalUnlock(hData);
-        ::CloseClipboard();
-        return S_FALSE;
-    }
+    if (cbBuf < sizeof(DWORD))
+        bValid = false;
 
     DWORD dwCount = 0;
-    ::memcpy(&dwCount, pSrc, sizeof(DWORD));
-    pSrc += sizeof(DWORD);
-    cbSize -= sizeof(DWORD);
+    if (bValid)
+    {
+        ::memcpy(&dwCount, pSrc + cbOffset, sizeof(DWORD));
+        cbOffset += sizeof(DWORD);
+
+        if (dwCount > kMaxClipboardItemCount)
+            bValid = false;
+    }
+
+    if (bValid)
+    {
+        // Each entry carries at least 6 DWORDs (fixed fields + length fields)
+        ULONGLONG ullMinBytes = static_cast<ULONGLONG>(dwCount) * (sizeof(DWORD) * 6);
+        if (cbBuf - cbOffset < ullMinBytes)
+            bValid = false;
+        else
+            entries.reserve(dwCount);
+    }
 
     // Parse each entry
-    std::vector<ClipboardEntry> entries;
-    entries.reserve(dwCount);
-
-    for (DWORD i = 0; i < dwCount; ++i)
+    for (DWORD i = 0; bValid && i < dwCount; ++i)
     {
-        if (cbSize < sizeof(DWORD) * 5) // id, track, pos, dur, fileLen
+        if (cbBuf - cbOffset < sizeof(DWORD) * 5) // id, track, pos, dur, fileLen
+        {
+            bValid = false;
             break;
+        }
 
         ClipboardEntry entry;
 
-        ::memcpy(&entry.dwItemId, pSrc, sizeof(DWORD));
-        pSrc += sizeof(DWORD);
+        ::memcpy(&entry.dwItemId, pSrc + cbOffset, sizeof(DWORD));
+        cbOffset += sizeof(DWORD);
 
         DWORD dwTrack = 0;
-        ::memcpy(&dwTrack, pSrc, sizeof(DWORD));
-        entry.track = static_cast<StoryboardManager::TimelineTrackType>(dwTrack);
-        pSrc += sizeof(DWORD);
+        ::memcpy(&dwTrack, pSrc + cbOffset, sizeof(DWORD));
+        cbOffset += sizeof(DWORD);
 
-        ::memcpy(&entry.dwPosition, pSrc, sizeof(DWORD));
-        pSrc += sizeof(DWORD);
+        ::memcpy(&entry.dwPosition, pSrc + cbOffset, sizeof(DWORD));
+        cbOffset += sizeof(DWORD);
 
-        ::memcpy(&entry.dwDuration, pSrc, sizeof(DWORD));
-        pSrc += sizeof(DWORD);
+        ::memcpy(&entry.dwDuration, pSrc + cbOffset, sizeof(DWORD));
+        cbOffset += sizeof(DWORD);
 
         DWORD cchFile = 0;
-        ::memcpy(&cchFile, pSrc, sizeof(DWORD));
-        pSrc += sizeof(DWORD);
-        cbSize -= sizeof(DWORD) * 5;
+        ::memcpy(&cchFile, pSrc + cbOffset, sizeof(DWORD));
+        cbOffset += sizeof(DWORD);
+
+        ULONGLONG ullFileBytes = static_cast<ULONGLONG>(cchFile) * sizeof(WCHAR);
+        if (cchFile > kMaxClipboardPathChars || ullFileBytes > (cbBuf - cbOffset))
+        {
+            bValid = false;
+            break;
+        }
 
         if (cchFile > 0)
         {
-            DWORD cbFile = cchFile * sizeof(WCHAR);
-            if (cbSize < cbFile)
-                break;
-
             entry.strSourceFile = ATL::CString(
-                reinterpret_cast<LPCWSTR>(pSrc), static_cast<int>(cchFile));
-            pSrc += cbFile;
-            cbSize -= cbFile;
+                reinterpret_cast<LPCWSTR>(pSrc + cbOffset), static_cast<int>(cchFile));
+            cbOffset += static_cast<SIZE_T>(ullFileBytes);
         }
 
-        if (cbSize < sizeof(DWORD))
+        if (cbBuf - cbOffset < sizeof(DWORD))
+        {
+            bValid = false;
             break;
+        }
 
         DWORD cbData = 0;
-        ::memcpy(&cbData, pSrc, sizeof(DWORD));
-        pSrc += sizeof(DWORD);
-        cbSize -= sizeof(DWORD);
+        ::memcpy(&cbData, pSrc + cbOffset, sizeof(DWORD));
+        cbOffset += sizeof(DWORD);
+
+        if (cbData > (cbBuf - cbOffset))
+        {
+            bValid = false;
+            break;
+        }
 
         if (cbData > 0)
         {
-            if (cbSize < cbData)
-                break;
-
-            entry.serializedData.assign(pSrc, pSrc + cbData);
-            pSrc += cbData;
-            cbSize -= cbData;
+            entry.serializedData.assign(pSrc + cbOffset, pSrc + cbOffset + cbData);
+            cbOffset += cbData;
         }
+
+        if (dwTrack > static_cast<DWORD>(StoryboardManager::TimelineTrackTypeTransition))
+        {
+            bValid = false;
+            break;
+        }
+        entry.track = static_cast<StoryboardManager::TimelineTrackType>(dwTrack);
 
         entries.push_back(entry);
     }
@@ -450,8 +508,8 @@ HRESULT ClipboardManager::PasteSelection()
     ::GlobalUnlock(hData);
     ::CloseClipboard();
 
-    if (entries.empty())
-        return S_FALSE;
+    if (!bValid || entries.empty())
+        return bValid ? S_FALSE : E_FAIL;
 
     // Paste each entry as a grouped undo transaction
     UndoManager* pUndoMgr = m_pAppMain->GetUndoManager();

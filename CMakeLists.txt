@@ -125,3 +125,14 @@ add_subdirectory(src/WLXPhotoSqm)
 add_subdirectory(src/Timeline)
 add_subdirectory(src/Renderer)
 add_subdirectory(src/Playback)
+
+include(CTest)
+
+if(BUILD_TESTING)
+    add_test(NAME sanity_MovieMaker_exe_exists COMMAND
+        ${CMAKE_COMMAND} -E compare_files
+        "$<TARGET_FILE:MovieMaker>" "$<TARGET_FILE:MovieMaker>")
+    add_test(NAME sanity_MovieMakerCore_dll_exists COMMAND
+        ${CMAKE_COMMAND} -E compare_files
+        "$<TARGET_FILE:MovieMakerCore>" "$<TARGET_FILE:MovieMakerCore>")
+endif()

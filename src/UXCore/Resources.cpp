@@ -1,4 +1,6 @@
 #include "Resources.h"
+#include "Element.h"
+#include <ocidl.h>
 
 #ifndef UNREFERENCED_PARAMETER
 #define UNREFERENCED_PARAMETER(p) (void)(p)
@@ -31,11 +33,13 @@ HRESULT CRMStringResource::Load(HINSTANCE hinst, UINT id)
     if (cch <= 0)
     {
         m_str.clear();
-        return HRESULT_FROM_WIN32(GetLastError());
+        DWORD err = GetLastError();
+        if (err == 0) err = ERROR_RESOURCE_NAME_NOT_FOUND;
+        return HRESULT_FROM_WIN32(err);
     }
     m_str.resize(cch);
     LoadStringW(hinst, id, &m_str[0], cch + 1);
-    return (g_CRMStringResource_mark > 0) ? S_OK : E_FAIL;
+    return S_OK;
 }
 
 int CRMStringResource::Length() const
@@ -82,9 +86,19 @@ CRMImage::~CRMImage()
 
 HRESULT CRMImage::LoadFromResource(HINSTANCE hinst, UINT id)
 {
-    UNREFERENCED_PARAMETER(hinst);
-    UNREFERENCED_PARAMETER(id);
-    return (g_CRMImage_mark > 0) ? E_NOTIMPL : S_OK;
+    if (!hinst) return E_INVALIDARG;
+    HBITMAP hbm = static_cast<HBITMAP>(
+        LoadImageW(hinst, MAKEINTRESOURCEW(id), IMAGE_BITMAP, 0, 0, LR_CREATEDIBSECTION));
+    if (!hbm)
+    {
+        DWORD err = GetLastError();
+        if (err == 0) err = ERROR_RESOURCE_NAME_NOT_FOUND;
+        return HRESULT_FROM_WIN32(err);
+    }
+    if (m_hBitmap)
+        DeleteObject(m_hBitmap);
+    m_hBitmap = hbm;
+    return S_OK;
 }
 
 HBITMAP CRMImage::Detach()
@@ -103,7 +117,49 @@ void CRMImage::Attach(HBITMAP hbm)
 
 HRESULT CRMImage::ConvertToARGB()
 {
-    return (g_CRMImage_mark > 0) ? E_NOTIMPL : S_OK;
+    if (!m_hBitmap)
+        return E_UNEXPECTED;
+
+    BITMAP bm;
+    if (!GetObjectW(m_hBitmap, sizeof(bm), &bm))
+        return HRESULT_FROM_WIN32(GetLastError());
+
+    if (bm.bmBitsPixel == 32)
+        return S_OK;
+
+    BITMAPINFO bi = {};
+    bi.bmiHeader.biSize = sizeof(BITMAPINFOHEADER);
+    bi.bmiHeader.biWidth = bm.bmWidth;
+    bi.bmiHeader.biHeight = -bm.bmHeight;
+    bi.bmiHeader.biPlanes = 1;
+    bi.bmiHeader.biBitCount = 32;
+    bi.bmiHeader.biCompression = BI_RGB;
+
+    void* pBits = nullptr;
+    HDC hdcScreen = GetDC(nullptr);
+    HBITMAP hbmNew = CreateDIBSection(hdcScreen, &bi, DIB_RGB_COLORS, &pBits, nullptr, 0);
+    ReleaseDC(nullptr, hdcScreen);
+
+    if (!hbmNew)
+        return HRESULT_FROM_WIN32(GetLastError());
+
+    HDC hdcDst = CreateCompatibleDC(nullptr);
+    HDC hdcSrc = CreateCompatibleDC(nullptr);
+    HGDIOBJ hObjDst = SelectObject(hdcDst, hbmNew);
+    HGDIOBJ hObjSrc = SelectObject(hdcSrc, m_hBitmap);
+
+    SetStretchBltMode(hdcDst, COLORONCOLOR);
+    StretchBlt(hdcDst, 0, 0, bm.bmWidth, bm.bmHeight,
+               hdcSrc, 0, 0, bm.bmWidth, bm.bmHeight, SRCCOPY);
+
+    SelectObject(hdcDst, hObjDst);
+    SelectObject(hdcSrc, hObjSrc);
+    DeleteDC(hdcDst);
+    DeleteDC(hdcSrc);
+
+    DeleteObject(m_hBitmap);
+    m_hBitmap = hbmNew;
+    return S_OK;
 }
 
 // ---------------------------------------------------------------------------
@@ -121,10 +177,73 @@ CRMDUIParser::~CRMDUIParser()
 
 HRESULT CRMDUIParser::Load(HINSTANCE hinst, UINT id, DWORD flags)
 {
-    UNREFERENCED_PARAMETER(hinst);
-    UNREFERENCED_PARAMETER(id);
     UNREFERENCED_PARAMETER(flags);
-    return (g_CRMDUIParser_mark > 0) ? E_NOTIMPL : S_OK;
+    if (!hinst)
+        return E_INVALIDARG;
+
+    HRSRC hRes = FindResourceW(hinst, MAKEINTRESOURCEW(id), L"UIFILE");
+    if (!hRes)
+        hRes = FindResourceW(hinst, MAKEINTRESOURCEW(id), RT_RCDATA);
+    if (!hRes)
+    {
+        DWORD err = GetLastError();
+        if (err == 0) err = ERROR_RESOURCE_NAME_NOT_FOUND;
+        return HRESULT_FROM_WIN32(err);
+    }
+
+    HGLOBAL hData = LoadResource(hinst, hRes);
+    if (!hData)
+        return HRESULT_FROM_WIN32(GetLastError());
+
+    DWORD cbSize = SizeofResource(hinst, hRes);
+    const BYTE* pRaw = static_cast<const BYTE*>(LockResource(hData));
+    if (!pRaw || cbSize == 0)
+    {
+        FreeResource(hData);
+        return E_FAIL;
+    }
+
+    m_uiText.clear();
+
+    if (cbSize >= 2 && pRaw[0] == 0xFF && pRaw[1] == 0xFE)
+    {
+        const wchar_t* pText = reinterpret_cast<const wchar_t*>(pRaw + 2);
+        int cch = static_cast<int>((cbSize - 2) / sizeof(wchar_t));
+        m_uiText.assign(pText, cch);
+    }
+    else if (cbSize >= 3 && pRaw[0] == 0xEF && pRaw[1] == 0xBB && pRaw[2] == 0xBF)
+    {
+        const char* pUtf8 = reinterpret_cast<const char*>(pRaw + 3);
+        int cch = MultiByteToWideChar(CP_UTF8, 0, pUtf8, static_cast<int>(cbSize - 3), nullptr, 0);
+        if (cch > 0)
+        {
+            m_uiText.resize(cch);
+            MultiByteToWideChar(CP_UTF8, 0, pUtf8, static_cast<int>(cbSize - 3), &m_uiText[0], cch);
+        }
+    }
+    else if ((cbSize & 1) == 0)
+    {
+        const wchar_t* pText = reinterpret_cast<const wchar_t*>(pRaw);
+        int cch = static_cast<int>(cbSize / sizeof(wchar_t));
+        m_uiText.assign(pText, cch);
+    }
+    else
+    {
+        const char* pUtf8 = reinterpret_cast<const char*>(pRaw);
+        int cch = MultiByteToWideChar(CP_UTF8, 0, pUtf8, static_cast<int>(cbSize), nullptr, 0);
+        if (cch > 0)
+        {
+            m_uiText.resize(cch);
+            MultiByteToWideChar(CP_UTF8, 0, pUtf8, static_cast<int>(cbSize), &m_uiText[0], cch);
+        }
+    }
+
+    FreeResource(hData);
+
+    if (m_uiText.empty())
+        return E_FAIL;
+
+    return S_OK;
 }
 
 // ---------------------------------------------------------------------------
@@ -173,14 +292,14 @@ STDMETHODIMP IDuiDataSourceImpl::FindConnectionPoint(REFIID riid, IConnectionPoi
     UNREFERENCED_PARAMETER(riid);
     if (!ppCp) return E_POINTER;
     *ppCp = nullptr;
-    return (g_IDuiDataSourceImpl_mark > 0) ? E_NOTIMPL : E_FAIL;
+    return 0x80040202; // CONNECT_E_NOCONNECTION
 }
 
 STDMETHODIMP IDuiDataSourceImpl::EnumConnectionPoints(IEnumConnectionPoints** ppEnum)
 {
     if (!ppEnum) return E_POINTER;
     *ppEnum = nullptr;
-    return (g_IDuiDataSourceImpl_mark > 0) ? E_NOTIMPL : S_OK;
+    return E_NOTIMPL;
 }
 
 int IDuiDataSourceImpl::GetLength() const
@@ -192,22 +311,23 @@ HRESULT IDuiDataSourceImpl::RetrieveItems(int index, int count, void** items)
 {
     UNREFERENCED_PARAMETER(index);
     UNREFERENCED_PARAMETER(count);
-    UNREFERENCED_PARAMETER(items);
-    return (g_IDuiDataSourceImpl_mark > 0) ? E_NOTIMPL : S_OK;
+    if (!items) return E_POINTER;
+    *items = nullptr;
+    return E_INVALIDARG;
 }
 
 HRESULT IDuiDataSourceImpl::AddItems(int index, int count)
 {
     UNREFERENCED_PARAMETER(index);
     UNREFERENCED_PARAMETER(count);
-    return (g_IDuiDataSourceImpl_mark > 0) ? E_NOTIMPL : S_OK;
+    return E_NOTIMPL;
 }
 
 HRESULT IDuiDataSourceImpl::RemoveItems(int index, int count)
 {
     UNREFERENCED_PARAMETER(index);
     UNREFERENCED_PARAMETER(count);
-    return (g_IDuiDataSourceImpl_mark > 0) ? E_NOTIMPL : S_OK;
+    return E_NOTIMPL;
 }
 
 bool IDuiDataSourceImpl::CanModifyList() const
@@ -219,19 +339,19 @@ HRESULT IDuiDataSourceImpl::FireRemoved(int index, int count)
 {
     UNREFERENCED_PARAMETER(index);
     UNREFERENCED_PARAMETER(count);
-    return (g_IDuiDataSourceImpl_mark > 0) ? E_NOTIMPL : S_OK;
+    return S_OK;
 }
 
 HRESULT IDuiDataSourceImpl::FireAdded(int index, int count)
 {
     UNREFERENCED_PARAMETER(index);
     UNREFERENCED_PARAMETER(count);
-    return (g_IDuiDataSourceImpl_mark > 0) ? E_NOTIMPL : S_OK;
+    return S_OK;
 }
 
 HRESULT IDuiDataSourceImpl::FireReset()
 {
-    return (g_IDuiDataSourceImpl_mark > 0) ? E_NOTIMPL : S_OK;
+    return S_OK;
 }
 
 // ---------------------------------------------------------------------------
@@ -241,7 +361,7 @@ static int g_VirtualListView_mark = 1;
 
 HRESULT VirtualListView::Register()
 {
-    return (g_VirtualListView_mark > 0) ? S_OK : E_FAIL;
+    return S_OK;
 }
 
 } // namespace DirectUI
@@ -267,20 +387,28 @@ static int g_GetGadgetRect_mark = 15;
 static int g_GetGadgetSize_mark = 16;
 static int g_GetTopHWNDParent_mark = 17;
 
+static DWORD s_dwTlsLayerManager = TLS_OUT_OF_INDEXES;
+
 extern "C" {
 
 __declspec(dllexport) HMODULE RMFindModuleForResource(HMODULE hMod, UINT id)
 {
-    UNREFERENCED_PARAMETER(hMod);
-    UNREFERENCED_PARAMETER(id);
-    return (g_RMFindModuleForResource_mark > 0) ? hMod : nullptr;
+    if (!hMod) return nullptr;
+    if (FindResourceW(hMod, MAKEINTRESOURCEW(id), RT_STRING) ||
+        FindResourceW(hMod, MAKEINTRESOURCEW(id), RT_RCDATA) ||
+        FindResourceW(hMod, MAKEINTRESOURCEW(id), RT_BITMAP) ||
+        FindResourceW(hMod, MAKEINTRESOURCEW(id), RT_MENU) ||
+        FindResourceW(hMod, MAKEINTRESOURCEW(id), L"UIFILE") ||
+        FindResourceW(hMod, MAKEINTRESOURCEW(id), L"DUI"))
+        return hMod;
+    return nullptr;
 }
 
 __declspec(dllexport) HMODULE RMFindModule(HMODULE hMod, const wchar_t* name)
 {
-    UNREFERENCED_PARAMETER(hMod);
-    UNREFERENCED_PARAMETER(name);
-    return (g_RMFindModule_mark > 0) ? hMod : nullptr;
+    if (!name)
+        return hMod;
+    return GetModuleHandleW(name);
 }
 
 __declspec(dllexport) void RMUpdateResourceSet(HMODULE hMod)
@@ -295,24 +423,25 @@ __declspec(dllexport) int RMLoadString(HINSTANCE hinst, UINT id, wchar_t* buf, i
 
 __declspec(dllexport) BSTR RMLoadStringBSTR(HINSTANCE hinst, UINT id)
 {
-    wchar_t buf[1024];
-    int cch = LoadStringW(hinst, id, buf, 1024);
+    if (!hinst) return nullptr;
+    int cch = LoadStringW(hinst, id, nullptr, 0);
     if (cch <= 0) return nullptr;
-    return SysAllocString(buf);
+    BSTR bstr = SysAllocStringLen(nullptr, cch);
+    if (!bstr) return nullptr;
+    LoadStringW(hinst, id, bstr, cch + 1);
+    return bstr;
 }
 
 __declspec(dllexport) HANDLE RMLoadImage(HINSTANCE hinst, UINT id)
 {
-    UNREFERENCED_PARAMETER(hinst);
-    UNREFERENCED_PARAMETER(id);
-    return (g_RMLoadImage_mark > 0) ? nullptr : INVALID_HANDLE_VALUE;
+    if (!hinst) return nullptr;
+    return LoadImageW(hinst, MAKEINTRESOURCEW(id), IMAGE_BITMAP, 0, 0, LR_CREATEDIBSECTION);
 }
 
 __declspec(dllexport) HMENU RMLoadMenu(HINSTANCE hinst, UINT id)
 {
-    UNREFERENCED_PARAMETER(hinst);
-    UNREFERENCED_PARAMETER(id);
-    return (g_RMLoadMenu_mark > 0) ? nullptr : LoadMenuW(hinst, MAKEINTRESOURCEW(id));
+    if (!hinst) return nullptr;
+    return LoadMenuW(hinst, MAKEINTRESOURCEW(id));
 }
 
 __declspec(dllexport) int StrToID(const wchar_t* str)
@@ -335,36 +464,48 @@ __declspec(dllexport) BOOL PeekMessageEx(MSG* msg, HWND hWnd, UINT msgFilterMin,
 
 __declspec(dllexport) HRESULT LayerManagerInitThread()
 {
-    return (g_LayerManagerInitThread_mark > 0) ? S_OK : E_FAIL;
+    if (s_dwTlsLayerManager == TLS_OUT_OF_INDEXES)
+        s_dwTlsLayerManager = TlsAlloc();
+    if (s_dwTlsLayerManager == TLS_OUT_OF_INDEXES)
+        return E_OUTOFMEMORY;
+    if (!TlsGetValue(s_dwTlsLayerManager))
+        TlsSetValue(s_dwTlsLayerManager, reinterpret_cast<void*>(1));
+    return S_OK;
 }
 
 __declspec(dllexport) void LayerManagerUnInitThread()
 {
+    if (s_dwTlsLayerManager != TLS_OUT_OF_INDEXES)
+        TlsSetValue(s_dwTlsLayerManager, nullptr);
 }
 
 __declspec(dllexport) void* DuiGetLayerManager()
 {
-    return (g_DuiGetLayerManager_mark > 0) ? nullptr : nullptr;
+    return nullptr;
 }
 
 __declspec(dllexport) void* ElementFromGadget(void* hGadget)
 {
-    UNREFERENCED_PARAMETER(hGadget);
-    return (g_ElementFromGadget_mark > 0) ? nullptr : nullptr;
+    return hGadget;
 }
 
 __declspec(dllexport) BOOL GetGadgetRect(void* hGadget, RECT* rc)
 {
-    UNREFERENCED_PARAMETER(hGadget);
     if (rc) SetRectEmpty(rc);
-    return (g_GetGadgetRect_mark > 0) ? FALSE : TRUE;
+    if (!hGadget) return FALSE;
+const DirectUI::Element* el = static_cast<const DirectUI::Element*>(hGadget);
+    if (rc) *rc = el->GetRect();
+    return TRUE;
 }
 
 __declspec(dllexport) BOOL GetGadgetSize(void* hGadget, SIZE* sz)
 {
-    UNREFERENCED_PARAMETER(hGadget);
     if (sz) { sz->cx = 0; sz->cy = 0; }
-    return (g_GetGadgetSize_mark > 0) ? FALSE : TRUE;
+    if (!hGadget) return FALSE;
+    const DirectUI::Element* el = static_cast<const DirectUI::Element*>(hGadget);
+    RECT rc = el->GetRect();
+    if (sz) { sz->cx = rc.right - rc.left; sz->cy = rc.bottom - rc.top; }
+    return TRUE;
 }
 
 __declspec(dllexport) HWND GetTopHWNDParent(HWND hWnd)
@@ -382,6 +523,8 @@ __declspec(dllexport) HWND GetTopHWNDParent(HWND hWnd)
 __declspec(dllexport) void* Internal_GetKeyFocusedElement_HWNDElement(void* hwndElement)
 {
     UNREFERENCED_PARAMETER(hwndElement);
+    if (DirectUI::Element::g_focusedElement)
+        return DirectUI::Element::g_focusedElement;
     return nullptr;
 }
 

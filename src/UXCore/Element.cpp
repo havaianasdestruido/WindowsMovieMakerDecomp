@@ -278,20 +278,54 @@ int Element::GetID()
 // Lifecycle
 void Element::StartDefer()
 {
-    m_deferCount++;
+    if (m_deferCount++ == 0)
+        m_deferPending = true;
 }
 
 HRESULT Element::EndDefer()
 {
-    if (m_deferCount > 0)
-        m_deferCount--;
+    if (m_deferCount == 0)
+        return E_UNEXPECTED;
+    if (--m_deferCount == 0 && m_deferPending)
+    {
+        m_deferPending = false;
+        _UpdateDesiredSize();
+        _UpdateLayoutSize();
+        _UpdateLayoutPosition();
+        Invalidate();
+    }
     return S_OK;
 }
 
 HRESULT Element::EnableElement(bool enable)
 {
-    UNREFERENCED_PARAMETER(enable);
-    return (g_EnableElement_mark > 0) ? S_OK : E_FAIL;
+    Value* cur = GetValue(EnabledProp);
+    bool enabled = (!cur || cur->GetType() != Value::Bool) ? true : cur->GetBool();
+    if (enabled == enable)
+        return S_OK;
+
+    HRESULT hr = SetValue(EnabledProp, enable ? Value::pvBoolTrue : Value::pvBoolFalse);
+    if (FAILED(hr))
+        return hr;
+
+    for (auto* child : m_children)
+    {
+        HRESULT hrChild = child->EnableElement(enable);
+        if (FAILED(hrChild))
+            hr = hrChild;
+    }
+
+    if (m_deferCount > 0)
+    {
+        m_deferPending = true;
+        return hr;
+    }
+
+    _UpdateDesiredSize();
+    _UpdateLayoutSize();
+    _UpdateLayoutPosition();
+    Invalidate();
+    return hr;
 }
 
 // Navigation

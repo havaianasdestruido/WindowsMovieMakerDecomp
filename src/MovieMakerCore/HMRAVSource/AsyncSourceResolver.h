@@ -114,6 +114,7 @@ private:
     CComPtr<IMFSourceResolver>  m_spResolver;
     HANDLE                      m_hResolveThread;
     HANDLE                      m_hResolveEvent;
+    std::atomic<bool>           m_bCancelRequested;
 
     static DWORD WINAPI ResolveThreadProc(LPVOID lpParam);
     HRESULT ResolveOnBackgroundThread();

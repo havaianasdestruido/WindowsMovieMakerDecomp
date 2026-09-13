@@ -4,6 +4,7 @@
 
 #include <windows.h>
 #include <shellapi.h>
+#include <wchar.h>
 
 // WLXPhotoBase forward -- single import from this DLL
 extern "C" void __declspec(dllimport) __stdcall WLXPhotoBase_Init(void);
@@ -34,8 +35,27 @@ int WINAPI WinMain(HINSTANCE /*hInstance*/, HINSTANCE /*hPrevInstance*/,
 {
     OutputDebugStringW(L"[WMMR] WinMain: Entry\n");
 
-    // -- Step 1: Bootstrap WLXPhotoBase (the shared "base" DLL) --
-    HMODULE hPhotoBase = LoadLibraryA("WLXPhotoBase.dll");
+    // -- Step 1: Resolve the application directory once --
+    wchar_t exeDir[MAX_PATH];
+    DWORD len = GetModuleFileNameW(NULL, exeDir, MAX_PATH);
+    if (len == 0 || len >= MAX_PATH)
+    {
+        OutputDebugStringW(L"[WMMR] WinMain: GetModuleFileNameW failed\n");
+        return 1;
+    }
+    wchar_t* slash = wcsrchr(exeDir, L'\\');
+    if (slash != NULL) *(slash + 1) = L'\0';
+
+    const DWORD safeFlags = LOAD_LIBRARY_SEARCH_APPLICATION_DIR |
+                            LOAD_LIBRARY_SEARCH_USER_DIRS |
+                            LOAD_LIBRARY_SEARCH_DEFAULT_DIRS;
+
+    // -- Step 2: Bootstrap WLXPhotoBase (the shared "base" DLL) --
+    wchar_t photoBasePath[MAX_PATH];
+    wcscpy_s(photoBasePath, exeDir);
+    wcscat_s(photoBasePath, L"WLXPhotoBase.dll");
+
+    HMODULE hPhotoBase = LoadLibraryExW(photoBasePath, NULL, safeFlags);
     if (hPhotoBase)
     {
         __try { WLXPhotoBase_Init(); } __except(EXCEPTION_EXECUTE_HANDLER) {
@@ -46,17 +66,16 @@ int WINAPI WinMain(HINSTANCE /*hInstance*/, HINSTANCE /*hPrevInstance*/,
         OutputDebugStringW(L"[WMMR] WinMain: WLXPhotoBase.dll not loaded (optional)\n");
     }
 
-    // -- Step 2: Load MovieMakerCore.dll --
-    HMODULE hCore = LoadLibraryExA(
-        "MovieMakerCore.dll",
-        NULL,
-        0);
+    // -- Step 3: Load MovieMakerCore.dll --
+    wchar_t corePath[MAX_PATH];
+    wcscpy_s(corePath, exeDir);
+    wcscat_s(corePath, L"MovieMakerCore.dll");
+
+    HMODULE hCore = LoadLibraryExW(corePath, NULL, safeFlags);
 
     if (!hCore)
     {
-        hCore = LoadLibraryExA("MovieMakerCore.dll", NULL,
-                               LOAD_LIBRARY_AS_DATAFILE |
-                               LOAD_LIBRARY_SEARCH_SYSTEM32);
+        hCore = LoadLibraryExW(corePath, NULL, LOAD_LIBRARY_AS_DATAFILE);
     }
 
     if (!hCore)
@@ -65,7 +84,7 @@ int WINAPI WinMain(HINSTANCE /*hInstance*/, HINSTANCE /*hPrevInstance*/,
         return 1;
     }
 
-    // -- Step 3: Resolve entry point --
+    // -- Step 4: Resolve entry point --
     auto pfnMain = reinterpret_cast<decltype(&MovieMakerMain)>(
         GetProcAddress(hCore, "MovieMakerMain"));
 
@@ -75,7 +94,7 @@ int WINAPI WinMain(HINSTANCE /*hInstance*/, HINSTANCE /*hPrevInstance*/,
         return 2;
     }
 
-    // -- Step 4: Call with VEH protecting against C++ exceptions --
+    // -- Step 5: Call with VEH protecting against C++ exceptions --
     int ret = 0;
     int argc = 0;
     wchar_t** argv = NULL;
@@ -103,7 +122,7 @@ int WINAPI WinMain(HINSTANCE /*hInstance*/, HINSTANCE /*hPrevInstance*/,
 
     if (veh) RemoveVectoredExceptionHandler(veh);
 
-    // -- Step 5: Shutdown -- release all acquired resources --
+    // -- Step 6: Shutdown -- release all acquired resources --
     if (argv)
     {
         LocalFree(argv);

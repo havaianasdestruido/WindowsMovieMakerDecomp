@@ -62,6 +62,9 @@ public:
     ~CRMDUIParser();
 
     HRESULT Load(HINSTANCE hinst, UINT id, DWORD flags = 0);
+
+private:
+    std::wstring m_uiText;
 };
 
 // ---------------------------------------------------------------------------

@@ -8,6 +8,11 @@
 namespace HMRAVSource
 {
 
+namespace
+{
+const DWORD kCancelWaitTimeoutMs = 5000;
+}
+
 // ============================================================================
 // Construction / Destruction
 // ============================================================================
@@ -17,6 +22,7 @@ AsyncSourceResolver::AsyncSourceResolver()
     , m_hrAsyncResult(S_OK)
     , m_hResolveThread(nullptr)
     , m_hResolveEvent(nullptr)
+    , m_bCancelRequested(false)
 {
 }
 
@@ -89,6 +95,8 @@ HRESULT AsyncSourceResolver::BeginResolve(LPCWSTR pszUrl)
     if (m_hResolveEvent)
         ResetEvent(m_hResolveEvent);
 
+    m_bCancelRequested = false;
+
     m_hResolveThread = CreateThread(
         nullptr,
         0,
@@ -126,15 +134,22 @@ HRESULT AsyncSourceResolver::CancelResolve()
     if (m_state != AsyncResolverResolving)
         return S_OK;
 
+    m_bCancelRequested = true;
+
     if (m_hResolveThread)
     {
-        TerminateThread(m_hResolveThread, 0);
-        CloseHandle(m_hResolveThread);
-        m_hResolveThread = nullptr;
+        DWORD dwWait = WaitForSingleObject(m_hResolveThread, kCancelWaitTimeoutMs);
+        if (dwWait == WAIT_OBJECT_0)
+        {
+            CloseHandle(m_hResolveThread);
+            m_hResolveThread = nullptr;
+            return S_OK;
+        }
     }
 
-    SetState(AsyncResolverIdle);
-    return S_OK;
+    m_hrAsyncResult = E_ABORT;
+    SetState(AsyncResolverError);
+    return E_ABORT;
 }
 
 // ============================================================================
@@ -275,55 +290,75 @@ DWORD WINAPI AsyncSourceResolver::ResolveThreadProc(LPVOID lpParam)
 HRESULT AsyncSourceResolver::ResolveOnBackgroundThread()
 {
     HRESULT hr = S_OK;
+    HRESULT hrCoInit = CoInitializeEx(nullptr, COINIT_MULTITHREADED);
 
-    if (m_spResolver)
+    if (SUCCEEDED(hrCoInit))
     {
-        PROPVARIANT var;
-        PropVariantInit(&var);
-        var.vt = VT_LPWSTR;
-        var.pwszVal = const_cast<LPWSTR>(m_strOriginalUrl.GetString());
-
-        IUnknown* pSource = nullptr;
-        MF_OBJECT_TYPE objectType = MF_OBJECT_UNKNOWN;
-
-        hr = m_spResolver->CreateObjectFromURL(
-            m_strOriginalUrl.GetString(),
-            MF_RESOLUTION_MEDIASOURCE,
-            nullptr,
-            &objectType,
-            &pSource);
-
-        if (SUCCEEDED(hr) && pSource)
+        if (m_bCancelRequested)
         {
-            hr = pSource->QueryInterface(IID_PPV_ARGS(&m_spResolvedSource));
-            pSource->Release();
+            m_hrAsyncResult = E_ABORT;
+            SetState(AsyncResolverError);
+        }
+        else if (m_spResolver)
+        {
+            PROPVARIANT var;
+            PropVariantInit(&var);
+            var.vt = VT_LPWSTR;
+            var.pwszVal = const_cast<LPWSTR>(m_strOriginalUrl.GetString());
 
-            if (SUCCEEDED(hr))
+            IUnknown* pSource = nullptr;
+            MF_OBJECT_TYPE objectType = MF_OBJECT_UNKNOWN;
+
+            hr = m_spResolver->CreateObjectFromURL(
+                m_strOriginalUrl.GetString(),
+                MF_RESOLUTION_MEDIASOURCE,
+                nullptr,
+                &objectType,
+                &pSource);
+
+            if (SUCCEEDED(hr) && pSource)
             {
-                m_strResolvedUrl = m_strOriginalUrl;
-                m_resolvedInfo.strResolvedUrl = m_strResolvedUrl;
-                m_resolvedInfo.strMimeType = L"unknown";
+                hr = pSource->QueryInterface(IID_PPV_ARGS(&m_spResolvedSource));
+                pSource->Release();
 
-                m_hrAsyncResult = S_OK;
-                SetState(AsyncResolverResolved);
+                if (SUCCEEDED(hr))
+                {
+                    m_strResolvedUrl = m_strOriginalUrl;
+                    m_resolvedInfo.strResolvedUrl = m_strResolvedUrl;
+                    m_resolvedInfo.strMimeType = L"unknown";
+
+                    m_hrAsyncResult = S_OK;
+                    SetState(AsyncResolverResolved);
+                }
+                else
+                {
+                    m_hrAsyncResult = hr;
+                    SetState(AsyncResolverError);
+                }
             }
             else
             {
                 m_hrAsyncResult = hr;
                 SetState(AsyncResolverError);
             }
+
+            PropVariantClear(&var);
         }
         else
         {
-            m_hrAsyncResult = hr;
+            m_hrAsyncResult = E_UNEXPECTED;
             SetState(AsyncResolverError);
         }
-
-        PropVariantClear(&var);
     }
     else
     {
-        m_hrAsyncResult = E_UNEXPECTED;
+        m_hrAsyncResult = hrCoInit;
+        SetState(AsyncResolverError);
+    }
+
+    if (m_bCancelRequested)
+    {
+        m_hrAsyncResult = E_ABORT;
         SetState(AsyncResolverError);
     }
 
@@ -332,6 +367,9 @@ HRESULT AsyncSourceResolver::ResolveOnBackgroundThread()
 
     if (m_completeCb)
         m_completeCb(m_hrAsyncResult, m_resolvedInfo);
+
+    if (SUCCEEDED(hrCoInit))
+        CoUninitialize();
 
     return m_hrAsyncResult;
 }

@@ -679,10 +679,11 @@ void Thread::Stop(DWORD dwTimeoutMs)
 
     m_fStopRequested = true;
 
-    if (::WaitForSingleObject(m_hThread, dwTimeoutMs) == WAIT_TIMEOUT)
+    if (::WaitForSingleObject(m_hThread, dwTimeoutMs) == WAIT_OBJECT_0)
     {
-        // Thread did not exit in time - force termination
-        ::TerminateThread(m_hThread, 1);
+        ::CloseHandle(m_hThread);
+        m_hThread = NULL;
+        m_fRunning = false;
     }
 }
 

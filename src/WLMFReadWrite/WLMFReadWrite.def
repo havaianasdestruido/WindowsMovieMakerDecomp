@@ -2,3 +2,10 @@ LIBRARY WLMFReadWrite
 EXPORTS
     DllCanUnloadNow
     DllGetClassObject
+    _MFReader_Close@4 @3
+    _MFReader_GetProperties@8 @4
+    _MFReader_Open@4 @5
+    _MFReader_ReadFrame@24 @6
+    _MFWriter_Create@8 @7
+    _MFWriter_Finalize@4 @8
+    _MFWriter_WriteFrame@20 @9

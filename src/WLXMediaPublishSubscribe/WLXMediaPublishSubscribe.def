@@ -4,3 +4,24 @@ EXPORTS
     DllGetClassObject
     DllRegisterServer
     DllUnregisterServer
+    _PublishManager_Authenticate@12
+    _PublishManager_Cancel@4
+    _PublishManager_Cleanup@0
+    _PublishManager_Create@0
+    _PublishManager_Destroy@4
+    _PublishManager_EnumerateTargets@12
+    _PublishManager_GetAccountInfo@16
+    _PublishManager_GetDefaultTarget@8
+    _PublishManager_GetResult@8
+    _PublishManager_GetServiceStatus@8
+    _PublishManager_GetStatus@12
+    _PublishManager_GetSubscribeStatus@12
+    _PublishManager_GetTargetName@12
+    _PublishManager_IsAuthenticated@12
+    _PublishManager_RefreshToken@8
+    _PublishManager_SetCompleteCallback@12
+    _PublishManager_SetDefaultTarget@8
+    _PublishManager_SetProgressCallback@12
+    _PublishManager_SignOut@8
+    _PublishManager_StartPublish@16
+    _PublishManager_StartSubscribe@12

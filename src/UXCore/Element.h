@@ -166,6 +166,7 @@ protected:
     Value* m_dataContext = nullptr;
     int m_layer = 0;
     int m_deferCount = 0;
+    bool m_deferPending = false;
     RECT m_rect = {};        // Bounding rectangle (position + size)
     bool m_visible = true;   // Visibility flag
     bool m_dirty = true;     // Needs repaint

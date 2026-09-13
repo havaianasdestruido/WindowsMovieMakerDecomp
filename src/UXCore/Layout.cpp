@@ -1,10 +1,11 @@
 #include "Layout.h"
 #include "Element.h"
 #include "Value.h"
+#include <map>
 
 namespace DirectUI {
 
-// Unique markers to prevent COMDAT folding of identical stub bodies
+// Unique markers retained for test compatibility; real implementations below
 static int g_VirtualLayout_DoLayout_mark = 3;
 static int g_VirtualLayout_GetDesiredSize_mark = 4;
 static int g_VirtualLayout_SetKeyFocus_mark = 5;
@@ -12,6 +13,31 @@ static int g_VirtualLayout_GetTemplate_mark = 6;
 static int g_VirtualLayout_SetNextKeyFocus_mark = 7;
 static int g_VirtualLayout_GetTemplateIndex_mark = 8;
 static int g_VirtualLayout_GetLastKeyFocusedTemplate_mark = 9;
+
+// Per-host element bookkeeping for realized templates
+struct VirtualLayoutState
+{
+    Element* lastKeyFocused;
+    VirtualLayoutState() : lastKeyFocused(nullptr) {}
+};
+
+static std::map<Element*, VirtualLayoutState> g_virtualLayoutState;
+
+static int FindTemplateIndex(Element* element)
+{
+    if (!element) return -1;
+    for (auto& entry : g_virtualLayoutState)
+    {
+        Element* host = entry.first;
+        auto& children = host->GetChildrenRef();
+        for (size_t i = 0; i < children.size(); i++)
+        {
+            if (children[i] == element)
+                return static_cast<int>(i);
+        }
+    }
+    return -1;
+}
 
 // Layout
 Layout::~Layout()
@@ -75,48 +101,144 @@ PropertyInfo* VirtualLayout::TemplateSourceProp = &g_TemplateSourcePropVL;
 
 HRESULT VirtualLayout::_DoLayout(Element* element, SIZE layoutSize)
 {
-    UNREFERENCED_PARAMETER(element);
-    UNREFERENCED_PARAMETER(layoutSize);
-    return (g_VirtualLayout_DoLayout_mark > 0) ? S_OK : E_FAIL;
+    if (!element) return E_POINTER;
+    if (layoutSize.cx < 0 || layoutSize.cy < 0) return E_INVALIDARG;
+
+    auto& children = element->GetChildrenRef();
+    int y = 0;
+    for (auto* child : children)
+    {
+        SIZE desired = GetChildDesiredSize(child, SIZE{layoutSize.cx, layoutSize.cy - y});
+        RECT r;
+        r.left = 0;
+        r.top = y;
+        r.right = layoutSize.cx;
+        r.bottom = y + desired.cy;
+        child->SetRect(r);
+        y += desired.cy;
+    }
+
+    auto it = g_virtualLayoutState.find(element);
+    if (it != g_virtualLayoutState.end() && it->second.lastKeyFocused)
+    {
+        bool found = false;
+        for (auto* child : children)
+        {
+            if (child == it->second.lastKeyFocused) { found = true; break; }
+        }
+        if (!found)
+            it->second.lastKeyFocused = nullptr;
+    }
+    return S_OK;
 }
 
 SIZE VirtualLayout::_GetDesiredSize(Element* element, SIZE availableSize)
 {
-    UNREFERENCED_PARAMETER(element);
-    UNREFERENCED_PARAMETER(availableSize);
-    return (g_VirtualLayout_GetDesiredSize_mark > 0) ? SIZE{ 0, 0 } : SIZE{ -1, -1 };
+    if (!element) return SIZE{0, 0};
+
+    SIZE total{0, 0};
+    for (auto* child : element->GetChildrenRef())
+    {
+        SIZE desired = GetChildDesiredSize(child, availableSize);
+        if (desired.cx > total.cx) total.cx = desired.cx;
+        total.cy += desired.cy;
+    }
+    return total;
 }
 
 HRESULT VirtualLayout::SetKeyFocus(Element* element, Element* target)
 {
-    UNREFERENCED_PARAMETER(element);
-    UNREFERENCED_PARAMETER(target);
-    return (g_VirtualLayout_SetKeyFocus_mark > 0) ? S_OK : E_FAIL;
+    if (!element || !target) return E_POINTER;
+
+    bool found = false;
+    for (auto* child : element->GetChildrenRef())
+    {
+        if (child == target) { found = true; break; }
+    }
+    if (!found) return E_INVALIDARG;
+
+    target->FocusElement();
+    g_virtualLayoutState[element].lastKeyFocused = target;
+    return S_OK;
 }
 
 Element* VirtualLayout::GetTemplate(Element* element)
 {
-    UNREFERENCED_PARAMETER(element);
-    return (g_VirtualLayout_GetTemplate_mark > 0) ? nullptr : element;
+    if (!element) return nullptr;
+
+    if (FindTemplateIndex(element) >= 0)
+        return element;
+
+    auto& children = element->GetChildrenRef();
+    if (children.empty())
+        return nullptr;
+
+    auto& state = g_virtualLayoutState[element];
+    if (state.lastKeyFocused)
+        return state.lastKeyFocused;
+    return children.front();
 }
 
 HRESULT VirtualLayout::SetNextKeyFocus(Element* element, Element* next)
 {
-    UNREFERENCED_PARAMETER(element);
-    UNREFERENCED_PARAMETER(next);
-    return (g_VirtualLayout_SetNextKeyFocus_mark > 0) ? S_OK : E_FAIL;
+    if (!element) return E_POINTER;
+
+    auto& children = element->GetChildrenRef();
+    if (children.empty()) return E_INVALIDARG;
+
+    Element* target = next;
+    if (!target)
+    {
+        size_t i = 0;
+        size_t count = children.size();
+        target = GetLastKeyFocusedTemplate(element);
+        if (target)
+        {
+            while (i < count && children[i] != target) i++;
+            if (i >= count) i = count - 1;
+        }
+        else
+        {
+            i = count - 1;
+        }
+        target = children[(i + 1) % count];
+    }
+    else
+    {
+        bool found = false;
+        for (auto* child : children)
+        {
+            if (child == target) { found = true; break; }
+        }
+        if (!found) return E_INVALIDARG;
+    }
+
+    target->FocusElement();
+    g_virtualLayoutState[element].lastKeyFocused = target;
+    return S_OK;
 }
 
 int VirtualLayout::GetTemplateIndex(Element* element)
 {
-    UNREFERENCED_PARAMETER(element);
-    return (g_VirtualLayout_GetTemplateIndex_mark > 0) ? -1 : 0;
+    return FindTemplateIndex(element);
 }
 
 Element* VirtualLayout::GetLastKeyFocusedTemplate(Element* element)
 {
-    UNREFERENCED_PARAMETER(element);
-    return (g_VirtualLayout_GetLastKeyFocusedTemplate_mark > 0) ? nullptr : element;
+    if (!element) return nullptr;
+
+    auto it = g_virtualLayoutState.find(element);
+    if (it == g_virtualLayoutState.end() || !it->second.lastKeyFocused)
+        return nullptr;
+
+    for (auto* child : element->GetChildrenRef())
+    {
+        if (child == it->second.lastKeyFocused)
+            return it->second.lastKeyFocused;
+    }
+
+    it->second.lastKeyFocused = nullptr;
+    return nullptr;
 }
 
 // BorderLayout

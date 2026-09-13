@@ -1,3 +1,4 @@
 LIBRARY WLXPipeline
 EXPORTS
     DllRegisterServer
+    _GetPipelineCreateFunctions@8

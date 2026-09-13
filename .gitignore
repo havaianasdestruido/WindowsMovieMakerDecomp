@@ -52,3 +52,5 @@ build_output*.txt
 common_new.h
 fix_locked.bat
 fix_locked.vbs
+python32/
+# Embedded Python 3.11.9 (downloaded test tool)

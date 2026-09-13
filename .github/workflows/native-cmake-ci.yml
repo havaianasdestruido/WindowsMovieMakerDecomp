@@ -1,0 +1,44 @@
+name: native-cmake-ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  build-test:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup MSVC (MSBuild)
+        uses: microsoft/setup-msbuild@v2
+
+      - name: Configure (Visual Studio 17 2022, Win32)
+        shell: pwsh
+        run: cmake -S . -B build -G "Visual Studio 17 2022" -A Win32
+
+      - name: Build Debug
+        shell: pwsh
+        run: |
+          cmake --build build --config Debug 2>&1 | Tee-Object -FilePath build.log
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+      - name: Test (ctest)
+        shell: pwsh
+        run: |
+          ctest --test-dir build -C Debug --output-on-failure 2>&1 | Tee-Object -FilePath ctest.log
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+      - name: Upload build/test logs
+        uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: native-cmake-ci-logs
+          path: |
+            build.log
+            ctest.log
+            build/Testing/Temporary/LastTest.log
+          if-no-files-found: ignore

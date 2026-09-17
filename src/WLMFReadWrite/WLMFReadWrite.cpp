@@ -580,7 +580,11 @@ extern "C"
 
 STDAPI DllCanUnloadNow()
 {
-    return S_FALSE;
+    // No outstanding COM objects are ever handed out (DllGetClassObject
+    // returns CLASS_E_CLASSNOTAVAILABLE), so the DLL is always safe to
+    // unload.  S_OK matches the reference binary; the earlier S_FALSE was
+    // a leftover stub value.
+    return S_OK;
 }
 
 STDAPI DllGetClassObject(REFCLSID rclsid, REFIID riid, LPVOID* ppv)

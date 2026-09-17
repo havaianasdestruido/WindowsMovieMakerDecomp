@@ -249,6 +249,9 @@ void GroupNodeImpl::Shutdown()
 
 void GroupNodeImpl::Traverse(std::function<void(X3DChildNodeImpl*, int)> visitor, int depth)
 {
+    if (depth >= kMaxTraverseDepth)
+        return;
+
     visitor(this, depth);
     UINT count = GetGroupChildCount();
     for (UINT i = 0; i < count; ++i)
@@ -303,6 +306,9 @@ X3DChildNodeImpl* SwitchNodeImpl::GetActiveChild() const
 
 void SwitchNodeImpl::TraverseActive(std::function<void(X3DChildNodeImpl*, int)> visitor, int depth)
 {
+    if (depth >= kMaxTraverseDepth)
+        return;
+
     X3DChildNodeImpl* active = GetActiveChild();
     if (active)
     {

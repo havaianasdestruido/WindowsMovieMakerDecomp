@@ -271,13 +271,17 @@ private:
         if (needed > cbData)
             return;
 
-        UINT32 totalSamples = 0;
+        UINT64 totalSamples64 = 0;
         UINT64 offset = 8;
         for (UINT32 i = 0; i < entryCount; i++)
         {
-            totalSamples += ReadBE32(pData + offset);
+            totalSamples64 += ReadBE32(pData + offset);
             offset += 8;
         }
+
+        // Guard against count overflow in a hostile stts box.
+        UINT32 totalSamples = (totalSamples64 > 0xFFFFFFFFull)
+            ? 0xFFFFFFFFu : (UINT32)totalSamples64;
 
         if (totalSamples > 0)
             m_uSampleCount = totalSamples;
@@ -507,6 +511,10 @@ public:
                 break;
             case kBoxTrak:
             {
+                // Cap the number of tracks accepted from an untrusted file
+                // so a malicious moov cannot cause unbounded allocation.
+                if (m_traks.size() >= 1024)
+                    break;
                 TrakBox trak;
                 trak.Parse(const_cast<BYTE*>(pPayload), cbPayload);
                 m_traks.push_back(trak);

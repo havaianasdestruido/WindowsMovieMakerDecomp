@@ -27,12 +27,14 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD dwReason, LPVOID lpReserved)
         g_hModule = hModule;
         DisableThreadLibraryCalls(hModule);
 
-        // COM required for DirectShow filter graph operations
+        // COM required for DirectShow filter graph operations. COM may
+        // already be initialized on this thread in a different concurrency
+        // mode (RPC_E_CHANGED_MODE) - do not abort DLL load in that case;
+        // the factories only need CoInitializeEx(COINIT_MULTITHREADED)
+        // lazy init which the MF client performs on demand.
         HRESULT hr = CoInitializeEx(NULL, COINIT_APARTMENTTHREADED | COINIT_DISABLE_OLE1DDE);
         if (SUCCEEDED(hr)) {
             g_bComInit = true;
-        } else {
-            return FALSE; // abort load on COM init failure
         }
 
         break;

@@ -13,6 +13,103 @@
 
 #include "PSAStub.h"
 #include <shlobj.h>
+#include <wincrypt.h>
+
+// ============================================================================
+// DPAPI helpers: tokens are persisted to %LOCALAPPDATA%\...\auth.dat as a
+// single blob encrypted with CryptProtectData (current-user scope). Plaintext
+// credentials never touch the disk directly.
+// ============================================================================
+
+namespace
+{
+    // Magic + version guard for the persisted auth store file.
+    const DWORD kAuthStoreMagic = 0x574C4D52; // 'WLMR'
+    const DWORD kAuthStoreVersion = 1;
+
+    struct AuthStoreHeader
+    {
+        DWORD dwMagic;
+        DWORD dwVersion;
+        DWORD dwDataSize;
+    };
+
+    // Serialize the token table to an opaque byte vector (UTF-16 lengths +
+    // payload per entry, length-prefixed to avoid ambiguities).
+    std::vector<BYTE> SerializeTokens(const std::vector<PSAAuthenticationStore::TokenEntry>& tokens)
+    {
+        std::vector<BYTE> blob;
+        const DWORD dwCount = static_cast<DWORD>(tokens.size());
+        const BYTE* pCount = reinterpret_cast<const BYTE*>(&dwCount);
+        blob.insert(blob.end(), pCount, pCount + sizeof(dwCount));
+
+        for (const auto& token : tokens)
+        {
+            const std::wstring fields[] = {
+                token.strServiceName.GetString(),
+                token.strTokenName.GetString(),
+                token.strTokenValue.GetString()
+            };
+            for (const auto& field : fields)
+            {
+                const DWORD dwLen = static_cast<DWORD>(field.size());
+                const BYTE* pLen = reinterpret_cast<const BYTE*>(&dwLen);
+                blob.insert(blob.end(), pLen, pLen + sizeof(dwLen));
+                const BYTE* pData = reinterpret_cast<const BYTE*>(field.c_str());
+                blob.insert(blob.end(), pData, pData + dwLen * sizeof(wchar_t));
+            }
+        }
+        return blob;
+    }
+
+    bool DeserializeTokens(const std::vector<BYTE>& blob,
+        std::vector<PSAAuthenticationStore::TokenEntry>& tokens)
+    {
+        size_t pos = 0;
+        if (blob.size() < sizeof(DWORD))
+            return false;
+
+        DWORD dwCount = 0;
+        memcpy(&dwCount, blob.data(), sizeof(dwCount));
+        pos += sizeof(dwCount);
+
+        // Bounded token count: refuse absurd tables.
+        if (dwCount > 4096)
+            return false;
+
+        tokens.clear();
+        tokens.reserve(dwCount);
+
+        for (DWORD i = 0; i < dwCount; ++i)
+        {
+            PSAAuthenticationStore::TokenEntry entry;
+            std::wstring fields[3];
+            for (size_t f = 0; f < 3; ++f)
+            {
+                if (blob.size() - pos < sizeof(DWORD))
+                    return false;
+
+                DWORD dwLen = 0;
+                memcpy(&dwLen, blob.data() + pos, sizeof(dwLen));
+                pos += sizeof(dwLen);
+
+                // String length sanity guard against corrupted/hostile data.
+                if (dwLen > 65536 || blob.size() - pos < static_cast<size_t>(dwLen) * sizeof(wchar_t))
+                    return false;
+
+                fields[f].assign(
+                    reinterpret_cast<const wchar_t*>(blob.data() + pos), dwLen);
+                pos += static_cast<size_t>(dwLen) * sizeof(wchar_t);
+            }
+
+            entry.strServiceName = fields[0].c_str();
+            entry.strTokenName = fields[1].c_str();
+            entry.strTokenValue = fields[2].c_str();
+            tokens.push_back(entry);
+        }
+        return true;
+    }
+} // namespace
 
 // ============================================================================
 // PSAAuthenticationStore implementation
@@ -197,10 +294,56 @@ HRESULT PSAAuthenticationStore::Save()
     if (m_strStoragePath.IsEmpty())
         return E_UNEXPECTED;
 
-    // In the full implementation, this would encrypt and persist tokens
-    // to the storage file using DPAPI or Credential Manager.
+    const std::vector<BYTE> plain = SerializeTokens(m_tokens);
+    if (plain.empty())
+    {
+        // Nothing to persist; remove any stale auth file.
+        ::DeleteFileW(m_strStoragePath);
+        return S_OK;
+    }
 
-    return S_OK;
+    DATA_BLOB in = {};
+    in.pbData = const_cast<BYTE*>(plain.data());
+    in.cbData = static_cast<DWORD>(plain.size());
+
+    DATA_BLOB out = {};
+    if (!::CryptProtectData(&in, L"WindowsLiveAuthenticationStore", nullptr,
+        nullptr, nullptr, CRYPTPROTECT_UI_FORBIDDEN, &out))
+    {
+        return HRESULT_FROM_WIN32(::GetLastError());
+    }
+
+    HRESULT hr = E_FAIL;
+
+    HANDLE hFile = ::CreateFileW(m_strStoragePath, GENERIC_WRITE, 0, nullptr,
+        CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, nullptr);
+    if (hFile == INVALID_HANDLE_VALUE)
+    {
+        hr = HRESULT_FROM_WIN32(::GetLastError());
+    }
+    else
+    {
+        AuthStoreHeader header = {};
+        header.dwMagic = kAuthStoreMagic;
+        header.dwVersion = kAuthStoreVersion;
+        header.dwDataSize = out.cbData;
+
+        DWORD dwWritten = 0;
+        BOOL bOk = ::WriteFile(hFile, &header, sizeof(header), &dwWritten, nullptr);
+        if (bOk && dwWritten == sizeof(header))
+        {
+            bOk = ::WriteFile(hFile, out.pbData, out.cbData, &dwWritten, nullptr);
+            if (bOk && dwWritten == out.cbData)
+                hr = S_OK;
+        }
+        if (FAILED(hr))
+            hr = HRESULT_FROM_WIN32(::GetLastError());
+
+        ::CloseHandle(hFile);
+    }
+
+    ::LocalFree(out.pbData);
+    return hr;
 }
 
 HRESULT PSAAuthenticationStore::Load()
@@ -209,5 +352,49 @@ HRESULT PSAAuthenticationStore::Load()
         return E_UNEXPECTED;
 
     m_tokens.clear();
-    return S_OK;
+
+    HANDLE hFile = ::CreateFileW(m_strStoragePath, GENERIC_READ, FILE_SHARE_READ,
+        nullptr, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, nullptr);
+    if (hFile == INVALID_HANDLE_VALUE)
+    {
+        // First run or no persisted store: treat as clean state.
+        return S_OK;
+    }
+
+    HRESULT hr = E_FAIL;
+
+    AuthStoreHeader header = {};
+    DWORD dwRead = 0;
+    if (::ReadFile(hFile, &header, sizeof(header), &dwRead, nullptr) &&
+        dwRead == sizeof(header) &&
+        header.dwMagic == kAuthStoreMagic &&
+        header.dwVersion == kAuthStoreVersion &&
+        header.dwDataSize > 0 &&
+        header.dwDataSize <= 64 * 1024 * 1024)
+    {
+        std::vector<BYTE> encrypted(header.dwDataSize);
+        if (::ReadFile(hFile, encrypted.data(), header.dwDataSize, &dwRead, nullptr) &&
+            dwRead == header.dwDataSize)
+        {
+            DATA_BLOB in = {};
+            in.pbData = encrypted.data();
+            in.cbData = header.dwDataSize;
+
+            DATA_BLOB out = {};
+            if (::CryptUnprotectData(&in, nullptr, nullptr, nullptr, nullptr,
+                CRYPTPROTECT_UI_FORBIDDEN, &out))
+            {
+                std::vector<BYTE> plain(out.pbData, out.pbData + out.cbData);
+                hr = DeserializeTokens(plain, m_tokens) ? S_OK : E_FAIL;
+                ::LocalFree(out.pbData);
+            }
+            else
+            {
+                hr = HRESULT_FROM_WIN32(::GetLastError());
+            }
+        }
+    }
+
+    ::CloseHandle(hFile);
+    return hr;
 }

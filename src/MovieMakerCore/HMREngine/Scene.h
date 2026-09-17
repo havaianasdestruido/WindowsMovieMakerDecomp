@@ -126,6 +126,8 @@ namespace HMREngine
 
         void TraverseNode(X3DChildNode* node, int depth, std::function<void(X3DChildNode*, int)>& visitor);
         void RenderNode(X3DChildNode* node);
+
+        static const int kMaxTraversalDepth = 512;
     };
 
     OBJECT_ENTRY_AUTO(__uuidof(Scene), Scene)

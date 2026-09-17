@@ -99,10 +99,14 @@ namespace HMREngine
         }
     }
 
-    void Scene::TraverseNode(X3DChildNode* node, int depth,
+void Scene::TraverseNode(X3DChildNode* node, int depth,
         std::function<void(X3DChildNode*, int)>& visitor)
     {
         if (!node) return;
+
+        // Guard against stack exhaustion from a hostile deeply-nested graph.
+        if (depth >= kMaxTraversalDepth)
+            return;
 
         visitor(node, depth);
 

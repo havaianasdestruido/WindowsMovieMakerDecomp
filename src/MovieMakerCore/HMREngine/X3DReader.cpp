@@ -199,8 +199,10 @@ namespace HMREngine
             return false;
         };
 
-        std::function<void()> parseObject;
-        parseObject = [&]() {
+        std::function<void(int)> parseObject;
+        parseObject = [&](int depth) {
+            if (depth >= static_cast<int>(X3DParseContext::kMaxNestingDepth))
+                return;
             skipWhitespace();
             if (!expect('{')) return;
             while (pos < content.size()) {
@@ -216,10 +218,10 @@ namespace HMREngine
                         X3DChildNode* parent = ctx.GetCurrentNode();
                         if (parent) parent->AddChild(child);
                         ctx.PushNode(child);
-                        parseObject();
+                        parseObject(depth + 1);
                         ctx.PopNode();
                     } else {
-                        parseObject();
+                        parseObject(depth + 1);
                     }
                 } else if (content[pos] == '[') {
                     pos++;
@@ -251,7 +253,7 @@ namespace HMREngine
             }
         };
 
-        parseObject();
+        parseObject(0);
         return S_OK;
     }
 

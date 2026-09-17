@@ -330,7 +330,7 @@ HRESULT CMRUSite::LoadFromRegistry(LPCWSTR pszRegKey)
     if (lRes != ERROR_SUCCESS || dwType != REG_DWORD)
     {
         RegCloseKey(hKey);
-        return S_FALSE;
+        return (lRes != ERROR_SUCCESS) ? HRESULT_FROM_WIN32(lRes) : E_FAIL;
     }
 
     // Read each MRU item

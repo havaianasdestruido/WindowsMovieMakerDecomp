@@ -18,6 +18,11 @@ namespace HMREngine
         std::vector<X3DChildNode*> nodeStack;
         std::string currentProto;
         std::string basePath;
+        size_t nodeCount = 0;
+
+        // Resource limits for untrusted scene data.
+        static const size_t kMaxNestingDepth = 512;
+        static const size_t kMaxNodeCount    = 100000;
 
         X3DChildNode* GetCurrentNode() const
         {
@@ -26,12 +31,25 @@ namespace HMREngine
 
         void PushNode(X3DChildNode* node)
         {
+            if (nodeStack.size() >= kMaxNestingDepth || nodeCount >= kMaxNodeCount)
+                return;
+            nodeCount++;
             nodeStack.push_back(node);
         }
 
         void PopNode()
         {
             if (!nodeStack.empty()) nodeStack.pop_back();
+        }
+
+        bool IsDepthExceeded() const
+        {
+            return nodeStack.size() >= kMaxNestingDepth;
+        }
+
+        bool IsNodeCountExceeded() const
+        {
+            return nodeCount >= kMaxNodeCount;
         }
     };
 

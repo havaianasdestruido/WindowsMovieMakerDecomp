@@ -95,21 +95,25 @@ void EnumerateNodes::StartEnumeration(X3DChildNode* rootNode)
     m_complete = false;
 
     if (rootNode)
-        EnumerateRecursive(rootNode);
+        EnumerateRecursive(rootNode, 0);
 
     m_complete = true;
 }
 
-void EnumerateNodes::EnumerateRecursive(X3DChildNode* node)
+void EnumerateNodes::EnumerateRecursive(X3DChildNode* node, unsigned depth)
 {
     if (!node) return;
+
+    // Guard against stack exhaustion from a hostile deeply-nested graph.
+    if (depth >= kMaxEnumerationDepth)
+        return;
 
     m_nodes.push_back(node);
 
     for (size_t i = 0; i < node->GetNumChildren(); ++i)
     {
         X3DChildNode* child = node->GetChild(i);
-        EnumerateRecursive(child);
+        EnumerateRecursive(child, depth + 1);
     }
 }
 

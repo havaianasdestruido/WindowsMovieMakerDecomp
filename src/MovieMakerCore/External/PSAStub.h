@@ -30,6 +30,11 @@
 // (YouTube, Facebook, SkyDrive). Provides secure storage and retrieval of
 // OAuth tokens, session secrets, and service credentials.
 //
+// Persistence: Save()/Load() round-trip the token table to a file under
+// %LOCALAPPDATA%\Microsoft\WL\MovieMaker\auth.dat as a single DPAPI-encrypted
+// blob (CryptProtectData, current-user scope). Credentials never touch the
+// disk in plaintext.
+//
 class PSAAuthenticationStore
 {
 public:
@@ -58,7 +63,6 @@ public:
     HRESULT Save();
     HRESULT Load();
 
-private:
     struct TokenEntry
     {
         ATL::CString strServiceName;
@@ -66,6 +70,7 @@ private:
         ATL::CString strTokenValue;
     };
 
+private:
     std::vector<TokenEntry> m_tokens;
     ATL::CString            m_strStoragePath;
 };

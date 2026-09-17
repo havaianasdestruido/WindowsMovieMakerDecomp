@@ -164,6 +164,7 @@ target_link_libraries(${TARGET} PRIVATE
     advapi32
     shell32
     shlwapi
+    crypt32
     ole32
     oleaut32
     gdiplus

@@ -223,6 +223,9 @@ X3DChildNodeImpl* X3DChildNodeImpl::GetChild(UINT index) const
 
 void X3DChildNodeImpl::Traverse(std::function<void(X3DChildNodeImpl*, int)> visitor, int depth)
 {
+    if (depth >= kMaxTraverseDepth)
+        return;
+
     visitor(this, depth);
     for (UINT i = 0; i < GetNumChildren(); ++i)
     {

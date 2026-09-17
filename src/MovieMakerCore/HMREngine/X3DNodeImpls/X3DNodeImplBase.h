@@ -166,6 +166,7 @@ namespace HMREngine
         virtual void Traverse(std::function<void(X3DChildNodeImpl*, int)> visitor, int depth = 0);
 
     protected:
+        static const int kMaxTraverseDepth = 512;
         X3DChildNode* m_childNode = nullptr;
         bool m_visible = true;
         X3DChildNodeImpl* m_parent = nullptr;

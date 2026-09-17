@@ -388,7 +388,7 @@ HRESULT ClipboardManager::PasteSelection()
     if (!hData)
     {
         ::CloseClipboard();
-        return S_FALSE;
+        return E_FAIL;
     }
 
     BYTE* pSrc = static_cast<BYTE*>(::GlobalLock(hData));

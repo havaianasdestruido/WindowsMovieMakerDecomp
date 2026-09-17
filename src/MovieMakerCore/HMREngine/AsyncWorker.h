@@ -81,7 +81,8 @@ namespace HMREngine
         std::vector<X3DChildNode*> m_nodes;
         std::atomic<bool> m_complete{ false };
 
-        void EnumerateRecursive(X3DChildNode* node);
+        static const unsigned kMaxEnumerationDepth = 512;
+        void EnumerateRecursive(X3DChildNode* node, unsigned depth);
     };
 
     // --- ImageLoaderWrapper: Wrapper for async image loading ---

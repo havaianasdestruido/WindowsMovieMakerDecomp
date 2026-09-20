@@ -1,5 +1,16 @@
 # WindowsMovieMakerDecomp
 
+## Star History
+
+<a href="https://www.star-history.com/?repos=havaianasdestruido%2FWindowsMovieMakerDecomp&type=date&legend=top-left">
+ <picture>
+   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/chart?repos=havaianasdestruido/WindowsMovieMakerDecomp&type=date&theme=dark&legend=top-left" />
+   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/chart?repos=havaianasdestruido/WindowsMovieMakerDecomp&type=date&legend=top-left" />
+   <img alt="Star History Chart" src="https://api.star-history.com/chart?repos=havaianasdestruido/WindowsMovieMakerDecomp&type=date&legend=top-left" />
+ </picture>
+</a>
+
+
 Full decompilation/recreation of **Microsoft Windows Live Movie Maker 2012**
 (codename Sundance, 16.4.3528.0331), extracted from a 2012 Live Essentials
 setup and rebuilt from binary analysis as C++14 / ATL / WTL source.

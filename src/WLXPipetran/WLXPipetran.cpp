@@ -267,7 +267,8 @@ public:
     }
 };
 
-// Placeholder transitions -- stub implementations for the remaining 22 transitions
+// TODO(reconstruction): Recreate the distinct render algorithms for the remaining 22 transitions.
+// Until binary analysis covers them, these registrations intentionally use the safe generic transition.
 // Each follows the same pattern as CrossFadeTransition but with different geometry
 
 #define DEFINE_STUB_TRANSITION(ClassName, stringId, displayName) \

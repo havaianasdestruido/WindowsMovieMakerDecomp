@@ -162,12 +162,14 @@ HRESULT TranscodeMetadataParser::WriteMetadata(LPCWSTR pszFilePath, const MediaM
     if (!pszFilePath)
         return E_POINTER;
 
-    // Would use property store to write metadata
+    // TODO(reconstruction): Persist writable metadata through the reference property-store path.
+    // Preserve the current no-op success until that behavior is contract-pinned.
     return S_OK;
 }
 
 HRESULT TranscodeMetadataParser::SetMetadataAttribute(LPCWSTR /*pszFilePath*/, REFGUID /*guidKey*/, LPCWSTR /*pszValue*/)
 {
+    // TODO(reconstruction): Map metadata attributes to their writable property-store keys.
     return S_OK;
 }
 
@@ -176,6 +178,7 @@ HRESULT TranscodeMetadataParser::ExtractThumbnail(LPCWSTR /*pszFilePath*/, BYTE*
     if (ppData) *ppData = nullptr;
     if (pcbData) *pcbData = 0;
     if (pFormat) *pFormat = GUID_NULL;
+    // TODO(reconstruction): Extract a thumbnail and report its encoded format.
     return E_NOTIMPL;
 }
 
@@ -208,7 +211,7 @@ HRESULT TranscodeMetadataParser::GetPropertyString(LPCWSTR pszFilePath, REFPROPE
 
     if (FAILED(hr))
     {
-        // Fallback: try reading via WIC
+        // TODO(reconstruction): Implement the WIC metadata fallback for formats without a shell property store.
         return E_NOTIMPL;
     }
 

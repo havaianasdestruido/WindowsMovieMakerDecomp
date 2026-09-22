@@ -31,7 +31,8 @@ std::wstring MediaCatalog::GenerateId() {
 }
 
 HBITMAP MediaCatalog::CreateThumbnail(const std::wstring& /*path*/) {
-    // minimal placeholder: 1x1 empty bitmap
+    // TODO(reconstruction): Decode and scale the source image once thumbnail behavior is recovered.
+    // Current behavior intentionally supplies a deterministic non-null fallback for callers.
     return CreateBitmap(1, 1, 1, 0, nullptr);
 }
 

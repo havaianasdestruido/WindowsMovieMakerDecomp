@@ -16,7 +16,8 @@
 #include "SundanceAppMain.h"
 
 // ============================================================================
-// CreateDataObject stub - not available in modern SDK
+// TODO(reconstruction): Provide a compatible IDataObject implementation for media drag/drop once
+// the original format set is recovered; the modern SDK has no CreateDataObject helper.
 // ============================================================================
 static HRESULT CreateDataObject(
     const FORMATETC* pFormatEtc,

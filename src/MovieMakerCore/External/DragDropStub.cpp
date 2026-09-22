@@ -108,6 +108,7 @@ STDMETHODIMP DynamicDataObjectWrapper::GetDataHere(FORMATETC* pformatetc, STGMED
 {
     UNREFERENCED_PARAMETER(pformatetc);
     UNREFERENCED_PARAMETER(pmedium);
+    // TODO(reconstruction): Support caller-provided storage for compatible clipboard formats.
     return E_NOTIMPL;
 }
 
@@ -164,6 +165,7 @@ STDMETHODIMP DynamicDataObjectWrapper::EnumFormatEtc(DWORD dwDirection, IEnumFOR
 {
     UNREFERENCED_PARAMETER(dwDirection);
     UNREFERENCED_PARAMETER(ppenumFormatEtc);
+    // TODO(reconstruction): Return an IEnumFORMATETC over m_dataEntries for drag/drop consumers.
     return E_NOTIMPL;
 }
 

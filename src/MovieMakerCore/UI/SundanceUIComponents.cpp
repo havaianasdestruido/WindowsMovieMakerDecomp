@@ -81,8 +81,8 @@ HRESULT SundanceMainElementBehavior::OnBehaviorChanged()
 HRESULT SundanceMainElementBehavior::LoadLayout(LPCWSTR pszDuxtResource)
 {
     UNREFERENCED_PARAMETER(pszDuxtResource);
-    // In the real implementation, this parses a .duxt binary resource
-    // and populates the DirectUI element tree.
+    // TODO(reconstruction): Parse .duxt resources and populate the DirectUI tree when their
+    // binary format and observable behavior are recovered.
     return S_OK;
 }
 

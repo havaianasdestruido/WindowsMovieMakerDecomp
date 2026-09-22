@@ -207,11 +207,13 @@ HRESULT TextureInterOp::GetSharedHandle(HANDLE* phShared)
 
 HRESULT TextureInterOp::CreateTextureInternal()
 {
+    // TODO(reconstruction): Create the D3D9 texture with the reference sharing flags.
     return E_NOTIMPL;
 }
 
 HRESULT TextureInterOp::CreateSurfaceInternal()
 {
+    // TODO(reconstruction): Create the matching D3D9 surface for texture interop.
     return E_NOTIMPL;
 }
 

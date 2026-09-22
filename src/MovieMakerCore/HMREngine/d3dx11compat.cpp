@@ -168,7 +168,8 @@ HRESULT WINAPI D3DX11CompileEffectFromMemory(
 }
 
 // ============================================================================
-// D3DX11CreateEffectFromMemory - Stub: D3DX11 effect framework is removed
+// TODO(reconstruction): Replace this compatibility fallback if an effect-framework replacement can
+// match the reference interface and behavior. D3DX11 no longer supplies the original framework.
 // ============================================================================
 HRESULT WINAPI D3DX11CreateEffectFromMemory(
     LPCVOID pData,

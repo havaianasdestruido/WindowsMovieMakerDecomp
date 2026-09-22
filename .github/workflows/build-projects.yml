@@ -1,0 +1,67 @@
+name: Build projects
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: ${{ matrix.project }}
+    runs-on: windows-latest
+    strategy:
+      fail-fast: false
+      max-parallel: 4
+      matrix:
+        project:
+          - DmxBici
+          - MediaCatalog
+          - MetadataSys
+          - MovieMaker
+          - MovieMakerCore
+          - MovieMakerLang
+          - MovieMakerPreviewClient
+          - PlaybackEngine
+          - ProjectManager
+          - GPURenderer
+          - TimelineEngine
+          - UXCore
+          - WLMFDS
+          - WLMFReadWrite
+          - WLXCodecHost
+          - WLXFaceRecognition
+          - WLXMP4Parser
+          - WLXMediaPublishSubscribe
+          - WLXMovieLibrary
+          - WLXPhotoBase
+          - WLXPhotoCinematic
+          - WLXPhotoSqm
+          - WLXPipeline
+          - WLXPipetran
+          - WLXSlideshow
+          - WLXTranscode
+          - WLXVideoTrim
+          - uxctl
+          - wlidcli
+
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Configure Win32 build
+        run: >
+          cmake -S . -B build
+          -G "Visual Studio 17 2022"
+          -A Win32
+
+      - name: Build project
+        run: >
+          cmake --build build
+          --config Debug
+          --target ${{ matrix.project }}
+          --parallel

@@ -39,8 +39,12 @@ precedent implementations (extend these patterns — don't invent new ones):
 
 ## Telemetry must be inert
 
-`WLXPhotoSqm` and `DmxBici` export their full original surfaces but **return `S_OK` and
+`WLXPhotoSqm` and `DmxBici` export their full original surfaces but are **inert: they
 never send data off-machine**. No sockets, no telemetry files, no phoning home — ever.
+Inert return behavior follows each export's signature rather than a blanket `S_OK`:
+`HRESULT` exports return `S_OK`; `BOOL` exports return `TRUE` (e.g.
+`BiciWrapper_TransferExperienceToWeb`); `DWORD`/`BOOL` queries return zero/`FALSE`
+(e.g. `Sqm_GetOptInState`, `Sqm_IsEnabled`); `void` exports are no-ops.
 
 ## Secrets hygiene
 

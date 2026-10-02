@@ -15,9 +15,9 @@ description: Flat C exports over the Media Foundation source reader and sink wri
 
 ## At a glance
 
-A **flat C API over Media Foundation read/write**: the original exposes 7 exports — 5 MF
-reader/writer functions plus 2 COM standard entries. This is the workhorse DLL for
-codecs/transcode tooling that wants MF without the full object model.
+A **flat C API over Media Foundation read/write**: the module exposes nine exports —
+seven MF reader/writer functions plus two COM standard entries. This is the workhorse
+DLL for codecs/transcode tooling that wants MF without the full object model.
 
 ## Public surface
 

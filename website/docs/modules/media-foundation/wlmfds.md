@@ -51,9 +51,11 @@ flowchart LR
 
 - Built with MSVC 11.0-era header conventions (`STRICT`, `WIN32_LEAN_AND_MEAN`,
   `WINVER 0x0602`), like the other media DLLs.
-- The reconstruction provides real COM class factories (contract-pinned), unlike the
-  parity-stub build which returns `E_NOTIMPL`
-  (see [Stub Design rule 3](../../methodology/stub-design.md#ground-rules)).
+- COM status: `DllGetClassObject` currently returns `CLASS_E_CLASSNOTAVAILABLE` — no
+  servable COM classes are implemented yet — and `DllRegisterServer` /
+  `DllUnregisterServer` return `S_OK` without writing registration. The COM surface is
+  a documented stub category (see
+  [Stub Design](../../methodology/stub-design.md#stub-categories)).
 
 ## Testing
 

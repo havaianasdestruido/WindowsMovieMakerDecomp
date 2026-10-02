@@ -9,14 +9,20 @@ description: From WinMain to a rendered frame — the boot sequence of the recon
 ## Phase 0 — the launcher (`src/MovieMaker/main.cpp`)
 
 ```cpp
-int WINAPI wWinMain(HINSTANCE, HINSTANCE, LPWSTR, int) {
-    // 1. Register a Vectored Exception Handler for MSVC C++ exception codes
+// src/MovieMaker/main.cpp (reconstructed shape)
+int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
+    // 1. Resolve this executable's directory.
+    // 2. LoadLibraryExW("WLXPhotoBase.dll") — optional bootstrap of the base DLL,
+    //    guarded by its own __try/__except.
+    // 3. LoadLibraryExW("MovieMakerCore.dll") from the exe dir (with a
+    //    LOAD_LIBRARY_AS_DATAFILE fallback).
+    // 4. GetProcAddress("MovieMakerMain").
+    // 5. Register the Vectored Exception Handler for MSVC C++ exception codes
     //    (0xe06d7363 magic + subcodes 0x19930520/21/22 and the
-    //    undocumented 0x01994000). [Quirk #1]
-    // 2. Resolve this executable's directory.
-    // 3. LoadLibrary("MovieMakerCore.dll") — delay-load style, from the exe dir.
-    // 4. GetProcAddress("MovieMakerMain") and call it (__cdecl).
-    // 5. Outer __except(EXCEPTION_EXECUTE_HANDLER) wraps the call.
+    //    undocumented 0x01994000). [Quirk #1] — installed only at this point,
+    //    so DLL loading above happens without the VEH active.
+    // 6. Call MovieMakerMain(argc, argv) (__cdecl) inside
+    //    __except(EXCEPTION_EXECUTE_HANDLER); remove the VEH afterwards.
 }
 ```
 
@@ -33,8 +39,11 @@ so the only way in is `LoadLibrary` + `GetProcAddress`.
   single-threaded flag ([Quirk #9](../methodology/quirks.md#9-d3d11-single-threaded-flag-for-a-video-editor)).
 - **WIC imaging factory** (`windowscodecs`) for thumbnail/decode paths.
 - **Media Foundation** startup (`MFStartup`).
-- The **single-instance mutex** `Global\WindowsLiveMovieMaker_Sundance_SingleInstance`
-  ([Quirk #2](../methodology/quirks.md#2-sundance-codename-leaked-into-runtime-objects)).
+- The **single-instance mutex** `Global\WindowsLiveMovieMaker_Sundance_SingleInstance`,
+  created in `MovieMakerMain` before subsystem init
+  ([Quirk #2](../methodology/quirks.md#2-sundance-codename-leaked-into-runtime-objects));
+  `SundanceAppMain::AcquireSingleInstanceMutex` later takes a second mutex,
+  `Global\WindowsLiveMovieMaker_SundanceApp`, during initialization.
 - Delay-load hooks for the optional legacy DLLs (`WLXPhotoSqm`, `DmxBici`, `wlidcli`,
   `uxcore`) so their absence cannot crash startup
   ([Quirk #11](../methodology/quirks.md#11-delay-loaded-dlls-that-no-longer-exist)).

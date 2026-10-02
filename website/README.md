@@ -7,7 +7,7 @@ modules, testing, methodology, tools, and reference material.
 
 ## Prerequisites
 
-- Node.js **≥ 18** (Node 20/22 recommended)
+- Node.js **≥ 20** (Node 20/22 recommended)
 
 ## Running locally
 
@@ -71,11 +71,10 @@ The site deploys automatically to GitHub Pages on every push to `main` that touc
 Deployment requires **Settings → Pages → Source: GitHub Actions** to be enabled on the
 repository (one-time, by an admin).
 
-Manual deployment from a workstation with `git push` rights:
-
-```bash
-npm run deploy   # uses docusaurus deploy (git push to gh-pages)
-```
+Manual deployment: run the same workflow on demand — GitHub → **Actions** →
+**Deploy documentation to GitHub Pages** → **Run workflow** on `main`
+(`workflow_dispatch`). This keeps manual and automatic deployments on the identical
+path.
 
 ## Maintenance notes
 

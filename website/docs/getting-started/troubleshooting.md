@@ -68,9 +68,10 @@ Check, in order:
 
 1. Is `MovieMakerCore.dll` next to `MovieMaker.exe` (`build\bin\Debug`)? The launcher
    `LoadLibrary`s it from its own directory.
-2. Is something else holding the single-instance mutex
-   `Global\WindowsLiveMovieMaker_Sundance_SingleInstance`? (Any program creating this name
-   blocks launch — preserved original behavior,
+2. Is something else holding a single-instance mutex? Startup creates two:
+   `Global\WindowsLiveMovieMaker_Sundance_SingleInstance` (in `MovieMakerMain`) and
+   `Global\WindowsLiveMovieMaker_SundanceApp` (in `SundanceAppMain` initialization).
+   (Any program creating either name blocks launch — preserved original behavior,
    [Quirk #2](../methodology/quirks.md#2-sundance-codename-leaked-into-runtime-objects).)
 3. A silently swallowed exception during bootstrap is *original behavior* (the VEH + SEH
    double layer, [Quirk #1](../methodology/quirks.md#1-double-exception-protection-pattern-veh--seh))

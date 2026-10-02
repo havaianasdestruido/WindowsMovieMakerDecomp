@@ -30,9 +30,14 @@ DllRegisterServer  DllUnregisterServer
 
 ## Registration semantics (documented category)
 
-`DllRegisterServer` performs **real registry writes**, but the result is
-**elevation-dependent** — registering under `HKCR` without admin rights fails, and the
-DLL reports that honestly. This is the "Registry ops" row of the
+`DllRegisterServer` performs **real registry writes** under
+`HKEY_LOCAL_MACHINE\Software\Microsoft\Windows Photo Gallery\Slideshow\Themes\{CLSID}`
+(the original binary's `.rgs` location), writing `InprocServer32` and
+`ThreadingModel=Apartment` for the two servable CLSIDs
+(`CLSID_CinematicFullScreen`, `CLSID_PanZoomTransform`). The result is
+**elevation-dependent** — writing HKLM without admin rights fails (the original
+returned `E_ACCESSDENIED` there as well), and the DLL reports that honestly. This is
+the "Registry ops" row of the
 [stub-category table](../../methodology/stub-design.md#stub-categories): real writes,
 guarded, elevation-dependent results documented.
 

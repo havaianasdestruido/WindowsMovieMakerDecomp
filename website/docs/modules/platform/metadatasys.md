@@ -40,8 +40,13 @@ DllUnregisterServer        @5
 - **Metadata writes and thumbnail fallback behavior** are a current reconstruction
   priority (see the [TODO audit](../../testing/todo-audit.md)) — reads are real, some
   write/fallback paths remain guarded stubs.
-- Registry/property-store writes are real but **guarded** — the "Registry ops" category
-  from [Stub Design](../../methodology/stub-design.md#stub-categories).
+- Property-store behavior is split: `CMediaMetadataStore` (the read-only extension
+  store) returns `STG_E_ACCESSDENIED` from `SetValue` and persists nothing on `Commit`;
+  write-back is instead delegated through `CSafePropertyStore` to the inner property
+  handler when opened read-write (and fails with `STG_E_ACCESSDENIED` otherwise). The
+  module itself performs no registry writes — the "Registry ops" category in
+  [Stub Design](../../methodology/stub-design.md#stub-categories) applies to modules
+  such as WLXPhotoCinematic.
 
 ## Testing
 

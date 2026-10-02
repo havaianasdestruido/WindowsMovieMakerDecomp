@@ -10,7 +10,12 @@ description: The maintained index of intentionally incomplete work — how TODO(
 
 The **TODO audit** is the project's maintained index of work that is intentionally
 incomplete. It exists because in a parity reconstruction, "returns `E_NOTIMPL`" or
-"stubbed" is often *correct* — the audit separates those from genuine gaps.
+"stubbed" is often *correct*. The scanner, `tools/todo_audit.py`, is a **search**: it
+finds and reports `TODO(reconstruction):` annotations across authored source. Deciding
+whether a given annotation is an intentional stub or a genuine gap — and whether the
+index is complete — is a **manual review** step; the tool does not verify or classify
+what it finds. With `--check`, the scan only fails when **no** annotations are found
+(i.e. it guards against the audit going empty, not against unclassified stubs).
 
 Maintained index: [`TODO_AUDIT.md`](https://github.com/havaianasdestruido/WindowsMovieMakerDecomp/blob/main/TODO_AUDIT.md)
 at the repo root. Scanner: `tools/todo_audit.py`.

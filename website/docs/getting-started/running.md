@@ -24,13 +24,14 @@ short:
 sequenceDiagram
     participant EXE as MovieMaker.exe
     participant Core as MovieMakerCore.dll
-    EXE->>EXE: WinMain — register VEH handler
-    EXE->>EXE: resolve own exe directory
-    EXE->>Core: LoadLibrary("MovieMakerCore.dll")
+    EXE->>EXE: WinMain — resolve own exe directory
+    EXE->>EXE: LoadLibraryExW("WLXPhotoBase.dll") (optional bootstrap)
+    EXE->>Core: LoadLibraryExW("MovieMakerCore.dll")
     EXE->>Core: GetProcAddress("MovieMakerMain")
-    EXE->>Core: MovieMakerMain() [__cdecl]
-    Core->>Core: COM / D3D11 / WIC / MF init
+    EXE->>EXE: register VEH handler
+    EXE->>Core: MovieMakerMain(argc, argv) [__cdecl]
     Core->>Core: single-instance mutex check
+    Core->>Core: COM / D3D11 / WIC / MF init
     Core->>Core: SundanceApp init, Ribbon UI
     Core-->>EXE: message loop runs until exit
 ```
@@ -39,11 +40,18 @@ Two details are load-bearing and deliberately preserved:
 
 1. **Vectored Exception Handler** — the launcher installs a VEH that intercepts MSVC C++
    exception codes (`0xe06d7363` and subcodes, including the undocumented `0x01994000`)
-   before the outer SEH catches the unwind. This mirrors the original binary's
-   RTTI-corruption paranoia. See [Quirk #1](../methodology/quirks.md#1-double-exception-protection-pattern-veh--seh).
-2. **Single-instance mutex** — named `Global\WindowsLiveMovieMaker_Sundance_SingleInstance`
-   (note the leaked codename; see
-   [Quirk #2](../methodology/quirks.md#2-sundance-codename-leaked-into-runtime-objects)).
+   before the outer SEH catches the unwind. It is registered only **after**
+   `MovieMakerCore.dll` is loaded and `MovieMakerMain` resolved — DLL loading happens
+   without the handler active — and is removed after the call returns. This mirrors the
+   original binary's RTTI-corruption paranoia. See
+   [Quirk #1](../methodology/quirks.md#1-double-exception-protection-pattern-veh--seh).
+2. **Single-instance mutexes** — `MovieMakerMain` first creates
+   `Global\WindowsLiveMovieMaker_Sundance_SingleInstance` (note the leaked codename; see
+   [Quirk #2](../methodology/quirks.md#2-sundance-codename-leaked-into-runtime-objects)),
+   and `SundanceAppMain::AcquireSingleInstanceMutex` later takes a second mutex,
+   `Global\WindowsLiveMovieMaker_SundanceApp`, during subsystem initialization. Both use
+   the `Global\` prefix (visible across Terminal Services sessions); if either already
+   exists, the new process exits and activates the existing window.
 
 ## Runtime environment notes
 

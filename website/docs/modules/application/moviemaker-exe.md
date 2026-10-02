@@ -27,13 +27,18 @@ None. `MovieMaker.exe` is not a library — it is the process entry.
 
 ```cpp
 // src/MovieMaker/main.cpp (reconstructed shape)
-int WINAPI wWinMain(...) {
-    AddVectoredExceptionHandler(1, SundanceVehHandler);   // see Quirk #1
+int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
     wchar_t dir[MAX_PATH]; GetModuleFileNameW(...); /* strip file */
-    HMODULE hCore = LoadLibraryW(dir + "\\MovieMakerCore.dll");
-    auto main = (int(__cdecl*)(HINSTANCE, LPWSTR))GetProcAddress(hCore, "MovieMakerMain");
-    __try { return main(hInst, cmdLine); }
-    __except (EXCEPTION_EXECUTE_HANDLER) { return hr; }
+    LoadLibraryExW(dir + L"WLXPhotoBase.dll", ...);       /* optional bootstrap */
+    HMODULE hCore = LoadLibraryExW(dir + L"MovieMakerCore.dll", ...);
+    auto main = (int(__cdecl*)(int, wchar_t**))GetProcAddress(hCore, "MovieMakerMain");
+    PVOID veh = AddVectoredExceptionHandler(0, VexHandler);   // see Quirk #1 —
+                                                              // registered only now
+    int ret = 0;
+    __try { ret = main(argc, argv); }
+    __except (EXCEPTION_EXECUTE_HANDLER) { ret = 3; }
+    if (veh) RemoveVectoredExceptionHandler(veh);
+    return ret;
 }
 ```
 

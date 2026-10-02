@@ -42,7 +42,9 @@ python32\python.exe tests\mmr-python\run_tests.py    # expect PASS=116 FAIL=0
 
 :::info Windows-only
 
-The project is **MSVC-only and Win32 (x86)-only** — both are enforced with `FATAL_ERROR`
-during CMake configure. This matches the original 2012 binaries, which are 32-bit.
+The project is **MSVC-only** — CMake fails configuration with `FATAL_ERROR` on
+non-Windows or non-MSVC toolchains. The architecture must be selected as
+**Win32 (x86)** with `-A Win32` (as in the commands above): the original 2012
+binaries are 32-bit, and export decorations and the contract suite assume x86.
 
 :::

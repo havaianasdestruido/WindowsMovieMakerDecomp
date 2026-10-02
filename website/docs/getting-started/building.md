@@ -46,7 +46,10 @@ Or use the wrapper script:
 
 ## Build outputs
 
-All 29 targets write to `build/bin/Debug/`. The headline outputs:
+EXE and DLL targets write to `build/bin/<Config>/` (`CMAKE_RUNTIME_OUTPUT_DIRECTORY`).
+The four static-library targets (`MediaCatalog`, `ProjectManager`, `TimelineEngine`,
+`PlaybackEngine`) instead produce `.lib` files under `build/lib/<Config>/`
+(`CMAKE_ARCHIVE_OUTPUT_DIRECTORY`). The headline outputs in `build/bin/Debug/`:
 
 | Output | Target type | Role |
 |---|---|---|

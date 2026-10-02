@@ -24,8 +24,8 @@ Parameters:
 |---|---|---|
 | `-Config` | `Debug`, `Release` | `Debug` |
 | `-Target` | any CMake target | all |
-| `-Clean` | switch | — |
-| `-Analyze` | switch | run binary analysis after build |
+| `-Clean` | switch — remove the build tree first | off |
+| `-Analyze` | switch — run binary analysis after build | off |
 
 It wraps the same `cmake -S . -B build -G "Visual Studio 17 2022" -A Win32` +
 `cmake --build` sequence documented in [Building](../getting-started/building.md).
@@ -36,10 +36,14 @@ The **runtime test harness** — tests MovieMaker.exe behavior by launching it a
 observing the process:
 
 ```powershell
-python tools\test_all.py                  # Run all tests
-python tools\test_all.py --launch         # Just test launch
+python tools\test_all.py                  # Run the full harness
 python tools\test_all.py --timeout 30     # Custom timeout
 ```
+
+Every invocation runs the **full suite** via `harness.run_all()` — file existence, DLL
+presence, a clean launch, a launch with arguments, stability, single-instance behavior,
+window creation, and memory usage. (`--launch` is accepted on the command line but does
+not select a subset; the harness always runs everything.)
 
 What it checks:
 
@@ -50,7 +54,8 @@ What it checks:
 ## todo_audit.py
 
 The **TODO audit scanner** — reads every line of every tracked, authored source file and
-reports `TODO(reconstruction):` annotations:
+reports `TODO(reconstruction):` annotations. It only reports matching lines; it does not
+verify, classify, or check the completeness of the annotations (that review is manual):
 
 ```powershell
 python tools\todo_audit.py --check

@@ -19,9 +19,12 @@ The **SQM (Service Quality Management / CEIP) telemetry** surface. The original 
 exported a large `Sqm::` namespace API (streams, timers, averages, medians, deferred
 reports) that Windows Live apps used to phone home quality metrics.
 
-**In the reconstruction, telemetry is a documented stub category: every export returns
-`S_OK` and no data ever leaves the machine** — see
-[Stub Design](../../methodology/stub-design.md#stub-categories).
+**In the reconstruction, telemetry is a documented stub category: the exports are inert
+and no data ever leaves the machine** — see
+[Stub Design](../../methodology/stub-design.md#stub-categories). Return behavior follows
+each export's signature: the `void` setters and stream/timer functions are no-ops; the
+`DWORD` query `Sqm_GetOptInState` returns `0`; the `BOOL` queries (`Sqm_IsEnabled`,
+`Sqm_IsStreamTimerActive`, `Sqm_IsStreamTimerDataSet`) return `FALSE`.
 
 ## Public surface
 

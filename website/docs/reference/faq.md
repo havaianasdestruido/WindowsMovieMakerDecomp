@@ -72,7 +72,8 @@ strings, imports/exports, and registry scripts — all preserved under `analysis
 
 ```powershell
 $env:WMMR_DLL_DIR = "$PWD\build\bin\Debug"
-python32\python.exe tests\mmr-python\run_tests.py --filter <name>
+python32\python.exe tests\mmr-python\run_tests.py --list               # enumerate contract names
+python32\python.exe tests\mmr-python\run_tests.py --filter wlxpipeline # run the matching contract(s)
 ```
 
 ### How do I preview or edit this documentation site?

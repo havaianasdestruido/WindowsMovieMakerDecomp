@@ -20,7 +20,11 @@ data-management extension that hosted it). The original wrapped experience track
 start/end experience, data points, timers — for Microsoft's telemetry pipeline.
 
 As with [WLXPhotoSqm](./wlxphotosqm.md), the reconstruction keeps the **full export
-surface but makes it inert**: `S_OK` everywhere, nothing transmitted.
+surface but makes it inert** — nothing is transmitted. Return behavior follows each
+export's signature: the `HRESULT` (`LONG`) exports such as `SetAnid` and
+`StartExperience` return `S_OK`; the `BOOL` exports such as `Set`, `TimerStart`, and
+`TransferExperienceToApp`/`TransferExperienceToWeb` return `TRUE`; the `void`
+`AddToStream` is a no-op.
 
 ## Public surface
 

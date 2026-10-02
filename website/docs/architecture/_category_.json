@@ -1,0 +1,8 @@
+{
+  "label": "Architecture",
+  "position": 3,
+  "link": {
+    "type": "generated-index",
+    "description": "How the reconstructed Windows Live Movie Maker fits together: process flow, module map, and engine internals."
+  }
+}

@@ -1,0 +1,233 @@
+/**
+ * Any CSS included here will be global. The classic template
+ * bundles Infima by default. Infima is a CSS framework designed to work well
+ * with Docusaurus.
+ */
+
+:root {
+  --ifm-color-primary: #d97706;
+  --ifm-color-primary-dark: #c26a05;
+  --ifm-color-primary-darker: #b86405;
+  --ifm-color-primary-darkest: #985303;
+  --ifm-color-primary-light: #e08513;
+  --ifm-color-primary-lighter: #e38d21;
+  --ifm-color-primary-lightest: #e79c3d;
+  --ifm-code-font-size: 90%;
+  --ifm-font-family-base: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --docusaurus-highlighted-code-line-bg: rgba(0, 0, 0, 0.1);
+  --wmmr-hero-gradient-start: #1d3557;
+  --wmmr-hero-gradient-end: #0b132b;
+}
+
+/* For readability concerns, you should choose a lighter palette in dark mode. */
+[data-theme='dark'] {
+  --ifm-color-primary: #fbbf24;
+  --ifm-color-primary-dark: #f5ab11;
+  --ifm-color-primary-darker: #eaa006;
+  --ifm-color-primary-darkest: #c28304;
+  --ifm-color-primary-light: #fcc93f;
+  --ifm-color-primary-lighter: #fcce4f;
+  --ifm-color-primary-lightest: #fdda7b;
+  --docusaurus-highlighted-code-line-bg: rgba(0, 0, 0, 0.3);
+  --wmmr-hero-gradient-start: #16263f;
+  --wmmr-hero-gradient-end: #070d1d;
+}
+
+/* ---------------------------------------------------------------------------
+ * Landing page
+ * ------------------------------------------------------------------------- */
+
+.wmmr-hero {
+  background: linear-gradient(
+    160deg,
+    var(--wmmr-hero-gradient-start) 0%,
+    var(--wmmr-hero-gradient-end) 100%
+  );
+  color: #e6edf3;
+  padding: 4rem 1rem 3.5rem;
+  text-align: center;
+}
+
+.wmmr-hero--badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  border: 1px solid rgba(142, 164, 204, 0.45);
+  background: rgba(29, 53, 87, 0.55);
+  color: #b8ccea;
+  border-radius: 999px;
+  padding: 0.3rem 0.9rem;
+  font-size: 0.8rem;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  margin-bottom: 1.5rem;
+}
+
+.wmmr-hero--title {
+  font-size: clamp(2.2rem, 5vw, 3.4rem);
+  font-weight: 800;
+  line-height: 1.1;
+  margin: 0 auto 1rem;
+  max-width: 900px;
+}
+
+.wmmr-hero--title em {
+  font-style: normal;
+  background: linear-gradient(92deg, #ffd166 0%, #f7961e 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.wmmr-hero--tagline {
+  color: #9db4d0;
+  font-size: 1.15rem;
+  max-width: 720px;
+  margin: 0 auto 2rem;
+  line-height: 1.6;
+}
+
+.wmmr-hero--buttons {
+  display: flex;
+  gap: 0.8rem;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.wmmr-stats {
+  border-top: 1px solid rgba(142, 164, 204, 0.25);
+  border-bottom: 1px solid rgba(142, 164, 204, 0.25);
+  background: rgba(11, 19, 43, 0.6);
+}
+
+.wmmr-stats--grid {
+  max-width: 1100px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 1rem;
+  padding: 1.5rem 1rem;
+  list-style: none;
+}
+
+.wmmr-stats--value {
+  display: block;
+  font-size: 1.9rem;
+  font-weight: 800;
+  color: var(--ifm-color-primary);
+}
+
+.wmmr-stats--label {
+  display: block;
+  font-size: 0.85rem;
+  color: #9db4d0;
+}
+
+.wmmr-section {
+  padding: 3rem 1rem;
+  max-width: 1100px;
+  margin: 0 auto;
+}
+
+.wmmr-section--title {
+  font-size: 1.9rem;
+  font-weight: 800;
+  margin-bottom: 0.5rem;
+}
+
+.wmmr-section--subtitle {
+  color: var(--ifm-color-emphasis-600);
+  margin-bottom: 2rem;
+}
+
+.wmmr-features {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1.25rem;
+}
+
+.wmmr-feature {
+  border: 1px solid var(--ifm-color-emphasis-200);
+  border-radius: 14px;
+  padding: 1.4rem;
+  background: var(--ifm-card-background-color, var(--ifm-background-color));
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
+  transition: transform 120ms ease, border-color 120ms ease;
+}
+
+.wmmr-feature:hover {
+  transform: translateY(-3px);
+  border-color: var(--ifm-color-primary);
+}
+
+.wmmr-feature--icon {
+  font-size: 1.8rem;
+  margin-bottom: 0.6rem;
+}
+
+.wmmr-feature--title {
+  font-size: 1.1rem;
+  font-weight: 700;
+  margin-bottom: 0.4rem;
+}
+
+.wmmr-feature--body {
+  color: var(--ifm-color-emphasis-700);
+  font-size: 0.95rem;
+  line-height: 1.6;
+}
+
+.wmmr-families {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1.25rem;
+}
+
+.wmmr-family {
+  border-radius: 14px;
+  padding: 1.25rem 1.4rem;
+  border: 1px solid var(--ifm-color-emphasis-200);
+  display: block;
+  text-decoration: none;
+  color: inherit;
+  transition: transform 120ms ease, border-color 120ms ease;
+}
+
+.wmmr-family:hover {
+  transform: translateY(-3px);
+  border-color: var(--ifm-color-primary);
+  text-decoration: none;
+}
+
+.wmmr-family--count {
+  display: inline-block;
+  font-size: 0.75rem;
+  font-weight: 700;
+  border-radius: 999px;
+  background: rgba(247, 150, 30, 0.15);
+  color: var(--ifm-color-primary);
+  padding: 0.15rem 0.6rem;
+  margin-bottom: 0.75rem;
+}
+
+.wmmr-family--title {
+  font-weight: 700;
+  margin-bottom: 0.35rem;
+}
+
+.wmmr-family--body {
+  color: var(--ifm-color-emphasis-600);
+  font-size: 0.88rem;
+  line-height: 1.55;
+}
+
+.wmmr-homepage-code {
+  text-align: left;
+  font-size: 0.85rem;
+}
+
+@media (max-width: 600px) {
+  .wmmr-hero {
+    padding: 2.5rem 0.8rem 2.25rem;
+  }
+}

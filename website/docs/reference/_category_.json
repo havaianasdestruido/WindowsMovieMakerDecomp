@@ -1,0 +1,8 @@
+{
+  "label": "Reference",
+  "position": 8,
+  "link": {
+    "type": "generated-index",
+    "description": "Repository map, SDK compatibility, conventions, security policy, glossary, and FAQ."
+  }
+}

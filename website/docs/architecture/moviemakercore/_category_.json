@@ -1,0 +1,9 @@
+{
+  "label": "MovieMakerCore Internals",
+  "position": 5,
+  "link": {
+    "type": "generated-index",
+    "slug": "/architecture/moviemakercore",
+    "description": "Deep dives into the engine DLL's subsystems: app framework, project model, rendering, media pipeline, UI, and serialization."
+  }
+}

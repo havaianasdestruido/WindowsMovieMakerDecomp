@@ -1,0 +1,9 @@
+{
+  "label": "Application Targets",
+  "position": 1,
+  "link": {
+    "type": "generated-index",
+    "slug": "/modules/application",
+    "description": "The launcher executable, the engine DLL, localization resources, and the preview client."
+  }
+}

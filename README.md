@@ -35,6 +35,24 @@ ctest --test-dir build --output-on-failure             # CTest
 Contract suite should report `PASS=116 FAIL=0`. It is the behavioral
 regression oracle for the DLL surfaces (see `tests/mmr-python/README.md`).
 
+## Documentation
+
+Full codebase documentation (every module, subsystem, test harness, and tool) is
+available as a [Docusaurus](https://docusaurus.io/) site:
+
+> **Read it online:** https://havaianasdestruido.github.io/WindowsMovieMakerDecomp/
+
+Run it locally:
+
+```
+cd website
+npm install
+npm start
+```
+
+The docs source lives in [`website/docs/`](website/docs/) — see
+[`website/README.md`](website/README.md) for the structure and how to contribute pages.
+
 ## Getting Oriented
 
 - `ROADMAP.md` — build state, subsystem inventory, SDK fixes, gotchas.
@@ -42,7 +60,7 @@ regression oracle for the DLL surfaces (see `tests/mmr-python/README.md`).
 - `QUIRKS.md` — 23 original bugs/quirks deliberately preserved.
 - `THINKING_PROCESS.md` — reconstruction methodology and history.
 - `analysis/` — binary analysis output, one directory per module.
-- `src/` — reconstructed source, 18 CMake targets (see `ROADMAP.md`).
+- `src/` — reconstructed source, 29 CMake targets (see `ROADMAP.md`).
 - `tests/` — `mmr-python` (contracts) and `mmr-gui` (GUI harness).
 
 ## Requirements

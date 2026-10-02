@@ -1,0 +1,9 @@
+{
+  "label": "DirectUI Engine Layer",
+  "position": 2,
+  "link": {
+    "type": "generated-index",
+    "slug": "/modules/dui-engine",
+    "description": "UXCore, uxctl, and the DirectUI-namespace engine libraries (media catalog, project, timeline, GPU renderer, playback)."
+  }
+}

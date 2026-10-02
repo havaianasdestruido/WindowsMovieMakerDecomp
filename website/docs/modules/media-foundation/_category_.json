@@ -1,0 +1,9 @@
+{
+  "label": "Media Foundation Targets",
+  "position": 3,
+  "link": {
+    "type": "generated-index",
+    "slug": "/modules/media-foundation",
+    "description": "The Media Foundation bridge DLLs, the MP4 container parser, and the transcode/codec host executables."
+  }
+}

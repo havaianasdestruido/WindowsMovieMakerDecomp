@@ -1,0 +1,24 @@
+<svg width="64" height="64" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg" x1="4" y1="4" x2="60" y2="60" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#1d3557"/>
+      <stop offset="1" stop-color="#0b132b"/>
+    </linearGradient>
+    <linearGradient id="play" x1="26" y1="19" x2="45" y2="46" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#ffd166"/>
+      <stop offset="1" stop-color="#f7961e"/>
+    </linearGradient>
+  </defs>
+  <rect x="2" y="2" width="60" height="60" rx="12" fill="url(#bg)" stroke="#415a77" stroke-width="2"/>
+  <g fill="#8ea4cc">
+    <rect x="8" y="11" width="6" height="4" rx="1"/>
+    <rect x="8" y="21" width="6" height="4" rx="1"/>
+    <rect x="8" y="31" width="6" height="4" rx="1"/>
+    <rect x="8" y="41" width="6" height="4" rx="1"/>
+    <rect x="50" y="11" width="6" height="4" rx="1"/>
+    <rect x="50" y="21" width="6" height="4" rx="1"/>
+    <rect x="50" y="31" width="6" height="4" rx="1"/>
+    <rect x="50" y="41" width="6" height="4" rx="1"/>
+  </g>
+  <path d="M27 19 L45 32 L27 45 Z" fill="url(#play)"/>
+</svg>

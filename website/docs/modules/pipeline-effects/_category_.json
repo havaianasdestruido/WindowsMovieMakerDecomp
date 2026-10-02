@@ -1,0 +1,9 @@
+{
+  "label": "Pipeline & Effects Targets",
+  "position": 4,
+  "link": {
+    "type": "generated-index",
+    "slug": "/modules/pipeline-effects",
+    "description": "Media processing factories, transitions, slideshow generation, cinematic effects, video trimming, and the movie library."
+  }
+}

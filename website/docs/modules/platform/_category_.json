@@ -1,0 +1,9 @@
+{
+  "label": "Platform Services Targets",
+  "position": 5,
+  "link": {
+    "type": "generated-index",
+    "slug": "/modules/platform",
+    "description": "The shared foundation library, publishing framework, face recognition, metadata handling, identity, and the inert telemetry pair."
+  }
+}

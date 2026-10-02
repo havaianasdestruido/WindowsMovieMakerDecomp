@@ -1,0 +1,8 @@
+{
+  "label": "Testing",
+  "position": 5,
+  "link": {
+    "type": "generated-index",
+    "description": "The contract suite, GUI and CLI harnesses, per-module tests, and the TODO audit."
+  }
+}

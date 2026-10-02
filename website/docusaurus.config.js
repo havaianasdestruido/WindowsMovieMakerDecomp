@@ -4,17 +4,21 @@
 
 const {themes} = require('prism-react-renderer');
 const lightCodeTheme = themes.github;
-const darkCodeTheme = themes.dracula;
+const darkCodeTheme = themes.vsDark;
+
+// Canonical hosting is the GitHub Pages project path; local previews can
+// override the base URL (e.g. WMMR_DOCS_BASE_URL=/ for a dev server).
+const baseUrl = process.env.WMMR_DOCS_BASE_URL || '/WindowsMovieMakerDecomp/';
 
 /** @type {import('@docusaurus/types').Config} */
 const config = {
   title: 'WindowsMovieMakerDecomp',
   tagline:
-    'Windows Live Movie Maker 2012 (codename Sundance) — reconstructed from binary analysis as C++14 / ATL / WTL source, and fully documented.',
+    'Windows Live Movie Maker 2012 (codename Sundance) reconstructed from binary analysis as C++14 / ATL / WTL source, and fully documented.',
 
   // GitHub Pages hosting (project site).
   url: 'https://havaianasdestruido.github.io',
-  baseUrl: '/WindowsMovieMakerDecomp/',
+  baseUrl,
 
   // Used by `docusaurus deploy` and GitHub Pages publishing.
   organizationName: 'havaianasdestruido',
@@ -145,16 +149,16 @@ const config = {
       mermaid: {
         theme: {light: 'default', dark: 'dark'},
         options: {
-          fontFamily: 'system-ui, sans-serif',
+          fontFamily: "'Geist', system-ui, sans-serif",
           wrap: true,
         },
       },
       announcementBar: {
         id: 'star-announcement',
         content:
-          '⭐ If you find this reconstruction useful, consider starring <a target="_blank" rel="noopener noreferrer" href="https://github.com/havaianasdestruido/WindowsMovieMakerDecomp">the repository on GitHub</a>!',
+          'Enjoying the reconstruction? Star <a target="_blank" rel="noopener noreferrer" href="https://github.com/havaianasdestruido/WindowsMovieMakerDecomp">the repository on GitHub</a>.',
         backgroundColor: 'var(--ifm-color-primary)',
-        textColor: '#111111',
+        textColor: '#ffffff',
         isCloseable: true,
       },
       tableOfContents: {
@@ -167,6 +171,17 @@ const config = {
         },
       },
     }),
+
+  headTags: [
+    {
+      tagName: 'link',
+      attributes: {
+        rel: 'preload',
+        as: 'image',
+        href: `${baseUrl}img/hero-film.jpg`,
+      },
+    },
+  ],
 };
 
 module.exports = config;

@@ -11,7 +11,7 @@ description: The shared foundation library — Base namespace exceptions, memory
 | **Source** | `src/WLXPhotoBase/` |
 | **CMake target** | `WLXPhotoBase` |
 | **Type** | Win32 DLL (56 KB / 21 KB code in the original) |
-| **Family** | [Platform services targets](/modules/platform) |
+| **Family** | [Platform services targets](../platform) |
 
 ## At a glance
 

@@ -11,7 +11,7 @@ description: The Windows property handler — WLXPSGetItemPropertyHandler over t
 | **Source** | `src/MetadataSys/` |
 | **CMake target** | `MetadataSys` |
 | **Type** | Win32 COM DLL |
-| **Family** | [Platform services targets](/modules/platform) |
+| **Family** | [Platform services targets](../platform) |
 
 ## At a glance
 

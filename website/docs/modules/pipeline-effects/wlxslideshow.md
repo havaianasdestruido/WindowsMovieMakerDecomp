@@ -11,7 +11,7 @@ description: The slideshow generation engine — turning photo sets into animate
 | **Source** | `src/WLXSlideshow/` |
 | **CMake target** | `WLXSlideshow` |
 | **Type** | Win32 COM DLL |
-| **Family** | [Pipeline & effects targets](/modules/pipeline-effects) |
+| **Family** | [Pipeline & effects targets](../pipeline-effects) |
 
 ## At a glance
 

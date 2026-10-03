@@ -11,7 +11,7 @@ description: DirectShow-based video trimming — AVI/ASF/DV/MPEG2/MP4/WMV copy p
 | **Source** | `src/WLXVideoTrim/` (the CMake-template module) |
 | **CMake target** | `WLXVideoTrim` |
 | **Type** | Win32 DLL (568 KB in the original) |
-| **Family** | [Pipeline & effects targets](/modules/pipeline-effects) |
+| **Family** | [Pipeline & effects targets](../pipeline-effects) |
 
 ## At a glance
 

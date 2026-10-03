@@ -11,7 +11,7 @@ description: The engine-layer project model — create, load, save over a simple
 | **Source** | `src/Project/` |
 | **CMake target** | `ProjectManager` (static library) |
 | **Type** | Static lib (linked into consumers) |
-| **Family** | [DirectUI engine layer](/modules/dui-engine) |
+| **Family** | [DirectUI engine layer](../dui-engine) |
 
 ## At a glance
 

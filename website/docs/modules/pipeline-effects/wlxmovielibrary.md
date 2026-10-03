@@ -11,7 +11,7 @@ description: The movie library — CreateMovieFactory plus a D3D9-based video pr
 | **Source** | `src/WLXMovieLibrary/` |
 | **CMake target** | `WLXMovieLibrary` |
 | **Type** | Win32 COM DLL (324 KB / 281 KB code, 20+ RTTI classes in the original) |
-| **Family** | [Pipeline & effects targets](/modules/pipeline-effects) |
+| **Family** | [Pipeline & effects targets](../pipeline-effects) |
 
 ## At a glance
 

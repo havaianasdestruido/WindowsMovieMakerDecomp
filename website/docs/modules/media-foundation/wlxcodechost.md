@@ -11,7 +11,7 @@ description: The out-of-process COM codec host — isolating codec bugs from the
 | **Source** | `src/WLXCodecHost/` |
 | **CMake target** | `WLXCodecHost` |
 | **Type** | Win32 EXE (~32 KB / ~20 KB code in the original) |
-| **Family** | [Media Foundation targets](/modules/media-foundation) |
+| **Family** | [Media Foundation targets](../media-foundation) |
 
 ## At a glance
 

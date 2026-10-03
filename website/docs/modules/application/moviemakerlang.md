@@ -11,7 +11,7 @@ description: The resource-only localization DLL — string tables, UIFILE markup
 | **Source** | `src/MovieMakerLang/` |
 | **CMake target** | `MovieMakerLang` |
 | **Type** | Resource-only DLL (216 KB in the original, **zero code**) |
-| **Family** | [Application targets](/modules/application) |
+| **Family** | [Application targets](../application) |
 
 ## At a glance
 

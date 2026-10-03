@@ -11,7 +11,7 @@ description: The main engine — SundanceApp, storyboard model, HMREngine, HMRAV
 | **Source** | `src/MovieMakerCore/` (349 files) |
 | **CMake target** | `MovieMakerCore` |
 | **Type** | Win32 DLL (the engine), ~1.4 MB |
-| **Family** | [Application targets](/modules/application) |
+| **Family** | [Application targets](../application) |
 
 ## At a glance
 

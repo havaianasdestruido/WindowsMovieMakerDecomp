@@ -379,7 +379,7 @@ cmake --build build --config Debug
 build\bin\Debug\MovieMaker.exe
 
 # Contract suite (behavioral regression oracle)
-$env:WMMR_DLL_DIR = "build\bin\Debug"
+set WMMR_DLL_DIR=build\bin\Debug
 python32\python.exe tests\mmr-python\run_tests.py   # PASS=116 FAIL=0</code></pre>
     </div>
   </div>

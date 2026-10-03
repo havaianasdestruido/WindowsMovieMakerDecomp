@@ -6,6 +6,13 @@ on:
       - main
     paths:
       - 'website/**'
+      - '_includes/**'
+      - '_layouts/**'
+      - 'assets/**'
+      - '_config.yml'
+      - 'Gemfile'
+      - 'Gemfile.lock'
+      - 'index.html'
       - '.github/workflows/docs.yml'
   workflow_dispatch:
 
@@ -15,15 +22,25 @@ permissions:
 # Allow only one concurrent deployment, skipping queued runs of the same branch.
 concurrency:
   group: pages
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 jobs:
   build:
-    name: Build Docusaurus site
+    name: Build Jekyll site & Docusaurus docs
     runs-on: ubuntu-latest
     steps:
       - name: Check out source
         uses: actions/checkout@v4
+
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.3'
+          bundler-cache: true
+
+      - name: Build Jekyll primary site
+        run: |
+          bundle exec jekyll build --baseurl "/WindowsMovieMakerDecomp" --destination _site
 
       - name: Set up Node.js
         uses: actions/setup-node@v4
@@ -32,18 +49,26 @@ jobs:
           cache: npm
           cache-dependency-path: website/package-lock.json
 
-      - name: Install dependencies
+      - name: Install website dependencies
         working-directory: website
         run: npm ci
 
-      - name: Build website
+      - name: Build Docusaurus docs
         working-directory: website
+        env:
+          WMMR_DOCS_BASE_URL: /WindowsMovieMakerDecomp/docs/
         run: npm run build
+
+      - name: Merge Docusaurus docs into Jekyll site
+        run: |
+          mkdir -p _site/docs
+          cp -r website/build/* _site/docs/
+          touch _site/.nojekyll
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: website/build
+          path: _site
 
   deploy:
     name: Deploy to GitHub Pages

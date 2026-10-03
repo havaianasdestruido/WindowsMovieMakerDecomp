@@ -11,7 +11,7 @@ description: The D3D11 + D2D1.1 device wrapper for the engine layer — draw vid
 | **Source** | `src/Renderer/` |
 | **CMake target** | `GPURenderer` (DLL, `OUTPUT_NAME GPURenderer`) |
 | **Type** | Win32 DLL |
-| **Family** | [DirectUI engine layer](/docs/modules/dui-engine) |
+| **Family** | [DirectUI engine layer](../dui-engine) |
 
 ## At a glance
 

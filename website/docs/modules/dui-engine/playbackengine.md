@@ -11,7 +11,7 @@ description: Media Foundation playback — open, play, pause, seek, and per-fram
 | **Source** | `src/Playback/` |
 | **CMake target** | `PlaybackEngine` (static library) |
 | **Type** | Static lib (linked into consumers) |
-| **Family** | [DirectUI engine layer](/docs/modules/dui-engine) |
+| **Family** | [DirectUI engine layer](../dui-engine) |
 
 ## At a glance
 

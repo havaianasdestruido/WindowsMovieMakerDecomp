@@ -11,7 +11,7 @@ description: The publish/subscribe framework — 21 flat PublishManager_* export
 | **Source** | `src/WLXMediaPublishSubscribe/` |
 | **CMake target** | `WLXMediaPublishSubscribe` |
 | **Type** | Win32 COM DLL |
-| **Family** | [Platform services targets](/docs/modules/platform) |
+| **Family** | [Platform services targets](../platform) |
 
 ## At a glance
 

@@ -11,7 +11,7 @@ description: Flat C exports over the Media Foundation source reader and sink wri
 | **Source** | `src/WLMFReadWrite/` |
 | **CMake target** | `WLMFReadWrite` |
 | **Type** | Win32 DLL (252 KB / 217 KB code, 70+ RTTI classes in the original) |
-| **Family** | [Media Foundation targets](/docs/modules/media-foundation) |
+| **Family** | [Media Foundation targets](../media-foundation) |
 
 ## At a glance
 

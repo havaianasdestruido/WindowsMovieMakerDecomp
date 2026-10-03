@@ -11,7 +11,7 @@ description: Face detection and recognition with bounded analysis buffers — an
 | **Source** | `src/WLXFaceRecognition/` |
 | **CMake target** | `WLXFaceRecognition` |
 | **Type** | Win32 COM DLL |
-| **Family** | [Platform services targets](/docs/modules/platform) |
+| **Family** | [Platform services targets](../platform) |
 
 ## At a glance
 

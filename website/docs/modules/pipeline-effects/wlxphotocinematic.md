@@ -11,7 +11,7 @@ description: Cinematic effects — Ken Burns pan/zoom computation with guarded C
 | **Source** | `src/WLXPhotoCinematic/` |
 | **CMake target** | `WLXPhotoCinematic` |
 | **Type** | Win32 COM DLL |
-| **Family** | [Pipeline & effects targets](/docs/modules/pipeline-effects) |
+| **Family** | [Pipeline & effects targets](../pipeline-effects) |
 
 ## At a glance
 

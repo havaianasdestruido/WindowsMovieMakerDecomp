@@ -1,4 +1,5 @@
 ---
+slug: /
 sidebar_position: 1
 title: Introduction
 description: What WindowsMovieMakerDecomp is, why it exists, and how this documentation is organized.

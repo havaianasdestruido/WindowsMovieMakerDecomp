@@ -53,4 +53,11 @@ common_new.h
 fix_locked.bat
 fix_locked.vbs
 python32/
+# Jekyll build artifacts
+_site/
+.jekyll-cache/
+.jekyll-metadata
+vendor/bundle/
+.bundle/
+
 # Embedded Python 3.11.9 (downloaded test tool)

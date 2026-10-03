@@ -11,7 +11,7 @@ description: The headless transcode helper — COM-activated out-of-process tran
 | **Source** | `src/WLXTranscode/` |
 | **CMake target** | `WLXTranscode` |
 | **Type** | Win32 EXE (~200 KB / ~120 KB code, ~15 RTTI classes in the original) |
-| **Family** | [Media Foundation targets](/docs/modules/media-foundation) |
+| **Family** | [Media Foundation targets](../media-foundation) |
 
 ## At a glance
 

@@ -11,7 +11,7 @@ description: Media item registry — import, metadata, and thumbnail generation 
 | **Source** | `src/Media/` |
 | **CMake target** | `MediaCatalog` (static library) |
 | **Type** | Static lib (linked into consumers) |
-| **Family** | [DirectUI engine layer](/docs/modules/dui-engine) |
+| **Family** | [DirectUI engine layer](../dui-engine) |
 
 ## At a glance
 

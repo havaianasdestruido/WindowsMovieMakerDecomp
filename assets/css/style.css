@@ -1,0 +1,1096 @@
+/**
+ * WindowsMovieMakerDecomp - Primary Jekyll Webpage Stylesheet
+ * Cohesive with Docusaurus documentation theme tokens.
+ */
+
+/* ---------------------------------------------------------------------------
+ * 1. Typefaces (Geist + Geist Mono)
+ * ------------------------------------------------------------------------- */
+@font-face {
+  font-family: 'Geist';
+  src: url('../fonts/Geist-Regular.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Geist';
+  src: url('../fonts/Geist-Medium.woff2') format('woff2');
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Geist';
+  src: url('../fonts/Geist-SemiBold.woff2') format('woff2');
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Geist';
+  src: url('../fonts/Geist-Bold.woff2') format('woff2');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Geist Mono';
+  src: url('../fonts/GeistMono-Regular.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Geist Mono';
+  src: url('../fonts/GeistMono-Medium.woff2') format('woff2');
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Geist Mono';
+  src: url('../fonts/GeistMono-Bold.woff2') format('woff2');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* ---------------------------------------------------------------------------
+ * 2. Design Tokens (Dark theme default)
+ * ------------------------------------------------------------------------- */
+:root {
+  --bg-page: #0c0a09;
+  --bg-surface: #12100e;
+  --bg-surface-elevated: #16130f;
+  --bg-card: #181512;
+  --bg-card-hover: #1f1b17;
+  --bg-code: #080706;
+
+  --ink-primary: #fafaf9;
+  --ink-secondary: #d6d3d1;
+  --ink-muted: #a8a29e;
+  --ink-faint: #57534e;
+
+  --border-subtle: #292524;
+  --border-muted: #38332e;
+  --border-hover: #44403c;
+
+  --amber-300: #fcd34d;
+  --amber-400: #fbbf24;
+  --amber-500: #f59e0b;
+  --amber-600: #d97706;
+  --amber-700: #b45309;
+
+  --accent: var(--amber-400);
+  --accent-strong: var(--amber-300);
+  --accent-tint: rgba(251, 191, 36, 0.12);
+  --accent-tint-hover: rgba(251, 191, 36, 0.18);
+  --accent-line: rgba(251, 191, 36, 0.35);
+
+  --btn-primary-bg: #fbbf24;
+  --btn-primary-bg-hover: #fcd34d;
+  --btn-primary-ink: #1c1917;
+
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --radius-xl: 20px;
+  --radius-pill: 9999px;
+
+  --font-base: 'Geist', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  --font-mono: 'Geist Mono', ui-monospace, 'Cascadia Code', Menlo, Consolas, monospace;
+
+  --max-width: 1180px;
+  --transition-fast: 0.15s ease;
+  --transition-smooth: 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* ---------------------------------------------------------------------------
+ * 3. Base & Reset
+ * ------------------------------------------------------------------------- */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  font-family: var(--font-base);
+  background-color: var(--bg-page);
+  color: var(--ink-secondary);
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  scroll-behavior: smooth;
+}
+
+body {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background-color: var(--bg-page);
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+  transition: color var(--transition-fast);
+}
+
+h1, h2, h3, h4, h5, h6 {
+  color: var(--ink-primary);
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  line-height: 1.25;
+}
+
+p {
+  margin-bottom: 1rem;
+}
+
+p:last-child {
+  margin-bottom: 0;
+}
+
+ul, ol {
+  list-style: none;
+}
+
+img {
+  max-width: 100%;
+  height: auto;
+  display: block;
+}
+
+code {
+  font-family: var(--font-mono);
+  font-size: 0.88em;
+}
+
+::selection {
+  background: var(--accent-tint-hover);
+  color: var(--amber-300);
+}
+
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.wmmr-container {
+  width: 100%;
+  max-width: var(--max-width);
+  margin: 0 auto;
+  padding: 0 1.5rem;
+}
+
+.wmmr-amber {
+  color: var(--accent);
+}
+
+/* ---------------------------------------------------------------------------
+ * 4. Header & Navigation
+ * ------------------------------------------------------------------------- */
+.site-header {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: rgba(12, 10, 9, 0.85);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--border-subtle);
+  transition: border-color var(--transition-fast);
+}
+
+.site-nav-container {
+  max-width: var(--max-width);
+  margin: 0 auto;
+  padding: 0.75rem 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.site-brand {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  font-weight: 600;
+  font-size: 1.05rem;
+  color: var(--ink-primary);
+}
+
+.site-logo {
+  border-radius: var(--radius-sm);
+}
+
+.site-nav {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.nav-link {
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: var(--ink-muted);
+  padding: 0.4rem 0.85rem;
+  border-radius: var(--radius-pill);
+  transition: all var(--transition-fast);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.nav-link:hover {
+  color: var(--ink-primary);
+  background: var(--bg-surface);
+}
+
+.nav-link.active {
+  color: var(--amber-300);
+  background: var(--accent-tint);
+}
+
+.nav-link--accent {
+  color: var(--amber-400);
+  background: rgba(251, 191, 36, 0.08);
+  font-weight: 600;
+}
+
+.nav-link--accent:hover {
+  background: var(--accent-tint-hover);
+  color: var(--amber-300);
+}
+
+.nav-link--github {
+  color: var(--ink-secondary);
+  border: 1px solid var(--border-subtle);
+  padding: 0.35rem 0.85rem;
+}
+
+.nav-link--github:hover {
+  border-color: var(--border-hover);
+  background: var(--bg-surface);
+  color: var(--ink-primary);
+}
+
+.nav-toggle {
+  display: none;
+  background: none;
+  border: none;
+  color: var(--ink-secondary);
+  cursor: pointer;
+  padding: 0.4rem;
+}
+
+/* ---------------------------------------------------------------------------
+ * 5. Hero Section
+ * ------------------------------------------------------------------------- */
+.wmmr-hero {
+  padding: 4.5rem 0 3.5rem;
+  border-bottom: 1px solid var(--border-subtle);
+  background: radial-gradient(circle at 20% 20%, rgba(251, 191, 36, 0.04) 0%, transparent 60%);
+}
+
+.wmmr-hero-inner {
+  max-width: var(--max-width);
+  margin: 0 auto;
+  padding: 0 1.5rem;
+  display: grid;
+  grid-template-columns: 1.25fr 0.85fr;
+  gap: 3.5rem;
+  align-items: center;
+}
+
+.wmmr-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--amber-400);
+  background: var(--accent-tint);
+  border: 1px solid var(--accent-line);
+  padding: 0.3rem 0.85rem;
+  border-radius: var(--radius-pill);
+  margin-bottom: 1.5rem;
+}
+
+.wmmr-pulse-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--amber-400);
+  box-shadow: 0 0 8px var(--amber-400);
+  animation: pulse-glow 2s infinite ease-in-out;
+}
+
+@keyframes pulse-glow {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.4; transform: scale(0.85); }
+}
+
+.wmmr-hero-title {
+  font-size: clamp(2.4rem, 4vw, 3.4rem);
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  line-height: 1.15;
+  margin-bottom: 1.25rem;
+}
+
+.wmmr-hero-sub {
+  font-size: 1.15rem;
+  color: var(--ink-secondary);
+  line-height: 1.6;
+  margin-bottom: 2rem;
+  max-width: 580px;
+}
+
+.wmmr-hero-ctas {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.85rem;
+}
+
+/* Button Primitives */
+.wmmr-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  font-size: 0.95rem;
+  font-weight: 600;
+  padding: 0.7rem 1.35rem;
+  border-radius: var(--radius-pill);
+  transition: all var(--transition-fast);
+  cursor: pointer;
+  border: 1px solid transparent;
+}
+
+.wmmr-btn--primary {
+  background: var(--btn-primary-bg);
+  color: var(--btn-primary-ink);
+  box-shadow: 0 2px 10px rgba(251, 191, 36, 0.2);
+}
+
+.wmmr-btn--primary:hover {
+  background: var(--btn-primary-bg-hover);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 14px rgba(251, 191, 36, 0.3);
+  color: #12100e;
+}
+
+.wmmr-btn--ghost {
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--ink-primary);
+  border-color: var(--border-subtle);
+}
+
+.wmmr-btn--ghost:hover {
+  background: rgba(255, 255, 255, 0.09);
+  border-color: var(--border-hover);
+  transform: translateY(-1px);
+}
+
+.wmmr-btn--secondary {
+  background: transparent;
+  color: var(--ink-secondary);
+  border-color: var(--border-subtle);
+}
+
+.wmmr-btn--secondary:hover {
+  background: var(--bg-surface);
+  border-color: var(--border-hover);
+  color: var(--ink-primary);
+  transform: translateY(-1px);
+}
+
+/* Hero Media */
+.wmmr-hero-media {
+  position: relative;
+}
+
+.wmmr-hero-fig {
+  position: relative;
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  border: 1px solid var(--border-subtle);
+  background: var(--bg-surface);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+}
+
+.wmmr-hero-fig img {
+  width: 100%;
+  max-height: 420px;
+  object-fit: cover;
+  filter: contrast(1.05) brightness(0.95);
+  transition: transform 0.5s var(--transition-smooth);
+}
+
+.wmmr-hero-fig:hover img {
+  transform: scale(1.02);
+}
+
+.wmmr-hero-cap {
+  position: absolute;
+  bottom: 0.85rem;
+  right: 0.85rem;
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  background: rgba(12, 10, 9, 0.85);
+  backdrop-filter: blur(8px);
+  color: var(--amber-300);
+  padding: 0.25rem 0.65rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-subtle);
+}
+
+/* ---------------------------------------------------------------------------
+ * 6. Stats Grid
+ * ------------------------------------------------------------------------- */
+.wmmr-stats {
+  padding: 2.5rem 0;
+  border-bottom: 1px solid var(--border-subtle);
+  background: var(--bg-surface);
+}
+
+.wmmr-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 1.25rem;
+}
+
+.wmmr-stat {
+  display: flex;
+  flex-direction: column;
+  padding: 1rem 1.25rem;
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  transition: all var(--transition-fast);
+}
+
+.wmmr-stat:hover {
+  border-color: var(--border-hover);
+  background: var(--bg-card-hover);
+  transform: translateY(-2px);
+}
+
+.wmmr-stat-value {
+  font-size: 1.75rem;
+  font-weight: 700;
+  font-family: var(--font-mono);
+  color: var(--ink-primary);
+  line-height: 1.2;
+}
+
+.wmmr-stat-label {
+  font-size: 0.82rem;
+  color: var(--ink-muted);
+  margin-top: 0.35rem;
+}
+
+/* ---------------------------------------------------------------------------
+ * 7. Section Shared Styles
+ * ------------------------------------------------------------------------- */
+.wmmr-section {
+  padding: 4.5rem 0;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.wmmr-section-header {
+  margin-bottom: 2.5rem;
+  max-width: 680px;
+}
+
+.wmmr-section-title {
+  font-size: 2rem;
+  font-weight: 700;
+  letter-spacing: -0.025em;
+  margin-bottom: 0.75rem;
+}
+
+.wmmr-section-sub {
+  font-size: 1.05rem;
+  color: var(--ink-secondary);
+  line-height: 1.6;
+}
+
+/* ---------------------------------------------------------------------------
+ * 8. Bento Grid
+ * ------------------------------------------------------------------------- */
+.wmmr-bento {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1.25rem;
+}
+
+.wmmr-cell {
+  position: relative;
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  padding: 1.75rem;
+  display: flex;
+  flex-direction: column;
+  transition: all var(--transition-fast);
+  overflow: hidden;
+}
+
+.wmmr-cell:hover {
+  border-color: var(--border-hover);
+  background: var(--bg-card-hover);
+  transform: translateY(-2px);
+}
+
+/* Cell A: Hero image span 2 */
+.wmmr-cell--a {
+  grid-column: span 2;
+  min-height: 240px;
+  justify-content: flex-end;
+  padding: 2rem;
+}
+
+.wmmr-cell-img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  filter: contrast(1.05) brightness(0.7);
+  transition: transform 0.4s var(--transition-smooth);
+}
+
+.wmmr-cell--a:hover .wmmr-cell-img {
+  transform: scale(1.03);
+}
+
+.wmmr-cell-scrim {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to top, rgba(12, 10, 9, 0.95) 0%, rgba(12, 10, 9, 0.4) 60%, transparent 100%);
+}
+
+.wmmr-cell-body-onimg {
+  position: relative;
+  z-index: 2;
+}
+
+.wmmr-cell-body-onimg .wmmr-cell-title {
+  font-size: 1.35rem;
+  font-weight: 700;
+  color: var(--ink-primary);
+  margin-bottom: 0.5rem;
+}
+
+.wmmr-cell-body-onimg p {
+  color: var(--ink-secondary);
+  font-size: 0.95rem;
+  max-width: 520px;
+}
+
+/* Normal Cells */
+.wmmr-cell-head {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.85rem;
+}
+
+.wmmr-cell-icon {
+  color: var(--amber-400);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.wmmr-cell-title {
+  font-size: 1.15rem;
+  font-weight: 600;
+  color: var(--ink-primary);
+}
+
+.wmmr-cell-body {
+  font-size: 0.92rem;
+  color: var(--ink-secondary);
+  line-height: 1.55;
+  flex: 1;
+}
+
+.wmmr-cell-chips {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+
+.wmmr-chip {
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  padding: 0.2rem 0.6rem;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--border-subtle);
+  background: var(--bg-surface);
+  color: var(--ink-muted);
+}
+
+.wmmr-chip--accent {
+  background: var(--accent-tint);
+  border-color: var(--accent-line);
+  color: var(--amber-300);
+}
+
+.wmmr-chip--pass {
+  background: rgba(34, 197, 94, 0.12);
+  border-color: rgba(34, 197, 94, 0.3);
+  color: #4ade80;
+}
+
+.wmmr-chip--fail {
+  background: rgba(239, 68, 68, 0.12);
+  border-color: rgba(239, 68, 68, 0.3);
+  color: #f87171;
+}
+
+/* ---------------------------------------------------------------------------
+ * 9. Module Families Section
+ * ------------------------------------------------------------------------- */
+.wmmr-split-container {
+  display: grid;
+  grid-template-columns: 0.9fr 1.3fr;
+  gap: 3.5rem;
+  align-items: start;
+}
+
+.wmmr-section-side {
+  position: sticky;
+  top: 5.5rem;
+}
+
+.wmmr-side-cta {
+  margin-top: 1.75rem;
+}
+
+.wmmr-family-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+
+.wmmr-family {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1.25rem 1.5rem;
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  transition: all var(--transition-fast);
+}
+
+.wmmr-family:hover {
+  border-color: var(--border-hover);
+  background: var(--bg-card-hover);
+  transform: translateX(4px);
+}
+
+.wmmr-family:hover .wmmr-family-arrow {
+  color: var(--amber-400);
+  transform: translate(2px, -2px);
+}
+
+.wmmr-family:hover .wmmr-family-title {
+  color: var(--amber-300);
+}
+
+.wmmr-family-main {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  padding-right: 1.5rem;
+}
+
+.wmmr-family-title {
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: var(--ink-primary);
+  transition: color var(--transition-fast);
+}
+
+.wmmr-family-body {
+  font-size: 0.88rem;
+  color: var(--ink-muted);
+  line-height: 1.45;
+}
+
+.wmmr-family-meta {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-shrink: 0;
+}
+
+.wmmr-family-arrow {
+  color: var(--ink-faint);
+  transition: all var(--transition-fast);
+}
+
+/* ---------------------------------------------------------------------------
+ * 10. Build It Yourself Section
+ * ------------------------------------------------------------------------- */
+.wmmr-build-container {
+  display: grid;
+  grid-template-columns: 0.95fr 1.25fr;
+  gap: 3rem;
+  align-items: center;
+}
+
+.wmmr-steps {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  margin-top: 1.75rem;
+}
+
+.wmmr-step {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+  padding: 0.75rem 1rem;
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+}
+
+.wmmr-step-index {
+  font-family: var(--font-mono);
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--amber-400);
+  background: var(--accent-tint);
+  border: 1px solid var(--accent-line);
+  padding: 0.15rem 0.45rem;
+  border-radius: var(--radius-sm);
+  margin-top: 0.1rem;
+}
+
+.wmmr-step-text {
+  display: flex;
+  flex-direction: column;
+}
+
+.wmmr-step-verb {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--ink-primary);
+}
+
+.wmmr-step-desc {
+  font-size: 0.86rem;
+  color: var(--ink-muted);
+}
+
+/* Terminal / Code Block */
+.wmmr-build-code {
+  background: var(--bg-code);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.5);
+}
+
+.wmmr-code-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem 1.25rem;
+  background: rgba(255, 255, 255, 0.03);
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.wmmr-code-dots {
+  display: flex;
+  gap: 6px;
+}
+
+.wmmr-code-dots span {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--border-muted);
+}
+
+.wmmr-code-dots span:nth-child(1) { background: #ef4444; opacity: 0.7; }
+.wmmr-code-dots span:nth-child(2) { background: #f59e0b; opacity: 0.7; }
+.wmmr-code-dots span:nth-child(3) { background: #22c55e; opacity: 0.7; }
+
+.wmmr-code-title {
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  color: var(--ink-muted);
+}
+
+.wmmr-code-copy {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  background: var(--bg-surface);
+  color: var(--ink-muted);
+  border: 1px solid var(--border-subtle);
+  padding: 0.25rem 0.65rem;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.wmmr-code-copy:hover {
+  background: var(--bg-card);
+  color: var(--ink-primary);
+  border-color: var(--border-hover);
+}
+
+.wmmr-code-block {
+  padding: 1.25rem 1.5rem;
+  overflow-x: auto;
+  font-family: var(--font-mono);
+  font-size: 0.88rem;
+  line-height: 1.7;
+  color: #e2e8f0;
+}
+
+/* ---------------------------------------------------------------------------
+ * 11. Call to Action Banner
+ * ------------------------------------------------------------------------- */
+.wmmr-cta-banner {
+  padding: 4.5rem 0;
+  background: radial-gradient(circle at center, rgba(251, 191, 36, 0.05) 0%, transparent 70%);
+}
+
+.wmmr-cta-box {
+  background: linear-gradient(135deg, var(--bg-card) 0%, var(--bg-surface) 100%);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-xl);
+  padding: 3rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 2.5rem;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+}
+
+.wmmr-cta-content {
+  max-width: 600px;
+}
+
+.wmmr-cta-title {
+  font-size: 1.75rem;
+  font-weight: 700;
+  margin-bottom: 0.75rem;
+}
+
+.wmmr-cta-text {
+  font-size: 1rem;
+  color: var(--ink-secondary);
+  line-height: 1.6;
+}
+
+.wmmr-cta-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  flex-shrink: 0;
+}
+
+/* ---------------------------------------------------------------------------
+ * 12. Footer
+ * ------------------------------------------------------------------------- */
+.site-footer {
+  margin-top: auto;
+  background: var(--bg-surface);
+  border-top: 1px solid var(--border-subtle);
+  padding: 4rem 0 2rem;
+}
+
+.site-footer-inner {
+  max-width: var(--max-width);
+  margin: 0 auto;
+  padding: 0 1.5rem;
+}
+
+.footer-columns {
+  display: grid;
+  grid-template-columns: 1.4fr 1fr 1fr 1fr;
+  gap: 3rem;
+  margin-bottom: 3rem;
+}
+
+.footer-brand {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  margin-bottom: 0.85rem;
+}
+
+.footer-brand-title {
+  font-weight: 700;
+  font-size: 1.05rem;
+  color: var(--ink-primary);
+}
+
+.footer-tagline {
+  font-size: 0.88rem;
+  color: var(--ink-muted);
+  line-height: 1.5;
+  margin-bottom: 1.25rem;
+  max-width: 320px;
+}
+
+.footer-badge {
+  display: inline-block;
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  color: var(--amber-400);
+  background: var(--accent-tint);
+  border: 1px solid var(--accent-line);
+  padding: 0.2rem 0.6rem;
+  border-radius: var(--radius-sm);
+}
+
+.footer-col-title {
+  font-size: 0.9rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--ink-primary);
+  margin-bottom: 1rem;
+}
+
+.footer-links {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.footer-links a {
+  font-size: 0.88rem;
+  color: var(--ink-muted);
+  transition: color var(--transition-fast);
+}
+
+.footer-links a:hover {
+  color: var(--amber-400);
+}
+
+.footer-bottom {
+  padding-top: 2rem;
+  border-top: 1px solid var(--border-subtle);
+}
+
+.footer-legal {
+  font-size: 0.82rem;
+  color: var(--ink-faint);
+  line-height: 1.5;
+}
+
+/* ---------------------------------------------------------------------------
+ * 13. Responsive Media Queries
+ * ------------------------------------------------------------------------- */
+@media (max-width: 1024px) {
+  .wmmr-hero-inner {
+    grid-template-columns: 1fr;
+    gap: 2.5rem;
+  }
+
+  .wmmr-hero-media {
+    max-width: 500px;
+  }
+
+  .wmmr-stats-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  .wmmr-bento {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .wmmr-cell--a {
+    grid-column: span 2;
+  }
+
+  .wmmr-split-container,
+  .wmmr-build-container {
+    grid-template-columns: 1fr;
+    gap: 2.5rem;
+  }
+
+  .wmmr-section-side {
+    position: static;
+  }
+
+  .wmmr-cta-box {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .footer-columns {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 640px) {
+  .site-nav {
+    display: none;
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: var(--bg-surface);
+    border-bottom: 1px solid var(--border-subtle);
+    flex-direction: column;
+    padding: 1rem;
+    gap: 0.5rem;
+  }
+
+  .site-nav.open {
+    display: flex;
+  }
+
+  .nav-toggle {
+    display: block;
+  }
+
+  .wmmr-stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .wmmr-bento {
+    grid-template-columns: 1fr;
+  }
+
+  .wmmr-cell--a {
+    grid-column: span 1;
+  }
+
+  .wmmr-hero-ctas {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .wmmr-hero-ctas .wmmr-btn {
+    width: 100%;
+  }
+
+  .footer-columns {
+    grid-template-columns: 1fr;
+  }
+}

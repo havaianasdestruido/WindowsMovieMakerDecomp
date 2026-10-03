@@ -11,7 +11,7 @@ description: The reconstructed DirectUI core — Element tree, containers, contr
 | **Source** | `src/UXCore/` (14 files) |
 | **CMake target** | `UXCore` |
 | **Type** | Win32 DLL |
-| **Family** | [DirectUI engine layer](/docs/modules/dui-engine) |
+| **Family** | [DirectUI engine layer](/modules/dui-engine) |
 
 ## At a glance
 

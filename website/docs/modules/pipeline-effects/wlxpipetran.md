@@ -11,7 +11,7 @@ description: The transition/effect animation library — 92 RTTI classes from St
 | **Source** | `src/WLXPipetran/` |
 | **CMake target** | `WLXPipetran` |
 | **Type** | Win32 DLL |
-| **Family** | [Pipeline & effects targets](/docs/modules/pipeline-effects) |
+| **Family** | [Pipeline & effects targets](/modules/pipeline-effects) |
 
 ## At a glance
 

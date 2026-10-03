@@ -11,7 +11,7 @@ description: The SQM/CEIP telemetry surface — full Sqm namespace exports that 
 | **Source** | `src/WLXPhotoSqm/` |
 | **CMake target** | `WLXPhotoSqm` |
 | **Type** | Win32 DLL (**inert telemetry**) |
-| **Family** | [Platform services targets](/docs/modules/platform) |
+| **Family** | [Platform services targets](/modules/platform) |
 
 ## At a glance
 

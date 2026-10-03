@@ -11,7 +11,7 @@ description: The embedded preview-pane communication interface — window lifecy
 | **Source** | `src/MovieMakerPreviewClient/` |
 | **CMake target** | `MovieMakerPreviewClient` |
 | **Type** | Win32 COM DLL (28 KB / 5.9 KB code in the original) |
-| **Family** | [Application targets](/docs/modules/application) |
+| **Family** | [Application targets](/modules/application) |
 
 ## At a glance
 

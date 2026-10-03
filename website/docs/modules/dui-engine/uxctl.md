@@ -11,7 +11,7 @@ description: The DirectUI control-host entry points — init, object creation, a
 | **Source** | `src/uxctl/` |
 | **CMake target** | `uxctl` |
 | **Type** | Win32 DLL |
-| **Family** | [DirectUI engine layer](/docs/modules/dui-engine) |
+| **Family** | [DirectUI engine layer](/modules/dui-engine) |
 
 ## At a glance
 

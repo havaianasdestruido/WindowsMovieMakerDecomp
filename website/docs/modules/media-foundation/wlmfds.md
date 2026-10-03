@@ -11,7 +11,7 @@ description: The Media Foundation / DirectShow compatibility bridge — legacy c
 | **Source** | `src/WLMFDS/` |
 | **CMake target** | `WLMFDS` |
 | **Type** | Win32 COM DLL (427 KB / 345 KB code in the original, 28+ RTTI classes) |
-| **Family** | [Media Foundation targets](/docs/modules/media-foundation) |
+| **Family** | [Media Foundation targets](/modules/media-foundation) |
 
 ## At a glance
 

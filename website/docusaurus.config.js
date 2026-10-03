@@ -6,13 +6,13 @@ const {themes} = require('prism-react-renderer');
 const lightCodeTheme = themes.github;
 const darkCodeTheme = themes.vsDark;
 
-// Canonical hosting is the GitHub Pages project path; local previews can
-// override the base URL (e.g. WMMR_DOCS_BASE_URL=/ for a dev server).
-const baseUrl = process.env.WMMR_DOCS_BASE_URL || '/WindowsMovieMakerDecomp/';
+// Canonical hosting is the GitHub Pages project path at /docs/; local previews can
+// override the base URL (e.g. WMMR_DOCS_BASE_URL=/docs/ or /).
+const baseUrl = process.env.WMMR_DOCS_BASE_URL || '/WindowsMovieMakerDecomp/docs/';
 
 /** @type {import('@docusaurus/types').Config} */
 const config = {
-  title: 'WindowsMovieMakerDecomp',
+  title: 'WindowsMovieMakerDecomp Docs',
   tagline:
     'Windows Live Movie Maker 2012 (codename Sundance) reconstructed from binary analysis as C++14 / ATL / WTL source, and fully documented.',
 
@@ -29,7 +29,6 @@ const config = {
   favicon: 'img/favicon.svg',
 
   // GitHub Pages deployment of the docs site never includes the trailing hash.
-  // Keep this in sync with .github/workflows/docs.yml.
   trailingSlash: false,
 
   // Even if you don't use internationalization, you can use this field to set
@@ -55,10 +54,8 @@ const config = {
       ({
         docs: {
           path: 'docs',
-          routeBasePath: 'docs',
+          routeBasePath: '/',
           sidebarPath: require.resolve('./sidebars.js'),
-          // Please change this to your repo.
-          // Remove this to remove the "edit this page" links.
           editUrl:
             'https://github.com/havaianasdestruido/WindowsMovieMakerDecomp/edit/main/website/',
           showLastUpdateAuthor: false,
@@ -75,7 +72,6 @@ const config = {
   themeConfig:
     /** @type {import('@docusaurus/preset-classic').ThemeConfig} */
     ({
-      // Replace with your project's social card
       image: 'img/logo.svg',
       colorMode: {
         defaultMode: 'dark',
@@ -86,8 +82,16 @@ const config = {
         logo: {
           alt: 'WindowsMovieMakerDecomp logo',
           src: 'img/logo.svg',
+          href: 'https://havaianasdestruido.github.io/WindowsMovieMakerDecomp/',
+          target: '_self',
         },
         items: [
+          {
+            href: 'https://havaianasdestruido.github.io/WindowsMovieMakerDecomp/',
+            label: '← Main Site',
+            position: 'left',
+            target: '_self',
+          },
           {type: 'doc', docId: 'intro', label: 'Docs', position: 'left'},
           {type: 'doc', docId: 'architecture/overview', label: 'Architecture', position: 'left'},
           {type: 'doc', docId: 'modules/overview', label: 'Modules', position: 'left'},
@@ -106,24 +110,29 @@ const config = {
           {
             title: 'Docs',
             items: [
-              {label: 'Introduction', to: '/docs/intro'},
-              {label: 'Getting Started', to: '/docs/getting-started/overview'},
-              {label: 'Architecture', to: '/docs/architecture/overview'},
-              {label: 'Module Reference', to: '/docs/modules/overview'},
+              {label: 'Introduction', to: '/'},
+              {label: 'Getting Started', to: '/getting-started/overview'},
+              {label: 'Architecture', to: '/architecture/overview'},
+              {label: 'Module Reference', to: '/modules/overview'},
             ],
           },
           {
             title: 'Engineering',
             items: [
-              {label: 'Testing', to: '/docs/testing/overview'},
-              {label: 'Methodology', to: '/docs/methodology/reconstruction'},
-              {label: 'Stub Design', to: '/docs/methodology/stub-design'},
-              {label: 'Preserved Quirks', to: '/docs/methodology/quirks'},
+              {label: 'Testing', to: '/testing/overview'},
+              {label: 'Methodology', to: '/methodology/reconstruction'},
+              {label: 'Stub Design', to: '/methodology/stub-design'},
+              {label: 'Preserved Quirks', to: '/methodology/quirks'},
             ],
           },
           {
             title: 'Repository',
             items: [
+              {
+                label: 'Main Site',
+                href: 'https://havaianasdestruido.github.io/WindowsMovieMakerDecomp/',
+                target: '_self',
+              },
               {
                 label: 'GitHub',
                 href: 'https://github.com/havaianasdestruido/WindowsMovieMakerDecomp',
@@ -171,17 +180,6 @@ const config = {
         },
       },
     }),
-
-  headTags: [
-    {
-      tagName: 'link',
-      attributes: {
-        rel: 'preload',
-        as: 'image',
-        href: `${baseUrl}img/hero-film.jpg`,
-      },
-    },
-  ],
 };
 
 module.exports = config;

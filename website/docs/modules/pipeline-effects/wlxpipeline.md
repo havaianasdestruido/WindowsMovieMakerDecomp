@@ -11,7 +11,7 @@ description: The media pipeline factory — GetPipelineCreateFunctions returning
 | **Source** | `src/WLXPipeline/` |
 | **CMake target** | `WLXPipeline` |
 | **Type** | Win32 DLL |
-| **Family** | [Pipeline & effects targets](/docs/modules/pipeline-effects) |
+| **Family** | [Pipeline & effects targets](/modules/pipeline-effects) |
 
 ## At a glance
 

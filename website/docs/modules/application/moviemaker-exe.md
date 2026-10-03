@@ -11,7 +11,7 @@ description: The thin launcher executable — VEH handler, LoadLibrary, and the 
 | **Source** | `src/MovieMaker/` |
 | **CMake target** | `MovieMaker` |
 | **Type** | Win32 EXE (launcher), ~94 KB |
-| **Family** | [Application targets](/docs/modules/application) |
+| **Family** | [Application targets](/modules/application) |
 
 ## At a glance
 

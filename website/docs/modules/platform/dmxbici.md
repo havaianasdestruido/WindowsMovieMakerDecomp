@@ -11,7 +11,7 @@ description: The BiciWrapper analytics surface — experience timers, data point
 | **Source** | `src/DmxBici/` |
 | **CMake target** | `DmxBici` |
 | **Type** | Win32 DLL (**inert telemetry**) |
-| **Family** | [Platform services targets](/docs/modules/platform) |
+| **Family** | [Platform services targets](/modules/platform) |
 
 ## At a glance
 

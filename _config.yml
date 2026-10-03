@@ -1,0 +1,52 @@
+# Jekyll site configuration for WindowsMovieMakerDecomp
+title: WindowsMovieMakerDecomp
+tagline: Windows Live Movie Maker 2012 (codename Sundance) reconstructed from binary analysis as C++14 / ATL / WTL source, and fully documented.
+description: Windows Live Movie Maker 2012 (codename Sundance) reconstructed from binary analysis as C++14 / ATL / WTL source, matching MSVC 11.0 binaries with 116 verified contract tests.
+url: "https://havaianasdestruido.github.io"
+baseurl: "/WindowsMovieMakerDecomp"
+
+# Author / Repository Info
+github_username: havaianasdestruido
+repository: havaianasdestruido/WindowsMovieMakerDecomp
+repository_url: "https://github.com/havaianasdestruido/WindowsMovieMakerDecomp"
+docs_url: "/WindowsMovieMakerDecomp/docs/"
+
+# Build settings
+markdown: kramdown
+highlighter: rouge
+permalink: pretty
+
+# Exclude unneeded directories and files from Jekyll build
+exclude:
+  - website
+  - node_modules
+  - src
+  - analysis
+  - tests
+  - tools
+  - apps
+  - resources
+  - build
+  - build64
+  - .github
+  - vendor
+  - Gemfile
+  - Gemfile.lock
+  - CMakeLists.txt
+  - AGENTS.md
+  - AI.md
+  - CLAUDE.md
+  - LICENSE
+  - QUIRKS.md
+  - README.md
+  - ROADMAP.md
+  - StubDesign.md
+  - THINKING_PROCESS.md
+  - TODO_AUDIT.md
+  - package.json
+  - package-lock.json
+
+# Keep files
+include:
+  - .nojekyll
+  - assets

@@ -11,7 +11,7 @@ description: Timeline clip arithmetic — add, move, trim with snapping and over
 | **Source** | `src/Timeline/` (5 files) |
 | **CMake target** | `TimelineEngine` (static library) |
 | **Type** | Static lib (linked into consumers) |
-| **Family** | [DirectUI engine layer](/docs/modules/dui-engine) |
+| **Family** | [DirectUI engine layer](/modules/dui-engine) |
 
 ## At a glance
 

@@ -11,7 +11,7 @@ description: The MP4 container parser — bounds-checked box walker with capped 
 | **Source** | `src/WLXMP4Parser/` |
 | **CMake target** | `WLXMP4Parser` |
 | **Type** | Win32 DLL (184 KB / 147 KB code, 50+ RTTI classes in the original) |
-| **Family** | [Media Foundation targets](/docs/modules/media-foundation) |
+| **Family** | [Media Foundation targets](/modules/media-foundation) |
 
 ## At a glance
 

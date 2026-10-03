@@ -11,7 +11,7 @@ description: The Windows Live ID client surface — login, tickets, and environm
 | **Source** | `src/wlidcli/` |
 | **CMake target** | `wlidcli` |
 | **Type** | Win32 DLL |
-| **Family** | [Platform services targets](/docs/modules/platform) |
+| **Family** | [Platform services targets](/modules/platform) |
 
 ## At a glance
 

@@ -168,8 +168,17 @@ HRESULT WINAPI D3DX11CompileEffectFromMemory(
 }
 
 // ============================================================================
-// TODO(reconstruction): Replace this compatibility fallback if an effect-framework replacement can
-// match the reference interface and behavior. D3DX11 no longer supplies the original framework.
+// D3DX11CreateEffectFromMemory
+//
+// Recreation note (documented parity): the D3DX11 effect framework is an
+// external Microsoft runtime (d3dx11_46.dll) that no longer ships with modern
+// Windows, and its full ID3DX11Effect surface (techniques, passes, variables,
+// reflection over the compiled effect blob) is declared in d3dx11compat.h but
+// not implemented. No in-process replacement can match the reference interface
+// and behavior without reimplementing the D3DX11 runtime itself, so this entry
+// point intentionally keeps the E_NOTIMPL fallback documented in ROADMAP.md's
+// SDK-compatibility table and StubDesign.md's render-pipeline stub category.
+// Callers must tolerate failure, as they do with the reference binaries.
 // ============================================================================
 HRESULT WINAPI D3DX11CreateEffectFromMemory(
     LPCVOID pData,

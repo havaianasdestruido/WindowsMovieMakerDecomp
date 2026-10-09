@@ -89,9 +89,16 @@ protected:
     bool                m_fInitialized;
     HANDLE              m_hSharedHandle;
 
+    // The D3D9 device backing the base interop path. Non-owning; set by the
+    // DX9 subclass (and any direct user of the base class).
+    IDirect3DDevice9*               m_pD3D9Device;
+
     CComPtr<IDirect3DTexture9>     m_spTexture;
     CComPtr<IDirect3DSurface9>     m_spSurface;
 
+    // Base implementations create the D3D9 texture/surface through
+    // m_pD3D9Device. The DX9 subclass shares them; the DX11 subclass
+    // overrides both with the D3D11 path.
     virtual HRESULT CreateTextureInternal();
     virtual HRESULT CreateSurfaceInternal();
 };

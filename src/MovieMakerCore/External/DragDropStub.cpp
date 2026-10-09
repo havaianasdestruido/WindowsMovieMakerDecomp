@@ -1,4 +1,4 @@
-﻿#include "pch.h"
+#include "pch.h"
 
 /*
  * DragDropStub.cpp
@@ -12,6 +12,122 @@
  */
 
 #include "DragDropStub.h"
+
+// ============================================================================
+// CEnumFormatEtc
+// ============================================================================
+// IEnumFORMATETC over a snapshot of FORMATETC entries. The snapshot keeps the
+// enumerator stable even if the underlying data entries change while the
+// enumerator is alive.
+//
+class CEnumFormatEtc : public IEnumFORMATETC
+{
+public:
+    explicit CEnumFormatEtc(const std::vector<FORMATETC>& entries)
+        : m_cRef(1)
+        , m_entries(entries)
+        , m_uIndex(0)
+    {
+    }
+
+    // IUnknown
+    STDMETHODIMP QueryInterface(REFIID riid, void** ppvObject)
+    {
+        if (!ppvObject)
+            return E_POINTER;
+
+        *ppvObject = nullptr;
+
+        if (riid == IID_IUnknown || riid == IID_IEnumFORMATETC)
+        {
+            *ppvObject = static_cast<IEnumFORMATETC*>(this);
+            AddRef();
+            return S_OK;
+        }
+
+        return E_NOINTERFACE;
+    }
+
+    STDMETHODIMP_(ULONG) AddRef()
+    {
+        return static_cast<ULONG>(InterlockedIncrement(&m_cRef));
+    }
+
+    STDMETHODIMP_(ULONG) Release()
+    {
+        long refCount = InterlockedDecrement(&m_cRef);
+        if (refCount == 0)
+        {
+            delete this;
+            return 0;
+        }
+        return static_cast<ULONG>(refCount);
+    }
+
+    // IEnumFORMATETC
+    STDMETHODIMP Next(ULONG celt, FORMATETC* rgelt, ULONG* pceltFetched)
+    {
+        if (!rgelt)
+            return E_POINTER;
+
+        ULONG cFetched = 0;
+        while (cFetched < celt && m_uIndex < m_entries.size())
+        {
+            rgelt[cFetched] = m_entries[m_uIndex];
+            // Hand out canonical entries: no target device.
+            rgelt[cFetched].ptd = nullptr;
+            ++m_uIndex;
+            ++cFetched;
+        }
+
+        if (pceltFetched)
+            *pceltFetched = cFetched;
+
+        return (cFetched == celt) ? S_OK : S_FALSE;
+    }
+
+    STDMETHODIMP Skip(ULONG celt)
+    {
+        // m_uIndex never exceeds m_entries.size(), so this cannot underflow.
+        if (celt > m_entries.size() - m_uIndex)
+        {
+            m_uIndex = static_cast<ULONG>(m_entries.size());
+            return S_FALSE;
+        }
+
+        m_uIndex += celt;
+        return S_OK;
+    }
+
+    STDMETHODIMP Reset()
+    {
+        m_uIndex = 0;
+        return S_OK;
+    }
+
+    STDMETHODIMP Clone(IEnumFORMATETC** ppenum)
+    {
+        if (!ppenum)
+            return E_POINTER;
+
+        *ppenum = nullptr;
+
+        CEnumFormatEtc* pClone = new CEnumFormatEtc(m_entries);
+        pClone->m_uIndex = m_uIndex;
+
+        *ppenum = pClone;
+        return S_OK;
+    }
+
+private:
+    ~CEnumFormatEtc()
+    {
+    }
+
+    long                    m_cRef;
+    std::vector<FORMATETC>  m_entries;
+    ULONG                   m_uIndex;
+};
 
 // ============================================================================
 // DynamicDataObjectWrapper implementation
@@ -73,6 +189,10 @@ STDMETHODIMP DynamicDataObjectWrapper::GetData(FORMATETC* pformatetcIn, STGMEDIU
 
     ZeroMemory(pmedium, sizeof(*pmedium));
 
+    // The wrapper stores every entry as a movable global handle.
+    if (!(pformatetcIn->tymed & TYMED_HGLOBAL))
+        return DV_E_TYMED;
+
     // Check if we have data in the requested format
     for (const auto& entry : m_dataEntries)
     {
@@ -106,16 +226,53 @@ STDMETHODIMP DynamicDataObjectWrapper::GetData(FORMATETC* pformatetcIn, STGMEDIU
 
 STDMETHODIMP DynamicDataObjectWrapper::GetDataHere(FORMATETC* pformatetc, STGMEDIUM* pmedium)
 {
-    UNREFERENCED_PARAMETER(pformatetc);
-    UNREFERENCED_PARAMETER(pmedium);
-    // TODO(reconstruction): Support caller-provided storage for compatible clipboard formats.
-    return E_NOTIMPL;
+    if (!pformatetc || !pmedium)
+        return E_POINTER;
+
+    // The wrapper stores every entry as a movable global handle, so only
+    // caller-provided HGLOBAL storage can be filled.
+    if (!(pformatetc->tymed & TYMED_HGLOBAL) || !(pmedium->tymed & TYMED_HGLOBAL))
+        return DV_E_TYMED;
+
+    for (const auto& entry : m_dataEntries)
+    {
+        if (entry.uClipFormat == pformatetc->cfFormat && entry.hData)
+        {
+            if (!pmedium->hGlobal)
+                return E_HANDLE;
+
+            SIZE_T cbSrc = ::GlobalSize(entry.hData);
+            SIZE_T cbDst = ::GlobalSize(pmedium->hGlobal);
+            if (cbDst < cbSrc)
+                return STG_E_MEDIUMFULL;
+
+            void* pSrc = ::GlobalLock(entry.hData);
+            void* pDst = ::GlobalLock(pmedium->hGlobal);
+            if (pSrc && pDst)
+                CopyMemory(pDst, pSrc, cbSrc);
+            if (pSrc) ::GlobalUnlock(entry.hData);
+            if (pDst) ::GlobalUnlock(pmedium->hGlobal);
+
+            if (!pSrc || !pDst)
+                return E_UNEXPECTED;
+
+            // Ownership of the caller-provided storage stays with the caller.
+            pmedium->pUnkForRelease = nullptr;
+            return S_OK;
+        }
+    }
+
+    return DV_E_FORMATETC;
 }
 
 STDMETHODIMP DynamicDataObjectWrapper::QueryGetData(FORMATETC* pformatetc)
 {
     if (!pformatetc)
         return E_INVALIDARG;
+
+    // The wrapper stores every entry as a movable global handle.
+    if (!(pformatetc->tymed & TYMED_HGLOBAL))
+        return DV_E_TYMED;
 
     for (const auto& entry : m_dataEntries)
     {
@@ -141,6 +298,38 @@ STDMETHODIMP DynamicDataObjectWrapper::SetData(FORMATETC* pformatetc, STGMEDIUM*
     if (!pformatetc || !pmedium)
         return E_POINTER;
 
+    // The wrapper only stores HGLOBAL payloads.
+    if (!(pmedium->tymed & TYMED_HGLOBAL) || !pmedium->hGlobal)
+        return DV_E_TYMED;
+
+    HANDLE hStored = nullptr;
+    if (fRelease)
+    {
+        // The caller transfers ownership of the medium.
+        hStored = pmedium->hGlobal;
+    }
+    else
+    {
+        // The caller keeps its medium; copy the payload.
+        SIZE_T cb = ::GlobalSize(pmedium->hGlobal);
+        hStored = ::GlobalAlloc(GMEM_MOVEABLE | GMEM_SHARE, cb);
+        if (!hStored)
+            return E_OUTOFMEMORY;
+
+        void* pSrc = ::GlobalLock(pmedium->hGlobal);
+        void* pDst = ::GlobalLock(hStored);
+        if (pSrc && pDst)
+            CopyMemory(pDst, pSrc, cb);
+        if (pSrc) ::GlobalUnlock(pmedium->hGlobal);
+        if (pDst) ::GlobalUnlock(hStored);
+
+        if (!pSrc || !pDst)
+        {
+            ::GlobalFree(hStored);
+            return E_UNEXPECTED;
+        }
+    }
+
     // Check if format already exists
     for (auto& entry : m_dataEntries)
     {
@@ -148,14 +337,14 @@ STDMETHODIMP DynamicDataObjectWrapper::SetData(FORMATETC* pformatetc, STGMEDIUM*
         {
             if (entry.hData)
                 ::GlobalFree(entry.hData);
-            entry.hData = fRelease ? pmedium->hGlobal : ::GlobalAlloc(GMEM_MOVEABLE, 0);
+            entry.hData = hStored;
             return S_OK;
         }
     }
 
     DataEntry entry;
     entry.uClipFormat = pformatetc->cfFormat;
-    entry.hData = fRelease ? pmedium->hGlobal : ::GlobalAlloc(GMEM_MOVEABLE, 0);
+    entry.hData = hStored;
     m_dataEntries.push_back(entry);
 
     return S_OK;
@@ -163,10 +352,33 @@ STDMETHODIMP DynamicDataObjectWrapper::SetData(FORMATETC* pformatetc, STGMEDIUM*
 
 STDMETHODIMP DynamicDataObjectWrapper::EnumFormatEtc(DWORD dwDirection, IEnumFORMATETC** ppenumFormatEtc)
 {
-    UNREFERENCED_PARAMETER(dwDirection);
-    UNREFERENCED_PARAMETER(ppenumFormatEtc);
-    // TODO(reconstruction): Return an IEnumFORMATETC over m_dataEntries for drag/drop consumers.
-    return E_NOTIMPL;
+    if (!ppenumFormatEtc)
+        return E_POINTER;
+
+    *ppenumFormatEtc = nullptr;
+
+    // The format set is fixed by SetData calls; there is nothing to enumerate
+    // for a set operation.
+    if (dwDirection == DATADIR_SET)
+        return E_NOTIMPL;
+
+    // Snapshot the current formats so the enumerator stays stable even if the
+    // underlying entries change while it is alive.
+    std::vector<FORMATETC> entries;
+    entries.reserve(m_dataEntries.size());
+    for (const auto& entry : m_dataEntries)
+    {
+        FORMATETC fmt = {};
+        fmt.cfFormat = static_cast<CLIPFORMAT>(entry.uClipFormat);
+        fmt.ptd = nullptr;
+        fmt.dwAspect = DVASPECT_CONTENT;
+        fmt.lindex = -1;
+        fmt.tymed = TYMED_HGLOBAL;
+        entries.push_back(fmt);
+    }
+
+    *ppenumFormatEtc = new CEnumFormatEtc(entries);
+    return S_OK;
 }
 
 STDMETHODIMP DynamicDataObjectWrapper::DAdvise(FORMATETC* pformatetc, DWORD advf, IAdviseSink* pAdvSink, DWORD* pdwConnection)

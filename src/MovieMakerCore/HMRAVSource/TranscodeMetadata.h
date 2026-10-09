@@ -139,6 +139,10 @@ public:
     HRESULT SetMetadataAttribute(LPCWSTR pszFilePath, REFGUID guidKey, LPCWSTR pszValue);
 
     // Thumbnail extraction
+    // Extracts the first video frame and encodes it as a JPEG. On success
+    // *ppData receives a CoTaskMemAlloc'd buffer (the caller frees it with
+    // CoTaskMemFree), *pcbData its size in bytes, and *pFormat receives
+    // GUID_ContainerFormatJpeg.
     HRESULT ExtractThumbnail(LPCWSTR pszFilePath, BYTE** ppData, DWORD* pcbData, GUID* pFormat);
 
     // Property system access

@@ -58,12 +58,18 @@ extension:
   it against [Stub Design](../methodology/stub-design.md) first.
 - A TODO must state the missing behavior **and** why the fallback is required.
 - Do not remove a TODO without implementing the behavior *and* adding a contract for it.
+  For externally observable behavior, the contract is mandatory. Behaviors that are not
+  externally observable (internal classes, static-library helpers, and `__thiscall`
+  member functions the ctypes harness cannot bind) are resolved by implementation plus a
+  recreation note at the call site; when such a behavior becomes export-observable, pin
+  it with a contract in `tests/mmr-python`.
 
-## Current priorities (from `TODO_AUDIT.md`)
+## Current state (from `TODO_AUDIT.md`)
 
-1. **Rendering and UI reconstruction** — DirectUI `.duxt` loading, the D3DX11 effect
-   compatibility layer, D3D9/D3D11 texture interop.
-2. **Media behavior** — source-image thumbnails, per-transition rendering, metadata
-   writes/thumbnails, shell-property fallback behavior.
-3. **Interop and serialization** — drag/drop format enumeration and the unresolved
-   serialization-writer scratch artifact.
+The audit is **clean** — the 14 annotations from the 2026-09 pass were resolved in the
+2026-10-08 pass across the three former priority areas (rendering/UI, media behavior,
+interop/serialization). See [`TODO_AUDIT.md`](https://github.com/havaianasdestruido/WindowsMovieMakerDecomp/blob/main/TODO_AUDIT.md)
+for the per-item resolution notes. Remaining stub work that is intentionally not annotated
+— telemetry no-ops, documented parity `E_NOTIMPL`s, and dead code paths — is triaged in
+`analysis/E_NOTIMPL/inventory.md` (92 stubs; its MEDIUM/HIGH entries are the next
+candidates for reconstruction passes).

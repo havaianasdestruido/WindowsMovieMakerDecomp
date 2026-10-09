@@ -14,11 +14,20 @@
 #include "pch.h"
 #include "MediaBrowser.h"
 #include "SundanceAppMain.h"
+#include "../External/DragDropStub.h"
 
 // ============================================================================
-// TODO(reconstruction): Provide a compatible IDataObject implementation for media drag/drop once
-// the original format set is recovered; the modern SDK has no CreateDataObject helper.
+// CreateDataObject
 // ============================================================================
+// Builds an IDataObject from caller-supplied format/medium pairs. The original
+// used the Windows Live shared component's data-object helper; the modern SDK
+// has no CreateDataObject entry point, so the same DynamicDataObjectWrapper the
+// original wrapped around is constructed directly. The media browser's drag
+// source carries a single CF_HDROP format (see BeginDrag).
+//
+// Ownership: on success the returned object owns every medium (they are stored
+// with fRelease = TRUE). On failure the caller retains ownership of all media.
+//
 static HRESULT CreateDataObject(
     const FORMATETC* pFormatEtc,
     const STGMEDIUM* pStgMedium,
@@ -28,8 +37,95 @@ static HRESULT CreateDataObject(
     if (!ppDataObject)
         return E_POINTER;
     *ppDataObject = NULL;
-    return E_NOTIMPL;
+
+    if (!pFormatEtc || !pStgMedium || cFormats == 0)
+        return E_INVALIDARG;
+
+    DynamicDataObjectWrapper* pWrapper = new DynamicDataObjectWrapper();
+
+    for (DWORD i = 0; i < cFormats; ++i)
+    {
+        FORMATETC fmt = pFormatEtc[i];
+        STGMEDIUM medium = pStgMedium[i];
+
+        // Takes ownership of the medium on success.
+        HRESULT hr = pWrapper->SetData(&fmt, &medium, TRUE);
+        if (FAILED(hr))
+        {
+            pWrapper->Release();
+            return hr;
+        }
+    }
+
+    *ppDataObject = pWrapper;
+    return S_OK;
 }
+
+// ============================================================================
+// CDropSource -- minimal IDropSource for DoDragDrop
+// ============================================================================
+// The original drag loop used the Windows Live shared drop source; this is the
+// standard minimal replacement (default cursors, drop on button release,
+// cancel on Escape).
+//
+class CDropSource : public IDropSource
+{
+public:
+    CDropSource()
+        : m_cRef(1)
+    {
+    }
+
+    // IUnknown
+    STDMETHODIMP QueryInterface(REFIID riid, void** ppvObject)
+    {
+        if (!ppvObject)
+            return E_POINTER;
+        *ppvObject = NULL;
+        if (riid == IID_IUnknown || riid == IID_IDropSource)
+        {
+            *ppvObject = static_cast<IDropSource*>(this);
+            AddRef();
+            return S_OK;
+        }
+        return E_NOINTERFACE;
+    }
+
+    STDMETHODIMP_(ULONG) AddRef()
+    {
+        return static_cast<ULONG>(InterlockedIncrement(&m_cRef));
+    }
+
+    STDMETHODIMP_(ULONG) Release()
+    {
+        long refCount = InterlockedDecrement(&m_cRef);
+        if (refCount == 0)
+        {
+            delete this;
+            return 0;
+        }
+        return static_cast<ULONG>(refCount);
+    }
+
+    // IDropSource
+    STDMETHODIMP QueryContinueDrag(BOOL fEscapePressed, DWORD grfKeyState)
+    {
+        if (fEscapePressed)
+            return DRAGDROP_S_CANCEL;
+        if (!(grfKeyState & MK_LBUTTON))
+            return DRAGDROP_S_DROP;
+        return S_OK;
+    }
+
+    STDMETHODIMP GiveFeedback(DWORD dwEffect)
+    {
+        UNREFERENCED_PARAMETER(dwEffect);
+        return DRAGDROP_S_USEDEFAULTCURSORS;
+    }
+
+private:
+    long m_cRef;
+};
 
 // ============================================================================
 // Supported file extensions (from disassembly string analysis)
@@ -483,12 +579,15 @@ HRESULT MediaBrowser::BeginDrag(DWORD dwIndex)
     m_dwDragIndex = dwIndex;
 
     IDataObject* pDataObject = NULL;
-    IDropSource* pDropSource = NULL;
+    CDropSource dropSource;
     DWORD dwEffect = DROPEFFECT_COPY;
 
     STGMEDIUM stgMedium = {};
     stgMedium.tymed = TYMED_HGLOBAL;
-    stgMedium.hGlobal = GlobalAlloc(GMEM_MOVEABLE, sizeof(CF_HDROP) + (m_items[dwIndex].strFilePath.GetLength() + 2) * sizeof(WCHAR));
+    // The medium holds a DROPFILES header followed by the double-null-
+    // terminated wide path list. (sizeof(CF_HDROP) is only the 4-byte format
+    // constant; the header is sizeof(DROPFILES).)
+    stgMedium.hGlobal = GlobalAlloc(GMEM_MOVEABLE, sizeof(DROPFILES) + (m_items[dwIndex].strFilePath.GetLength() + 2) * sizeof(WCHAR));
     if (!stgMedium.hGlobal)
     {
         m_bDragging = false;
@@ -508,8 +607,13 @@ HRESULT MediaBrowser::BeginDrag(DWORD dwIndex)
     HRESULT hr = CreateDataObject(&fmtetc, &stgMedium, 1, &pDataObject);
     if (SUCCEEDED(hr))
     {
-        hr = DoDragDrop(pDataObject, NULL, dwEffect, &dwEffect);
+        hr = DoDragDrop(pDataObject, &dropSource, dwEffect, &dwEffect);
         pDataObject->Release();
+    }
+    else
+    {
+        // CreateDataObject did not take ownership of the medium.
+        GlobalFree(stgMedium.hGlobal);
     }
 
     m_bDragging = false;

@@ -16,4 +16,5 @@ target_link_libraries(MediaCatalog PUBLIC
     mfplat
     mfreadwrite
     mf
+    windowscodecs
 )

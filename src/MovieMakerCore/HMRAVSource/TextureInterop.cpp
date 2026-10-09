@@ -15,6 +15,7 @@ namespace HMRAVSource
 TextureInterOp::TextureInterOp()
     : m_fInitialized(false)
     , m_hSharedHandle(nullptr)
+    , m_pD3D9Device(nullptr)
 {
 }
 
@@ -207,14 +208,50 @@ HRESULT TextureInterOp::GetSharedHandle(HANDLE* phShared)
 
 HRESULT TextureInterOp::CreateTextureInternal()
 {
-    // TODO(reconstruction): Create the D3D9 texture with the reference sharing flags.
-    return E_NOTIMPL;
+    // The base interop path is the D3D9 one. Shared textures are created by
+    // passing a shared-handle out-parameter to CreateTexture (D3D9Ex); the
+    // desc's fShared flag selects that reference sharing path.
+    if (!m_pD3D9Device)
+        return E_UNEXPECTED;
+
+    HANDLE hShared = nullptr;
+    HRESULT hr = m_pD3D9Device->CreateTexture(
+        m_desc.uWidth,
+        m_desc.uHeight,
+        1,
+        m_desc.uUsage ? m_desc.uUsage : D3DUSAGE_RENDERTARGET,
+        m_desc.d3dFormat,
+        D3DPOOL_DEFAULT,
+        &m_spTexture,
+        m_desc.fShared ? &hShared : nullptr);
+    if (FAILED(hr))
+        return hr;
+
+    if (hShared)
+        m_hSharedHandle = hShared;
+
+    return m_spTexture->GetSurfaceLevel(0, &m_spSurface);
 }
 
 HRESULT TextureInterOp::CreateSurfaceInternal()
 {
-    // TODO(reconstruction): Create the matching D3D9 surface for texture interop.
-    return E_NOTIMPL;
+    // Prefer the texture's level-0 surface; create a standalone render target
+    // when no texture exists yet.
+    if (m_spTexture)
+        return m_spTexture->GetSurfaceLevel(0, &m_spSurface);
+
+    if (!m_pD3D9Device)
+        return E_UNEXPECTED;
+
+    return m_pD3D9Device->CreateRenderTarget(
+        m_desc.uWidth,
+        m_desc.uHeight,
+        m_desc.d3dFormat,
+        D3DMULTISAMPLE_NONE,
+        0,
+        FALSE,
+        &m_spSurface,
+        nullptr);
 }
 
 // ============================================================================
@@ -238,6 +275,7 @@ HRESULT TextureInterOpDX9::Initialize(const TextureInteropDesc& desc, IDirect3DD
         return E_POINTER;
 
     m_pDevice = pDevice;
+    m_pD3D9Device = pDevice;
 
     HRESULT hr = TextureInterOp::Initialize(desc);
     if (FAILED(hr))
@@ -256,6 +294,7 @@ HRESULT TextureInterOpDX9::Initialize(const TextureInteropDesc& desc, IDirect3DD
 HRESULT TextureInterOpDX9::Shutdown()
 {
     m_pDevice = nullptr;
+    m_pD3D9Device = nullptr;
     m_hSharedTexture = nullptr;
     return TextureInterOp::Shutdown();
 }
@@ -265,22 +304,8 @@ HRESULT TextureInterOpDX9::CreateTextureFromDevice(IDirect3DDevice9* pDevice)
     if (!pDevice)
         return E_POINTER;
 
-    HRESULT hr = pDevice->CreateTexture(
-        m_desc.uWidth,
-        m_desc.uHeight,
-        1,
-        m_desc.uUsage ? m_desc.uUsage : D3DUSAGE_RENDERTARGET,
-        m_desc.d3dFormat,
-        D3DPOOL_DEFAULT,
-        &m_spTexture,
-        nullptr);
-
-    if (SUCCEEDED(hr) && m_spTexture)
-    {
-        hr = m_spTexture->GetSurfaceLevel(0, &m_spSurface);
-    }
-
-    return hr;
+    SetDevice(pDevice);
+    return TextureInterOp::CreateTextureInternal();
 }
 
 HRESULT TextureInterOpDX9::CopyFromSurface(IDirect3DSurface9* pSource)
@@ -309,6 +334,7 @@ IDirect3DDevice9* TextureInterOpDX9::GetDevice() const
 HRESULT TextureInterOpDX9::SetDevice(IDirect3DDevice9* pDevice)
 {
     m_pDevice = pDevice;
+    m_pD3D9Device = pDevice;
     return S_OK;
 }
 
@@ -357,26 +383,14 @@ HRESULT TextureInterOpDX9::OpenSharedTexture(IDirect3DDevice9* pDevice, HANDLE h
 
 HRESULT TextureInterOpDX9::CreateTextureInternal()
 {
-    if (!m_pDevice)
-        return E_UNEXPECTED;
-
-    return CreateTextureFromDevice(m_pDevice);
+    // The DX9 subclass shares the base D3D9 implementations; the device lives
+    // in the base class.
+    return TextureInterOp::CreateTextureInternal();
 }
 
 HRESULT TextureInterOpDX9::CreateSurfaceInternal()
 {
-    if (!m_pDevice)
-        return E_UNEXPECTED;
-
-    return m_pDevice->CreateRenderTarget(
-        m_desc.uWidth,
-        m_desc.uHeight,
-        m_desc.d3dFormat,
-        D3DMULTISAMPLE_NONE,
-        0,
-        FALSE,
-        &m_spSurface,
-        nullptr);
+    return TextureInterOp::CreateSurfaceInternal();
 }
 
 // ============================================================================

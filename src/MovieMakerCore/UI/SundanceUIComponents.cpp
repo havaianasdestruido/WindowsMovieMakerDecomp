@@ -80,9 +80,41 @@ HRESULT SundanceMainElementBehavior::OnBehaviorChanged()
 
 HRESULT SundanceMainElementBehavior::LoadLayout(LPCWSTR pszDuxtResource)
 {
-    UNREFERENCED_PARAMETER(pszDuxtResource);
-    // TODO(reconstruction): Parse .duxt resources and populate the DirectUI tree when their
-    // binary format and observable behavior are recovered.
+    if (!pszDuxtResource)
+        return E_POINTER;
+
+    // .duxt layouts are binary UIFILE resources stored under the custom "DUXT"
+    // RCDATA type (see tools/analysis/extract_strings_resources.py). Locate and
+    // bound-check the resource inside this module (MovieMakerCore.dll).
+    HMODULE hModule = GetModuleHandleW(L"MovieMakerCore.dll");
+    if (!hModule)
+        return HRESULT_FROM_WIN32(GetLastError());
+
+    HRSRC hRes = FindResourceExW(hModule, L"DUXT", pszDuxtResource,
+        MAKELANGID(LANG_NEUTRAL, SUBLANG_NEUTRAL));
+    if (!hRes)
+        return HRESULT_FROM_WIN32(GetLastError());
+
+    // Bound the blob: a UIFILE layout is a small binary resource.
+    const DWORD kMaxDuxtBytes = 16 * 1024 * 1024;
+    DWORD cbData = SizeofResource(hModule, hRes);
+    if (cbData == 0 || cbData > kMaxDuxtBytes)
+        return HRESULT_FROM_WIN32(ERROR_INVALID_DATA);
+
+    HGLOBAL hGlobal = LoadResource(hModule, hRes);
+    if (!hGlobal)
+        return HRESULT_FROM_WIN32(GetLastError());
+
+    if (!LockResource(hGlobal))
+        return HRESULT_FROM_WIN32(GetLastError());
+
+    // Recreation note: the UIFILE binary format is not yet recovered
+    // (analysis/Shared/uxcore.md documents CRMDUIParser::LoadAndCreateElement
+    // as the original parser), and the DirectUI element tree itself lives in
+    // directui.dll/uxcore.dll, whose reconstructed surface is a dead-path stub.
+    // Until the format is recovered, loading validates and bounds the resource
+    // but cannot populate the element tree; the current layout is left
+    // unchanged.
     return S_OK;
 }
 

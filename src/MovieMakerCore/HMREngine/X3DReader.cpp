@@ -56,18 +56,18 @@ namespace HMREngine
 
     HRESULT X3DReader::ParseX3D(const char* data, size_t length, X3DParseContext& ctx)
     {
-        std::string content(data, length);
+        // Detect format, allocating only a small string
+        std::string header(data, std::min<size_t>(length, 1024));
 
-        // Detect format
-        if (content.find("<X3D") != std::string::npos || content.find("<Scene") != std::string::npos)
+        if (header.find("<X3D") != std::string::npos || header.find("<Scene") != std::string::npos)
         {
             return ParseXML(data, length, ctx);
         }
-        else if (content.find("#X3D") != std::string::npos || content.find("PROFILE") != std::string::npos)
+        else if (header.find("#X3D") != std::string::npos || header.find("PROFILE") != std::string::npos)
         {
             return ParseX3DV1(data, length, ctx);
         }
-        else if (content[0] == '{')
+        else if (length > 0 && data[0] == '{')
         {
             return ParseJSON(data, length, ctx);
         }
@@ -75,10 +75,17 @@ namespace HMREngine
         return ParseX3DV1(data, length, ctx);
     }
 
+    struct MemBuf : std::streambuf {
+        MemBuf(const char* base, size_t size) {
+            char* p = const_cast<char*>(base);
+            this->setg(p, p, p + size);
+        }
+    };
+
     HRESULT X3DReader::ParseX3DV1(const char* data, size_t length, X3DParseContext& ctx)
     {
-        std::string content(data, length);
-        std::istringstream stream(content);
+        MemBuf sbuf(data, length);
+        std::istream stream(&sbuf);
         std::string line;
         int lineNum = 0;
 
@@ -115,8 +122,6 @@ namespace HMREngine
 
     HRESULT X3DReader::ParseXML(const char* data, size_t length, X3DParseContext& ctx)
     {
-        std::string content(data, length);
-
         // Create root layer
         CComObject<LayerNode>* rootLayer = nullptr;
         CComObject<LayerNode>::CreateInstance(&rootLayer);
@@ -125,15 +130,17 @@ namespace HMREngine
 
         // Parse XML elements (simplified - in production would use MSXML)
         size_t pos = 0;
-        while (pos < content.size())
+        while (pos < length)
         {
-            size_t tagStart = content.find('<', pos);
-            if (tagStart == std::string::npos) break;
+            const char* tagStartPtr = static_cast<const char*>(std::memchr(data + pos, '<', length - pos));
+            if (!tagStartPtr) break;
+            size_t tagStart = tagStartPtr - data;
 
-            size_t tagEnd = content.find('>', tagStart);
-            if (tagEnd == std::string::npos) break;
+            const char* tagEndPtr = static_cast<const char*>(std::memchr(data + tagStart, '>', length - tagStart));
+            if (!tagEndPtr) break;
+            size_t tagEnd = tagEndPtr - data;
 
-            std::string tag = content.substr(tagStart + 1, tagEnd - tagStart - 1);
+            std::string tag(data + tagStart + 1, tagEnd - tagStart - 1);
             pos = tagEnd + 1;
 
             if (tag[0] == '/') continue; // closing tag
@@ -170,27 +177,28 @@ namespace HMREngine
 
     HRESULT X3DReader::ParseJSON(const char* data, size_t length, X3DParseContext& ctx)
     {
-        std::string content(data, length);
         size_t pos = 0;
 
         auto skipWhitespace = [&]() {
-            while (pos < content.size() && (content[pos] == ' ' || content[pos] == '\t' ||
-                content[pos] == '\r' || content[pos] == '\n')) pos++;
+            while (pos < length && (data[pos] == ' ' || data[pos] == '\t' ||
+                data[pos] == '\r' || data[pos] == '\n')) pos++;
         };
 
         auto readToken = [&]() -> std::string {
             skipWhitespace();
-            if (pos >= content.size()) return "";
-            if (content[pos] == '"') {
+            if (pos >= length) return "";
+            if (data[pos] == '"') {
                 pos++;
                 size_t start = pos;
-                while (pos < content.size() && content[pos] != '"') pos++;
-                return content.substr(start, pos++ - start);
+                while (pos < length && data[pos] != '"') pos++;
+                std::string res(data + start, pos - start);
+                pos++;
+                return res;
             }
             size_t start = pos;
-            while (pos < content.size() && content[pos] != ',' && content[pos] != '}' &&
-                   content[pos] != ']' && content[pos] != ' ' && content[pos] != '\n') pos++;
-            return content.substr(start, pos - start);
+            while (pos < length && data[pos] != ',' && data[pos] != '}' &&
+                   data[pos] != ']' && data[pos] != ' ' && data[pos] != '\n') pos++;
+            return std::string(data + start, pos - start);
         };
 
         auto expect = [&](char c) {

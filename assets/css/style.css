@@ -444,6 +444,10 @@ code {
   box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
 }
 
+.wmmr-hero-picture {
+  display: block;
+}
+
 .wmmr-hero-fig img {
   width: 100%;
   max-height: 420px;

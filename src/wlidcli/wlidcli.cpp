@@ -2,7 +2,10 @@
 #include <ole2.h>
 
 static volatile LONG g_bSignedIn = 0;
-static volatile LONG g_dwNextHandle = 0x1000;
+// Handle sequence starts at 0x1000 (first call to
+// WLCreateIdentityHandle returns 0x1000) -- pre-decremented so the
+// InterlockedIncrement below yields the documented first value.
+static volatile LONG g_dwNextHandle = 0xFFF;
 
 static const WCHAR g_wszTicket[] = L"ticket=st%3d1%26token%3dWLID_SIMULATED_TOKEN";
 static const WCHAR g_wszEnvProduction[] = L"production";

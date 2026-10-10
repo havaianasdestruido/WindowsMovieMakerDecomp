@@ -330,6 +330,28 @@ memory.
 
 ---
 
+## 24. WLMFDS.dll Aborts DLL_PROCESS_ATTACH (LoadLibrary Fails with 1114)
+
+**File:** `src/WLMFDS/dllmain.cpp`
+
+The reference WLMFDS.dll (Media Foundation / DirectShow bridge) aborts
+`DLL_PROCESS_ATTACH`: `LoadLibrary("WLMFDS.dll")` fails with
+`ERROR_DLL_INIT_FAILED` (Win32 1114) in a fresh process, deterministically.
+The COM quartet is still present in the file's export table (visible via
+dumpbin), but the module is never actually resident in any process.
+
+This is pinned by two independent test suites:
+- `tests/mmr-python` contract `comstubs.test_wlmfds_load`
+  (docstring: "binary diverges from source, whose dllmain always returns TRUE")
+- `tests/mmr-gui` self-test `WLMFDS.load`
+  ("module cannot initialize; COM quartet exported (dumpbin) but DllMain init failure")
+
+The recreation's DllMain therefore returns FALSE on attach. **Do not
+"fix" this to return TRUE** — doing so breaks both contracts.
+No code in the recreation loads WLMFDS.dll, so the abort is safe.
+
+---
+
 ## How to Use This File
 
 For a "remix" build, search for each quirk's file location and apply fixes:

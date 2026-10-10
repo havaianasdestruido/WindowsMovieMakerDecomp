@@ -16,11 +16,15 @@ PropertyInfo* DialogHost::FrameTitleProp = &g_FrameTitleProp;
 // ====================================================================
 // HWNDElement
 // ====================================================================
-HRESULT HWNDElement::Create(HWNDElement** ppElement)
+HRESULT HWNDElement::Create(HWND* pParent, UINT dwStyle, HWND* pHwnd, Element** ppElement)
 {
     if (!ppElement) return E_POINTER;
     *ppElement = new HWNDElement();
-    return (*ppElement) ? S_OK : E_OUTOFMEMORY;
+    if (!*ppElement) return E_OUTOFMEMORY;
+    if (pHwnd)
+        *pHwnd = pParent;
+    UNREFERENCED_PARAMETER(dwStyle);
+    return S_OK;
 }
 
 HWND HWNDElement::GetRootHWND()
@@ -28,9 +32,9 @@ HWND HWNDElement::GetRootHWND()
     return m_hwnd;
 }
 
-HWNDElement* HWNDElement::GetKeyFocusedElement()
+Element* HWNDElement::GetKeyFocusedElement()
 {
-    return Element::g_focusedElement ? static_cast<HWNDElement*>(Element::g_focusedElement) : nullptr;
+    return Element::g_focusedElement;
 }
 
 
@@ -363,7 +367,7 @@ HRESULT CDUIDialog::OnMessage(UINT msg, WPARAM wParam, LPARAM lParam, LRESULT* p
     }
     case WM_KEYDOWN:
     {
-        HWNDElement* focused = GetKeyFocusedElement();
+        Element* focused = GetKeyFocusedElement();
         if (focused)
             focused->OnKeyDown((UINT)wParam);
         break;

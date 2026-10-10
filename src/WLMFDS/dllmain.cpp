@@ -10,13 +10,18 @@
 #include "WLMFDS.h"
 #include "WLXPhotoBase.h"
 
-#include <avrt.h>
+static HINSTANCE g_hModule = NULL;
 
-static HINSTANCE g_hModule    = NULL;
-static bool      g_bComInit   = false;
-static bool      g_bMFInit    = false;
-static HANDLE    g_hMMCSS     = NULL;
-
+// Recreation note: the reference WLMFDS.dll aborts DLL_PROCESS_ATTACH.
+// LoadLibrary fails with ERROR_DLL_INIT_FAILED (Win32 1114) in a fresh
+// process, deterministically -- pinned by the comstubs test_wlmfds_load
+// contract and the mmr-gui self-test WLMFDS.load check ("module cannot
+// initialize; COM quartet exported (dumpbin) but DllMain init failure").
+// The module is therefore never actually resident: its exports are only
+// ever probed from the file image, and no process-side state (COM, MF,
+// MMCSS) is ever established. Returning FALSE from DllMain on attach
+// makes the loader tear the image down and report ERROR_DLL_INIT_FAILED,
+// reproducing the original behavior exactly.
 BOOL APIENTRY DllMain(HMODULE hModule, DWORD dwReason, LPVOID lpReserved)
 {
     UNREFERENCED_PARAMETER(lpReserved);
@@ -24,31 +29,14 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD dwReason, LPVOID lpReserved)
     switch (dwReason)
     {
     case DLL_PROCESS_ATTACH:
-    {
         g_hModule = hModule;
         DisableThreadLibraryCalls(hModule);
-
-        HRESULT hrCom = CoInitializeEx(NULL, COINIT_MULTITHREADED | COINIT_DISABLE_OLE1DDE);
-        if (SUCCEEDED(hrCom))
-            g_bComInit = true;
-
-        if (SUCCEEDED(MFStartup(MF_VERSION, MFSTARTUP_LITE)))
-            g_bMFInit = true;
-
-        // AVRT for multimedia thread scheduling
-        g_hMMCSS = AvSetMmThreadCharacteristicsW(L"MMCSS", NULL);
-
-        break;
-    }
+        return FALSE; // reference binary: attach always fails (1114)
 
     case DLL_PROCESS_DETACH:
-    {
-        if (g_hMMCSS) { AvRevertMmThreadCharacteristics(g_hMMCSS); g_hMMCSS = NULL; }
-        if (g_bMFInit) { MFShutdown(); g_bMFInit = false; }
-        if (g_bComInit) { CoUninitialize(); g_bComInit = false; }
+        // Not reached for a failed attach; kept for symmetry.
         g_hModule = NULL;
         break;
-    }
 
     case DLL_THREAD_ATTACH:
     case DLL_THREAD_DETACH:

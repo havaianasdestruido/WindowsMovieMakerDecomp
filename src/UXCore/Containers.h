@@ -16,11 +16,18 @@ class CRMDUIParser;
 
 class __declspec(dllexport) HWNDElement : public Element {
 public:
-    static HRESULT Create(HWNDElement** ppElement);
+    // Signature pinned by the reference MovieMakerCore import
+    // ?Create@HWNDElement@DirectUI@@SGJPAUHWND__@@_NI1PAPAVElement@2@@Z
+    // (HWND*, UINT, HWND*, Element**) -> HRESULT.
+    static HRESULT Create(HWND* pParent, UINT dwStyle, HWND* pHwnd, Element** ppElement);
     static wchar_t const* Class() { return L"HWNDElement"; }
 
     HWND GetRootHWND();
-    HWNDElement* GetKeyFocusedElement();
+    // Static, returns Element* (not HWNDElement*): the reference
+    // MovieMakerCore imports the mangled export
+    // ?GetKeyFocusedElement@HWNDElement@DirectUI@@SGPAVElement@2@XZ,
+    // which pins both the static linkage and the Element* return type.
+    static Element* GetKeyFocusedElement();
     void SetRootHWND(HWND hwnd) { m_hwnd = hwnd; }
 
 protected:

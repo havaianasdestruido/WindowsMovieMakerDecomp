@@ -528,7 +528,73 @@ __declspec(dllexport) void* Internal_GetKeyFocusedElement_HWNDElement(void* hwnd
     return nullptr;
 }
 
+// Clean-C alias pinned by the reference export surface: the 19 cdecl
+// resource helpers include a plain GetKeyFocusedElement (no decoration),
+// distinct from the C++-mangled static
+// ?GetKeyFocusedElement@HWNDElement@DirectUI@@SGPAVElement@2@XZ
+// exported from Containers.h.
+__declspec(dllexport) void* GetKeyFocusedElement()
+{
+    if (DirectUI::Element::g_focusedElement)
+        return DirectUI::Element::g_focusedElement;
+    return nullptr;
+}
+
 } // extern "C"
 
-// Export alias for the decorated name expected by callers
-#pragma comment(linker, "/export:GetKeyFocusedElement@HWNDElement=Internal_GetKeyFocusedElement_HWNDElement")
+// ============================================================================
+// C++-mangled DirectUI exports.
+//
+// The reference MovieMakerCore imports the following decorated names from
+// UXCore (analysis/CrossDllImports/MovieMakerCore_dll_imports.txt); the
+// recreation must export the same symbols:
+//   ?LayerManagerInitThread@DirectUI@@YGJXZ
+//   ?LayerManagerUnInitThread@DirectUI@@YGJXZ
+//   ?DuiGetLayerManager@DirectUI@@YGPAUIUxLayerManager@@XZ
+//   ?StrToID@DirectUI@@YGGPB_W@Z
+//   ?InvalidateElement@DirectUI@@YGHPAVElement@1@@Z
+// (The clean cdecl helpers above are also present in the reference -
+// both surfaces coexist.)
+// ============================================================================
+
+// IUxLayerManager is a global-scope interface in the reference (the import
+// table encodes it unqualified: PAUIUxLayerManager@@).
+struct IUxLayerManager;
+
+namespace DirectUI
+{
+
+// ?LayerManagerInitThread@DirectUI@@YGJXZ
+__declspec(dllexport) HRESULT __stdcall LayerManagerInitThread()
+{
+    return ::LayerManagerInitThread();
+}
+
+// ?LayerManagerUnInitThread@DirectUI@@YGJXZ
+__declspec(dllexport) HRESULT __stdcall LayerManagerUnInitThread()
+{
+    ::LayerManagerUnInitThread();
+    return S_OK;
+}
+
+// ?DuiGetLayerManager@DirectUI@@YGPAUIUxLayerManager@@XZ
+__declspec(dllexport) IUxLayerManager* __stdcall DuiGetLayerManager()
+{
+    return static_cast<IUxLayerManager*>(::DuiGetLayerManager());
+}
+
+// ?StrToID@DirectUI@@YGGPB_W@Z
+__declspec(dllexport) unsigned int __stdcall StrToID(const wchar_t* str)
+{
+    return static_cast<unsigned int>(::StrToID(str));
+}
+
+// ?InvalidateElement@DirectUI@@YGHPAVElement@1@@Z
+__declspec(dllexport) HRESULT __stdcall InvalidateElement(Element* pElement)
+{
+    if (!pElement)
+        return E_INVALIDARG;
+    return pElement->Invalidate();
+}
+
+} // namespace DirectUI

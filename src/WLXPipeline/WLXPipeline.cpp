@@ -692,7 +692,11 @@ WLXPIPE_API HRESULT __stdcall GetPipelineCreateFunctions(void** ppFunctions, UIN
         return E_INVALIDARG;
 
     *ppFunctions = static_cast<void*>(&Pipeline::g_pipelineFunctions);
-    *pCount = sizeof(::PipelineCreateFunctions) / sizeof(void*);
+    // The reference DLL reports the field count of the function table
+    // (uVersion, uStructSize, pfnCreate, pfnDestroy, pfnProcess,
+    // pfnGetInfo) -- 6 -- not a byte-size derivation (pinned by the
+    // wlxpipeline contract: count == 6).
+    *pCount = PIPELINE_TABLE_FIELD_COUNT;
     return S_OK;
 }
 

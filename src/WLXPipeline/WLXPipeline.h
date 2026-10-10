@@ -96,6 +96,10 @@ typedef struct tagPipelineCreateFunctions
     PFN_PIPELINE_GETINFO    pfnGetInfo;
 } PipelineCreateFunctions;
 
+// Field count of the function table as reported by GetPipelineCreateFunctions
+// in the reference DLL (the ctypes contract pins count == 6).
+#define PIPELINE_TABLE_FIELD_COUNT  6
+
 // ============================================================================
 // Exported functions -- GetPipelineCreateFunctions + DllRegisterServer
 // ============================================================================

@@ -136,7 +136,11 @@ __declspec(dllexport) BOOL GetGadgetRect(void* hGadget, RECT* rc);
 __declspec(dllexport) BOOL GetGadgetSize(void* hGadget, SIZE* sz);
 __declspec(dllexport) HWND GetTopHWNDParent(HWND hWnd);
 
-// Exported as GetKeyFocusedElement@HWNDElement via pragma in Resources.cpp
+// Clean-C exports (cdecl, undecorated) for the focused-element lookup:
+// GetKeyFocusedElement and Internal_GetKeyFocusedElement_HWNDElement
+// (see Resources.cpp). The C++-mangled static
+// ?GetKeyFocusedElement@HWNDElement@DirectUI@@SGPAVElement@2@XZ is
+// exported separately from the dllexport-ed HWNDElement class.
 __declspec(dllexport) void* Internal_GetKeyFocusedElement_HWNDElement(void* hwndElement);
 
 } // extern "C"

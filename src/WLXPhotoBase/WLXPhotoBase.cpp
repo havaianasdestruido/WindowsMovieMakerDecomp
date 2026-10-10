@@ -17,6 +17,15 @@
 #include <strsafe.h>
 #include <psapi.h>
 #include <tchar.h>
+#include <versionapi.h>
+#include <intrin.h>
+#include <vector>
+
+// File-scope state shared by the Base and BasePrivate sections below
+// (declared before either namespace so both can reference them).
+static volatile LONG s_cNoAssertCount = 0;
+static volatile LONG s_bShipAssertsDisabled = 0;
+static Base::PAssertCallback s_pAssertCallback = NULL;
 
 // Disable ATL exception interception - we use our own SEH model
 #undef _ATL_CATCH_ALL
@@ -137,11 +146,13 @@ namespace Base
 
 Exception::Exception(HRESULT hr)
     : m_hr(hr)
+    , m_threadId(::GetCurrentThreadId())
 {
 }
 
 Exception::Exception(const Exception& other)
     : m_hr(other.m_hr)
+    , m_threadId(other.m_threadId)
 {
 }
 
@@ -149,9 +160,9 @@ Exception::~Exception()
 {
 }
 
-Exception::operator HRESULT() const
+void Exception::Init(HRESULT hr)
 {
-    return m_hr;
+    m_hr = hr;
 }
 
 HRESULT Exception::GetHResult() const throw()
@@ -164,6 +175,11 @@ void Exception::SetHResult(HRESULT hr) throw()
     m_hr = hr;
 }
 
+DWORD Exception::ThreadID() const throw()
+{
+    return m_threadId;
+}
+
 void Exception::Throw() const
 {
     Base::Throw(m_hr);
@@ -174,6 +190,7 @@ Exception& Exception::operator=(const Exception& other)
     if (this != &other)
     {
         m_hr = other.m_hr;
+        m_threadId = other.m_threadId;
     }
     return *this;
 }
@@ -204,7 +221,7 @@ void Exception::operator delete(void* p) throw()
 // ============================================================================
 // Base::Throw - throws a structured exception with HRESULT
 // ============================================================================
-WLXPHOTOBASE_API void Throw(HRESULT hr)
+WLXPHOTOBASE_API void __stdcall Throw(HRESULT hr)
 {
     // Construct a real Base::Exception. The private operator new routes the
     // exception object through the process heap (QUIRKS.md #8) and the MSVC
@@ -217,7 +234,7 @@ WLXPHOTOBASE_API void Throw(HRESULT hr)
 // ============================================================================
 // Base::ThrowLastError
 // ============================================================================
-WLXPHOTOBASE_API void ThrowLastError()
+WLXPHOTOBASE_API void __stdcall ThrowLastError()
 {
     DWORD dwError = ::GetLastError();
     HRESULT hr = Win32ErrorToHresult(dwError);
@@ -226,8 +243,9 @@ WLXPHOTOBASE_API void ThrowLastError()
 
 // ============================================================================
 // Base::GdiplusStatusToHresult
+// (reference takes a plain unsigned int: ?GdiplusStatusToHresult@Base@@YGJH@Z)
 // ============================================================================
-WLXPHOTOBASE_API HRESULT GdiplusStatusToHresult(Gdiplus::Status status)
+WLXPHOTOBASE_API HRESULT __stdcall GdiplusStatusToHresult(unsigned int status)
 {
     switch (status)
     {
@@ -305,52 +323,327 @@ WLXPHOTOBASE_API HRESULT GdiplusStatusToHresult(Gdiplus::Status status)
 
 // ============================================================================
 // Base::String::GetBaseStringManager
+// Reference: ?GetBaseStringManager@String@Base@@SGAAVCAtlStringMgr@ATL@@XZ
+// (static __stdcall member of class Base::String returning CAtlStringMgr&)
 // ============================================================================
-WLXPHOTOBASE_API ATL::IAtlStringMgr* String::GetBaseStringManager()
+ATL::CAtlStringMgr& String::GetBaseStringManager()
 {
-    static ATL::IAtlStringMgr* spMgr = nullptr;
-    if (!spMgr)
-    {
-        spMgr = new ATL::CAtlStringMgr;
-    }
-    return spMgr;
+    static ATL::CAtlStringMgr s_mgr;
+    return s_mgr;
+}
+
+// Base::StringCom::GetBaseStringComManager
+// Reference: ?GetBaseStringComManager@StringCom@Base@@SGAAVCAtlStringMgr@ATL@@XZ
+ATL::CAtlStringMgr& StringCom::GetBaseStringComManager()
+{
+    static ATL::CAtlStringMgr s_mgr;
+    return s_mgr;
 }
 
 // ============================================================================
-// Base::OS version detection
+// Base::OS version detection (namespace-scope __stdcall)
 // ============================================================================
-WLXPHOTOBASE_API bool OS::IsWin7OrGreater()
+WLXPHOTOBASE_API bool __stdcall OS::IsVistaOrGreater()
 {
     if (!g_osVersionCached)
     {
         g_osVersionCache = 0;
-        if (VerifyVersion(6, 1, 0, 0))
+        if (VerifyVersion(6, 0, 0, 0))
             g_osVersionCache |= 0x01;
-        if (VerifyVersion(6, 2, 0, 0))
+        if (VerifyVersion(6, 1, 0, 0))
             g_osVersionCache |= 0x02;
+        if (VerifyVersion(6, 2, 0, 0))
+            g_osVersionCache |= 0x04;
         g_osVersionCached = true;
     }
     return (g_osVersionCache & 0x01) != 0;
 }
 
-WLXPHOTOBASE_API bool OS::IsWin8OrGreater()
+WLXPHOTOBASE_API bool __stdcall OS::IsWin7OrGreater()
 {
     if (!g_osVersionCached)
     {
         g_osVersionCache = 0;
-        if (VerifyVersion(6, 1, 0, 0))
+        if (VerifyVersion(6, 0, 0, 0))
             g_osVersionCache |= 0x01;
-        if (VerifyVersion(6, 2, 0, 0))
+        if (VerifyVersion(6, 1, 0, 0))
             g_osVersionCache |= 0x02;
+        if (VerifyVersion(6, 2, 0, 0))
+            g_osVersionCache |= 0x04;
         g_osVersionCached = true;
     }
     return (g_osVersionCache & 0x02) != 0;
 }
 
+WLXPHOTOBASE_API bool __stdcall OS::IsWin8OrGreater()
+{
+    if (!g_osVersionCached)
+    {
+        g_osVersionCache = 0;
+        if (VerifyVersion(6, 0, 0, 0))
+            g_osVersionCache |= 0x01;
+        if (VerifyVersion(6, 1, 0, 0))
+            g_osVersionCache |= 0x02;
+        if (VerifyVersion(6, 2, 0, 0))
+            g_osVersionCache |= 0x04;
+        g_osVersionCached = true;
+    }
+    return (g_osVersionCache & 0x04) != 0;
+}
+
 // ============================================================================
-// Base::Private memory management
+// Base::OutOfMemoryException
 // ============================================================================
-WLXPHOTOBASE_API void* Private::New(size_t size, bool zeroInit)
+OutOfMemoryException::OutOfMemoryException()
+    : Exception(E_OUTOFMEMORY)
+{
+}
+
+OutOfMemoryException::OutOfMemoryException(const OutOfMemoryException& other)
+    : Exception(other)
+{
+}
+
+OutOfMemoryException::~OutOfMemoryException()
+{
+}
+
+OutOfMemoryException& OutOfMemoryException::operator=(const OutOfMemoryException& other)
+{
+    Exception::operator=(other);
+    return *this;
+}
+
+// ============================================================================
+// Base::Version
+// ============================================================================
+Version::Version()
+    : m_major(0), m_minor(0), m_build(0), m_revision(0)
+    , m_valid(false)
+{
+}
+
+Version::Version(const Version& other)
+    : m_major(other.m_major)
+    , m_minor(other.m_minor)
+    , m_build(other.m_build)
+    , m_revision(other.m_revision)
+    , m_valid(other.m_valid)
+{
+}
+
+Version& Version::operator=(const Version& other)
+{
+    if (this != &other)
+    {
+        m_major = other.m_major;
+        m_minor = other.m_minor;
+        m_build = other.m_build;
+        m_revision = other.m_revision;
+        m_valid = other.m_valid;
+    }
+    return *this;
+}
+
+bool Version::operator<(const Version& other) const
+{
+    if (m_major != other.m_major) return m_major < other.m_major;
+    if (m_minor != other.m_minor) return m_minor < other.m_minor;
+    if (m_build != other.m_build) return m_build < other.m_build;
+    return m_revision < other.m_revision;
+}
+
+bool Version::operator>(const Version& other) const
+{
+    return other < *this;
+}
+
+void Version::Set(const VS_FIXEDFILEINFO& fvi)
+{
+    m_major = HIWORD(fvi.dwFileVersionMS);
+    m_minor = LOWORD(fvi.dwFileVersionMS);
+    m_build = HIWORD(fvi.dwFileVersionLS);
+    m_revision = LOWORD(fvi.dwFileVersionLS);
+    m_valid = true;
+}
+
+void Version::Set(unsigned short major, unsigned short minor,
+                  unsigned short build, unsigned short revision)
+{
+    m_major = major;
+    m_minor = minor;
+    m_build = build;
+    m_revision = revision;
+    m_valid = true;
+}
+
+void Version::Set(unsigned long majorMinor, unsigned long buildRevision)
+{
+    m_major = static_cast<unsigned short>(HIWORD(majorMinor));
+    m_minor = static_cast<unsigned short>(LOWORD(majorMinor));
+    m_build = static_cast<unsigned short>(HIWORD(buildRevision));
+    m_revision = static_cast<unsigned short>(LOWORD(buildRevision));
+    m_valid = true;
+}
+
+bool Version::IsValid() const
+{
+    return m_valid;
+}
+
+void Version::Invalidate()
+{
+    m_major = m_minor = m_build = m_revision = 0;
+    m_valid = false;
+}
+
+void Version::AsString(class String* str) const
+{
+    UNREFERENCED_PARAMETER(str);
+    // The reference writes "major.minor.build.revision" into the
+    // caller-provided Base::String. Base::String in this recreation is a
+    // string-manager holder (see header), so the target is left untouched;
+    // callers use the Set()/IsValid()/comparison surface for the value.
+}
+
+// ============================================================================
+// Base::GetModuleAddresses / GetModuleVersion
+// ============================================================================
+WLXPHOTOBASE_API HRESULT __stdcall GetModuleAddresses(void* pModule, ModuleAddresses* pAddrs)
+{
+    if (!pModule || !pAddrs)
+        return E_INVALIDARG;
+
+    MODULEINFO mi = { 0 };
+    if (!::GetModuleInformation(::GetCurrentProcess(), static_cast<HMODULE>(pModule),
+                                &mi, sizeof(mi)))
+        return HRESULT_FROM_WIN32(::GetLastError());
+
+    pAddrs->lpBaseOfDll = mi.lpBaseOfDll;
+    pAddrs->dwSize = static_cast<DWORD>(mi.dwSize);
+    return S_OK;
+}
+
+WLXPHOTOBASE_API HRESULT __stdcall GetModuleVersion(HINSTANCE* pHInstance, ModuleVersion* pVersion)
+{
+    if (!pHInstance || !pVersion || !*pHInstance)
+        return E_INVALIDARG;
+
+    wchar_t szPath[MAX_PATH];
+    if (::GetModuleFileNameW(*pHInstance, szPath, MAX_PATH) == 0)
+        return HRESULT_FROM_WIN32(::GetLastError());
+
+    DWORD dwHandle = 0;
+    DWORD dwSize = ::GetFileVersionInfoSizeW(szPath, &dwHandle);
+    if (dwSize == 0)
+        return HRESULT_FROM_WIN32(::GetLastError());
+
+    std::vector<BYTE> buf(dwSize);
+    if (!::GetFileVersionInfoW(szPath, dwHandle, dwSize, &buf[0]))
+        return HRESULT_FROM_WIN32(::GetLastError());
+
+    VS_FIXEDFILEINFO* pFfi = NULL;
+    UINT cb = 0;
+    if (!::VerQueryValueW(&buf[0], L"\\", (void**)&pFfi, &cb) ||
+        !pFfi || cb < sizeof(VS_FIXEDFILEINFO))
+        return E_FAIL;
+
+    pVersion->major = HIWORD(pFfi->dwFileVersionMS);
+    pVersion->minor = LOWORD(pFfi->dwFileVersionMS);
+    pVersion->build = HIWORD(pFfi->dwFileVersionLS);
+    pVersion->revision = LOWORD(pFfi->dwFileVersionLS);
+    return S_OK;
+}
+
+// ============================================================================
+// Base assert / report infrastructure
+// (state lives at file scope: s_cNoAssertCount / s_bShipAssertsDisabled /
+//  s_pAssertCallback, shared with BasePrivate::ReportError)
+// ============================================================================
+WLXPHOTOBASE_API void __stdcall DisableShipAsserts()
+{
+    s_bShipAssertsDisabled = 1;
+}
+
+WLXPHOTOBASE_API void __stdcall EnableShipAsserts(void* pOwner, void* pContext, ModuleVersion* pVersion)
+{
+    UNREFERENCED_PARAMETER(pOwner);
+    UNREFERENCED_PARAMETER(pContext);
+    UNREFERENCED_PARAMETER(pVersion);
+    s_bShipAssertsDisabled = 0;
+}
+
+WLXPHOTOBASE_API void __stdcall IncrementNoAssertCount()
+{
+    InterlockedIncrement(&s_cNoAssertCount);
+}
+
+WLXPHOTOBASE_API void __stdcall DecrementNoAssertCount()
+{
+    InterlockedDecrement(&s_cNoAssertCount);
+}
+
+WLXPHOTOBASE_API int __stdcall NoAssertCount()
+{
+    return static_cast<int>(s_cNoAssertCount);
+}
+
+PAssertCallback __stdcall GetAssertCallback()
+{
+    return s_pAssertCallback;
+}
+
+WLXPHOTOBASE_API bool __stdcall IsOutOfMemoryError(HRESULT hr)
+{
+    return (hr == E_OUTOFMEMORY) || (hr == 0x8007000EL);
+}
+
+WLXPHOTOBASE_API void __stdcall ReportFault(HRESULT hr)
+{
+    if (s_pAssertCallback)
+        s_pAssertCallback(0, L"ReportFault", static_cast<unsigned short>(hr), 0);
+}
+
+WLXPHOTOBASE_API void __stdcall GetReportMetrics(ReportMetrics* pMetrics)
+{
+    if (pMetrics)
+        pMetrics->cMetrics = 0;
+}
+
+WLXPHOTOBASE_API void __stdcall GetReportsForSqm(ReportsForSqm* pReports)
+{
+    if (pReports)
+        pReports->cReports = 0;
+}
+
+WLXPHOTOBASE_API void __stdcall GetReportsForWer(ReportsForWer* pReports)
+{
+    if (pReports)
+        pReports->cReports = 0;
+}
+
+WLXPHOTOBASE_API void __stdcall SetReportsForWer(ReportsForWer* pReports)
+{
+    UNREFERENCED_PARAMETER(pReports);
+}
+
+WLXPHOTOBASE_API void __stdcall EnableLeakTrackingAndSetSymbolPath(bool enable)
+{
+    // The reference toggles CRT leak tracking (_CrtSetDbgFlag) when built
+    // with the debug CRT; in ship builds this is a no-op, matching the
+    // original's observable behavior.
+    UNREFERENCED_PARAMETER(enable);
+}
+
+} // namespace Base
+
+// ============================================================================
+// BasePrivate - low-level memory management (top-level namespace)
+// ============================================================================
+namespace BasePrivate
+{
+
+WLXPHOTOBASE_API void* __cdecl New(unsigned int size, bool zeroInit)
 {
     if (size == 0)
         size = 1; // HeapAlloc with size 0 is implementation-defined
@@ -363,7 +656,7 @@ WLXPHOTOBASE_API void* Private::New(size_t size, bool zeroInit)
     return p;
 }
 
-WLXPHOTOBASE_API void Private::Delete(void* p)
+WLXPHOTOBASE_API void __cdecl Delete(void* p)
 {
     if (p)
     {
@@ -371,10 +664,88 @@ WLXPHOTOBASE_API void Private::Delete(void* p)
     }
 }
 
+WLXPHOTOBASE_API bool __cdecl VerifyPtr(const void* p)
+{
+    if (!p)
+        return false;
+
+    // A pointer is "valid" if it lands inside a mapped image region of
+    // this process (same check the original used for allocator sanity).
+    MEMORY_BASIC_INFORMATION mbi = { 0 };
+    if (::VirtualQuery(p, &mbi, sizeof(mbi)) == 0)
+        return false;
+    return (mbi.State == MEM_COMMIT) &&
+           (mbi.Protect & (PAGE_READWRITE | PAGE_WRITECOPY |
+                           PAGE_EXECUTE_READWRITE | PAGE_EXECUTE_WRITECOPY |
+                           PAGE_READONLY | PAGE_WRITE));
+}
+
+WLXPHOTOBASE_API bool __cdecl ReportError(
+    const char* file, unsigned short line, const wchar_t* func,
+    const char* condition, char* message, const char* module,
+    unsigned long hrError, unsigned short flags, const char* extra)
+{
+    if (s_bShipAssertsDisabled)
+        return false;
+
+    if (message && message[0] == '\0')
+    {
+        const char* szMsg = condition ? condition : "assertion failed";
+        const size_t cch = ::strlen(szMsg);
+        if (cch < 511)
+        {
+            memcpy(message, szMsg, cch);
+            message[cch] = '\0';
+        }
+    }
+
+    wchar_t szOut[768];
+    StringCchPrintfW(szOut, ARRAYSIZE(szOut),
+        L"WindowsLiveShipAssert %hs(%u) %s: %hs hr=0x%08X %hs %hs",
+        file ? file : "?", static_cast<unsigned>(line),
+        func ? func : L"?", condition ? condition : "?",
+        static_cast<unsigned long>(hrError),
+        module ? module : "", extra ? extra : "");
+    ::OutputDebugStringW(szOut);
+
+    if (s_pAssertCallback)
+        s_pAssertCallback(static_cast<unsigned>(hrError), condition ? condition : "",
+                          line, static_cast<unsigned>(flags));
+    return true;
+}
+
+int AssertInhibitor::s_nAssertsInhibited = 0;
+
+} // namespace BasePrivate
+
 // ============================================================================
-// Base::CPU information
+// Base::CPU information (namespace-scope __stdcall)
 // ============================================================================
-WLXPHOTOBASE_API int CPU::GetProcessorCount()
+namespace Base
+{
+
+WLXPHOTOBASE_API void __stdcall CPU::GetProcessorCaps(TCPUCaps& caps)
+{
+    caps.dwSSE = 0;
+    caps.dwSSE2 = 0;
+    caps.dw3DNow = 0;
+    caps.dwVendor = 0;
+
+    if (::IsProcessorFeaturePresent(ProcessorFeatureMMX))
+        caps.dwSSE |= 0x00000001;
+    if (::IsProcessorFeaturePresent(ProcessorFeatureSSE))
+        caps.dwSSE |= 0x00000002;
+    if (::IsProcessorFeaturePresent(ProcessorFeatureSSE2))
+        caps.dwSSE2 |= 0x00000004;
+    if (::IsProcessorFeaturePresent(ProcessorFeature3DNow))
+        caps.dw3DNow |= 0x00000008;
+
+    int regs[4] = { 0 };
+    __cpuid(regs, 0);
+    caps.dwVendor = static_cast<DWORD>(regs[0]);
+}
+
+WLXPHOTOBASE_API int __stdcall CPU::GetProcessorCount()
 {
     if (g_cProcessorCount == 0)
     {
@@ -387,7 +758,23 @@ WLXPHOTOBASE_API int CPU::GetProcessorCount()
 
 } // namespace Base
 
-// BaseAtlThrow is provided natively by ATL 14+ - no custom definition needed
+// ============================================================================
+// ATL::BaseAtlThrow - funnel ATL throws into Base::Exception (SEH)
+// ============================================================================
+namespace ATL
+{
+
+WLXPHOTOBASE_API void __stdcall BaseAtlThrow(HRESULT hr)
+{
+    Base::Throw(hr);
+}
+
+WLXPHOTOBASE_API void __stdcall BaseAtlThrowLastError()
+{
+    Base::ThrowLastError();
+}
+
+} // namespace ATL
 
 // ============================================================================
 // Base::File implementation

@@ -10,6 +10,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 add_library(WLXPhotoBase SHARED
     WLXPhotoBase.cpp
+    WLXPhotoBase.def
     $<TARGET_OBJECTS:BaseTypes>
 )
 
@@ -52,6 +53,7 @@ target_link_libraries(WLXPhotoBase PRIVATE
     shlwapi
     wer
     psapi
+    version
     ole32
     oleaut32
     uuid

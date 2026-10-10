@@ -1,8 +1,18 @@
 LIBRARY UXCore
 
-; UXCore export surface is controlled via __declspec(dllexport) on all classes
-; and individual __declspec(dllexport) on free function declarations.
-; No .def entries needed - C++ decorated names are auto-exported by the compiler.
+; The UXCore export surface is controlled via __declspec(dllexport) on all
+; classes and on the free function declarations (C++-mangled names are
+; auto-exported by the compiler). The entries below add the CLEAN names
+; that the reference MovieMakerCore binds against from this DLL
+; (analysis/CrossDllImports/MovieMakerCore_dll_imports.txt lists the
+; undecorated UXCoreInitProcess / UXCoreInitThread / UXCoreUnInitProcess /
+; UXCoreUnInitThread / DuiCreateObject / UxGetClassObject imports, while
+; the ctypes contract pins the decorated _...@N forms - the reference
+; exports both).
 EXPORTS
-    ; Reserved for future explicit ordinal exports if needed
-    ; (see UXCore.cpp and individual source files for all exported symbols)
+    UXCoreInitProcess    = _UXCoreInitProcess@0
+    UXCoreInitThread     = _UXCoreInitThread@0
+    UXCoreUnInitProcess  = _UXCoreUnInitProcess@0
+    UXCoreUnInitThread   = _UXCoreUnInitThread@0
+    UxGetClassObject     = _UxGetClassObject@12
+    DuiCreateObject      = _DuiCreateObject@8

@@ -1,39 +1,115 @@
 LIBRARY WLXPhotoBase
 EXPORTS
-    ; Base::Exception
+    ; =====================================================================
+    ; Reference-named exports (analysis/WLXPhotoBase/analysis.md,
+    ; "Complete Export Table (56 functions)") plus the undecorated
+    ; _WLXPhotoBase_Init@0 pinned by the wlxphotobase ctypes contract.
+    ;
+    ; Mangling notes: Q = public __thiscall, M = protected, A = private,
+    ; U = virtual, S = static, I = explicit ctor, Y = namespace/free
+    ; function (G = __stdcall, A = __cdecl).
+    ; =====================================================================
+
+    ; Undecorated init entry (contract: wlxphotobase test_wlxphotobase_init)
+    _WLXPhotoBase_Init@0
+
+    ; ---- Base::Exception ------------------------------------------------
+    ; Reference ctor is the explicit form (I-prefix). The recreation's
+    ; ctor is the public non-explicit QAE form; the reference name is
+    ; bound to it (identical ABI: thiscall this+long).
+    ??0Exception@Base@@IAE@J@Z = ??0Exception@Base@@QAE@J@Z
     ??0Exception@Base@@QAE@ABV01@@Z
-    ??0Exception@Base@@QAE@J@Z
     ??1Exception@Base@@UAE@XZ
-    ??BException@Base@@QBEJXZ
     ??4Exception@Base@@QAEAAV01@ABV01@@Z
+    ??_7Exception@Base@@6B@
+    ; Reference "operator long() const" conversion export. The recreation
+    ; exposes the same behavior through the public const member
+    ; GetHResult(); the reference name is bound to that symbol so the
+    ; export table matches the original byte-for-byte.
+    ??BException@Base@@QBEJXZ = ?GetHResult@Exception@Base@@QBEJXZ
+    ; Reference private Init(long) member. Bound to the recreation's
+    ; public member of the same signature (identical ABI).
+    ?Init@Exception@Base@@AAEXJ@Z = ?Init@Exception@Base@@QAEAJXZ
+    ?ThreadID@Exception@Base@@QBEKXZ
 
-    ; Base::Throw / ThrowLastError / GdiplusStatusToHresult
-    ?Throw@Base@@SAXJ@Z
-    ?ThrowLastError@Base@@SAXXZ
-    ?GdiplusStatusToHresult@Base@@SAJW4Status@Gdiplus@@@Z
+    ; ---- Base::OutOfMemoryException -------------------------------------
+    ??0OutOfMemoryException@Base@@IAE@XZ = ??0OutOfMemoryException@Base@@QAE@XZ
+    ??0OutOfMemoryException@Base@@QAE@ABV01@@Z
+    ??1OutOfMemoryException@Base@@UAE@XZ
+    ??4OutOfMemoryException@Base@@QAEAAV01@ABV01@@Z
+    ??_7OutOfMemoryException@Base@@6B@
 
-    ; Base::String
-    ?GetBaseStringManager@String@Base@@SAPAUIAtlStringMgr@ATL@@XZ
+    ; ---- Base::Version ---------------------------------------------------
+    ??0Version@Base@@QAE@XZ
+    ??0Version@Base@@QAE@ABV01@@Z
+    ??4Version@Base@@QAEAAV01@ABV01@@Z
+    ??MVersion@Base@@QBE_NABV01@@Z
+    ??OVersion@Base@@QBE_NABV01@@Z
+    ?AsString@Version@Base@@QBEXPAVString@2@@Z
+    ?Invalidate@Version@Base@@QAEXXZ
+    ?IsValid@Version@Base@@QBE_NXZ
+    ?Set@Version@Base@@QAEXABUtagVS_FIXEDFILEINFO@@@Z
+    ?Set@Version@Base@@QAEXGGGG@Z
+    ?Set@Version@Base@@QAEXKK@Z
 
-    ; Base::OS
-    ?IsWin7OrGreater@OS@Base@@SA_NXZ
-    ?IsWin8OrGreater@OS@Base@@SA_NXZ
+    ; ---- Base free functions (namespace-scope __stdcall) ----------------
+    ?Throw@Base@@YGXJ@Z
+    ?ThrowLastError@Base@@YGXXZ
+    ?GdiplusStatusToHresult@Base@@YGJH@Z
+    ?DecrementNoAssertCount@Base@@YGXXZ
+    ?DisableShipAsserts@Base@@YGXXZ
+    ?EnableLeakTrackingAndSetSymbolPath@Base@@YGX_N@Z
+    ?EnableShipAsserts@Base@@YGXPAX0PAUModuleVersion@1@@Z
+    ?GetAssertCallback@Base@@YGAAP6G_NPBDH0@ZXZ
+    ?GetModuleAddresses@Base@@YGJPAXPAUModuleAddresses@1@@Z
+    ?GetModuleVersion@Base@@YGJPAUHINSTANCE__@@PAUModuleVersion@1@@Z
+    ?GetReportMetrics@Base@@YGXPAUReportMetrics@1@@Z
+    ?GetReportsForSqm@Base@@YGXPAUReportsForSqm@1@@Z
+    ?GetReportsForWer@Base@@YGXPAUReportsForWer@1@@Z
+    ?IncrementNoAssertCount@Base@@YGXXZ
+    ?IsOutOfMemoryError@Base@@YG_NJ@Z
+    ?ReportFault@Base@@YGXJ@Z
+    ?SetReportsForWer@Base@@YGXPAUReportsForWer@1@@Z
 
-    ; Base::Private
-    ?Delete@Private@Base@@SAXPAX@Z
-    ?New@Private@Base@@SAPAXI_N@Z
+    ; ---- ATL throw funnel ------------------------------------------------
+    ?BaseAtlThrow@ATL@@YGXJ@Z
+    ?BaseAtlThrowLastError@ATL@@YGXXZ
 
-    ; Base::CPU
-    ?GetProcessorCount@CPU@Base@@SAHXZ
+    ; ---- Base::String / Base::StringCom (static, __stdcall) -------------
+    ?GetBaseStringManager@String@Base@@SGAAVCAtlStringMgr@ATL@@XZ
+    ?GetBaseStringComManager@StringCom@Base@@SGAAVCAtlStringMgr@ATL@@XZ
 
-    ; ATL
-    ?BaseAtlThrow@ATL@@YAXJ@Z
+    ; ---- Base::OS / Base::CPU (namespace-scope __stdcall) ---------------
+    ?IsVistaOrGreater@OS@Base@@YG_NXZ
+    ?IsWin7OrGreater@OS@Base@@YG_NXZ
+    ?IsWin8OrGreater@OS@Base@@YG_NXZ
+    ?GetProcessorCaps@CPU@Base@@YGXAATCPUCaps@12@@Z
+    ?GetProcessorCount@CPU@Base@@YGHXZ
+
+    ; ---- BasePrivate (top-level namespace, __cdecl) ---------------------
+    ?New@BasePrivate@@YAPAXI_N@Z
+    ?Delete@BasePrivate@@YAXPAX@Z
+    ?VerifyPtr@BasePrivate@@YA_NPBX@Z
+    ?ReportError@BasePrivate@@YA_NPBDHPB_W0PAD0KH0@Z
+
+    ; =====================================================================
+    ; Recreation-consumer compatibility exports.
+    ;
+    ; These classes are NOT in the original DLL's export table (the
+    ; original MovieMakerCore/WLMFReadWrite never imported them - see
+    ; analysis/CrossDllImports), but the recreation's other modules
+    ; (WLMFReadWrite, MovieMakerCore, MovieMakerPreviewClient) call into
+    ; them through this DLL's import table, so they must stay exported
+    ; for the recreation to link. Documented deviation from the
+    ; reference export surface.
+    ; =====================================================================
 
     ; Base::File
     ?GetFileName@File@Base@@QBE?AV?$CStringT@DV?$StrTraitMFC@DV?$ChTraitsCRT@D@ATL@@@ATL@@@@XZ
     ?GetPath@File@Base@@QBE?AV?$CStringT@DV?$StrTraitMFC@DV?$ChTraitsCRT@D@ATL@@@ATL@@@@XZ
     ?IsValid@File@Base@@QBE_NXZ
     ?GetFileSize@File@Base@@QBE_KXZ
+    ??0File@Base@@QAE@XZ
 
     ; Base::TempFile
     ?Create@TempFile@Base@@QAE_NPBD@Z
@@ -58,7 +134,7 @@ EXPORTS
     ?GetGdiplusStatus@GdiException@Base@@QBE?AW4Status@Gdiplus@@XZ
     ??1GdiException@Base@@UAE@XZ
 
-    ; Base::IntSet
+    ; Base::DataStructs::IntSet
     ?Add@IntSet@DataStructs@Base@@QAEXH@Z
     ?Remove@IntSet@DataStructs@Base@@QAEXH@Z
     ?Contains@IntSet@DataStructs@Base@@QBE_NH@Z

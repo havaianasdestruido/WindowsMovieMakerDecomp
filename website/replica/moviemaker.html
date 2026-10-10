@@ -1,0 +1,719 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<!--
+  Windows Live Movie Maker 2012 (Sundance, 16.4.3528.0331) - UI replica
+  1:1 reconstruction of the Windows 7 / Aero-lite frame, Ribbon, preview
+  pane, filmstrip storyboard and status bar, measured against reference
+  screenshots of the original binary.
+  Self-contained: no external assets. Fonts fall back to the Segoe UI
+  stack the original used.
+-->
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Untitled - Windows Live Movie Maker</title>
+<style>
+  :root {
+    --frame-bg: #ffffff;
+    --caption-text: #1e1e1e;
+    --file-tab-blue: #1574c4;
+    --file-tab-blue-hot: #3c8fd4;
+    --tabstrip-bg: #f6f6f7;
+    --tab-active-bg: #ffffff;
+    --tab-text: #1e1e1e;
+    --ribbon-bg: #f4f5f7;
+    --ribbon-group-label: #6d6d6d;
+    --ribbon-line: #d9dce1;
+    --ctx-video-yellow: #f0ef87;
+    --ctx-video-band: #e9e878;
+    --ctx-text-pink: #e3c8f5;
+    --ctx-text-band: #dcb6f0;
+    --panel-bg: #ffffff;
+    --splitter: #e3e3e5;
+    --statusbar-bg: #eaf3fa;
+    --statusbar-line: #d5e5f0;
+    --statusbar-text: #3a3a3a;
+    --selection-blue: #5aa4e0;
+    --clip-label-bg: #ffffff;
+    --clip-label-border: #b9c6d4;
+    --transport-blue: #1d6fc2;
+    --scrollbar-thumb: #cdd6de;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; }
+  body {
+    font-family: "Segoe UI", "Noto Sans", Tahoma, "DejaVu Sans", sans-serif;
+    font-size: 12px;
+    background: #6b7a88; /* desktop backdrop behind the window */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+  }
+
+  /* ======================================================================
+     Main window: Aero-lite frame (Win7/WLPG-era): 1px gray border,
+     white caption band, centered title, caption buttons
+     ====================================================================== */
+  #window {
+    width: 1156px;
+    height: 746px;
+    max-width: 100vw;
+    max-height: 100vh;
+    background: var(--frame-bg);
+    border: 1px solid #8d9297;
+    box-shadow: 0 18px 44px rgba(0,0,0,.45);
+    display: flex;
+    flex-direction: column;
+    user-select: none;
+    position: relative;
+  }
+
+  /* ---- caption ---- */
+  #caption {
+    height: 30px;
+    flex: 0 0 30px;
+    background: var(--frame-bg);
+    display: flex;
+    align-items: center;
+    position: relative;
+  }
+  #appicon {
+    width: 16px; height: 16px;
+    margin: 0 6px 0 8px;
+    flex: 0 0 16px;
+  }
+  /* Quick Access Toolbar lives in the caption row, left of the centered title */
+  #qat {
+    display: flex;
+    align-items: center;
+    gap: 3px;
+    margin: 0 4px 0 2px;
+  }
+  #qat .qi { width: 16px; height: 16px; display: flex; align-items: center; justify-content: center; }
+  #qat .qi svg { display: block; }
+  #qat .qsep { width: 1px; height: 14px; background: #cfd3d8; margin: 0 3px; }
+  #title {
+    position: absolute;
+    left: 0; right: 0;
+    text-align: center;
+    font-size: 12px;
+    color: var(--caption-text);
+    white-space: nowrap;
+    overflow: hidden;
+    pointer-events: none;
+  }
+  #captionbuttons { margin-left: auto; display: flex; height: 100%; }
+  .capbtn {
+    width: 29px; height: 100%;
+    display: flex; align-items: center; justify-content: center;
+    color: #000;
+  }
+  .capbtn:hover { background: #e5eff8; }
+  .capbtn.close:hover { background: #e81123; color: #fff; }
+  .capbtn svg { display: block; }
+
+  /* ---- ribbon ---- */
+  #ribbonhost { flex: 0 0 auto; position: relative; background: var(--tabstrip-bg); }
+
+  #tabstrip {
+    height: 23px;
+    display: flex;
+    align-items: flex-end;
+    padding: 0 2px;
+    background: var(--tabstrip-bg);
+    border-top: 1px solid #e4e6e9;
+    position: relative;
+  }
+
+  .tabs { display: flex; align-items: flex-end; height: 100%; margin-left: 2px; }
+  .tab {
+    height: 23px;
+    padding: 0 11px 1px;
+    display: flex; align-items: center;
+    font-size: 12px;
+    color: var(--tab-text);
+    border: 1px solid transparent;
+    border-bottom: none;
+    border-radius: 2px 2px 0 0;
+    position: relative;
+    cursor: default;
+    white-space: nowrap;
+  }
+  .tab:hover { background: #dce9f5; border-color: #b8d2ea; }
+  .tab.active {
+    background: var(--tab-active-bg);
+    border-color: #c6ccd3;
+    box-shadow: 0 1px 0 #fff;
+    margin-bottom: -1px;
+    padding-bottom: 2px;
+    height: 24px;
+  }
+  .tab.file {
+    background: linear-gradient(#2b84d6, #1272bf);
+    color: #fff;
+    border-radius: 2px;
+    height: 21px;
+    margin: 0 6px 1px 3px;
+    padding: 0 14px;
+  }
+  .tab.file:hover { background: var(--file-tab-blue-hot); }
+
+  /* Contextual tabs: colored band behind the upper half
+     ("Video Tools" / "Text Tools" caption), label on the tab strip below */
+  .tab.ctx {
+    margin-left: 4px;
+    background: transparent;
+    border-radius: 0;
+    padding: 0 12px 1px;
+    flex-direction: column;
+    justify-content: flex-end;
+    gap: 1px;
+  }
+  .tab.ctx .band {
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 12px;
+  }
+  .tab.ctx.band-video .band { background: var(--ctx-video-yellow); }
+  .tab.ctx.band-text  .band { background: var(--ctx-text-pink); }
+  .tab.ctx .ctxsup {
+    font-size: 10px;
+    line-height: 11px;
+    color: #1a1a1a;
+    position: relative;
+  }
+  .tab.ctx .ctxlabel { position: relative; line-height: 11px; }
+  .tab.ctx.active { background: var(--tab-active-bg); border-color: #c6ccd3; }
+  .tab.ctx.band-video.active .band { background: var(--ctx-video-band); }
+  .tab.ctx.band-text.active .band  { background: var(--ctx-text-band); }
+  #helpbtn {
+    position: absolute;
+    right: 10px; top: 3px;
+    width: 18px; height: 18px;
+  }
+
+  /* ---- ribbon body ---- */
+  #ribbonbody {
+    height: 84px;
+    background: var(--ribbon-bg);
+    border-bottom: 1px solid var(--ribbon-line);
+    display: flex;
+    align-items: stretch;
+    padding: 4px 2px 0;
+    position: relative;
+  }
+  .rgroup {
+    display: flex;
+    flex-direction: column;
+    padding: 2px 8px 0;
+    position: relative;
+  }
+  .rgroup + .rgroup::before {
+    content: "";
+    position: absolute; left: 0; top: 4px; bottom: 16px;
+    width: 1px;
+    background: #dde0e4;
+  }
+  .rcontrols { display: flex; align-items: flex-start; gap: 2px; flex: 1 1 auto; }
+  .rlabel {
+    height: 15px;
+    margin-top: 2px;
+    text-align: center;
+    color: var(--ribbon-group-label);
+    font-size: 11px;
+  }
+
+  .rbig {
+    width: 47px;
+    display: flex; flex-direction: column; align-items: center;
+    font-size: 11px; color: #1e1e1e;
+    text-align: center;
+    padding: 2px 1px 0;
+    border: 1px solid transparent; border-radius: 2px;
+    line-height: 1.15;
+  }
+  .rbig:hover { background: #dceaf7; border-color: #b9d5ec; }
+  .rbig .lbl { white-space: nowrap; display: block; line-height: 12px; }
+  .rbig .ic { width: 30px; height: 30px; margin-bottom: 2px; display:flex; align-items:center; justify-content:center; }
+
+  .rsmall-stack { display: flex; flex-direction: column; gap: 1px; }
+  .rsmall {
+    height: 18px;
+    padding: 0 5px 0 2px;
+    display: flex; align-items: center; gap: 5px;
+    font-size: 11px; color: #1e1e1e;
+    white-space: nowrap;
+    border: 1px solid transparent; border-radius: 2px;
+  }
+  .rsmall:hover { background: #dceaf7; border-color: #b9d5ec; }
+  .rsmall .ic { width: 16px; height: 16px; flex: 0 0 16px; }
+  .rsmall .dd { font-size: 9px; color: #444; margin-left: 1px; }
+  .rsmall.disabled, .rbig.disabled { color: #9aa0a6; }
+  .rsmall.disabled .ic, .rbig.disabled .ic { opacity: .45; }
+
+  .autobar {
+    width: 218px;
+    height: 46px;
+    display: flex;
+    gap: 3px;
+    background: #fff;
+    border: 1px solid #c9ced4;
+    border-radius: 2px;
+    padding: 2px;
+  }
+  .autobar .th {
+    width: 48px; height: 42px;
+    border: 1px solid #cfd6dd;
+    border-radius: 1px;
+    background: #fff;
+    position: relative;
+  }
+  .autobar .th.sel { outline: 2px solid #7fb1e4; outline-offset: -1px; }
+  .autobar .th svg { display: block; }
+  .autobar .arrows { display: flex; flex-direction: column; justify-content: space-between; padding: 2px 1px; }
+  .autobar .arrows span { color: #5a5f65; font-size: 8px; line-height: 8px; text-align: center; }
+
+  /* ======================================================================
+     Content: preview pane | splitter | filmstrip
+     ====================================================================== */
+  #content { flex: 1 1 auto; display: flex; min-height: 0; background: var(--panel-bg); }
+
+  #previewpane {
+    flex: 1 1 auto;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    background: var(--panel-bg);
+    min-width: 0;
+  }
+  #videostage { flex: 1 1 auto; position: relative; }
+  #videoframe {
+    position: absolute;
+    left: 50%; top: 44%;
+    transform: translate(-50%, -50%);
+    background: #000;
+    display: none;
+    box-shadow: 0 0 0 1px rgba(0,0,0,.35);
+  }
+  #emptyhint { position: absolute; inset: 0; }
+
+  /* seek + transport under the video */
+  #transportzone { flex: 0 0 46px; padding: 0 10px 6px; }
+  #seekrow { position: relative; height: 14px; margin: 0 6px 4px; }
+  #seekrow .track {
+    position: absolute; left: 0; right: 0; top: 6px; height: 3px;
+    background: #cfd8e0; border-radius: 2px;
+  }
+  #seekrow .played { position: absolute; left: 0; top: 6px; height: 3px; background: var(--transport-blue); border-radius: 2px; width: 32%; }
+  #seekrow .thumb {
+    position: absolute; top: 3px; left: 32%;
+    width: 9px; height: 9px; border-radius: 50%;
+    background: var(--transport-blue);
+    box-shadow: 0 0 0 1px #fff inset;
+  }
+  #timerow {
+    position: absolute; right: 10px; top: -6px;
+    font-size: 11px; color: #8a9199;
+  }
+  #transportrow { display: flex; align-items: center; justify-content: center; gap: 14px; height: 26px; }
+  .tbtn { width: 22px; height: 22px; display: flex; align-items: center; justify-content: center; }
+  .tbtn svg { display: block; }
+
+  #vsplitter { flex: 0 0 4px; background: var(--splitter); cursor: col-resize; }
+
+  /* ---- filmstrip ---- */
+  #storypanepane { flex: 0 0 552px; position: relative; background: var(--panel-bg); min-width: 0; }
+  #storyscroll {
+    position: absolute; inset: 0 14px 0 0;
+    overflow-y: auto; overflow-x: hidden;
+    padding: 10px 12px 12px;
+  }
+  #storyscroll::-webkit-scrollbar { width: 14px; }
+  #storyscroll::-webkit-scrollbar-thumb { background: var(--scrollbar-thumb); border: 3px solid #fff; border-radius: 7px; }
+  #storyscroll::-webkit-scrollbar-track { background: #fbfbfc; }
+
+  .clip {
+    position: relative;
+    margin: 0 0 14px;
+    border: 1px solid #aeb7c0;
+    outline: 1px solid #fff;
+    background: #17191c;
+    height: 96px;
+  }
+  .clip .sp { position: absolute; top: 0; bottom: 0; width: 9px; background:
+    repeating-linear-gradient(to bottom, #f2f4f6 0 4px, #c9ced4 4px 7px); }
+  .clip .sp.l { left: 0; border-right: 1px solid #b6bdc5; }
+  .clip .sp.r { right: 0; border-left: 1px solid #b6bdc5; }
+  .clip .body { position: absolute; left: 10px; right: 10px; top: 0; bottom: 0; overflow: hidden; }
+  .clip svg { display: block; }
+  .clip.selected { border-color: var(--selection-blue); box-shadow: 0 0 0 1px var(--selection-blue); }
+  .cliplabel {
+    margin: -12px 0 12px 10px;
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    max-width: 180px;
+    background: var(--clip-label-bg);
+    border: 1px solid var(--clip-label-border);
+    border-radius: 2px;
+    padding: 1px 6px 2px;
+    font-size: 11px;
+    color: #1e1e1e;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .cliplabel .ic { flex: 0 0 11px; }
+
+  /* ======================================================================
+     Status bar
+     ====================================================================== */
+  #statusbar {
+    flex: 0 0 23px;
+    background: var(--statusbar-bg);
+    border-top: 1px solid var(--statusbar-line);
+    display: flex;
+    align-items: center;
+    padding: 0 8px 0 8px;
+    font-size: 11px;
+    color: var(--statusbar-text);
+    gap: 6px;
+  }
+  #sbitems { white-space: nowrap; }
+  #sbright { margin-left: auto; display: flex; align-items: center; gap: 7px; }
+  #sbright .zi { color: #56606a; font-size: 11px; }
+  #zoomtrack { position: relative; width: 130px; height: 14px; }
+  #zoomtrack .track { position: absolute; top: 6px; left: 0; right: 0; height: 3px; background: #c3d4e2; border-radius: 2px; }
+  #zoomtrack .thumb { position: absolute; top: 2px; left: 62%; width: 11px; height: 11px; border-radius: 50%; background: var(--transport-blue); }
+
+  /* File menu (Application menu) popup */
+  #appmenu {
+    position: absolute;
+    left: 4px; top: 96px;
+    width: 250px;
+    background: #f0f6fb;
+    border: 1px solid #9cb2c4;
+    box-shadow: 3px 3px 10px rgba(0,0,0,.30);
+    display: none;
+    z-index: 50;
+    padding: 2px;
+  }
+  #appmenu.open { display: block; }
+  .am { display: flex; gap: 9px; padding: 6px 10px; align-items: center; color: #16405e; }
+  .am:hover { background: #cde2f5; }
+  .am b { font-weight: 600; font-size: 12px; color: #103653; }
+  .am .t { flex: 1 1 auto; display: flex; align-items: baseline; justify-content: space-between; }
+  .am .t small { color: #5a7285; margin-left: 24px; }
+  .amic { width: 16px; flex: 0 0 16px; display: flex; }
+  .amsep { height: 1px; background: #d3dfe9; margin: 3px 8px; }
+</style>
+</head>
+<body>
+<div id="window">
+
+  <!-- ================= CAPTION ================= -->
+  <div id="caption">
+    <!-- 16px app icon: blue film-clip glyph -->
+    <svg id="appicon" viewBox="0 0 16 16" aria-hidden="true">
+      <rect x="1" y="2.5" width="14" height="11" rx="1.2" fill="#1d6fc2"/>
+      <rect x="2.4" y="4" width="11.2" height="8" rx=".6" fill="#fdfdfd"/>
+      <circle cx="6" cy="7" r="1.5" fill="#59a4e7"/>
+      <path d="M4 12l3.4-3.6 2.2 2.2L12 8l1 4z" fill="#8fc3ec"/>
+    </svg>
+    <!-- Quick Access Toolbar (undo, redo, paste) -->
+    <div id="qat">
+      <span class="qi" title="Undo"><svg width="16" height="16" viewBox="0 0 16 16"><path d="M6 4L2.5 7.5 6 11" fill="none" stroke="#1d6fc2" stroke-width="1.6"/><path d="M3 7.5h5.4c2.6 0 4.6 1.7 4.6 4" fill="none" stroke="#1d6fc2" stroke-width="1.6"/></svg></span>
+      <span class="qi" title="Redo"><svg width="16" height="16" viewBox="0 0 16 16"><path d="M10 4l3.5 3.5L10 11" fill="none" stroke="#1d6fc2" stroke-width="1.6"/><path d="M13 7.5H7.6c-2.6 0-4.6 1.7-4.6 4" fill="none" stroke="#1d6fc2" stroke-width="1.6"/></svg></span>
+      <span class="qsep"></span>
+      <span class="qi" title="Paste"><svg width="16" height="16" viewBox="0 0 16 16"><rect x="3" y="2.5" width="10" height="12" rx="1" fill="#caa06a"/><rect x="4.2" y="4" width="7.6" height="9.4" fill="#fbfbf7"/><rect x="5.6" y="1.2" width="4.8" height="2.6" rx=".6" fill="#8fa6b8"/></svg></span>
+      <span class="qsep"></span>
+      <span class="qi" title="Customize Quick Access Toolbar"><svg width="12" height="12" viewBox="0 0 12 12"><path d="M2 4.5l4 4 4-4" fill="none" stroke="#5a6067" stroke-width="1.4"/></svg></span>
+    </div>
+    <div id="title">Windows Live Movie Maker</div>
+    <div id="captionbuttons">
+      <div class="capbtn" title="Minimize"><svg width="10" height="9" viewBox="0 0 10 9"><rect x="0" y="4" width="10" height="1" fill="currentColor"/></svg></div>
+      <div class="capbtn" title="Maximize"><svg width="10" height="9" viewBox="0 0 10 9"><rect x="0" y="0" width="10" height="9" fill="none" stroke="currentColor"/></svg></div>
+      <div class="capbtn close" title="Close"><svg width="10" height="9" viewBox="0 0 10 9"><path d="M0 0l10 9M10 0l-10 9" stroke="currentColor"/></svg></div>
+    </div>
+  </div>
+
+  <!-- ================= RIBBON ================= -->
+  <div id="ribbonhost">
+    <div id="tabstrip">
+      <div class="tabs" id="tabs">
+        <div class="tab file" id="filetab">File</div>
+        <div class="tab active">Home</div>
+        <div class="tab">Animations</div>
+        <div class="tab">Visual Effects</div>
+        <div class="tab">Project</div>
+        <div class="tab">View</div>
+        <!-- Contextual tabs (Video Tools / Text Tools) appear when a clip is selected -->
+        <div class="tab ctx band-video" id="ctxVideo" style="display:none"><span class="band"></span><span class="ctxsup">Video Tools</span><span class="ctxlabel">Edit</span></div>
+        <div class="tab ctx band-text"  id="ctxText"  style="display:none"><span class="band"></span><span class="ctxsup">Text Tools</span><span class="ctxlabel">Format</span></div>
+      </div>
+      <svg id="helpbtn" viewBox="0 0 18 18" title="Help">
+        <circle cx="9" cy="9" r="8" fill="#2b7cd3"/>
+        <text x="9" y="12.6" text-anchor="middle" font-size="10.5" fill="#fff" font-family="Segoe UI, sans-serif">?</text>
+      </svg>
+    </div>
+
+    <div id="ribbonbody">
+      <!-- Clipboard -->
+      <div class="rgroup" style="width:52px">
+        <div class="rcontrols">
+          <div class="rbig">
+            <span class="ic"><svg width="30" height="30" viewBox="0 0 30 30"><rect x="6" y="4" width="18" height="23" rx="1.5" fill="#c99b5f"/><rect x="8.2" y="6.6" width="13.6" height="17.8" fill="#fbfaf5"/><rect x="11" y="2.6" width="8" height="4" rx="1" fill="#93a9bb"/></svg></span>
+            Paste
+          </div>
+        </div>
+        <div class="rlabel">Clipboard</div>
+      </div>
+
+      <!-- Add -->
+      <div class="rgroup">
+        <div class="rcontrols">
+          <div class="rbig" style="width:64px">
+            <span class="ic"><svg width="32" height="32" viewBox="0 0 32 32"><rect x="3" y="7" width="19" height="16" rx="1.4" fill="#4a5e70"/><rect x="4.6" y="8.6" width="15.8" height="12.8" fill="#dfe7ee"/><path d="M5.4 20l4.6-5.4 3.4 3.4 4-4.6 3 6.6z" fill="#7fa3c0"/><circle cx="9.4" cy="11.6" r="1.7" fill="#f2b24c"/><path d="M23.6 13.6c3.4-1 5.4 1.4 5 4.4" fill="none" stroke="#4a5e70" stroke-width="1.4"/><path d="M10.6 23.4h12.8l-1.6 4.4H12z" fill="#4a5e70"/></svg></span>
+            <span class="lbl">Add videos</span><span class="lbl">and photos</span>
+          </div>
+          <div class="rbig" style="width:44px">
+            <span class="ic"><svg width="28" height="30" viewBox="0 0 28 30"><path d="M11 5.2l12.4 3.6v12.9c0 2.6-2.8 3.9-6 2.9-3.1-1-5.3-3.2-5.3-5.4 0-2.3 2.9-3.3 6.1-2.3 3 1 5.2 3 5.2 5.2" fill="none" stroke="#1d6fc2" stroke-width="2.1"/><ellipse cx="10.2" cy="20.6" rx="4.4" ry="3.1" transform="rotate(-15 10.2 20.6)" fill="#1d6fc2"/><path d="M4.8 12.4c-1.8 1.9-2 4.6-.5 6.6" fill="none" stroke="#1d6fc2" stroke-width="1.4"/><path d="M11 5.2v14" stroke="#1d6fc2" stroke-width="2.1"/></svg></span>
+            <span class="lbl">Add <span class="dd">&#9662;</span></span><span class="lbl">music</span>
+          </div>
+          <div class="rsmall-stack">
+            <div class="rsmall"><span class="ic"><svg width="16" height="16" viewBox="0 0 16 16"><rect x="4" y="1.6" width="8" height="12.8" rx="1.4" fill="#5a6673"/><circle cx="8" cy="8" r="2.3" fill="#dfe6ec"/><circle cx="8" cy="8" r="1" fill="#5a6673"/><rect x="6.9" y="11.4" width="2.2" height="1.6" rx=".4" fill="#dfe6ec"/></svg></span>Webcam video</div>
+            <div class="rsmall"><span class="ic"><svg width="16" height="16" viewBox="0 0 16 16"><path d="M4 11.5c1-3 2.6-5.6 5.2-8.1l3.4 3.4C10 9.4 7.4 11 4.4 12z" fill="#b98a56"/><path d="M3 13.6l1.2-2.6 1.4 1.4z" fill="#5a6673"/></svg></span>Record narration <span class="dd">&#9656;</span></div>
+            <div class="rsmall"><span class="ic"><svg width="16" height="16" viewBox="0 0 16 16"><rect x="1.8" y="4" width="12.4" height="9" rx="1.2" fill="#5a6673"/><circle cx="8" cy="8.5" r="2.6" fill="#dfe6ec"/><circle cx="8" cy="8.5" r="1.2" fill="#5a6673"/></svg></span>Snapshot</div>
+          </div>
+          <div class="rsmall-stack">
+            <div class="rsmall"><span class="ic"><svg width="16" height="16" viewBox="0 0 16 16"><rect x="2.4" y="3" width="11.2" height="8.6" rx="1" fill="#4d5a68"/><path d="M4 10l2.7-3.2 2 2 2.4-2.7 2.2 3.9z" fill="#cfe0ef"/><rect x="6.6" y="12.6" width="2.8" height="1.8" fill="#4d5a68"/><path d="M4.6 3.2l6.8 8.2" stroke="#8fb4d6" stroke-width=".8"/></svg></span>Title</div>
+            <div class="rsmall"><span class="ic"><svg width="16" height="16" viewBox="0 0 16 16"><rect x="3.2" y="2.4" width="9.6" height="11.2" rx="1" fill="#4d5a68"/><text x="8" y="11.4" text-anchor="middle" font-size="8" fill="#e8eef4" font-family="Segoe UI">A</text></svg></span>Caption</div>
+            <div class="rsmall"><span class="ic"><svg width="16" height="16" viewBox="0 0 16 16"><rect x="3.2" y="2.4" width="9.6" height="11.2" rx="1" fill="#4d5a68"/><text x="5.4" y="8" font-size="5.4" fill="#e8eef4">A</text><text x="9" y="12.4" font-size="5.4" fill="#e8eef4">A</text></svg></span>Credits <span class="dd">&#9662;</span></div>
+          </div>
+        </div>
+        <div class="rlabel">Add</div>
+      </div>
+
+      <!-- AutoMovie themes -->
+      <div class="rgroup">
+        <div class="rcontrols">
+          <div class="autobar">
+            <div class="th sel"><svg width="46" height="42" viewBox="0 0 46 42"><defs><linearGradient id="sky1" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#8ec3e2"/><stop offset=".62" stop-color="#c5e0ee"/></linearGradient></defs><rect width="46" height="42" fill="url(#sky1)"/><rect y="26" width="46" height="16" fill="#3e79a3"/><path d="M0 26h46v3H0z" fill="#79aec9"/><rect x="5" y="5" width="36" height="32" fill="none" stroke="#fff" stroke-width="2"/></svg></div>
+            <div class="th"><svg width="46" height="42" viewBox="0 0 46 42"><defs><linearGradient id="sky2" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#a7cfe4"/><stop offset=".6" stop-color="#d6ebf4"/></linearGradient></defs><rect width="46" height="42" fill="url(#sky2)"/><rect y="24" width="46" height="18" fill="#52869e"/><circle cx="34" cy="9" r="4.4" fill="#f7ecc9"/><rect x="4" y="4" width="38" height="34" fill="none" stroke="#fff" stroke-width="2"/></svg></div>
+            <div class="th"><svg width="46" height="42" viewBox="0 0 46 42"><defs><linearGradient id="sky3" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#9cc8de"/><stop offset=".58" stop-color="#cfe6ef"/></linearGradient></defs><rect width="46" height="42" fill="url(#sky3)"/><path d="M0 28l12-10 10 7 12-9 12 8v18H0z" fill="#48788f"/><rect x="4" y="4" width="38" height="34" fill="none" stroke="#fff" stroke-width="2"/></svg></div>
+            <div class="th"><svg width="46" height="42" viewBox="0 0 46 42"><defs><linearGradient id="sky4" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#b5d4e0"/><stop offset=".6" stop-color="#e2f0f4"/></linearGradient></defs><rect width="46" height="42" fill="url(#sky4)"/><path d="M0 30l14-12 9 6 10-8 13 10v16H0z" fill="#5d8ba0"/><rect x="4" y="4" width="38" height="34" fill="none" stroke="#fff" stroke-width="2"/></svg></div>
+            <div class="arrows"><span>&#9652;</span><span>&#9660;</span></div>
+          </div>
+        </div>
+        <div class="rlabel">AutoMovie themes</div>
+      </div>
+
+      <!-- Editing -->
+      <div class="rgroup">
+        <div class="rcontrols">
+          <div class="rsmall-stack" style="gap:3px">
+            <div class="rsmall" style="height:20px"><span class="ic"><svg width="16" height="16" viewBox="0 0 16 16"><path d="M3 12.5L12 3.5l1.6 1.6-9 9L2.4 14.6z" fill="#c47f3c"/><path d="M2 15l1-.4-1.2-1.2z" fill="#4d5a68"/></svg></span>Rotate left</div>
+            <div class="rsmall" style="height:20px"><span class="ic"><svg width="16" height="16" viewBox="0 0 16 16"><path d="M13 12.5L4 3.5 2.4 5.1l9 9L14 14.6z" fill="#c47f3c"/></svg></span>Rotate right</div>
+          </div>
+          <div class="rsmall-stack" style="gap:3px">
+            <div class="rsmall" style="height:20px"><span class="ic" style="color:#c23a3a;font-size:15px">&#10006;</span>Remove</div>
+            <div class="rsmall" style="height:20px"><span class="ic"><svg width="16" height="16" viewBox="0 0 16 16"><rect x="2.5" y="2.5" width="11" height="11" rx="1" fill="none" stroke="#5a6673"/><path d="M2.5 5.5h11" stroke="#5a6673"/></svg></span>Select all</div>
+          </div>
+        </div>
+        <div class="rlabel">Editing</div>
+      </div>
+
+      <!-- Share -->
+      <div class="rgroup">
+        <div class="rcontrols">
+          <div class="rbig" style="width:46px">
+            <span class="ic"><svg width="34" height="34" viewBox="0 0 34 34"><path d="M5 11L17 5l12 6v4L17 21 5 15z" fill="#1e78c8"/><path d="M5 16l12 6 12-6v7.6c0 1-6 4.4-12 4.4s-12-3.4-12-4.4z" fill="#67a7dd"/></svg></span>
+          </div>
+          <div class="rbig" style="width:46px">
+            <span class="ic"><svg width="34" height="34" viewBox="0 0 34 34"><rect width="34" height="34" rx="2" fill="#3b5998"/><path d="M22 12h-2.6c-.9 0-1.4.5-1.4 1.5V16h3.9l-.6 3.7H18V34h-4V19.7h-2.7V16H14v-2.7c0-3.1 1.9-5.3 5.1-5.3H22z" fill="#fff"/></svg></span>
+          </div>
+          <div class="rbig" style="width:18px;align-self:center;justify-content:flex-start;padding-top:10px">
+            <span class="ic" style="width:12px"><svg width="12" height="34" viewBox="0 0 12 34"><g fill="#5a6067"><path d="M6 12l3.5 4h-7z"/><path d="M6 22l-3.5-4h7z"/></g></svg></span>
+          </div>
+        </div>
+        <div class="rlabel">Share</div>
+      </div>
+
+      <!-- Save movie / Sign in -->
+      <div class="rgroup" style="min-width:64px">
+        <div class="rcontrols">
+          <div class="rbig" style="width:50px">
+            <span class="ic"><svg width="30" height="30" viewBox="0 0 30 30"><rect x="4" y="4" width="22" height="22" rx="1.6" fill="#4d5a68"/><rect x="7" y="4.6" width="16" height="7.4" fill="#dfe7ee"/><rect x="16.6" y="6" width="4.6" height="4.6" fill="#4d5a68"/><rect x="7" y="14.6" width="16" height="10.8" fill="#eef2f6"/><circle cx="15" cy="20" r="3" fill="#7fa3c0"/></svg></span>
+            <span class="lbl">Save</span><span class="lbl">movie <span class="dd">&#9662;</span></span>
+          </div>
+          <div class="rbig" style="width:40px">
+            <span class="ic"><svg width="30" height="30" viewBox="0 0 30 30"><rect x="5" y="4" width="20" height="22" rx="1.4" fill="#cfe0ee" stroke="#8fb0cc"/><circle cx="15" cy="12" r="3.4" fill="#f0f4f8" stroke="#7d9db9"/><path d="M8.5 23c.8-3.4 3.4-5 6.5-5s5.7 1.6 6.5 5z" fill="#f0f4f8" stroke="#7d9db9"/></svg></span>
+            <span class="lbl">Sign</span><span class="lbl">in</span>
+          </div>
+        </div>
+        <div class="rlabel">&nbsp;</div>
+      </div>
+    </div>
+
+    <!-- Application menu -->
+    <div id="appmenu">
+      <div class="am"><span class="amic"><svg width="16" height="16" viewBox="0 0 16 16"><path d="M3 1.5h6.5L13 5v9.5H3z" fill="#fbfbf7" stroke="#8a9aa8"/><path d="M9.5 1.5V5H13" fill="none" stroke="#8a9aa8"/></svg></span><span class="t"><b>Open project</b><small>Ctrl+O</small></span></div>
+      <div class="am"><span class="amic"><svg width="16" height="16" viewBox="0 0 16 16"><path d="M3 1.5h6.5L13 5v9.5H3z" fill="#fbfbf7" stroke="#8a9aa8"/><path d="M5 8h6M5 10.5h6" stroke="#7d99b5"/></svg></span><span class="t"><b>Save project</b><small>Ctrl+S</small></span></div>
+      <div class="am"><span class="amic"><svg width="16" height="16" viewBox="0 0 16 16"><path d="M3 1.5h6.5L13 5v9.5H3z" fill="#fbfbf7" stroke="#8a9aa8"/><path d="M5 8h6M5 10.5h4" stroke="#7d99b5"/><path d="M10.5 12.5l2 2 3-3.5" fill="none" stroke="#3a76ab" stroke-width="1.3"/></svg></span><span class="t"><b>Save project as</b></span></div>
+      <div class="amsep"></div>
+      <div class="am"><span class="amic"><svg width="16" height="16" viewBox="0 0 16 16"><rect x="2" y="2" width="12" height="12" rx="1" fill="#4d5a68"/><path d="M6 2v3.4h4V2" fill="#d7e3ee"/><rect x="4" y="9.4" width="8" height="3.4" fill="#d7e3ee"/></svg></span><span class="t"><b>Save movie</b></span></div>
+      <div class="amsep"></div>
+      <div class="am"><span class="amic"><svg width="16" height="16" viewBox="0 0 16 16"><circle cx="8" cy="8" r="6" fill="none" stroke="#5a7285"/><path d="M8 4.8v3.4l2.3 1.9" fill="none" stroke="#5a7285"/></svg></span><span class="t"><b>Options</b></span></div>
+      <div class="amsep"></div>
+      <div class="am"><span class="amic"><svg width="16" height="16" viewBox="0 0 16 16"><path d="M3.5 3.5l9 9M12.5 3.5l-9 9" stroke="#4d5a68" stroke-width="1.4"/></svg></span><span class="t"><b>Exit</b></span></div>
+    </div>
+  </div>
+
+  <!-- ================= CONTENT ================= -->
+  <div id="content">
+    <div id="previewpane">
+      <div id="videostage">
+        <div id="emptyhint"></div>
+        <div id="videoframe"></div>
+      </div>
+      <div id="transportzone" style="display:none">
+        <div id="seekrow">
+          <div class="track"></div>
+          <div class="played"></div>
+          <div class="thumb"></div>
+          <div id="timerow">0:00:00.00&nbsp;&nbsp;0:00:00.00</div>
+        </div>
+        <div id="transportrow">
+          <span class="tbtn" title="Previous frame"><svg width="20" height="18" viewBox="0 0 20 18"><path d="M4 3v12h2V3z" fill="#1d6fc2"/><path d="M16 3l-8 6 8 6z" fill="#1d6fc2"/></svg></span>
+          <span class="tbtn" title="Play"><svg width="20" height="18" viewBox="0 0 20 18"><path d="M5 3l11 6-11 6z" fill="#1d6fc2"/></svg></span>
+          <span class="tbtn" title="Next frame"><svg width="20" height="18" viewBox="0 0 20 18"><path d="M4 3l8 6-8 6z" fill="#1d6fc2"/><path d="M14 3h2v12h-2z" fill="#1d6fc2"/></svg></span>
+        </div>
+      </div>
+    </div>
+
+    <div id="vsplitter"></div>
+
+    <div id="storypanepane">
+      <div id="storyscroll"><!-- clips injected by script --></div>
+    </div>
+  </div>
+
+  <!-- ================= STATUS BAR ================= -->
+  <div id="statusbar">
+    <span id="sbitems"></span>
+    <span id="sbright">
+      <span class="zi" title="Mute">
+        <svg width="13" height="13" viewBox="0 0 13 13"><path d="M1.5 5h2.3L7 2.2v8.6L3.8 8H1.5z" fill="#56606a"/><path d="M8.6 4.2c1.4 1.2 1.4 3.4 0 4.6" stroke="#56606a" fill="none"/></svg>
+      </span>
+      <span class="zi">&minus;</span>
+      <span id="zoomtrack"><span class="track"></span><span class="thumb"></span></span>
+      <span class="zi">+</span>
+    </span>
+  </div>
+</div>
+
+<script>
+/* ======================================================================
+   Replica state + interactions (mirrors SundanceAppMain command routing)
+   ====================================================================== */
+const state = { clips: [], selected: -1, playing: false, hasMedia: false };
+const story = document.getElementById('storyscroll');
+const frame = document.getElementById('videoframe');
+const timerow = document.getElementById('timerow');
+const sbitems = document.getElementById('sbitems');
+
+function wavePath(w, h, seed) {
+  // deterministic pseudo-waveform, like the audio strip the original renders
+  let d = `M0 ${h/2}`;
+  let s = seed;
+  const rnd = () => (s = (s * 1103515245 + 12345) & 0x7fffffff) / 0x7fffffff;
+  for (let x = 0; x <= w; x += 3) {
+    const amp = (0.25 + rnd() * 0.75) * (h * 0.42);
+    d += ` L${x} ${(h/2 - amp).toFixed(1)}`;
+  }
+  d += ` V${h/2} Z`;
+  return d;
+}
+
+function makeClip(seed, label, labelIcon) {
+  const el = document.createElement('div');
+  el.className = 'clip';
+  const W = 520, H = 94;
+  el.innerHTML =
+    `<span class="sp l"></span><span class="sp r"></span>` +
+    `<div class="body">` +
+      `<svg width="100%" height="${H}" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none">` +
+        `<rect width="${W}" height="${H}" fill="#1b1e22"/>` +
+        `<path d="M20 ${H*0.68} ${wavePath(W-40, H*0.5, seed).slice(1)}" fill="#6f98c0" opacity=".9" transform="translate(0,${H*0.16})"/>` +
+        `<rect x="16" y="${H*0.62}" width="${W-32}" height="2" fill="#3a4148"/>` +
+      `</svg>` +
+    `</div>`;
+  el.addEventListener('mousedown', () => selectClip(el, label, labelIcon));
+  return el;
+}
+
+function selectClip(el, label, labelIcon) {
+  document.querySelectorAll('.cliplabel').forEach(n => n.remove());
+  document.querySelectorAll('.clip.selected').forEach(n => n.classList.remove('selected'));
+  el.classList.add('selected');
+  state.selected = [...story.children].indexOf(el);
+  // contextual tabs appear on selection, exactly like the original
+  document.getElementById('ctxVideo').style.display = '';
+  if (labelIcon === 'A') document.getElementById('ctxText').style.display = '';
+  // selection label chip under the clip
+  const chip = document.createElement('div');
+  chip.className = 'cliplabel';
+  chip.innerHTML = (labelIcon === 'A'
+    ? `<svg class="ic" width="11" height="11" viewBox="0 0 11 11"><text x="0" y="9" font-size="9" fill="#3a76ab" font-family="serif">A</text></svg>`
+    : `<svg class="ic" width="11" height="11" viewBox="0 0 11 11"><rect x="0" y="1" width="11" height="9" rx="1" fill="#3a76ab"/></svg>`) +
+    `<span>${label}</span>`;
+  el.after(chip);
+}
+
+function addClip(seed, label) {
+  const el = makeClip(seed, label, 'V');
+  story.appendChild(el);
+  state.clips.push(label);
+  state.hasMedia = true;
+  frame.style.display = 'block';
+  document.getElementById('transportzone').style.display = '';
+  document.getElementById('title').textContent = 'My Movie - Movie Maker';
+  layoutVideo();
+  updateStatus();
+  selectClip(el, label, 'V');
+}
+
+function layoutVideo() {
+  const stage = document.getElementById('videostage');
+  const r = stage.getBoundingClientRect();
+  // 16:9 letterboxed like the original preview presenter
+  let w = r.width - 24, h = w * 9 / 16;
+  if (h > r.height - 16) { h = r.height - 16; w = h * 16 / 9; }
+  frame.style.width = w + 'px';
+  frame.style.height = h + 'px';
+}
+
+function updateStatus() {
+  sbitems.textContent = state.clips.length
+    ? `Item ${state.selected + 1} of ${state.clips.length}`
+    : '';
+}
+
+document.getElementById('filetab').addEventListener('click', () => {
+  document.getElementById('appmenu').classList.toggle('open');
+});
+document.addEventListener('mousedown', (e) => {
+  const m = document.getElementById('appmenu');
+  if (m.classList.contains('open') && !m.contains(e.target) && e.target.id !== 'filetab')
+    m.classList.remove('open');
+});
+window.addEventListener('resize', layoutVideo);
+new ResizeObserver(layoutVideo).observe(document.getElementById('videostage'));
+
+/* Start in the exact empty-project state the original launches with */
+layoutVideo();
+updateStatus();
+</script>
+</body>
+</html>

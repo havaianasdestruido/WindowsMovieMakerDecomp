@@ -67,6 +67,27 @@ Recreating the full source code of Windows Live Movie Maker 2012 (`MovieMakerCor
 - **HMREngine** (`HMREngine/`): DXResources, TextRender, MeshResourceDX, TextureCodecs, d3dx11compat
 - **Undo/Redo**: Transaction-based undo stack with clipboard integration
 
+### UI Shell Reconstruction (2026-10-10 pass)
+- **Owner-drawn main-window shell**: `src/MovieMakerCore/UI/SundanceMainVisual.{h,cpp}`
+  renders the 16.4 ribbon shell (File/Home/Animations/Visual Effects/Project/View
+  tabs, contextual "Video Tools > Edit" / "Text Tools > Format" bands, Home groups
+  Clipboard / Add / AutoMovie themes / Editing / Share / Save movie / Sign in),
+  the split preview + filmstrip storyboard (sprocket strips, waveform bodies,
+  selection label chips) and the light-blue status bar with zoom slider. All
+  geometry and colors were measured from reference captures of the original
+  binary; the WndProc in `MovieMakerCore_new.cpp` paints through it and routes
+  tab/clip/File-menu interactions.
+- **Pixel-verified web replica**: `website/replica/moviemaker.html` is a
+  self-contained HTML/CSS/SVG reconstruction of the same shell, verified
+  side-by-side against reference screenshots (caption, tab anatomy, group
+  layout, filmstrip proportions). It doubles as the visual spec for the
+  native layer.
+- **Caption format**: the original captions the window "<project> - Movie
+  Maker" and seeds untitled projects with "My Movie"
+  (`AppMain::UpdateTitleFromProject`).
+- **comdlg32.lib** added to MovieMakerCore link libraries (GetOpenFileNameW /
+  GetSaveFileNameW call sites predated this and could not have linked).
+
 ### What's Still Stub/Placeholder
 - Some serialization round-trip edge cases
 - Full export rendering pipeline (writes test frames, not real video)

@@ -732,13 +732,70 @@ HRESULT SundanceAppMain::SaveProject()
 
     if (m_pProject->GetFilePath().IsEmpty())
     {
-        return E_NOTIMPL;
+        // The original binary routes Save on an untitled project straight
+        // into the Save As dialog (the .wlmp path is only known after the
+        // user picks a location), so an untitled Save never fails silently.
+        return PromptSaveProjectAs();
     }
 
     HRESULT hr = m_pProject->Save();
     if (SUCCEEDED(hr))
         m_bProjectDirty = false;
 
+    return hr;
+}
+
+// ============================================================================
+// PromptSaveProjectAs
+//
+// Shows the Vista+ common Save dialog with the .wlmp project filter and
+// forwards the chosen path to SaveProjectAs. Used by SaveProject when the
+// project is untitled and by the Save-As ribbon command.
+// ============================================================================
+HRESULT SundanceAppMain::PromptSaveProjectAs()
+{
+    if (!m_pProject)
+        return E_UNEXPECTED;
+
+    CComPtr<IFileSaveDialog> spDialog;
+    HRESULT hr = CoCreateInstance(CLSID_FileSaveDialog, nullptr, CLSCTX_INPROC_SERVER,
+                                  IID_PPV_ARGS(&spDialog));
+    if (FAILED(hr))
+        return hr;
+
+    const COMDLG_FILTERSPEC kFilters[] =
+    {
+        { L"Windows Live Movie Maker Project (*.wlmp)", L"*.wlmp" },
+        { L"All Files (*.*)", L"*.*" },
+    };
+    hr = spDialog->SetFileTypes(ARRAYSIZE(kFilters), kFilters);
+    if (SUCCEEDED(hr))
+        hr = spDialog->SetDefaultExtension(L"wlmp");
+    if (SUCCEEDED(hr))
+        hr = spDialog->SetFileName(m_pProject->GetProjectName().IsEmpty()
+                                       ? L"My Movie"
+                                       : m_pProject->GetProjectName().GetString());
+    if (SUCCEEDED(hr))
+        hr = spDialog->SetTitle(L"Save Project As");
+
+    if (SUCCEEDED(hr))
+        hr = spDialog->Show(m_hWndMain);
+
+    if (FAILED(hr))
+        return (hr == HRESULT_FROM_WIN32(ERROR_CANCELLED)) ? S_FALSE : hr;
+
+    CComPtr<IShellItem> spItem;
+    hr = spDialog->GetResult(&spItem);
+    if (FAILED(hr))
+        return hr;
+
+    PWSTR pszPath = nullptr;
+    hr = spItem->GetDisplayName(SIGDN_FILESYSPATH, &pszPath);
+    if (FAILED(hr))
+        return hr;
+
+    hr = SaveProjectAs(pszPath);
+    CoTaskMemFree(pszPath);
     return hr;
 }
 

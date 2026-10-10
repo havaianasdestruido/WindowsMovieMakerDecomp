@@ -4,6 +4,8 @@
 #include "TranscodeMetadata.h"
 #include <propsys.h>
 #include <propvarutil.h>
+#include <olectl.h>
+#include <oleauto.h>
 
 namespace HMRAVSource
 {
@@ -704,11 +706,77 @@ HRESULT TranscodeMetadataParser::GetPropertyInt(LPCWSTR pszFilePath, REFPROPERTY
     return hr;
 }
 
-HRESULT TranscodeMetadataParser::GetPropertyDateTime(LPCWSTR /*pszFilePath*/, REFPROPERTYKEY /*key*/, SYSTEMTIME* pSystemTime)
+HRESULT TranscodeMetadataParser::GetPropertyDateTime(LPCWSTR pszFilePath, REFPROPERTYKEY key, SYSTEMTIME* pSystemTime)
 {
-    if (pSystemTime)
-        ZeroMemory(pSystemTime, sizeof(SYSTEMTIME));
-    return E_NOTIMPL;
+    if (!pSystemTime)
+        return E_POINTER;
+    if (!pszFilePath || !pszFilePath[0])
+        return E_INVALIDARG;
+
+    ZeroMemory(pSystemTime, sizeof(SYSTEMTIME));
+
+    // The original binary reads date/time properties through the shell
+    // property store, where they are exposed as VT_FILETIME values.
+    // SHGetPropertyStoreFromParsingName covers filesystem paths and shell
+    // namespace items alike, unlike StgOpenStorageEx which only works for
+    // formats with an OLE property storage.
+    CComPtr<IPropertyStore> spStore;
+    HRESULT hr = SHGetPropertyStoreFromParsingName(
+        pszFilePath, nullptr, GPS_READWRITE, IID_PPV_ARGS(&spStore));
+    if (SUCCEEDED(hr))
+    {
+        PROPVARIANT var;
+        PropVariantInit(&var);
+        hr = spStore->GetValue(key, &var);
+        if (SUCCEEDED(hr))
+        {
+            switch (var.vt)
+            {
+            case VT_FILETIME:
+                hr = FileTimeToSystemTime(&var.filetime, pSystemTime)
+                         ? S_OK
+                         : HRESULT_FROM_WIN32(GetLastError());
+                break;
+            case VT_DATE:
+                hr = (VariantTimeToSystemTime(var.date, pSystemTime) != 0)
+                         ? S_OK
+                         : E_FAIL;
+                break;
+            default:
+                hr = E_FAIL; // fall through to the string parse below
+                break;
+            }
+        }
+        PropVariantClear(&var);
+    }
+
+    if (SUCCEEDED(hr))
+        return hr;
+
+    // Fallback: read the formatted string form and parse the leading
+    // ISO-8601 date ("2026-10-08T14:30:00" or "2026-10-08 14:30:00").
+    ATL::CString strValue;
+    if (SUCCEEDED(GetPropertyString(pszFilePath, key, &strValue)) && !strValue.IsEmpty())
+    {
+        SYSTEMTIME st = {};
+        if (strValue.GetLength() >= 10 &&
+            swscanf_s(strValue.GetString(), L"%4hd-%2hd-%2hd",
+                      &st.wYear, &st.wMonth, &st.wDay) == 3 &&
+            st.wYear >= 1601 && st.wMonth >= 1 && st.wMonth <= 12 &&
+            st.wDay >= 1 && st.wDay <= 31)
+        {
+            if (strValue.GetLength() >= 19)
+            {
+                swscanf_s(strValue.GetString() + 11, L"%2hd:%2hd:%2hd",
+                          &st.wHour, &st.wMinute, &st.wSecond);
+            }
+            *pSystemTime = st;
+            return S_OK;
+        }
+        return E_FAIL;
+    }
+
+    return hr;
 }
 
 HRESULT TranscodeMetadataParser::ParseFromPropertyStore(LPCWSTR pszFilePath, MediaMetadata* pMetadata)

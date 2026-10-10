@@ -101,6 +101,7 @@ public:
     HRESULT OpenProject(LPCWSTR pszFilePath);
     HRESULT SaveProject();
     HRESULT SaveProjectAs(LPCWSTR pszFilePath);
+    HRESULT PromptSaveProjectAs();
     HRESULT CloseProject();
     bool    IsProjectDirty() const throw();
     bool    IsProjectOpen() const throw();

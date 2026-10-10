@@ -78,6 +78,7 @@ add_library(${TARGET} SHARED
     DataStructs/StringSet.cpp
     UI/Ribbon/RibbonApp.cpp
     UI/Ribbon/RibbonSites.cpp
+    UI/SundanceMainVisual.cpp
     UI/UIBehaviorClasses.cpp
     Preview/PreviewPresenter.cpp
     Preview/PreviewDataContext.cpp
@@ -161,6 +162,7 @@ target_link_libraries(${TARGET} PRIVATE
     kernel32
     user32
     gdi32
+    comdlg32
     advapi32
     shell32
     shlwapi

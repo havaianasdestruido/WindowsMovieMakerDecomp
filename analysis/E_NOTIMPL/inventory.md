@@ -3,6 +3,15 @@
 Generated: 2026-07-29
 Total stubs found: **92** across 31 files in 14 DLLs
 
+> **2026-10-10 pass:** the last three unpinned engine stubs were replaced
+> with real implementations and are no longer E_NOTIMPL: `SaveProject`
+> (untitled projects now route to the Save As dialog via
+> `SundanceAppMain::PromptSaveProjectAs`), `RibbonApp` unknown-key
+> `UpdateProperty` (S_OK + VT_EMPTY, the framework convention), and
+> `TranscodeMetadataParser::GetPropertyDateTime` (shell property store with
+> ISO-8601 string fallback). The remaining E_NOTIMPL lines below are either
+> pinned by contracts as original behavior or dead paths as documented.
+
 ---
 
 ## Summary by DLL

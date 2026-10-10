@@ -3,14 +3,16 @@
 Generated: 2026-07-29
 Total stubs found: **92** across 31 files in 14 DLLs
 
-> **2026-10-10 pass:** the last three unpinned engine stubs were replaced
-> with real implementations and are no longer E_NOTIMPL: `SaveProject`
-> (untitled projects now route to the Save As dialog via
-> `SundanceAppMain::PromptSaveProjectAs`), `RibbonApp` unknown-key
-> `UpdateProperty` (S_OK + VT_EMPTY, the framework convention), and
+> **2026-10-10 pass:** two inventory entries below were replaced with real
+> implementations and removed from the tables: `SaveProject` (untitled
+> projects now route to the Save As dialog via
+> `SundanceAppMain::PromptSaveProjectAs`) and
 > `TranscodeMetadataParser::GetPropertyDateTime` (shell property store with
-> ISO-8601 string fallback). The remaining E_NOTIMPL lines below are either
-> pinned by contracts as original behavior or dead paths as documented.
+> ISO-8601 string fallback). A third unpinned stub outside these tables --
+> `RibbonApp` unknown-key `UpdateProperty` (now S_OK + VT_EMPTY, the
+> framework convention) -- was replaced in the same pass. Totals reflect
+> the removals. The remaining entries are pinned by contracts as original
+> behavior or dead paths as documented.
 
 ---
 
@@ -18,7 +20,7 @@ Total stubs found: **92** across 31 files in 14 DLLs
 
 | DLL | Stubs | CRITICAL | HIGH | MEDIUM | LOW |
 |-----|-------|----------|------|--------|-----|
-| **MovieMakerCore.dll** | 41 | 0 | 5 | 12 | 24 |
+| **MovieMakerCore.dll** | 39 | 0 | 4 | 11 | 24 |
 | **UXCore.dll** | 19 | 0 | 0 | 0 | 19 |
 | **WLXMediaPublishSubscribe.dll** | 12 | 0 | 0 | 0 | 12 |
 | **WLXVideoTrim.dll** | 5 | 0 | 0 | 0 | 5 |
@@ -31,23 +33,22 @@ Total stubs found: **92** across 31 files in 14 DLLs
 | **WLMFReadWrite.dll** | 1 | 0 | 0 | 1 | 0 |
 | **WLXMovieLibrary.dll** | 1 | 0 | 0 | 1 | 0 |
 | **MetadataSys.dll** | 1 | 0 | 0 | 1 | 0 |
-| **Total** | **92** | **0** | **5** | **20** | **67** |
+| **Total** | **90** | **0** | **4** | **19** | **67** |
 
 ---
 
 ## Full Inventory by DLL
 
-### MovieMakerCore.dll — `src/MovieMakerCore/` (41 stubs)
+### MovieMakerCore.dll — `src/MovieMakerCore/` (39 stubs)
 
 This DLL contains the main application logic, undo/redo, playback, import/export,
 the 3D HMR engine, and AV source pipeline. It has the highest concentration of
 impactful stubs.
 
-#### SundanceApp/ — Application shell (17 stubs)
+#### SundanceApp/ — Application shell (16 stubs)
 
 | # | File | Function | Line | Pri | Description |
 |---|------|----------|------|-----|-------------|
-| 1 | `SundanceAppMain.cpp` | `SaveProject` (when `GetFilePath().IsEmpty()`) | 616 | **HIGH** | New/untitled project: Save fails instead of redirecting to SaveProjectAs |
 | 2 | `SundanceAppMain.cpp` | `ImportFiles` (when `m_pImportController == nullptr`) | 958 | **HIGH** | No import controller created; importing media silently fails |
 | 3 | `SundanceAppMain.cpp` | `PublishMovie` (when `m_pExportController == nullptr`) | 979 | **MEDIUM** | Publish/Save-Movie fails if export controller not initialized |
 | 4 | `SundanceAppMain.cpp` | `PublishToService` (when `m_pExportController == nullptr`) | 1005 | **MEDIUM** | Publish-to-service fails if export controller not initialized |
@@ -95,7 +96,7 @@ impactful stubs.
 | 26 | `DXResources/TextureResourceDX.cpp` | `CreateFromDIB` — unsupported bpp (<24) | 136 | **LOW** | Only hit for <24bpp images; rare edge case |
 | 27 | `CommandBin.cpp` | Switch default in command deserialization | 145 | **LOW** | Unknown serialized command type; error path |
 
-#### HMRAVSource/ — Audio/video pipeline (14 stubs)
+#### HMRAVSource/ — Audio/video pipeline (13 stubs)
 
 | # | File | Function | Line | Pri | Description |
 |---|------|----------|------|-----|-------------|
@@ -112,7 +113,6 @@ impactful stubs.
 | 38 | `TextureInterop.cpp` | `CreateSurfaceInternal` | 215 | **LOW** | Internal surface creation method |
 | 39 | `TranscodeMetadata.cpp` | `ExtractThumbnail` | 172 | **MEDIUM** | Thumbnail extraction from media files |
 | 40 | `TranscodeMetadata.cpp` | `ExtractMetadata` (WIC fallback) | 205 | **MEDIUM** | Metadata extraction fallback path |
-| 41 | `TranscodeMetadata.cpp` | `GetPropertyDateTime` | 240 | **MEDIUM** | Date/time property extraction from media |
 
 ---
 
@@ -283,36 +283,34 @@ compatibility in the MF pipeline.
 
 | Rank | File:Line | Function | Why | Suggested Fix |
 |------|-----------|----------|-----|---------------|
-| 1 | `SundanceAppMain.cpp:616` | `SaveProject` — no file path | New/untitled projects cannot be saved | Call `SaveProjectAs()` or `E_UNEXPECTED` with a dialog prompt instead of silent failure |
-| 2 | `SundanceAppMain.cpp:958` | `ImportFiles` — no controller | Import media silently fails | Create the `m_pImportController` during startup, or return `E_UNEXPECTED` |
-| 3 | `MediaBrowser.cpp:30` | `CreateDataObject` | Drag-and-drop from media browser broken | Return `E_UNEXPECTED` or implement using `OleCreateDataObject` / `SHCreateDataObject` |
+| 1 | `SundanceAppMain.cpp:958` | `ImportFiles` — no controller | Import media silently fails | Create the `m_pImportController` during startup, or return `E_UNEXPECTED` |
+| 2 | `MediaBrowser.cpp:30` | `CreateDataObject` | Drag-and-drop from media browser broken | Return `E_UNEXPECTED` or implement using `OleCreateDataObject` / `SHCreateDataObject` |
 
 ### Tier 2 — MEDIUM-HIGH (major feature gaps)
 
 | Rank | File:Line | Function | Why | Suggested Fix |
 |------|-----------|----------|-----|---------------|
-| 4 | `WLXMP4Parser.cpp:245` | `GetTrackInfo` | MP4 track info unavailable; media browser can't show MP4 metadata | Parse from moov box header data or return `E_FAIL` |
-| 5 | `WLXMP4Parser.cpp:294` | `AddMP4SourceFilter` | No MP4 DirectShow source filter | Return `CLASS_E_CLASSNOTAVAILABLE` or implement via MF source reader |
-| 6 | `WLXMP4Parser.cpp:301` | `BuildMP4FilterGraph` | MP4 filter graph cannot be built | Return `CLASS_E_CLASSNOTAVAILABLE` |
-| 7 | `WLXMP4Parser.cpp:308` | `BuildMP4PlayBack` | MP4 playback broken | Return `CLASS_E_CLASSNOTAVAILABLE` |
-| 8 | `TranscodeMetadata.cpp:172` | `ExtractThumbnail` | Thumbnail extraction fails | Implement via MF `IMFMediaSource` + `IMFSourceReader` thumbnail extraction, or return `E_FAIL` |
-| 9 | `TranscodeMetadata.cpp:205` | `ExtractMetadata` (WIC fallback) | Metadata reading fallback broken | Implement via WIC `IWICMetadataQueryReader` |
-| 10 | `TranscodeMetadata.cpp:240` | `GetPropertyDateTime` | Date properties unavailable | Read via `IPropertyStore` from Shell item |
-| 11 | `WLXMovieLibrary.cpp:177` | `GetThumbnail` (MF fallback) | Video thumbnails not generated | Implement via `IMFSourceReader` + `IMFMediaBuffer` extraction, or `IThumbnailProvider` |
-| 12 | `WLMFReadWrite.cpp:226` | `WriteFrame` | MF writer wrapper: frame writing broken | Implement by wrapping data in `IMFMediaBuffer` + `IMFSample` |
-| 13 | `MovieMakerPreviewClient.cpp:356` | `PreviewCmd_LoadFile` | Preview window cannot load files | Implement via `IPropertyStore` / DirectShow graph creation |
+| 3 | `WLXMP4Parser.cpp:245` | `GetTrackInfo` | MP4 track info unavailable; media browser can't show MP4 metadata | Parse from moov box header data or return `E_FAIL` |
+| 4 | `WLXMP4Parser.cpp:294` | `AddMP4SourceFilter` | No MP4 DirectShow source filter | Return `CLASS_E_CLASSNOTAVAILABLE` or implement via MF source reader |
+| 5 | `WLXMP4Parser.cpp:301` | `BuildMP4FilterGraph` | MP4 filter graph cannot be built | Return `CLASS_E_CLASSNOTAVAILABLE` |
+| 6 | `WLXMP4Parser.cpp:308` | `BuildMP4PlayBack` | MP4 playback broken | Return `CLASS_E_CLASSNOTAVAILABLE` |
+| 7 | `TranscodeMetadata.cpp:172` | `ExtractThumbnail` | Thumbnail extraction fails | Implement via MF `IMFMediaSource` + `IMFSourceReader` thumbnail extraction, or return `E_FAIL` |
+| 8 | `TranscodeMetadata.cpp:205` | `ExtractMetadata` (WIC fallback) | Metadata reading fallback broken | Implement via WIC `IWICMetadataQueryReader` |
+| 9 | `WLXMovieLibrary.cpp:177` | `GetThumbnail` (MF fallback) | Video thumbnails not generated | Implement via `IMFSourceReader` + `IMFMediaBuffer` extraction, or `IThumbnailProvider` |
+| 10 | `WLMFReadWrite.cpp:226` | `WriteFrame` | MF writer wrapper: frame writing broken | Implement by wrapping data in `IMFMediaBuffer` + `IMFSample` |
+| 11 | `MovieMakerPreviewClient.cpp:356` | `PreviewCmd_LoadFile` | Preview window cannot load files | Implement via `IPropertyStore` / DirectShow graph creation |
 
 ### Tier 3 — MEDIUM (feature degradation)
 
 | Rank | File:Line | Function | Why | Suggested Fix |
 |------|-----------|----------|-----|---------------|
-| 14 | `SundanceAppMain.cpp:1029` | `Undo` — no manager | Undo/redo unavailable | Create `m_pUndoManager` in `SundanceAppMain::Initialize()`; change stub to `E_UNEXPECTED` |
-| 15 | `SundanceAppMain.cpp:1072` | `CutSelection` — no clipboard | Cut/Copy/Paste unavailable | Create `m_pClipboardManager` during init; change stub to `E_UNEXPECTED` |
-| 16 | `SundanceAppMain.cpp:1151` | `StartPlayback` — no controller | Playback controls dead | Create `m_pPlaybackController` during init; change stub to `E_UNEXPECTED` |
-| 17 | `SundanceAppMain.cpp:979` | `PublishMovie` — no controller | Save-Movie fails | Create `m_pExportController` during init; change stub to `E_UNEXPECTED` |
-| 18 | `MetadataSys.cpp:16` | `WLXPSGetItemPropertyHandler` | Shell property handler unavailable | Return `CLASS_E_CLASSNOTAVAILABLE` |
-| 19 | `SundanceAppMain.cpp:1005` | `PublishToService` — no controller | Publish-to-service unavailable | Same as #17; create controller or return `E_UNEXPECTED` |
-| 20 | `SundanceAppMain.cpp:1556` | `OnRibbonCommand(SaveMovie)` — no export | Ribbon Save-Movie broken | Same as #17 |
+| 12 | `SundanceAppMain.cpp:1029` | `Undo` — no manager | Undo/redo unavailable | Create `m_pUndoManager` in `SundanceAppMain::Initialize()`; change stub to `E_UNEXPECTED` |
+| 13 | `SundanceAppMain.cpp:1072` | `CutSelection` — no clipboard | Cut/Copy/Paste unavailable | Create `m_pClipboardManager` during init; change stub to `E_UNEXPECTED` |
+| 14 | `SundanceAppMain.cpp:1151` | `StartPlayback` — no controller | Playback controls dead | Create `m_pPlaybackController` during init; change stub to `E_UNEXPECTED` |
+| 15 | `SundanceAppMain.cpp:979` | `PublishMovie` — no controller | Save-Movie fails | Create `m_pExportController` during init; change stub to `E_UNEXPECTED` |
+| 16 | `MetadataSys.cpp:16` | `WLXPSGetItemPropertyHandler` | Shell property handler unavailable | Return `CLASS_E_CLASSNOTAVAILABLE` |
+| 17 | `SundanceAppMain.cpp:1005` | `PublishToService` — no controller | Publish-to-service unavailable | Same as #15; create controller or return `E_UNEXPECTED` |
+| 18 | `SundanceAppMain.cpp:1556` | `OnRibbonCommand(SaveMovie)` — no export | Ribbon Save-Movie broken | Same as #15 |
 
 ---
 
@@ -323,15 +321,15 @@ compatibility in the MF pipeline.
    (SundanceApp) initializes — but many **managers are never created**, which means
    their null-guard stubs are active.
 
-2. **The #1 fix is initializing managers at startup.** 12 of 14 SundanceApp
+2. **The #1 fix is initializing managers at startup.** Most SundanceApp
    stubs are null-guard checks (`if (!m_pX) return E_NOTIMPL`). The root cause
    is that `m_pImportController`, `m_pExportController`, `m_pUndoManager`,
    `m_pClipboardManager`, and `m_pPlaybackController` are not instantiated.
    **Fixing initialization eliminates most SundanceApp stubs** in one pass.
 
-3. **The #2 fix is SaveProject (line 616).** This is a logic bug — when a new
-   project has no file path, `SaveProject` should redirect to `SaveProjectAs`
-   instead of returning `E_NOTIMPL`.
+3. **RESOLVED (2026-10-10): SaveProject** now redirects untitled projects to
+   the Save As dialog (`SundanceAppMain::PromptSaveProjectAs`) instead of
+   returning `E_NOTIMPL`; removed from the tables above.
 
 4. **WLXMP4Parser stubs** block MP4 file support in the DirectShow pipeline.
    These should return `CLASS_E_CLASSNOTAVAILABLE` so the app can fall back
@@ -341,7 +339,7 @@ compatibility in the MF pipeline.
    features (social upload, video export/trim). They are genuinely unimplented
    rather than broken — remove the stubs or mark with `CLASS_E_CLASSNOTAVAILABLE`.
 
-6. **UXCore stubs** (19 of 92 — 21%) are dead code and can be ignored entirely.
+6. **UXCore stubs** (19 of 90 — 21%) are dead code and can be ignored entirely.
 
 ---
 
@@ -350,11 +348,11 @@ compatibility in the MF pipeline.
 | Metric | Count |
 |--------|-------|
 | Total files with E_NOTIMPL | 31 |
-| Total stub occurrences | 92 |
+| Total stub occurrences | 90 |
 | Dead code (UXCore) | 19 |
 | Error-code mappings (WLXPhotoBase) | 4 |
 | True missing features (publish/trim/export) | 18 |
 | Engine/AV/compat stubs (LOW) | 28 |
-| Feature-degradation stubs (MEDIUM) | 20 |
-| Functional-blocker stubs (HIGH) | 3 |
+| Feature-degradation stubs (MEDIUM) | 19 |
+| Functional-blocker stubs (HIGH) | 2 |
 | Startup-blocking (CRITICAL) | 0 |

@@ -719,10 +719,12 @@ HRESULT TranscodeMetadataParser::GetPropertyDateTime(LPCWSTR pszFilePath, REFPRO
     // property store, where they are exposed as VT_FILETIME values.
     // SHGetPropertyStoreFromParsingName covers filesystem paths and shell
     // namespace items alike, unlike StgOpenStorageEx which only works for
-    // formats with an OLE property storage.
+    // formats with an OLE property storage. Read-only access: this is a
+    // metadata read, and read-write access would fail on read-only or
+    // locked files.
     CComPtr<IPropertyStore> spStore;
     HRESULT hr = SHGetPropertyStoreFromParsingName(
-        pszFilePath, nullptr, GPS_READWRITE, IID_PPV_ARGS(&spStore));
+        pszFilePath, nullptr, GPS_DEFAULT, IID_PPV_ARGS(&spStore));
     if (SUCCEEDED(hr))
     {
         PROPVARIANT var;
@@ -761,15 +763,33 @@ HRESULT TranscodeMetadataParser::GetPropertyDateTime(LPCWSTR pszFilePath, REFPRO
         SYSTEMTIME st = {};
         if (strValue.GetLength() >= 10 &&
             swscanf_s(strValue.GetString(), L"%4hd-%2hd-%2hd",
-                      &st.wYear, &st.wMonth, &st.wDay) == 3 &&
-            st.wYear >= 1601 && st.wMonth >= 1 && st.wMonth <= 12 &&
-            st.wDay >= 1 && st.wDay <= 31)
+                      &st.wYear, &st.wMonth, &st.wDay) == 3)
         {
-            if (strValue.GetLength() >= 19)
-            {
+            // Time-of-day is optional; when present it must parse fully and
+            // be in range.
+            if (strValue.GetLength() >= 19 &&
                 swscanf_s(strValue.GetString() + 11, L"%2hd:%2hd:%2hd",
-                          &st.wHour, &st.wMinute, &st.wSecond);
+                          &st.wHour, &st.wMinute, &st.wSecond) != 3)
+            {
+                return E_FAIL;
             }
+
+            // Range checks: FILETIME epoch year, calendar month/day bounds,
+            // and 24h clock. wDayOfWeek is ignored by SystemTimeToFileTime.
+            if (st.wYear < 1601 || st.wMonth < 1 || st.wMonth > 12 ||
+                st.wDay < 1 || st.wDay > 31 ||
+                st.wHour > 23 || st.wMinute > 59 || st.wSecond > 59)
+            {
+                return E_FAIL;
+            }
+
+            // Reject impossible calendar dates (February 31 and friends);
+            // SystemTimeToFileTime validates the date against the actual
+            // month length and fails with ERROR_INVALID_PARAMETER.
+            FILETIME ftValidation = {};
+            if (!SystemTimeToFileTime(&st, &ftValidation))
+                return E_FAIL;
+
             *pSystemTime = st;
             return S_OK;
         }

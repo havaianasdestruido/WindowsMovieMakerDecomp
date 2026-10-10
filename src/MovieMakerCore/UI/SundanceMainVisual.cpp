@@ -1130,6 +1130,16 @@ void MainVisual::Render(HWND hWnd, HDC hdc, const RECT& rcClient,
 {
     EnsureFonts();
 
+    // Drop a stale selection that no longer matches the project (media
+    // removed, project closed or reloaded) so the contextual tabs and the
+    // "Item N of M" readout never reference a nonexistent clip. Valid
+    // selections and the no-selection state are preserved.
+    int cMedia = 0;
+    if (pApp && pApp->IsProjectOpen() && pApp->GetProject())
+        cMedia = static_cast<int>(pApp->GetProject()->GetMediaItemCount());
+    if (g_vis.nSelectedClip >= cMedia)
+        g_vis.nSelectedClip = -1;
+
     int w = rcClient.right - rcClient.left;
     int h = rcClient.bottom - rcClient.top;
     if (w <= 0 || h <= 0)

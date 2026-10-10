@@ -507,12 +507,14 @@ static LRESULT CALLBACK SundanceWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPA
                 PostMessageW(hWnd, WM_COMMAND, MAKEWPARAM(ID_APP_EXPORT, 0), 0);
                 break;
             case SundanceUI::MainVisualMenuOptions:
-                // Options dialog (EditingBehaviors) -- routed through the
-                // ribbon dispatcher like the original command surface.
-                pSundanceApp->OnRibbonCommand(0);
+                // Options property sheet (SundanceApplicationOptionsDialog,
+                // General page drives the auto-save manager settings).
+                pSundanceApp->ShowApplicationOptionsDialog(hWnd);
                 break;
             case SundanceUI::MainVisualMenuExit:
-                DestroyWindow(hWnd);
+                // Route through WM_CLOSE so the save-changes prompt applies
+                // to Exit, the title-bar X and Alt+F4 alike.
+                PostMessageW(hWnd, WM_CLOSE, 0, 0);
                 break;
             default:
                 break;
@@ -531,6 +533,35 @@ static LRESULT CALLBACK SundanceWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPA
     case WM_MOUSELEAVE:
         SundanceUI::MainVisual::OnMouseLeave(hWnd);
         return 0;
+
+    case WM_CLOSE:
+    {
+        // The original prompts to save unsaved changes before the window
+        // closes (Exit menu, title-bar X and Alt+F4 all land here).
+        if (pSundanceApp && pSundanceApp->IsProjectOpen() &&
+            pSundanceApp->IsProjectDirty())
+        {
+            int nChoice = ::MessageBoxW(hWnd,
+                L"Do you want to save changes to the project?",
+                L"Windows Live Movie Maker",
+                MB_YESNOCANCEL | MB_ICONQUESTION);
+
+            if (nChoice == IDCANCEL)
+                return 0; // keep the app open
+
+            if (nChoice == IDYES)
+            {
+                // SaveProject routes untitled projects to Save Project As;
+                // S_FALSE means the user cancelled that dialog, so the
+                // window must stay open.
+                HRESULT hrSave = pSundanceApp->SaveProject();
+                if (hrSave == S_FALSE || FAILED(hrSave))
+                    return 0;
+            }
+        }
+        DestroyWindow(hWnd);
+        return 0;
+    }
 
     case WM_COMMAND:
     {
@@ -720,6 +751,7 @@ static LRESULT CALLBACK SundanceWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPA
                                 pSundanceApp->GetProject()->GetMediaItemCount()) - 1);
                     }
                     InvalidateRect(hWnd, NULL, FALSE);
+                    if (pApp) pApp->RefreshWindowTitle();
                 }
             }
             DragFinish(hDrop);

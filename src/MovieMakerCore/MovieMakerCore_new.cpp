@@ -1,4 +1,4 @@
-﻿/*
+/*
  * MovieMakerCore.cpp
  *
  * Implementation of MovieMakerMain -- the sole exported function from
@@ -37,6 +37,7 @@ extern "C"
 
 #include "SundanceApp/SundanceAppMain.h"
 #include "StoryboardManager/MovieProject.h"
+#include "UI/SundanceMainVisual.h"
 
 namespace Sundance
 {
@@ -365,6 +366,10 @@ public:
     bool IsRunning() const { return m_bRunning; }
     ::SundanceAppMain* GetSundanceApp() const { return m_pSundanceApp; }
 
+    // Window-title refresh for callers outside the class (the WndProc
+    // routes File-menu Save/Open results here).
+    void RefreshWindowTitle() { UpdateTitleFromProject(); }
+
 private:
     HACCEL CreateAccelerators()
     {
@@ -396,10 +401,10 @@ private:
         {
             ATL::CString strTitle;
             ATL::CString strName = app->GetProject()->GetProjectName();
-            if (!strName.IsEmpty())
-                strTitle.Format(L"%s - %s", kMainWindowTitle, strName.GetString());
-            else
-                strTitle = kMainWindowTitle;
+            // The original binary captions the window "<project> - Movie Maker"
+            // and seeds untitled projects with the name "My Movie".
+            strTitle.Format(L"%s - Movie Maker",
+                strName.IsEmpty() ? L"My Movie" : strName.GetString());
 
             if (app->IsProjectDirty())
                 strTitle += L" *";
@@ -453,48 +458,108 @@ static LRESULT CALLBACK SundanceWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPA
         HDC hdc = BeginPaint(hWnd, &ps);
         RECT rc;
         GetClientRect(hWnd, &rc);
-        FillRect(hdc, &rc, (HBRUSH)(COLOR_WINDOW + 1));
 
-        if (pSundanceApp && pSundanceApp->IsProjectOpen())
-        {
-            StoryboardManager::MovieProject* pProject = pSundanceApp->GetProject();
-            if (pProject)
-            {
-                size_t cMedia = pProject->GetMediaItemCount();
-                size_t cExtents = pProject->GetTotalExtentCount();
-
-                SetBkMode(hdc, TRANSPARENT);
-                SetTextColor(hdc, RGB(60, 60, 60));
-                HFONT hFont = CreateFontW(16, 0, 0, 0, FW_NORMAL, FALSE, FALSE, FALSE,
-                    DEFAULT_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS,
-                    CLEARTYPE_QUALITY, DEFAULT_PITCH, L"Segoe UI");
-                HFONT hOld = (HFONT)SelectObject(hdc, hFont);
-
-                ATL::CString strInfo;
-                strInfo.Format(
-                    L"Windows Live Movie Maker\n\n"
-                    L"Project: %s\n"
-                    L"Media items: %zu\n"
-                    L"Timeline extents: %zu\n\n"
-                    L"Use File > Add videos and photos to get started.",
-                    pProject->GetProjectName().IsEmpty()
-                        ? L"(untitled)" : pProject->GetProjectName().GetString(),
-                    cMedia, cExtents);
-                DrawTextW(hdc, strInfo, -1, &rc, DT_CENTER | DT_VCENTER | DT_WORDBREAK);
-
-                SelectObject(hdc, hOld);
-                DeleteObject(hFont);
-            }
-        }
-        else
-        {
-            SetBkMode(hdc, TRANSPARENT);
-            SetTextColor(hdc, RGB(100, 100, 100));
-            DrawTextW(hdc, L"Windows Live Movie Maker\n\nImport media to get started.",
-                      -1, &rc, DT_CENTER | DT_VCENTER | DT_WORDBREAK);
-        }
+        // Owner-drawn Sundance shell: ribbon tab strip + Home groups,
+        // preview pane, filmstrip storyboard and status bar, laid out to
+        // match the original 16.4 binary (see UI/SundanceMainVisual.cpp).
+        SundanceUI::MainVisual::Render(hWnd, hdc, rc, pSundanceApp);
 
         EndPaint(hWnd, &ps);
+        return 0;
+    }
+
+    case WM_LBUTTONDOWN:
+    {
+        if (pSundanceApp)
+        {
+            POINT pt = { GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam) };
+            int nMenuCmd = SundanceUI::MainVisual::OnLButtonDown(hWnd, pt, pSundanceApp);
+            switch (nMenuCmd)
+            {
+            case SundanceUI::MainVisualMenuOpenProject:
+            {
+                WCHAR szProject[MAX_PATH] = { 0 };
+                OPENFILENAMEW ofn;
+                ZeroMemory(&ofn, sizeof(ofn));
+                ofn.lStructSize  = sizeof(ofn);
+                ofn.hwndOwner    = hWnd;
+                ofn.lpstrFilter  = L"Windows Live Movie Maker Project (*.wlmp)\0*.wlmp\0All Files\0*.*\0";
+                ofn.lpstrFile    = szProject;
+                ofn.nMaxFile     = ARRAYSIZE(szProject);
+                ofn.lpstrTitle   = L"Open Project";
+                ofn.Flags        = OFN_FILEMUSTEXIST | OFN_PATHMUSTEXIST;
+                if (::GetOpenFileNameW(&ofn))
+                {
+                    if (SUCCEEDED(pSundanceApp->OpenProject(szProject)) && pApp)
+                        pApp->RefreshWindowTitle();
+                }
+                break;
+            }
+            case SundanceUI::MainVisualMenuSaveProject:
+                pSundanceApp->SaveProject();
+                if (pApp) pApp->RefreshWindowTitle();
+                break;
+            case SundanceUI::MainVisualMenuSaveProjectAs:
+                pSundanceApp->PromptSaveProjectAs();
+                if (pApp) pApp->RefreshWindowTitle();
+                break;
+            case SundanceUI::MainVisualMenuSaveMovie:
+                PostMessageW(hWnd, WM_COMMAND, MAKEWPARAM(ID_APP_EXPORT, 0), 0);
+                break;
+            case SundanceUI::MainVisualMenuOptions:
+                // Options property sheet (SundanceApplicationOptionsDialog,
+                // General page drives the auto-save manager settings).
+                pSundanceApp->ShowApplicationOptionsDialog(hWnd);
+                break;
+            case SundanceUI::MainVisualMenuExit:
+                // Route through WM_CLOSE so the save-changes prompt applies
+                // to Exit, the title-bar X and Alt+F4 alike.
+                PostMessageW(hWnd, WM_CLOSE, 0, 0);
+                break;
+            default:
+                break;
+            }
+        }
+        return 0;
+    }
+
+    case WM_MOUSEMOVE:
+    {
+        POINT pt = { GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam) };
+        SundanceUI::MainVisual::OnMouseMove(hWnd, pt);
+        return 0;
+    }
+
+    case WM_MOUSELEAVE:
+        SundanceUI::MainVisual::OnMouseLeave(hWnd);
+        return 0;
+
+    case WM_CLOSE:
+    {
+        // The original prompts to save unsaved changes before the window
+        // closes (Exit menu, title-bar X and Alt+F4 all land here).
+        if (pSundanceApp && pSundanceApp->IsProjectOpen() &&
+            pSundanceApp->IsProjectDirty())
+        {
+            int nChoice = ::MessageBoxW(hWnd,
+                L"Do you want to save changes to the project?",
+                L"Windows Live Movie Maker",
+                MB_YESNOCANCEL | MB_ICONQUESTION);
+
+            if (nChoice == IDCANCEL)
+                return 0; // keep the app open
+
+            if (nChoice == IDYES)
+            {
+                // SaveProject routes untitled projects to Save Project As;
+                // S_FALSE means the user cancelled that dialog, so the
+                // window must stay open.
+                HRESULT hrSave = pSundanceApp->SaveProject();
+                if (hrSave == S_FALSE || FAILED(hrSave))
+                    return 0;
+            }
+        }
+        DestroyWindow(hWnd);
         return 0;
     }
 
@@ -555,13 +620,27 @@ static LRESULT CALLBACK SundanceWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPA
                             for (auto& f : files)
                                 pSundanceApp->AddMediaToTimeline(
                                     f.c_str(), TimelineTrack_Video);
+
+                            if (pApp) pApp->RefreshWindowTitle();
                         }
                     }
                     else if (szFiles[0] != L'\0')
                     {
                         LPCWSTR szFilePtr = szFiles; pSundanceApp->ImportMediaFiles(1, &szFilePtr);
                         pSundanceApp->AddMediaToTimeline(szFiles, TimelineTrack_Video);
+                        if (pApp) pApp->RefreshWindowTitle();
                     }
+
+                    // The original selects the newly added clip (which is
+                    // what surfaces the contextual Video Tools tab).
+                    if (pSundanceApp->GetProject() &&
+                        pSundanceApp->GetProject()->GetMediaItemCount() > 0)
+                    {
+                        SundanceUI::MainVisual::SetSelectedClip(
+                            static_cast<int>(
+                                pSundanceApp->GetProject()->GetMediaItemCount()) - 1);
+                    }
+                    InvalidateRect(hWnd, NULL, FALSE);
                 }
                 return 0;
             }
@@ -661,6 +740,18 @@ static LRESULT CALLBACK SundanceWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPA
                     for (auto& f : files)
                         pSundanceApp->AddMediaToTimeline(
                             f.c_str(), TimelineTrack_Video);
+
+                    // Select the newest clip and refresh the caption,
+                    // matching the dialog import path.
+                    if (pSundanceApp->GetProject() &&
+                        pSundanceApp->GetProject()->GetMediaItemCount() > 0)
+                    {
+                        SundanceUI::MainVisual::SetSelectedClip(
+                            static_cast<int>(
+                                pSundanceApp->GetProject()->GetMediaItemCount()) - 1);
+                    }
+                    InvalidateRect(hWnd, NULL, FALSE);
+                    if (pApp) pApp->RefreshWindowTitle();
                 }
             }
             DragFinish(hDrop);

@@ -1,4 +1,4 @@
-﻿#include "pch.h"
+#include "pch.h"
 
 // IID_IUICommandHandler GUID definition (not in Win10 SDK uiribbon.lib)
 // {75AE0A2D-DC03-4C9F-8883-069660D0BEB6}
@@ -1203,7 +1203,16 @@ HRESULT RibbonApp::UpdateState(UINT nCmdId, REFPROPERTYKEY key,
         return S_OK;
     }
 
-    return E_NOTIMPL;
+    // Unknown / unsupported property key. The Windows Ribbon framework
+    // treats S_OK with VT_EMPTY as "handler does not supply this key" and
+    // keeps its cached value; returning E_NOTIMPL makes the framework
+    // debug-break in ValidateHandlerResult. The original binary follows
+    // the framework convention, so mirror it here.
+    if (pNewValue)
+    {
+        pNewValue->vt = VT_EMPTY;
+    }
+    return S_OK;
 }
 
 // ============================================================================

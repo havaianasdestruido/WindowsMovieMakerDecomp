@@ -39,14 +39,21 @@ description: Windows Live Movie Maker 2012 (codename Sundance) reconstructed fro
     </div>
     <div class="wmmr-hero-media">
       <figure class="wmmr-hero-fig">
-        <img
-          src="{{ site.baseurl }}/assets/img/hero-film.jpg"
-          alt="35mm film strip curled on a dark workbench, warmed by amber light"
-          width="768"
-          height="1376"
-          loading="eager"
-          decoding="async"
-        >
+        <!-- Prefer the smaller WebP for modern browsers; retain JPEG fallback. -->
+        <picture class="wmmr-hero-picture">
+          <source
+            srcset="{{ site.baseurl }}/assets/img/hero-film.webp"
+            type="image/webp"
+          >
+          <img
+            src="{{ site.baseurl }}/assets/img/hero-film.jpg"
+            alt="35mm film strip curled on a dark workbench, warmed by amber light"
+            width="768"
+            height="1376"
+            loading="eager"
+            decoding="async"
+          >
+        </picture>
         <figcaption class="wmmr-hero-cap">Build 16.4.3528.0331</figcaption>
       </figure>
     </div>

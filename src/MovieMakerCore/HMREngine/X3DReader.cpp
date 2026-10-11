@@ -56,14 +56,19 @@ namespace HMREngine
 
     HRESULT X3DReader::ParseX3D(const char* data, size_t length, X3DParseContext& ctx)
     {
-        // Detect format, allocating only a small string
-        std::string header(data, std::min<size_t>(length, 1024));
+        // Detect format without allocating string copies
+        size_t searchLen = std::min<size_t>(length, 1024);
+        auto contains = [&](const char* str) {
+            size_t strLen = std::strlen(str);
+            if (strLen == 0 || searchLen < strLen) return false;
+            return std::search(data, data + searchLen, str, str + strLen) != (data + searchLen);
+        };
 
-        if (header.find("<X3D") != std::string::npos || header.find("<Scene") != std::string::npos)
+        if (contains("<X3D") || contains("<Scene"))
         {
             return ParseXML(data, length, ctx);
         }
-        else if (header.find("#X3D") != std::string::npos || header.find("PROFILE") != std::string::npos)
+        else if (contains("#X3D") || contains("PROFILE"))
         {
             return ParseX3DV1(data, length, ctx);
         }
@@ -203,7 +208,7 @@ namespace HMREngine
 
         auto expect = [&](char c) {
             skipWhitespace();
-            if (pos < content.size() && content[pos] == c) { pos++; return true; }
+            if (pos < length && data[pos] == c) { pos++; return true; }
             return false;
         };
 
@@ -213,14 +218,14 @@ namespace HMREngine
                 return;
             skipWhitespace();
             if (!expect('{')) return;
-            while (pos < content.size()) {
+            while (pos < length) {
                 skipWhitespace();
-                if (content[pos] == '}') { pos++; return; }
+                if (data[pos] == '}') { pos++; return; }
                 std::string key = readToken();
                 if (key.empty()) return;
                 if (!expect(':')) return;
                 skipWhitespace();
-                if (content[pos] == '{') {
+                if (data[pos] == '{') {
                     X3DChildNode* child = CreateNode(key);
                     if (child) {
                         X3DChildNode* parent = ctx.GetCurrentNode();
@@ -231,10 +236,10 @@ namespace HMREngine
                     } else {
                         parseObject(depth + 1);
                     }
-                } else if (content[pos] == '[') {
+                } else if (data[pos] == '[') {
                     pos++;
-                    while (pos < content.size() && content[pos] != ']') pos++;
-                    if (pos < content.size()) pos++;
+                    while (pos < length && data[pos] != ']') pos++;
+                    if (pos < length) pos++;
                 } else {
                     std::string val = readToken();
                     if (ctx.GetCurrentNode()) {
@@ -257,7 +262,7 @@ namespace HMREngine
                     }
                 }
                 skipWhitespace();
-                if (content[pos] == ',') pos++;
+                if (data[pos] == ',') pos++;
             }
         };
 

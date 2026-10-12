@@ -519,115 +519,149 @@ namespace HMREngine
 
     bool X3DReader::ParseVec2f(const std::string& s, Vec2& out)
     {
-        auto tokens = Split(Trim(s), ' ');
-        if (tokens.size() >= 2)
-        {
-            float x, y;
-            if (ParseFloat(tokens[0], x) && ParseFloat(tokens[1], y))
-            {
-                out = Vec2(x, y);
-                return true;
-            }
+        const char* p = s.c_str();
+        char* end;
+        float vals[2];
+        for (int i = 0; i < 2; ++i) {
+            while (*p == ',' || *p == ' ' || *p == '\t' || *p == '\r' || *p == '\n') p++;
+            if (!*p) return false;
+            vals[i] = std::strtof(p, &end);
+            if (p == end) return false;
+            p = end;
         }
-        return false;
+        out = Vec2(vals[0], vals[1]);
+        return true;
     }
 
     bool X3DReader::ParseVec3f(const std::string& s, Vec3& out)
     {
-        auto tokens = Split(Trim(s), ' ');
-        if (tokens.size() >= 3)
-        {
-            float x, y, z;
-            if (ParseFloat(tokens[0], x) && ParseFloat(tokens[1], y) && ParseFloat(tokens[2], z))
-            {
-                out = Vec3(x, y, z);
-                return true;
-            }
+        const char* p = s.c_str();
+        char* end;
+        float vals[3];
+        for (int i = 0; i < 3; ++i) {
+            while (*p == ',' || *p == ' ' || *p == '\t' || *p == '\r' || *p == '\n') p++;
+            if (!*p) return false;
+            vals[i] = std::strtof(p, &end);
+            if (p == end) return false;
+            p = end;
         }
-        return false;
+        out = Vec3(vals[0], vals[1], vals[2]);
+        return true;
     }
 
     bool X3DReader::ParseRotation(const std::string& s, Rotation4f& out)
     {
-        auto tokens = Split(Trim(s), ' ');
-        if (tokens.size() >= 4)
-        {
-            float x, y, z, w;
-            if (ParseFloat(tokens[0], x) && ParseFloat(tokens[1], y) &&
-                ParseFloat(tokens[2], z) && ParseFloat(tokens[3], w))
-            {
-                out = Rotation4f(x, y, z, w);
-                return true;
-            }
+        const char* p = s.c_str();
+        char* end;
+        float vals[4];
+        for (int i = 0; i < 4; ++i) {
+            while (*p == ',' || *p == ' ' || *p == '\t' || *p == '\r' || *p == '\n') p++;
+            if (!*p) return false;
+            vals[i] = std::strtof(p, &end);
+            if (p == end) return false;
+            p = end;
         }
-        return false;
+        out = Rotation4f(vals[0], vals[1], vals[2], vals[3]);
+        return true;
     }
 
     bool X3DReader::ParseColor(const std::string& s, Rgb& out)
     {
-        auto tokens = Split(Trim(s), ' ');
-        if (tokens.size() >= 3)
-        {
-            float r, g, b;
-            if (ParseFloat(tokens[0], r) && ParseFloat(tokens[1], g) && ParseFloat(tokens[2], b))
-            {
-                out = Rgb(r, g, b);
-                return true;
-            }
+        const char* p = s.c_str();
+        char* end;
+        float vals[3];
+        for (int i = 0; i < 3; ++i) {
+            while (*p == ',' || *p == ' ' || *p == '\t' || *p == '\r' || *p == '\n') p++;
+            if (!*p) return false;
+            vals[i] = std::strtof(p, &end);
+            if (p == end) return false;
+            p = end;
         }
-        return false;
+        out = Rgb(vals[0], vals[1], vals[2]);
+        return true;
     }
 
     bool X3DReader::ParseColorRGBA(const std::string& s, Rgba& out)
     {
-        auto tokens = Split(Trim(s), ' ');
-        if (tokens.size() >= 4)
-        {
-            float r, g, b, a;
-            if (ParseFloat(tokens[0], r) && ParseFloat(tokens[1], g) &&
-                ParseFloat(tokens[2], b) && ParseFloat(tokens[3], a))
-            {
-                out = Rgba(r, g, b, a);
-                return true;
-            }
+        const char* p = s.c_str();
+        char* end;
+        float vals[4];
+        for (int i = 0; i < 4; ++i) {
+            while (*p == ',' || *p == ' ' || *p == '\t' || *p == '\r' || *p == '\n') p++;
+            if (!*p) return false;
+            vals[i] = std::strtof(p, &end);
+            if (p == end) return false;
+            p = end;
         }
-        return false;
+        out = Rgba(vals[0], vals[1], vals[2], vals[3]);
+        return true;
     }
 
     bool X3DReader::ParseFloatArray(const std::string& s, std::vector<float>& out)
     {
-        auto tokens = Split(Trim(s), ' ');
-        for (auto& t : tokens)
-        {
-            float v;
-            if (ParseFloat(t, v)) out.push_back(v);
+        const char* p = s.c_str();
+        char* end;
+        bool found = false;
+        while (true) {
+            while (*p == ',' || *p == ' ' || *p == '\t' || *p == '\r' || *p == '\n') p++;
+            if (!*p) break;
+            float v = std::strtof(p, &end);
+            if (p == end) {
+                // If it's a completely invalid char, skip one to avoid infinite loop
+                p++;
+            } else {
+                out.push_back(v);
+                p = end;
+                found = true;
+            }
         }
-        return !out.empty();
+        return found;
     }
 
     bool X3DReader::ParseIntArray(const std::string& s, std::vector<int>& out)
     {
-        auto tokens = Split(Trim(s), ' ');
-        for (auto& t : tokens)
-        {
-            int v;
-            if (ParseInt(t, v)) out.push_back(v);
+        const char* p = s.c_str();
+        char* end;
+        bool found = false;
+        while (true) {
+            while (*p == ',' || *p == ' ' || *p == '\t' || *p == '\r' || *p == '\n') p++;
+            if (!*p) break;
+            long v = std::strtol(p, &end, 10);
+            if (p == end) {
+                // If it's a completely invalid char, skip one to avoid infinite loop
+                p++;
+            } else {
+                out.push_back(static_cast<int>(v));
+                p = end;
+                found = true;
+            }
         }
-        return !out.empty();
+        return found;
     }
 
     bool X3DReader::ParseVec3fArray(const std::string& s, std::vector<Vec3>& out)
     {
-        auto tokens = Split(Trim(s), ' ');
-        for (size_t i = 0; i + 2 < tokens.size(); i += 3)
-        {
-            float x, y, z;
-            if (ParseFloat(tokens[i], x) && ParseFloat(tokens[i + 1], y) && ParseFloat(tokens[i + 2], z))
-            {
-                out.push_back(Vec3(x, y, z));
+        const char* p = s.c_str();
+        char* end;
+        bool found = false;
+        while (true) {
+            float vals[3];
+            bool valid = true;
+            for (int i = 0; i < 3; ++i) {
+                while (*p == ',' || *p == ' ' || *p == '\t' || *p == '\r' || *p == '\n') p++;
+                if (!*p) { valid = false; break; }
+                vals[i] = std::strtof(p, &end);
+                if (p == end) { valid = false; break; }
+                p = end;
+            }
+            if (valid) {
+                out.push_back(Vec3(vals[0], vals[1], vals[2]));
+                found = true;
+            } else {
+                break;
             }
         }
-        return !out.empty();
+        return found;
     }
 
     HRESULT X3DReader::SaveToFile(const std::string& filePath, Scene* scene)

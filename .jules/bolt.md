@@ -9,3 +9,6 @@
 ## 2023-10-25 - X3D Array Parsing Allocations
 **Learning:** Parsing massive float/int arrays in `X3DReader` using `Split` created millions of temporary `std::string` objects and threw expensive exceptions for commas via `std::stof`.
 **Action:** Replace `Split` and string manipulation with direct in-place `const char*` pointer traversal and `std::strtof`/`std::strtol` for zero-allocation parsing of 3D data arrays.
+## 2024-05-18 - Mesh Resource Generation Bottleneck
+**Learning:** Generating mesh resources (like grids and wipe meshes) dynamically can cause unnecessary memory reallocations if the target vertex and index buffers are not pre-reserved. In `MeshResourceDX.cpp`, vectors for vertices and indices were populated via `push_back` inside nested loops without prior capacity reservations, causing O(N) allocation overhead for meshes with many subdivisions.
+**Action:** Always compute and `reserve()` the exact or maximum required size for `std::vector` before populating it in tight loops, particularly for procedural geometry generation (e.g., `(segmentsX + 1) * (segmentsY + 1)` for a grid).

@@ -293,6 +293,11 @@ HRESULT GridResourceDX::CreateGrid(UINT divisionsX, UINT divisionsY,
     std::vector<VertexPosTex> vertices;
     std::vector<WORD> indices;
 
+    // Bolt: Pre-allocate vector capacity based on precise vertex/index counts
+    // Impact: Avoids multiple O(N) memory reallocations during tight loop push_backs
+    vertices.reserve((divisionsX + 1) * (divisionsY + 1));
+    indices.reserve(divisionsX * divisionsY * 6);
+
     for (UINT y = 0; y <= divisionsY; ++y)
     {
         for (UINT x = 0; x <= divisionsX; ++x)
@@ -367,6 +372,11 @@ HRESULT ShatterGridResourceDX::CreateShatterGrid(UINT piecesX, UINT piecesY,
 
     std::vector<ShatterVertex> vertices;
     std::vector<WORD> indices;
+
+    // Bolt: Pre-allocate vector capacity based on precise vertex/index counts
+    // Impact: Avoids multiple O(N) memory reallocations during tight loop push_backs
+    vertices.reserve(piecesX * piecesY * 4);
+    indices.reserve(piecesX * piecesY * 6);
 
     for (UINT y = 0; y < piecesY; ++y)
     {
@@ -464,6 +474,11 @@ HRESULT PageCurlGridResourceDX::CreatePageCurlGrid(UINT segmentsX, UINT segments
 
     std::vector<PageCurlVertex> vertices;
     std::vector<WORD> indices;
+
+    // Bolt: Pre-allocate vector capacity based on precise vertex/index counts
+    // Impact: Avoids multiple O(N) memory reallocations during tight loop push_backs
+    vertices.reserve((segmentsX + 1) * (segmentsY + 1));
+    indices.reserve(segmentsX * segmentsY * 6);
 
     for (UINT y = 0; y <= segmentsY; ++y)
     {
@@ -578,6 +593,11 @@ HRESULT WipeMeshResourceDX::CreateWipeMesh(UINT segmentsX, UINT segmentsY,
 
     std::vector<VertexPosTex> vertices;
     std::vector<WORD> indices;
+
+    // Bolt: Pre-allocate vector capacity based on precise vertex/index counts
+    // Impact: Avoids multiple O(N) memory reallocations during tight loop push_backs
+    vertices.reserve((segmentsX + 1) * (segmentsY + 1));
+    indices.reserve(segmentsX * segmentsY * 6);
 
     for (UINT y = 0; y <= segmentsY; ++y)
     {
@@ -777,6 +797,9 @@ HRESULT PreprocessMesh::WeldVertices(
     float tolSq = tolerance * tolerance;
     std::vector<WORD> remap(vertices.size());
     std::vector<VertexPosNormTex> unique;
+    // Bolt: Pre-allocate vector capacity to maximum possible size
+    // Impact: Avoids multiple O(N) memory reallocations during tight loop push_backs
+    unique.reserve(vertices.size());
 
     for (size_t i = 0; i < vertices.size(); ++i)
     {

@@ -58,7 +58,7 @@ return `E_NOTIMPL`), the real implementation wins and the contract pins the real
 | `apps/` | 10 consumer/exercise apps (submodules) |
 | `tools/` | Build, verification, and binary-analysis tooling |
 | `website/` | This Docusaurus documentation site |
-| `README.md`, `ROADMAP.md`, `StubDesign.md`, `QUIRKS.md`, `THINKING_PROCESS.md`, `AGENTS.md` | Root engineering documents |
+| `README.md`, `TODO.md`, `ROADMAP.md`, `StubDesign.md`, `QUIRKS.md`, `THINKING_PROCESS.md`, `AGENTS.md` | Root engineering documents |
 
 A complete map lives in [Repository Map](./reference/repository-map.md).
 

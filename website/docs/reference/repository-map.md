@@ -12,6 +12,7 @@ description: Every directory in the repository and what lives in it.
 |---|---|
 | `README.md` | Project overview + quick start |
 | `AGENTS.md` | **The** canonical instruction file for AI coding agents (CLAUDE.md / AI.md point here) |
+| `TODO.md` | Phased work plan for the 1:1 clean-room reconstruction (13 phases, exit gates, trackers) |
 | `ROADMAP.md` | Build state, subsystem inventory, SDK fixes, 23 gotchas |
 | `StubDesign.md` | Stub conventions, decision rules, hardening notes |
 | `QUIRKS.md` | 23 original bugs/quirks deliberately preserved |

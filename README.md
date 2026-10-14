@@ -18,6 +18,14 @@ setup and rebuilt from binary analysis as C++14 / ATL / WTL source.
 Please read [THINKING_PROCESS.md](THINKING_PROCESS.md),
 [ROADMAP.md](ROADMAP.md) and [QUIRKS.md](QUIRKS.md).
 
+**Work plan:** [TODO.md](TODO.md) is the phased checklist for reaching a faithful 1:1
+clean-room reconstruction — 13 phases (clean-room charter → reference freeze → static
+specs → golden oracles → binary-surface parity → re-implementation → resources →
+real media pipeline → regression hardening → 1:1 verification & diff closure →
+install/deploy → docs → out-of-scope remix), each with tasks, an exit gate, and the
+cross-phase trackers (unreconstructed modules, stub burn-down, binary-diff gaps, parity
+matrix).
+
 ## Quick Start
 
 ```
@@ -55,6 +63,7 @@ The docs source lives in [`website/docs/`](website/docs/) — see
 
 ## Getting Oriented
 
+- `TODO.md` — **phased work plan** for the 1:1 clean-room reconstruction, with exit gates.
 - `ROADMAP.md` — build state, subsystem inventory, SDK fixes, gotchas.
 - `StubDesign.md` — stub conventions, decision rules, hardening notes.
 - `QUIRKS.md` — 23 original bugs/quirks deliberately preserved.

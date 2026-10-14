@@ -34,9 +34,10 @@ analysis of the original MSVC-11 (VS2012) binaries.
 | `build/` | Real build output (`bin/Debug/*.dll|*.exe`). Always the target for tests. |
 | `build_clean/`, `build64/`, `out/`, `cool/`, `intro/` | Gitignored scratch/alternate builds. |
 
-Documentation: `README.md` (overview), `ROADMAP.md` (build state + subsystem
-inventory), `StubDesign.md` (stub/parity/security rules), `QUIRKS.md` (23 preserved bugs),
-`THINKING_PROCESS.md` (reconstruction methodology).
+Documentation: `README.md` (overview), `TODO.md` (phased 1:1 clean-room work plan + exit
+gates), `ROADMAP.md` (build state + subsystem inventory), `StubDesign.md` (stub/parity/security
+rules), `QUIRKS.md` (23 preserved bugs), `THINKING_PROCESS.md` (reconstruction methodology),
+`TODO_AUDIT.md` (index of intentionally incomplete source).
 
 ## Architecture & Entry Points
 

@@ -42,6 +42,7 @@ exclude:
   - ROADMAP.md
   - StubDesign.md
   - THINKING_PROCESS.md
+  - TODO.md
   - TODO_AUDIT.md
   - package.json
   - package-lock.json

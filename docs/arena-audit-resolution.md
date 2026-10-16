@@ -200,13 +200,14 @@ All 18 open issues (#15–#32) were inspected before implementation, including f
 
 ## Implementation reconciliation
 
-All 18 defects were present at the baseline; none were already fixed. 17 issues
+All 18 defects were present at the baseline; none were already fixed. All 18 issues
 have implemented resolutions (including the explicit deletion/deferral options and
-the permitted #32 waiver); #30 is partially verified until the automatic Windows
-matrix has run successfully. No issue is silently excluded. The portability suite
+the permitted #32 waiver). The final automatic Windows matrix and portable job
+passed in run 38916223230. No issue is silently excluded. The portability suite
 has **34 new test methods**, including **12 native sanitizer harnesses**.
 
 Every row also has regression coverage in commit `7f709d3` under `tests/portable/`.
+Subsequent regression follow-ups are recorded in the CI section below.
 Source paths abbreviated below are under `src/MovieMakerCore/` unless qualified.
 
 | Issue | Title / subsystem | Relevant implementation commits / files | Fix | Tests | Status |
@@ -226,7 +227,7 @@ Source paths abbreviated below are under `src/MovieMakerCore/` unless qualified.
 | #27 | PE32 ImageBase offset | 2e446bb; `tools/pe_analyzer.py` | Skip BaseOfData before reading ImageBase. | PE32 distinct BaseOfData/ImageBase and PE32+ fixture checks. | Resolved; platform limitations below apply |
 | #28 | Runtime harness false results | 2e446bb; `tools/test_all.py` | Resolve EXE and adjacent DLL paths; propagate test failures; implement launch-only dispatch and argument validation. | DLL trees for Debug/Release/custom, missing EXE process exit, launch dispatch/status. | Resolved; platform limitations below apply |
 | #29 | Build wrapper wrong root | 2e446bb, 07bef3d; `tools/build.ps1` | Resolve one parent of tools, guard root CMakeLists before any deletion, and configure explicit VS2022/Win32. | Root/generator/guard regression; Windows MediaCatalog job executes -Clean wrapper from outside the repository. | Resolved; platform limitations below apply |
-| #30 | Automatic build triggers disabled | 1931998, 07bef3d, c68faa7, e2b765a; `.github/workflows/build-projects.yml`, `TranscodeMetadata.cpp`, core CMake | Restore push-main and pull_request; retain dispatch, Windows2022/Win32 matrix (28 after #21 deletion); add Ubuntu portable suite. | Trigger/matrix/dependency assertions; automatic run history verified. Final remote matrix outcome is recorded in PR #34. | Implementation complete; final Windows result tracked in PR #34 |
+| #30 | Automatic build triggers disabled | 1931998, 07bef3d, c68faa7, e2b765a; `.github/workflows/build-projects.yml`, `TranscodeMetadata.cpp`, core CMake | Restore push-main and pull_request; retain dispatch, Windows2022/Win32 matrix (28 after #21 deletion); add Ubuntu portable suite. | Trigger/matrix/dependency assertions; automatic run history verified. Final remote matrix outcome is recorded in PR #34. | Resolved; all 28 Windows matrix targets and portable CI pass |
 | #31 | Persisted mirror PAT | 1931998; `.github/workflows/sync.yml` | Per-command credential helper from env, no credential persistence; explicit main/tag refspecs, unrelated refs preserved, read-only GitHub permissions. | Dummy helper credential fill, workspace scan, real local bare push and unrelated-ref preservation. | Resolved; platform limitations below apply |
 | #32 | Website dependency advisories | 7d8ad9a; `website/package*.json`, `website/README.md` | Align Docusaurus 3.10.2, patched overrides, regenerate lock. Explicit time-bounded braces waiver lists all 29 remaining propagated high findings; no critical findings. | Clean npm ci, audit JSON (exit 1, documented waiver), production strict-link build. | Resolved via documented exception |
 
@@ -276,8 +277,8 @@ Source paths abbreviated below are under `src/MovieMakerCore/` unless qualified.
 
 ## Remaining risks / release checks
 
-- #30 must remain open until the automatic Windows matrix is confirmed green.
-  Restoring triggers does not prove the prior disabled build is healthy.
+- #30 is verified by automatic run 38916223230: all 28 remaining Windows matrix
+  targets and the portable job pass, including MovieMakerCore and the clean wrapper.
 - Real x86 contracts, CTest, export parity against copyrighted reference DLLs,
   slow-disk autosave behavior, and D3D11/Media Foundation debug-layer/refcount checks
   require the Windows environment. Portable shims are explicitly not substitutes.
@@ -327,3 +328,26 @@ not passed runs. Attempts to cancel superseded runs were denied by the integrati
 (HTTP 403); no permission workaround was attempted. The final automatic run and
 final #30 disposition are recorded in the PR's Verification section. #30 must not
 be closed unless all remaining Windows targets pass.
+
+### Final reconciliation
+
+[Automatic run 38916223230](https://github.com/havaianasdestruido/WindowsMovieMakerDecomp/actions/runs/38916223230)
+completed **successfully** for code commit `caa0b78`: **28/28 Windows/MSVC Win32
+matrix builds**, plus **34/34 portable regressions** in the Ubuntu job. The
+MediaCatalog job's real PowerShell `-Clean` wrapper check also passed. #30 is now
+fully resolved, including the newly exposed compile/link blockers; no follow-up
+build failure remains to track. This final documentation-only update records the
+already-verified code and does not change it.
+
+Final original-inventory disposition: **18 resolved, 0 already fixed, 0 blocked
+or partially resolved**. #21 is resolved by deletion, #25 by explicit deferral,
+and #32 by patched updates plus the acceptance criteria's documented waiver.
+Windows DLL contracts/CTest/GPU runtime remain unexecuted as detailed above; a
+successful matrix build is not represented as a contract or runtime test pass.
+The PR contains closing references for all 18 original issues.
+
+Additional baseline tool check using the same synthetic fixture against the
+`git archive` source: #26 returned `{}`/empty imports and exited 0 for missing
+inputs; #27 reported `0x3000` instead of `0x400000`. The fixed fixture/oracle
+checks pass. Final diff and clean working-tree checks passed after removing only
+generated Python caches.

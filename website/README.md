@@ -8,13 +8,13 @@ This repository uses a two-tier static website architecture for GitHub Pages:
 ## Prerequisites
 
 - **Jekyll**: Ruby ≥ 3.0, Bundler
-- **Docusaurus**: Node.js ≥ 20 (Node 20/22 recommended)
+- **Docusaurus**: Node.js ≥ 20.19 (Node 22 recommended)
 
 ## Running Docusaurus locally
 
 ```bash
 cd website
-npm install        # first time only
+npm ci             # install the reviewed lockfile
 
 npm start          # dev server with hot reload → http://localhost:3000/WindowsMovieMakerDecomp/docs/
 ```
@@ -74,3 +74,42 @@ The site deploys automatically on push to `main` via [`.github/workflows/docs.ym
 > https://havaianasdestruido.github.io/WindowsMovieMakerDecomp/
 
 Ensure **Repository Settings → Pages → Build and deployment → Source: GitHub Actions** is selected in GitHub settings.
+
+## Dependency security review — #32 (2026-10-16)
+
+Docusaurus and its type packages are aligned at 3.10.2. Patched transitive
+versions are selected by explicit overrides: `tinypool` 2.2.x,
+`serialize-javascript` 7.1.x, `postcss-selector-parser` 7.1.6+, and the CommonJS
+`uuid` 11.1.1+ under `sockjs`. These cross upstream version ranges; the production
+build was verified on Node 22, but the dev-server workflow also needs ongoing
+upstream compatibility review. Remove overrides once upstream adopts fixes.
+
+### Time-bounded exception: braces stack exhaustion
+
+**Waiver owner:** repository maintainers. **Review by: 2026-11-16.**
+
+`npm ci` succeeds; `npm audit` still exits 1 with **29 high, 0 critical** findings.
+All 29 are the single advisory
+[GHSA-vfj7-8cjw-p6xm](https://github.com/advisories/GHSA-vfj7-8cjw-p6xm)
+in `braces <=3.0.3` and its propagated dependents. Registry latest is 3.0.3:
+there is no published patched braces release. `npm audit fix --force` proposes a
+Docusaurus downgrade, not a fix for this advisory; do not apply it blindly.
+
+Every remaining audit package (including propagated findings):
+
+`@docusaurus/babel`, `@docusaurus/bundler`, `@docusaurus/core`, `@docusaurus/mdx-loader`, `@docusaurus/plugin-content-blog`, `@docusaurus/plugin-content-docs`, `@docusaurus/plugin-content-pages`, `@docusaurus/plugin-css-cascade-layers`, `@docusaurus/plugin-debug`, `@docusaurus/plugin-google-analytics`, `@docusaurus/plugin-google-gtag`, `@docusaurus/plugin-google-tag-manager`, `@docusaurus/plugin-sitemap`, `@docusaurus/plugin-svgr`, `@docusaurus/preset-classic`, `@docusaurus/theme-classic`, `@docusaurus/theme-common`, `@docusaurus/theme-mermaid`, `@docusaurus/theme-search-algolia`, `@docusaurus/utils`, `@docusaurus/utils-validation`, `braces`, `chokidar`, `copy-webpack-plugin`, `fast-glob`, `globby`, `http-proxy-middleware`, `micromatch`, `webpack-dev-server`.
+
+**Rationale / scope:** static published output does not execute this build-time
+glob parser. The vulnerable operation is parsing adversarial deeply nested glob
+patterns through micromatch/chokidar/fast-glob. Build only trusted documentation
+and configuration; do not accept arbitrary glob patterns from visitors. Keep the
+dev server local (do not expose it to untrusted networks), and run untrusted PR
+builds without secrets in disposable runners. This mitigates exposure, not the
+underlying denial of service. This exception is explicitly accepted for the docs
+toolchain only, never for the C++ file parsers. Re-run `npm audit --json` at the
+review date or any dependency update and replace braces when a compatible patched
+release is available. New advisories are not covered by this exception.
+
+Verification: `npm ci`; `npm audit --json`; and
+`WMMR_DOCS_BASE_URL=/WindowsMovieMakerDecomp/docs/ npm run build` with
+`onBrokenLinks: 'throw'` unchanged. Audit output must not be described as clean.

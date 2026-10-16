@@ -47,7 +47,7 @@ Or use the wrapper script:
 ## Build outputs
 
 EXE and DLL targets write to `build/bin/<Config>/` (`CMAKE_RUNTIME_OUTPUT_DIRECTORY`).
-The four static-library targets (`MediaCatalog`, `ProjectManager`, `TimelineEngine`,
+The three static-library targets (`MediaCatalog`, `TimelineEngine`,
 `PlaybackEngine`) instead produce `.lib` files under `build/lib/<Config>/`
 (`CMAKE_ARCHIVE_OUTPUT_DIRECTORY`). The headline outputs in `build/bin/Debug/`:
 
@@ -59,7 +59,7 @@ The four static-library targets (`MediaCatalog`, `ProjectManager`, `TimelineEngi
 | `MovieMakerLang.dll` | Resource-only DLL | Localization strings, UIFILEs, icons |
 | `WLXPipeline.dll`, `WLXPipetran.dll`, `WLXVideoTrim.dll`, `WLXMovieLibrary.dll`, `WLXSlideshow.dll`, `WLXPhotoCinematic.dll`, `WLXMediaPublishSubscribe.dll`, `WLXFaceRecognition.dll`, `WLXMP4Parser.dll`, `WLMFDS.dll`, `WLMFReadWrite.dll`, `MovieMakerPreviewClient.dll` | Supporting DLLs | Media pipeline, effects, publishing, parsing |
 | `WLXTranscode.exe`, `WLXCodecHost.exe` | Supporting EXEs | Transcode tool and out-of-process codec host |
-| `UXCore.dll`, `uxctl.dll`, `GPURenderer.dll`, `MediaCatalog.lib`, `ProjectManager.lib`, `TimelineEngine.lib`, `PlaybackEngine.lib`, `DmxBici.dll`, `MetadataSys.dll`, `wlidcli.dll`, `WLXPhotoSqm.dll` | Engine-layer & platform targets | DirectUI engine layer, telemetry, metadata, identity |
+| `UXCore.dll`, `uxctl.dll`, `GPURenderer.dll`, `MediaCatalog.lib`, `TimelineEngine.lib`, `PlaybackEngine.lib`, `DmxBici.dll`, `MetadataSys.dll`, `wlidcli.dll`, `WLXPhotoSqm.dll` | Engine-layer & platform targets | DirectUI engine layer, telemetry, metadata, identity |
 
 The full table with per-module documentation is in the [Module Reference](../modules/overview.md).
 

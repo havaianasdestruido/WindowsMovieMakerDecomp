@@ -8,7 +8,7 @@ description: Which target is which, what each links, and how the dependency grap
 
 ## Target inventory
 
-The root `CMakeLists.txt` adds 29 module subdirectories. Targets are added in dependency
+The root `CMakeLists.txt` adds 28 module subdirectories. Targets are added in dependency
 order (foundation first, engine last):
 
 | # | CMake target | Source dir | Type | Family |
@@ -34,7 +34,6 @@ order (foundation first, engine last):
 | 19 | `DmxBici` | `src/DmxBici/` | DLL | Platform |
 | 20 | `MetadataSys` | `src/MetadataSys/` | DLL | Platform |
 | 21 | `UXCore` | `src/UXCore/` | DLL | DirectUI engine layer |
-| 22 | `ProjectManager` | `src/Project/` | static lib | DirectUI engine layer |
 | 23 | `uxctl` | `src/uxctl/` | DLL | DirectUI engine layer |
 | 24 | `wlidcli` | `src/wlidcli/` | DLL | Platform |
 | 25 | `MediaCatalog` | `src/Media/` | static lib | DirectUI engine layer |
@@ -61,7 +60,6 @@ flowchart TD
         UXC["uxctl.dll"]
         GPU["GPURenderer.dll"]
         MC["MediaCatalog"]
-        PM["ProjectManager"]
         TE["TimelineEngine"]
         PE["PlaybackEngine"]
     end
@@ -137,3 +135,7 @@ src/<Module>/
 
 `MovieMakerCore` is the exception — a full subsystem tree of 349 files described in
 [Architecture Overview](overview.md).
+
+The disconnected DirectUI preview scaffolding is not constructed or linked by
+MovieMakerCore (#25); application playback uses MF `PlaybackController`. The
+unused standalone ProjectManager target was removed (#21).

@@ -13,6 +13,10 @@ description: The D3D11 + D2D1.1 device wrapper for the engine layer — draw vid
 | **Type** | Win32 DLL |
 | **Family** | [DirectUI engine layer](../dui-engine) |
 
+> **Integration status (#25):** standalone experimental scaffolding. MovieMakerCore
+> no longer constructs or links this stack; MF `PlaybackController` is the live
+> application playback path. A future integration needs a catalog and UI tick.
+
 ## At a glance
 
 A focused rendering device wrapper in the `DirectUI` namespace: owns a **D3D11 device**

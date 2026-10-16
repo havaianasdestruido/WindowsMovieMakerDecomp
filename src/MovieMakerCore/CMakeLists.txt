@@ -193,9 +193,6 @@ target_link_libraries(${TARGET} PRIVATE
     dwrite
     wininet
     WLXPhotoBase
-    GPURenderer
-    PlaybackEngine
-    TimelineEngine
     MediaCatalog
 )
 

@@ -204,7 +204,7 @@ All 18 defects were present at the baseline; none were already fixed. 17 issues
 have implemented resolutions (including the explicit deletion/deferral options and
 the permitted #32 waiver); #30 is partially verified until the automatic Windows
 matrix has run successfully. No issue is silently excluded. The portability suite
-has **32 new test methods**, including **11 native sanitizer harnesses**.
+has **34 new test methods**, including **12 native sanitizer harnesses**.
 
 Every row also has regression coverage in commit `7f709d3` under `tests/portable/`.
 Source paths abbreviated below are under `src/MovieMakerCore/` unless qualified.
@@ -214,7 +214,7 @@ Source paths abbreviated below are under `src/MovieMakerCore/` unless qualified.
 | #15 | MP4 box-size overflow | 4dfcdff; `src/WLXMP4Parser/WLXMP4Parser.cpp` | Compare whole box size to remaining bytes in both walkers (not the issue suggestion’s undersized payload comparison); reject malformed opens and clear stale parse state. | Native overflow, exact/truncated/trailing box tests; actual MP4File::Open with file shims. | Resolved; platform limitations below apply |
 | #16 | MP4 fixed-offset reads | 4dfcdff; `src/WLXMP4Parser/WLXMP4Parser.cpp` | Correct final-field guards; also correct verified tkhd v0 track-id offset to 12. | All fixed parser lengths 0–100 under ASan/UBSan; known track fields. | Resolved; platform limitations below apply |
 | #17 | Truncated scene input | 4dfcdff; `src/MovieMakerCore/HMREngine/X3DReader.cpp` | Bound every token access, handle escaped quotes and nested arrays, reject incomplete/depth-exceeding JSON; guard empty XML tags and invalid input. Array fields remain unsupported/ignored as before. | Truncated JSON prefixes, nested arrays/quotes/depth under ASan/UBSan. | Resolved; platform limitations below apply |
-| #18 | Reload worker termination | 2a4e44b; `HMREngine/AsyncWorker.{h,cpp}` | Join before restart/destruction; atomic cancellation/result, synchronized callback copy and completion after callback. Owner-thread lifecycle required. | 100 repeated start/restart/cancel/destruct cycles under sanitizers. | Resolved; platform limitations below apply |
+| #18 | Reload worker termination | 2a4e44b, b0a6f38; `HMREngine/AsyncWorker.{h,cpp}` | Join before restart/destruction; atomic cancellation/result, synchronized callback copy and completion after callback. Owner-thread lifecycle required. | 100 repeated start/restart/cancel/destruct cycles under sanitizers. | Resolved; platform limitations below apply |
 | #19 | Audio ring tail corruption | 2a4e44b; `HMRAVSource/Audio/AudioQueue.cpp` | Normalize tail modulo new capacity. | Shrink-full/grow/wrap/FIFO/drop with checked array shim. | Resolved; platform limitations below apply |
 | #20 | Undo/redo loses failed action | 2a4e44b; `SundanceApp/UndoManager.cpp` | Restore popped action to its original stack on HRESULT failure; retain existing callback invocation behavior. | Failure/retry/order/empty history tests. | Resolved; platform limitations below apply |
 | #21 | Unused broken project model | a80df7d, 1931998; `src/Project` (deleted), root CMake, CI matrix, website docs | Take explicit deletion option; preserve authoritative MovieProject and SundanceApp ProjectManager. | Structural removal/matrix checks; strict-link docs build. | Resolved; platform limitations below apply |
@@ -225,15 +225,15 @@ Source paths abbreviated below are under `src/MovieMakerCore/` unless qualified.
 | #26 | Ineffective PE parity gate | 2e446bb; `tools/diff_exports.py` | Bounded PE reader, correct exports/ordinals/holes/import descriptors, nonzero CLI for errors/differences, strict batch checks; import differences informational. | Synthetic PE32/PE32+ tests and independent pefile oracle; malformed/CLI/batch cases. | Resolved; platform limitations below apply |
 | #27 | PE32 ImageBase offset | 2e446bb; `tools/pe_analyzer.py` | Skip BaseOfData before reading ImageBase. | PE32 distinct BaseOfData/ImageBase and PE32+ fixture checks. | Resolved; platform limitations below apply |
 | #28 | Runtime harness false results | 2e446bb; `tools/test_all.py` | Resolve EXE and adjacent DLL paths; propagate test failures; implement launch-only dispatch and argument validation. | DLL trees for Debug/Release/custom, missing EXE process exit, launch dispatch/status. | Resolved; platform limitations below apply |
-| #29 | Build wrapper wrong root | 2e446bb; `tools/build.ps1` | Resolve one parent of tools and configure explicit VS2022/Win32. | Static root/generator regression; PowerShell execution unavailable. | Resolved; platform limitations below apply |
-| #30 | Automatic build triggers disabled | 1931998; `.github/workflows/build-projects.yml` | Restore push-main and pull_request; retain dispatch, Windows2022/Win32 matrix (28 after #21 deletion); add Ubuntu portable suite. | Trigger/matrix assertions; remote automatic Windows run still to be verified. | Partial: trigger fixed; remote Windows matrix not yet verified |
+| #29 | Build wrapper wrong root | 2e446bb, 07bef3d; `tools/build.ps1` | Resolve one parent of tools, guard root CMakeLists before any deletion, and configure explicit VS2022/Win32. | Root/generator/guard regression; Windows MediaCatalog job executes -Clean wrapper from outside the repository. | Resolved; platform limitations below apply |
+| #30 | Automatic build triggers disabled | 1931998, 07bef3d, c68faa7, e2b765a; `.github/workflows/build-projects.yml`, `TranscodeMetadata.cpp`, core CMake | Restore push-main and pull_request; retain dispatch, Windows2022/Win32 matrix (28 after #21 deletion); add Ubuntu portable suite. | Trigger/matrix/dependency assertions; automatic run history verified. Final remote matrix outcome is recorded in PR #34. | Implementation complete; final Windows result tracked in PR #34 |
 | #31 | Persisted mirror PAT | 1931998; `.github/workflows/sync.yml` | Per-command credential helper from env, no credential persistence; explicit main/tag refspecs, unrelated refs preserved, read-only GitHub permissions. | Dummy helper credential fill, workspace scan, real local bare push and unrelated-ref preservation. | Resolved; platform limitations below apply |
 | #32 | Website dependency advisories | 7d8ad9a; `website/package*.json`, `website/README.md` | Align Docusaurus 3.10.2, patched overrides, regenerate lock. Explicit time-bounded braces waiver lists all 29 remaining propagated high findings; no critical findings. | Clean npm ci, audit JSON (exit 1, documented waiver), production strict-link build. | Resolved via documented exception |
 
 ## Actual verification results
 
-- `python -m unittest discover -s tests/portable -v`: **32/32 pass**, including
-  11 production-algorithm C++14 ASan/UBSan harnesses. Latest run: 11.359 seconds.
+- `python -m unittest discover -s tests/portable -v`: **34/34 pass**, including
+  12 production-algorithm C++14 ASan/UBSan harnesses. Latest run: 11.598 seconds.
 - `git archive a0eccb3 src tools | tar -x -C /home/user/audit-baseline` followed by
   `WMMR_TEST_SOURCE_ROOT=/home/user/audit-baseline python -m unittest discover -s tests/portable -p test_native.py -v`
   (at the nine-native-test stage): expected failure, **8 runtime regressions
@@ -291,3 +291,39 @@ Source paths abbreviated below are under `src/MovieMakerCore/` unless qualified.
 - #32 retains a time-bounded, fully enumerated high-severity exception; updated
   cross-range overrides need continued upstream compatibility review. The static
   production build was tested, not a browser/HMR test.
+
+## Automatic CI follow-up (same PR #34)
+
+The automatic `pull_request` event is verified in run
+[38914408495](https://github.com/havaianasdestruido/WindowsMovieMakerDecomp/actions/runs/38914408495).
+It built 27 of the 28 Windows targets successfully, but exposed a pre-existing core
+compile failure and a portable harness compilation failure. We did not suppress
+or skip either failure:
+
+- `b0a6f38` (#18/#30): explicitly include `<system_error>` (newer GCC no longer
+  provides it transitively); fixed both production source and extracted harness.
+  A separate fixture lifetime correction (`2f73583`) keeps callback captures alive
+  until the joined worker is destroyed. Final portable CI is green at `c68faa7`.
+- `c68faa7` (#30): replace nonexistent `PKEY_DateTaken` with SDK
+  `PKEY_Photo_DateTaken` and avoid taking `CComPtr::operator&` when constructing an
+  array of borrowed metadata readers. Both defects are present in the baseline.
+- The follow-up Windows build compiled all changed core code, then found one
+  unresolved DynamicDataObjectWrapper constructor. `e2b765a` (#30) includes the
+  already-existing `External/DragDropStub.cpp` implementation in the core target;
+  no replacement stub or weakened linker option was introduced.
+- `07bef3d` (#29/#30): root guard added before `-Clean`, and the Windows
+  MediaCatalog job now executes `tools/build.ps1 -Clean -Target MediaCatalog
+  -Verbose` from `$RUNNER_TEMP`. That real PowerShell integration check passed in
+  run [38915530274](https://github.com/havaianasdestruido/WindowsMovieMakerDecomp/actions/runs/38915530274).
+- `1394bfc` (#23/#30): additional 100-cycle real-thread autosave regression, with
+  live-worker and handle-count assertions. Latest local suite: **34/34 pass**,
+  including 12 sanitizer harnesses; pefile oracle and changed-Python compilation
+  were rerun successfully.
+
+GitHub job logs redirect to Azure Blob storage, which this sandbox cannot access.
+The workflow therefore preserves actionable failure tails as check annotations
+without changing failure exit status. Earlier CI failures are part of the record,
+not passed runs. Attempts to cancel superseded runs were denied by the integration
+(HTTP 403); no permission workaround was attempted. The final automatic run and
+final #30 disposition are recorded in the PR's Verification section. #30 must not
+be closed unless all remaining Windows targets pass.

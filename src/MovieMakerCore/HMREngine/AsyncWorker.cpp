@@ -3,6 +3,7 @@
 
 #include "AsyncWorker.h"
 #include <algorithm>
+#include <system_error>
 
 namespace HMREngine
 {

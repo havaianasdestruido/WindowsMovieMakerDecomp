@@ -36,6 +36,7 @@ COMMON = r'''
 #include <atomic>
 #include <mutex>
 #include <thread>
+#include <system_error>
 #include <cassert>
 #include <memory>
 #include <limits>

@@ -36,6 +36,8 @@ private:
     GPURenderer* m_pRenderer = nullptr;
     IMFSourceReader* m_pReader = nullptr;
     ID3D11Texture2D* m_pFrameTexture = nullptr;
+    ID3D11Texture2D* m_pUploadTexture = nullptr;
+    LONG m_frameStride = 0;
     bool m_playing = false;
     bool m_eof = false;
     double m_currentTime = 0.0;

@@ -3,6 +3,9 @@
 #include <mfapi.h>
 #include <mferror.h>
 #include <d3d11.h>
+#include <wrl/client.h>
+#include <propvarutil.h>
+#include "FrameCopy.h"
 
 template <class T>
 inline void SafeReleasePlayback(T*& pVal) {
@@ -27,6 +30,7 @@ PlaybackEngine::~PlaybackEngine() {
 
 void PlaybackEngine::Cleanup() {
     Stop();
+    SafeReleasePlayback(m_pUploadTexture);
     SafeReleasePlayback(m_pFrameTexture);
     SafeReleasePlayback(m_pReader);
 }
@@ -37,60 +41,68 @@ HRESULT PlaybackEngine::OpenFile(const std::wstring& path) {
     m_currentTime = 0.0;
     m_duration = 0.0;
 
-    HRESULT hr = MFCreateSourceReaderFromURL(
-        path.c_str(), nullptr, &m_pReader);
+    if (!m_pRenderer || !m_pRenderer->GetDevice()) return E_UNEXPECTED;
+    using Microsoft::WRL::ComPtr;
+    ComPtr<IMFSourceReader> reader;
+    ComPtr<ID3D11Texture2D> frame, upload;
+    ComPtr<IMFAttributes> attributes;
+    HRESULT hr = MFCreateAttributes(attributes.GetAddressOf(), 1);
+    if (FAILED(hr)) return hr;
+    hr = attributes->SetUINT32(MF_SOURCE_READER_ENABLE_VIDEO_PROCESSING, TRUE);
+    if (FAILED(hr)) return hr;
+    hr = MFCreateSourceReaderFromURL(path.c_str(), attributes.Get(), reader.GetAddressOf());
     if (FAILED(hr)) return hr;
 
-    IMFMediaType* pVideoType = nullptr;
-    for (DWORD i = 0; ; ++i) {
-        IMFMediaType* pType = nullptr;
-        hr = m_pReader->GetNativeMediaType(i, 0, &pType);
-        if (FAILED(hr)) break;
+    // Ask the source reader to decode/convert, not to copy compressed native bytes.
+    ComPtr<IMFMediaType> requested;
+    hr = MFCreateMediaType(requested.GetAddressOf());
+    if (FAILED(hr)) return hr;
+    hr = requested->SetGUID(MF_MT_MAJOR_TYPE, MFMediaType_Video);
+    if (SUCCEEDED(hr)) hr = requested->SetGUID(MF_MT_SUBTYPE, MFVideoFormat_RGB32);
+    if (SUCCEEDED(hr)) hr = reader->SetStreamSelection(MF_SOURCE_READER_ALL_STREAMS, FALSE);
+    if (SUCCEEDED(hr)) hr = reader->SetStreamSelection(MF_SOURCE_READER_FIRST_VIDEO_STREAM, TRUE);
+    if (SUCCEEDED(hr)) hr = reader->SetCurrentMediaType(
+        MF_SOURCE_READER_FIRST_VIDEO_STREAM, nullptr, requested.Get());
+    if (FAILED(hr)) return hr;
 
-        GUID majorType;
-        pType->GetGUID(MF_MT_MAJOR_TYPE, &majorType);
-        if (majorType == MFMediaType_Video) {
-            pVideoType = pType;
-            break;
-        }
-        SafeReleasePlayback(pType);
+    ComPtr<IMFMediaType> current;
+    hr = reader->GetCurrentMediaType(MF_SOURCE_READER_FIRST_VIDEO_STREAM, current.GetAddressOf());
+    if (FAILED(hr)) return hr;
+    UINT32 width = 0, height = 0, stride = 0;
+    hr = MFGetAttributeSize(current.Get(), MF_MT_FRAME_SIZE, &width, &height);
+    if (FAILED(hr) || !width || !height) return MF_E_INVALIDMEDIATYPE;
+    hr = current->GetUINT32(MF_MT_DEFAULT_STRIDE, &stride);
+    if (SUCCEEDED(hr)) m_frameStride = static_cast<LONG>(stride);
+    else {
+        hr = MFGetStrideForBitmapInfoHeader(MFVideoFormat_RGB32.Data1, width, &m_frameStride);
+        if (FAILED(hr)) return hr;
     }
 
-    if (!pVideoType) return MF_E_INVALIDMEDIATYPE;
+    D3D11_TEXTURE2D_DESC desc = {};
+    desc.Width = width;
+    desc.Height = height;
+    desc.MipLevels = 1;
+    desc.ArraySize = 1;
+    desc.Format = DXGI_FORMAT_B8G8R8A8_UNORM;
+    desc.SampleDesc.Count = 1;
+    desc.Usage = D3D11_USAGE_DEFAULT;
+    hr = m_pRenderer->GetDevice()->CreateTexture2D(&desc, nullptr, frame.GetAddressOf());
+    if (FAILED(hr)) return hr;
+    desc.Usage = D3D11_USAGE_STAGING;
+    desc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
+    hr = m_pRenderer->GetDevice()->CreateTexture2D(&desc, nullptr, upload.GetAddressOf());
+    if (FAILED(hr)) return hr;
 
-    m_pReader->SetCurrentMediaType(0, nullptr, pVideoType);
+    PROPVARIANT duration;
+    PropVariantInit(&duration);
+    hr = reader->GetPresentationAttribute(MF_SOURCE_READER_MEDIASOURCE, MF_PD_DURATION, &duration);
+    if (SUCCEEDED(hr) && duration.vt == VT_UI8)
+        m_duration = static_cast<double>(duration.uhVal.QuadPart) / 10000000.0;
+    PropVariantClear(&duration);
 
-    PROPVARIANT var;
-    hr = m_pReader->GetCurrentMediaType(0, &pVideoType);
-    if (SUCCEEDED(hr)) {
-        UINT32 width = 0, height = 0;
-        MFGetAttributeSize(pVideoType, MF_MT_FRAME_SIZE, &width, &height);
-
-        if (m_pRenderer && m_pRenderer->GetDevice()) {
-            D3D11_TEXTURE2D_DESC desc = {};
-            desc.Width = width > 0 ? width : 1920;
-            desc.Height = height > 0 ? height : 1080;
-            desc.MipLevels = 1;
-            desc.ArraySize = 1;
-            desc.Format = DXGI_FORMAT_B8G8R8A8_UNORM;
-            desc.SampleDesc.Count = 1;
-            desc.Usage = D3D11_USAGE_DEFAULT;
-            desc.BindFlags = 0;
-
-            m_pRenderer->GetDevice()->CreateTexture2D(&desc, nullptr, &m_pFrameTexture);
-        }
-        SafeReleasePlayback(pVideoType);
-    }
-
-    PROPVARIANT varDuration;
-    hr = m_pReader->GetPresentationAttribute(
-        MF_SOURCE_READER_MEDIASOURCE,
-        MF_PD_DURATION,
-        &varDuration);
-    if (SUCCEEDED(hr)) {
-        m_duration = (double)varDuration.uhVal.QuadPart / 10000000.0;
-    }
-
+    m_pReader = reader.Detach();
+    m_pFrameTexture = frame.Detach();
+    m_pUploadTexture = upload.Detach();
     return S_OK;
 }
 
@@ -146,13 +158,17 @@ HRESULT PlaybackEngine::ReadNextSample() {
     DWORD streamIndex = 0;
     LONGLONG timestamp = 0;
 
-    while (true) {
+    for (unsigned attempt = 0; attempt < 64; ++attempt) {
         SafeReleasePlayback(pSample);
         HRESULT hr = m_pReader->ReadSample(
             MF_SOURCE_READER_FIRST_VIDEO_STREAM,
             0, &streamIndex, &dwFlags, &timestamp, &pSample);
 
-        if (FAILED(hr)) return hr;
+        if (FAILED(hr)) { SafeReleasePlayback(pSample); return hr; }
+        if (dwFlags & (MF_SOURCE_READERF_ERROR | MF_SOURCE_READERF_CURRENTMEDIATYPECHANGED)) {
+            SafeReleasePlayback(pSample);
+            return MF_E_INVALIDMEDIATYPE;
+        }
 
         if (dwFlags & MF_SOURCE_READERF_ENDOFSTREAM) {
             m_eof = true;
@@ -166,56 +182,44 @@ HRESULT PlaybackEngine::ReadNextSample() {
             if (timestamp >= 0) {
                 m_currentTime = (double)timestamp / 10000000.0;
             }
-            CopySampleToTexture(pSample);
+            hr = CopySampleToTexture(pSample);
             SafeReleasePlayback(pSample);
-            return S_OK;
+            return hr;
         }
     }
+    return E_FAIL; // A pathological stream must not monopolize the UI thread.
 }
 
 HRESULT PlaybackEngine::CopySampleToTexture(IMFSample* pSample) {
-    if (!pSample || !m_pFrameTexture) return E_INVALIDARG;
-
-    IMFMediaBuffer* pBuffer = nullptr;
-    HRESULT hr = pSample->ConvertToContiguousBuffer(&pBuffer);
+    if (!pSample || !m_pFrameTexture || !m_pUploadTexture) return E_INVALIDARG;
+    using Microsoft::WRL::ComPtr;
+    ComPtr<IMFMediaBuffer> buffer;
+    HRESULT hr = pSample->ConvertToContiguousBuffer(buffer.GetAddressOf());
+    if (FAILED(hr)) return hr;
+    BYTE* data = nullptr;
+    DWORD cbData = 0;
+    hr = buffer->Lock(&data, nullptr, &cbData);
     if (FAILED(hr)) return hr;
 
-    BYTE* pData = nullptr;
-    DWORD cbData = 0;
-    hr = pBuffer->Lock(&pData, nullptr, &cbData);
-    if (FAILED(hr)) {
-        SafeReleasePlayback(pBuffer);
-        return hr;
-    }
-
-    ID3D11DeviceContext* pContext = nullptr;
-    if (m_pRenderer && m_pRenderer->GetDevice()) {
-        m_pRenderer->GetDevice()->GetImmediateContext(&pContext);
-    }
-
-    if (pContext && m_pFrameTexture) {
+    ComPtr<ID3D11DeviceContext> context;
+    if (m_pRenderer && m_pRenderer->GetDevice())
+        m_pRenderer->GetDevice()->GetImmediateContext(context.GetAddressOf());
+    hr = E_UNEXPECTED;
+    if (context) {
         D3D11_TEXTURE2D_DESC desc;
-        m_pFrameTexture->GetDesc(&desc);
-
-        D3D11_MAPPED_SUBRESOURCE mapped;
-        hr = pContext->Map(m_pFrameTexture, 0, D3D11_MAP_WRITE_DISCARD, 0, &mapped);
+        m_pUploadTexture->GetDesc(&desc);
+        D3D11_MAPPED_SUBRESOURCE mapped = {};
+        hr = context->Map(m_pUploadTexture, 0, D3D11_MAP_WRITE, 0, &mapped);
         if (SUCCEEDED(hr)) {
-            UINT srcRowPitch = desc.Width * 4;
-            BYTE* pDst = (BYTE*)mapped.pData;
-            BYTE* pSrc = pData;
-            for (UINT row = 0; row < desc.Height; ++row) {
-                memcpy(pDst, pSrc, srcRowPitch < cbData - row * srcRowPitch ? srcRowPitch : cbData - row * srcRowPitch);
-                pDst += mapped.RowPitch;
-                pSrc += srcRowPitch;
-            }
-            pContext->Unmap(m_pFrameTexture, 0);
+            bool copied = CopyRGB32Rows(static_cast<BYTE*>(mapped.pData), mapped.RowPitch,
+                data, cbData, desc.Width, desc.Height, m_frameStride);
+            context->Unmap(m_pUploadTexture, 0);
+            if (copied) context->CopyResource(m_pFrameTexture, m_pUploadTexture);
+            else hr = MF_E_BUFFERTOOSMALL;
         }
-        SafeReleasePlayback(pContext);
     }
-
-    pBuffer->Unlock();
-    SafeReleasePlayback(pBuffer);
-    return S_OK;
+    HRESULT unlockHr = buffer->Unlock();
+    return FAILED(hr) ? hr : unlockHr;
 }
 
 HRESULT PlaybackEngine::UpdateFrame() {
@@ -224,7 +228,8 @@ HRESULT PlaybackEngine::UpdateFrame() {
     DWORD elapsed = GetTickCount() - m_tickStart;
     double targetTime = (double)elapsed / 1000.0;
 
-    while (m_currentTime <= targetTime) {
+    unsigned frames = 0;
+    while (m_currentTime <= targetTime && frames++ < 64) {
         HRESULT hr = ReadNextSample();
         if (hr == S_FALSE || m_eof) {
             Pause();

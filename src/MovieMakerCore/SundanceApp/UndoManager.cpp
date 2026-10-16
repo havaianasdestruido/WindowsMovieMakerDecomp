@@ -51,7 +51,10 @@ HRESULT UndoManager::Undo()
 
     HRESULT hr = entry.undoAction();
     if (FAILED(hr))
+    {
+        m_undoStack.push_back(entry);
         return hr;
+    }
 
     m_redoStack.push_back(entry);
     return S_OK;
@@ -67,7 +70,10 @@ HRESULT UndoManager::Redo()
 
     HRESULT hr = entry.doAction();
     if (FAILED(hr))
+    {
+        m_redoStack.push_back(entry);
         return hr;
+    }
 
     m_undoStack.push_back(entry);
     return S_OK;

@@ -81,7 +81,7 @@ void AutoSaveManager::Shutdown()
 
     if (m_hTimerThread)
     {
-        ::WaitForSingleObject(m_hTimerThread, 5000);
+        ::WaitForSingleObject(m_hTimerThread, INFINITE);
         ::CloseHandle(m_hTimerThread);
         m_hTimerThread = NULL;
     }
@@ -125,7 +125,7 @@ void AutoSaveManager::OnProjectClosed()
 
     if (m_hTimerThread)
     {
-        ::WaitForSingleObject(m_hTimerThread, 5000);
+        ::WaitForSingleObject(m_hTimerThread, INFINITE);
         ::CloseHandle(m_hTimerThread);
         m_hTimerThread = NULL;
     }
@@ -196,7 +196,13 @@ HRESULT AutoSaveManager::SaveNow()
     StoryboardManagerNamespace::MovieProject* pProject = m_pAppMain->GetProject();
     if (pProject && !m_strRecoveryFile.IsEmpty())
     {
-        hr = pProject->SaveAs(m_strRecoveryFile);
+        IStream* pStream = nullptr;
+        hr = SHCreateStreamOnFileW(m_strRecoveryFile, STGM_WRITE | STGM_CREATE, &pStream);
+        if (SUCCEEDED(hr))
+        {
+            hr = pProject->SaveToStream(pStream);
+            pStream->Release();
+        }
     }
 
     m_bSaving = false;
@@ -350,7 +356,7 @@ void AutoSaveManager::AutoSaveLoop()
     {
         DWORD dwWait = ::WaitForSingleObject(m_hStopEvent, m_dwIntervalMs);
 
-        if (dwWait == WAIT_OBJECT_0)
+        if (dwWait != WAIT_TIMEOUT)
         {
             // Stop event signaled
             break;

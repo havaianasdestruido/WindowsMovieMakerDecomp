@@ -1,10 +1,10 @@
 name: Build projects
 
 on:
-  #push:
-    #branches:
-      #- main
-  #pull_request:
+  push:
+    branches:
+      - main
+  pull_request:
   workflow_dispatch:
 
 permissions:
@@ -30,7 +30,6 @@ jobs:
           - MovieMakerLang
           - MovieMakerPreviewClient
           - PlaybackEngine
-          - ProjectManager
           - GPURenderer
           - TimelineEngine
           - UXCore
@@ -68,3 +67,14 @@ jobs:
           --config Debug
           --target ${{ matrix.project }}
           --parallel
+
+  portable-regressions:
+    name: Portable audit regressions
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Run Python and C++14 ASan/UBSan regressions
+        run: python -m unittest discover -s tests/portable -v

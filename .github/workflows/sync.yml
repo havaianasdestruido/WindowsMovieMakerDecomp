@@ -5,6 +5,9 @@ on:
     branches:
       - main
 
+permissions:
+  contents: read
+
 jobs:
   mirror:
     runs-on: ubuntu-latest
@@ -13,10 +16,16 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          persist-credentials: false
 
       - name: push to codeberg
+        # Mirror main and tags only; do not delete or overwrite unrelated branches (#31).
+        # The per-command helper reads the secret from env, never from a saved URL.
         run: |
-          git remote add codeberg "https://${{ secrets.CODEBERG_PAT }}@codeberg.org/PatoFlamejanteTV/WindowsMovieMakerDecomp.git"
-          git push --mirror codeberg
+          git -c credential.helper= \
+            -c 'credential.helper=!f() { test "$1" = get || exit 0; printf "%s\n" "username=oauth" "password=$CODEBERG_PAT"; }; f' \
+            push --force https://codeberg.org/PatoFlamejanteTV/WindowsMovieMakerDecomp.git \
+            refs/heads/main:refs/heads/main 'refs/tags/*:refs/tags/*'
         env:
+          CODEBERG_PAT: ${{ secrets.CODEBERG_PAT }}
           GIT_TERMINAL_PROMPT: 0

@@ -76,6 +76,16 @@ jobs:
           }
           exit $buildExit
 
+      - name: Verify build wrapper from outside the repository
+        if: matrix.project == 'MediaCatalog'
+        shell: pwsh
+        run: |
+          Push-Location $env:RUNNER_TEMP
+          & "$env:GITHUB_WORKSPACE/tools/build.ps1" -Clean -Target MediaCatalog -Verbose
+          $buildExit = $LASTEXITCODE
+          Pop-Location
+          exit $buildExit
+
   portable-regressions:
     name: Portable audit regressions
     runs-on: ubuntu-latest
@@ -91,9 +101,6 @@ jobs:
           python -m unittest discover -s tests/portable -v > portable-tests.log 2>&1 || status=$?
           cat portable-tests.log
           if [ "$status" -ne 0 ]; then
-            while IFS= read -r line; do
-              line="${line//'%'/'%25'}"
-              printf '::error::%s\n' "$line"
-            done < portable-tests.log
+            python -c 'from pathlib import Path; text = Path("portable-tests.log").read_text(); print("::error::" + text.replace("%", "%25").replace("\r", "%0D").replace("\n", "%0A"))'
           fi
           exit "$status"

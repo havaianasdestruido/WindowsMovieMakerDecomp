@@ -184,6 +184,7 @@ class RuntimeTools(unittest.TestCase):
         source = (ROOT / 'tools/build.ps1').read_text()
         self.assertIn('$ProjectRoot = Split-Path -Parent $PSScriptRoot', source)
         self.assertNotIn('Split-Path -Parent (Split-Path', source)
+        self.assertIn('Test-Path (Join-Path $ProjectRoot "CMakeLists.txt")', source)
         self.assertIn('-G "Visual Studio 17 2022" -A Win32', source)
 
 

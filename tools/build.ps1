@@ -22,6 +22,9 @@ param(
 $ErrorActionPreference = "Stop"
 $ProjectRoot = Split-Path -Parent $PSScriptRoot
 $BuildDir = Join-Path $ProjectRoot "build"
+if (-not (Test-Path (Join-Path $ProjectRoot "CMakeLists.txt"))) {
+    throw "Project root resolved to '$ProjectRoot', which has no CMakeLists.txt"
+}
 $CMakeExe = "C:\Program Files\CMake\bin\cmake.exe"
 
 Write-Host ""

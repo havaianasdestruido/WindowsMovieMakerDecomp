@@ -56,6 +56,8 @@ namespace HMREngine
 
     HRESULT X3DReader::ParseX3D(const char* data, size_t length, X3DParseContext& ctx)
     {
+        if (!data || !length) return E_INVALIDARG;
+
         // Detect format without allocating string copies
         size_t searchLen = std::min<size_t>(length, 1024);
         auto contains = [&](const char* str) {
@@ -148,6 +150,7 @@ namespace HMREngine
             std::string tag(data + tagStart + 1, tagEnd - tagStart - 1);
             pos = tagEnd + 1;
 
+            if (tag.empty()) continue;
             if (tag[0] == '/') continue; // closing tag
 
             // Extract tag name
@@ -182,92 +185,108 @@ namespace HMREngine
 
     HRESULT X3DReader::ParseJSON(const char* data, size_t length, X3DParseContext& ctx)
     {
+        if (!data || !length) return E_INVALIDARG;
         size_t pos = 0;
-
+        bool valid = true;
         auto skipWhitespace = [&]() {
             while (pos < length && (data[pos] == ' ' || data[pos] == '\t' ||
-                data[pos] == '\r' || data[pos] == '\n')) pos++;
+                data[pos] == '\r' || data[pos] == '\n')) ++pos;
         };
-
+        auto expect = [&](char c) {
+            skipWhitespace();
+            if (pos < length && data[pos] == c) { ++pos; return true; }
+            return false;
+        };
         auto readToken = [&]() -> std::string {
             skipWhitespace();
-            if (pos >= length) return "";
+            if (pos >= length) { valid = false; return ""; }
             if (data[pos] == '"') {
-                pos++;
+                ++pos;
                 size_t start = pos;
-                while (pos < length && data[pos] != '"') pos++;
-                std::string res(data + start, pos - start);
-                pos++;
-                return res;
+                while (pos < length && data[pos] != '"') {
+                    if (data[pos] == '\\') {
+                        ++pos;
+                        if (pos >= length) break;
+                    }
+                    ++pos;
+                }
+                if (pos >= length) { valid = false; return ""; }
+                std::string result(data + start, pos - start);
+                ++pos;
+                return result;
             }
             size_t start = pos;
             while (pos < length && data[pos] != ',' && data[pos] != '}' &&
-                   data[pos] != ']' && data[pos] != ' ' && data[pos] != '\n') pos++;
+                data[pos] != ']' && data[pos] != ':' &&
+                !std::isspace(static_cast<unsigned char>(data[pos]))) ++pos;
+            if (pos == start) valid = false;
             return std::string(data + start, pos - start);
         };
 
-        auto expect = [&](char c) {
+        std::function<bool(int, bool)> parseObject;
+        std::function<bool(const std::string&, int, bool)> parseValue;
+        parseValue = [&](const std::string& key, int depth, bool applyFields) -> bool {
+            if (depth >= static_cast<int>(X3DParseContext::kMaxNestingDepth)) return false;
             skipWhitespace();
-            if (pos < length && data[pos] == c) { pos++; return true; }
+            if (pos >= length) return false;
+            if (data[pos] == '{') {
+                X3DChildNode* child = applyFields ? CreateNode(key) : nullptr;
+                if (child) {
+                    X3DChildNode* parent = ctx.GetCurrentNode();
+                    if (parent) parent->AddChild(child);
+                    ctx.PushNode(child);
+                }
+                bool result = parseObject(depth + 1, applyFields);
+                if (child) ctx.PopNode();
+                return result;
+            }
+            if (data[pos] == '[') {
+                ++pos;
+                if (expect(']')) return true;
+                do {
+                    if (!parseValue(key, depth + 1, false)) return false;
+                    if (expect(']')) return true;
+                } while (expect(','));
+                return false;
+            }
+            std::string val = readToken();
+            if (!valid) return false;
+            if (applyFields && ctx.GetCurrentNode()) {
+                X3DFieldNode* field = CreateField(key);
+                if (field) {
+                    switch (field->GetFieldType()) {
+                    case FieldType::SFFloat:
+                    case FieldType::SFDouble: { float fv; if (ParseFloat(val, fv)) static_cast<SFFloat*>(field)->m_value = fv; break; }
+                    case FieldType::SFInt32: { int iv; if (ParseInt(val, iv)) static_cast<SFInt32*>(field)->m_value = iv; break; }
+                    case FieldType::SFBool: { bool bv; if (ParseBool(val, bv)) static_cast<SFBool*>(field)->m_value = bv; break; }
+                    case FieldType::SFVec3f: { Vec3 vv; if (ParseVec3f(val, vv)) static_cast<SFVec3f*>(field)->m_value = vv; break; }
+                    case FieldType::SFRotation: { Rotation4f rv; if (ParseRotation(val, rv)) static_cast<SFRotation*>(field)->m_value = rv; break; }
+                    case FieldType::SFColor: { Rgb cv; if (ParseColor(val, cv)) static_cast<SFColor*>(field)->m_value = cv; break; }
+                    case FieldType::SFString: static_cast<SFString*>(field)->m_value = val; break;
+                    default: break;
+                    }
+                    ctx.GetCurrentNode()->SetField(key, field);
+                    field->Release();
+                }
+            }
+            return true;
+        };
+        parseObject = [&](int depth, bool applyFields) -> bool {
+            if (depth >= static_cast<int>(X3DParseContext::kMaxNestingDepth) || !expect('{'))
+                return false;
+            if (expect('}')) return true;
+            do {
+                skipWhitespace();
+                if (pos >= length || data[pos] != '"') return false;
+                std::string key = readToken();
+                if (!valid || !expect(':') || !parseValue(key, depth, applyFields)) return false;
+                if (expect('}')) return true;
+            } while (expect(','));
             return false;
         };
-
-        std::function<void(int)> parseObject;
-        parseObject = [&](int depth) {
-            if (depth >= static_cast<int>(X3DParseContext::kMaxNestingDepth))
-                return;
-            skipWhitespace();
-            if (!expect('{')) return;
-            while (pos < length) {
-                skipWhitespace();
-                if (data[pos] == '}') { pos++; return; }
-                std::string key = readToken();
-                if (key.empty()) return;
-                if (!expect(':')) return;
-                skipWhitespace();
-                if (data[pos] == '{') {
-                    X3DChildNode* child = CreateNode(key);
-                    if (child) {
-                        X3DChildNode* parent = ctx.GetCurrentNode();
-                        if (parent) parent->AddChild(child);
-                        ctx.PushNode(child);
-                        parseObject(depth + 1);
-                        ctx.PopNode();
-                    } else {
-                        parseObject(depth + 1);
-                    }
-                } else if (data[pos] == '[') {
-                    pos++;
-                    while (pos < length && data[pos] != ']') pos++;
-                    if (pos < length) pos++;
-                } else {
-                    std::string val = readToken();
-                    if (ctx.GetCurrentNode()) {
-                        X3DFieldNode* field = CreateField(key);
-                        if (field) {
-                            switch (field->GetFieldType()) {
-                            case FieldType::SFFloat:
-                            case FieldType::SFDouble: { float fv; if (ParseFloat(val, fv)) static_cast<SFFloat*>(field)->m_value = fv; break; }
-                            case FieldType::SFInt32: { int iv; if (ParseInt(val, iv)) static_cast<SFInt32*>(field)->m_value = iv; break; }
-                            case FieldType::SFBool: { bool bv; if (ParseBool(val, bv)) static_cast<SFBool*>(field)->m_value = bv; break; }
-                            case FieldType::SFVec3f: { Vec3 vv; if (ParseVec3f(val, vv)) static_cast<SFVec3f*>(field)->m_value = vv; break; }
-                            case FieldType::SFRotation: { Rotation4f rv; if (ParseRotation(val, rv)) static_cast<SFRotation*>(field)->m_value = rv; break; }
-                            case FieldType::SFColor: { Rgb cv; if (ParseColor(val, cv)) static_cast<SFColor*>(field)->m_value = cv; break; }
-                            case FieldType::SFString: static_cast<SFString*>(field)->m_value = val; break;
-                            default: break;
-                            }
-                            ctx.GetCurrentNode()->SetField(key, field);
-                            field->Release();
-                        }
-                    }
-                }
-                skipWhitespace();
-                if (data[pos] == ',') pos++;
-            }
-        };
-
-        parseObject(0);
-        return S_OK;
+        if (!parseObject(0, true)) return E_FAIL;
+        skipWhitespace();
+        return valid && pos == length ? S_OK : E_FAIL;
     }
 
     bool X3DReader::ParseNodeLine(const std::string& line, X3DParseContext& ctx)

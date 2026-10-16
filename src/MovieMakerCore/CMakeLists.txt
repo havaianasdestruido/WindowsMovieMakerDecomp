@@ -15,6 +15,7 @@ add_library(${TARGET} SHARED
     SundanceApp/CommandLineParser.cpp
     SundanceApp/AutoSaveManager.cpp
     SundanceApp/ClipboardManager.cpp
+    External/DragDropStub.cpp
     SundanceApp/MediaBrowser.cpp
     SundanceApp/ThumbnailCache.cpp
     SundanceApp/UndoManager.cpp

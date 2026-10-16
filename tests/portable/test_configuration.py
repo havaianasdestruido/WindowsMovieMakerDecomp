@@ -31,6 +31,15 @@ class ConfigurationRegressions(unittest.TestCase):
         self.assertIn('-A Win32', workflow)
         self.assertEqual(len(re.findall(r'^          - ', workflow, re.M)), 28)
 
+    def test_core_build_dependencies_and_metadata_keys_30(self):
+        cmake = (ROOT / 'src/MovieMakerCore/CMakeLists.txt').read_text()
+        metadata = (ROOT / 'src/MovieMakerCore/HMRAVSource/TranscodeMetadata.cpp').read_text()
+        self.assertIn('External/DragDropStub.cpp', cmake)
+        self.assertNotIn('PKEY_DateTaken', metadata)
+        self.assertIn('PKEY_Photo_DateTaken', metadata)
+        self.assertIn('IWICMetadataQueryReader* readers[2]', metadata)
+        self.assertNotIn('{ &spFrameReader, &spContainerReader }', metadata)
+
     def test_mirror_ephemeral_credentials_and_scoped_push_31(self):
         workflow = (ROOT / '.github/workflows/sync.yml').read_text()
         self.assertNotIn('--mirror', workflow)

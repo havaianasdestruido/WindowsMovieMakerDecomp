@@ -117,6 +117,8 @@ float PatternMesh::ComputeAngularMask(float x, float y, float cx, float cy,
 // ============================================================================
 void CheckerboardPatternMesh::BuildVertices(std::vector<PatternVertex>& vertices, UINT width, UINT height)
 {
+    // ⚡ Bolt: Pre-allocate memory to avoid multiple O(N) reallocations during push_back
+    vertices.reserve(m_gridSize * m_gridSize * 4);
     float cellW = 2.0f / m_gridSize;
     float cellH = 2.0f / m_gridSize;
 
@@ -154,6 +156,8 @@ void CheckerboardPatternMesh::BuildVertices(std::vector<PatternVertex>& vertices
 void CheckerboardPatternMesh::BuildIndices(std::vector<WORD>& indices)
 {
     WORD quadCount = m_gridSize * m_gridSize;
+    // ⚡ Bolt: Pre-allocate memory to avoid multiple O(N) reallocations during push_back
+    indices.reserve(quadCount * 6);
     for (WORD q = 0; q < quadCount; ++q)
     {
         WORD base = q * 4;
@@ -173,6 +177,8 @@ void BowTiePatternMesh::BuildVertices(std::vector<PatternVertex>& vertices, UINT
 {
     (void)width; (void)height;
     const UINT tess = 12;
+    // ⚡ Bolt: Pre-allocate memory to avoid multiple O(N) reallocations during push_back
+    vertices.reserve(tess * tess * 4);
     float cellW = 2.0f / tess;
     float cellH = 2.0f / tess;
 
@@ -212,6 +218,8 @@ void BowTiePatternMesh::BuildIndices(std::vector<WORD>& indices)
 {
     WORD tess = 12;
     WORD quadCount = tess * tess;
+    // ⚡ Bolt: Pre-allocate memory to avoid multiple O(N) reallocations during push_back
+    indices.reserve(quadCount * 6);
     for (WORD q = 0; q < quadCount; ++q)
     {
         WORD base = q * 4;
@@ -227,6 +235,8 @@ void DiagonalCrossPatternMesh::BuildVertices(std::vector<PatternVertex>& vertice
 {
     (void)width; (void)height;
     const UINT tess = 16;
+    // ⚡ Bolt: Pre-allocate memory to avoid multiple O(N) reallocations during push_back
+    vertices.reserve(tess * tess * 4);
     float cellW = 2.0f / tess;
     float cellH = 2.0f / tess;
 
@@ -265,6 +275,8 @@ void DiagonalCrossPatternMesh::BuildIndices(std::vector<WORD>& indices)
 {
     WORD tess = 16;
     WORD quadCount = tess * tess;
+    // ⚡ Bolt: Pre-allocate memory to avoid multiple O(N) reallocations during push_back
+    indices.reserve(quadCount * 6);
     for (WORD q = 0; q < quadCount; ++q)
     {
         WORD base = q * 4;
@@ -280,6 +292,8 @@ void DiagonalBoxPatternMesh::BuildVertices(std::vector<PatternVertex>& vertices,
 {
     (void)width; (void)height;
     const UINT tess = 16;
+    // ⚡ Bolt: Pre-allocate memory to avoid multiple O(N) reallocations during push_back
+    vertices.reserve(tess * tess * 4);
     float cellW = 2.0f / tess;
     float cellH = 2.0f / tess;
 
@@ -316,6 +330,8 @@ void DiagonalBoxPatternMesh::BuildIndices(std::vector<WORD>& indices)
 {
     WORD tess = 16;
     WORD quadCount = tess * tess;
+    // ⚡ Bolt: Pre-allocate memory to avoid multiple O(N) reallocations during push_back
+    indices.reserve(quadCount * 6);
     for (WORD q = 0; q < quadCount; ++q)
     {
         WORD base = q * 4;
@@ -331,6 +347,8 @@ void SplitPatternMesh::BuildVertices(std::vector<PatternVertex>& vertices, UINT 
 {
     (void)width; (void)height;
     const UINT tess = 16;
+    // ⚡ Bolt: Pre-allocate memory to avoid multiple O(N) reallocations during push_back
+    vertices.reserve(tess * tess * 4);
     float cellW = 2.0f / tess;
     float cellH = 2.0f / tess;
 
@@ -368,6 +386,8 @@ void SplitPatternMesh::BuildIndices(std::vector<WORD>& indices)
 {
     WORD tess = 16;
     WORD quadCount = tess * tess;
+    // ⚡ Bolt: Pre-allocate memory to avoid multiple O(N) reallocations during push_back
+    indices.reserve(quadCount * 6);
     for (WORD q = 0; q < quadCount; ++q)
     {
         WORD base = q * 4;
@@ -383,6 +403,8 @@ void RevealPatternMesh::BuildVertices(std::vector<PatternVertex>& vertices, UINT
 {
     (void)width; (void)height;
     const UINT tess = 16;
+    // ⚡ Bolt: Pre-allocate memory to avoid multiple O(N) reallocations during push_back
+    vertices.reserve(tess * tess * 4);
     float cellW = 2.0f / tess;
     float cellH = 2.0f / tess;
 
@@ -419,6 +441,8 @@ void RevealPatternMesh::BuildIndices(std::vector<WORD>& indices)
 {
     WORD tess = 16;
     WORD quadCount = tess * tess;
+    // ⚡ Bolt: Pre-allocate memory to avoid multiple O(N) reallocations during push_back
+    indices.reserve(quadCount * 6);
     for (WORD q = 0; q < quadCount; ++q)
     {
         WORD base = q * 4;
@@ -434,6 +458,8 @@ void CirclesPatternMesh::BuildVertices(std::vector<PatternVertex>& vertices, UIN
 {
     (void)width; (void)height;
     const UINT tess = 16;
+    // ⚡ Bolt: Pre-allocate memory to avoid multiple O(N) reallocations during push_back
+    vertices.reserve(tess * tess * 4);
     float cellW = 2.0f / tess;
     float cellH = 2.0f / tess;
 
@@ -487,6 +513,8 @@ void CirclesPatternMesh::BuildIndices(std::vector<WORD>& indices)
 {
     WORD tess = 16;
     WORD quadCount = tess * tess;
+    // ⚡ Bolt: Pre-allocate memory to avoid multiple O(N) reallocations during push_back
+    indices.reserve(quadCount * 6);
     for (WORD q = 0; q < quadCount; ++q)
     {
         WORD base = q * 4;
@@ -502,6 +530,8 @@ void CirclePatternMesh::BuildVertices(std::vector<PatternVertex>& vertices, UINT
 {
     (void)width; (void)height;
     const UINT tess = 16;
+    // ⚡ Bolt: Pre-allocate memory to avoid multiple O(N) reallocations during push_back
+    vertices.reserve(tess * tess * 4);
     float cellW = 2.0f / tess;
     float cellH = 2.0f / tess;
     float radius = m_progress * 1.4142f;
@@ -538,6 +568,8 @@ void CirclePatternMesh::BuildIndices(std::vector<WORD>& indices)
 {
     WORD tess = 16;
     WORD quadCount = tess * tess;
+    // ⚡ Bolt: Pre-allocate memory to avoid multiple O(N) reallocations during push_back
+    indices.reserve(quadCount * 6);
     for (WORD q = 0; q < quadCount; ++q)
     {
         WORD base = q * 4;
@@ -553,6 +585,8 @@ void FanAndSweepPatternMesh::BuildVertices(std::vector<PatternVertex>& vertices,
 {
     (void)width; (void)height;
     const UINT tess = 16;
+    // ⚡ Bolt: Pre-allocate memory to avoid multiple O(N) reallocations during push_back
+    vertices.reserve(tess * tess * 4);
     float cellW = 2.0f / tess;
     float cellH = 2.0f / tess;
 
@@ -599,6 +633,8 @@ void FanAndSweepPatternMesh::BuildIndices(std::vector<WORD>& indices)
 {
     WORD tess = 16;
     WORD quadCount = tess * tess;
+    // ⚡ Bolt: Pre-allocate memory to avoid multiple O(N) reallocations during push_back
+    indices.reserve(quadCount * 6);
     for (WORD q = 0; q < quadCount; ++q)
     {
         WORD base = q * 4;
@@ -614,6 +650,8 @@ void FanAndSweepBasePatternMesh::BuildVertices(std::vector<PatternVertex>& verti
 {
     (void)width; (void)height;
     const UINT tess = 16;
+    // ⚡ Bolt: Pre-allocate memory to avoid multiple O(N) reallocations during push_back
+    vertices.reserve(tess * tess * 4);
     float cellW = 2.0f / tess;
     float cellH = 2.0f / tess;
 
@@ -657,6 +695,8 @@ void FanAndSweepBasePatternMesh::BuildIndices(std::vector<WORD>& indices)
 {
     WORD tess = 16;
     WORD quadCount = tess * tess;
+    // ⚡ Bolt: Pre-allocate memory to avoid multiple O(N) reallocations during push_back
+    indices.reserve(quadCount * 6);
     for (WORD q = 0; q < quadCount; ++q)
     {
         WORD base = q * 4;
@@ -672,6 +712,8 @@ void FanInPatternMesh::BuildVertices(std::vector<PatternVertex>& vertices, UINT 
 {
     (void)width; (void)height;
     const UINT tess = 16;
+    // ⚡ Bolt: Pre-allocate memory to avoid multiple O(N) reallocations during push_back
+    vertices.reserve(tess * tess * 4);
     float cellW = 2.0f / tess;
     float cellH = 2.0f / tess;
 
@@ -714,6 +756,8 @@ void FanInPatternMesh::BuildIndices(std::vector<WORD>& indices)
 {
     WORD tess = 16;
     WORD quadCount = tess * tess;
+    // ⚡ Bolt: Pre-allocate memory to avoid multiple O(N) reallocations during push_back
+    indices.reserve(quadCount * 6);
     for (WORD q = 0; q < quadCount; ++q)
     {
         WORD base = q * 4;
@@ -729,6 +773,8 @@ void EyePatternMesh::BuildVertices(std::vector<PatternVertex>& vertices, UINT wi
 {
     (void)width; (void)height;
     const UINT tess = 16;
+    // ⚡ Bolt: Pre-allocate memory to avoid multiple O(N) reallocations during push_back
+    vertices.reserve(tess * tess * 4);
     float cellW = 2.0f / tess;
     float cellH = 2.0f / tess;
 
@@ -767,6 +813,8 @@ void EyePatternMesh::BuildIndices(std::vector<WORD>& indices)
 {
     WORD tess = 16;
     WORD quadCount = tess * tess;
+    // ⚡ Bolt: Pre-allocate memory to avoid multiple O(N) reallocations during push_back
+    indices.reserve(quadCount * 6);
     for (WORD q = 0; q < quadCount; ++q)
     {
         WORD base = q * 4;
@@ -782,6 +830,8 @@ void FanUpPatternMesh::BuildVertices(std::vector<PatternVertex>& vertices, UINT 
 {
     (void)width; (void)height;
     const UINT tess = 16;
+    // ⚡ Bolt: Pre-allocate memory to avoid multiple O(N) reallocations during push_back
+    vertices.reserve(tess * tess * 4);
     float cellW = 2.0f / tess;
     float cellH = 2.0f / tess;
 
@@ -819,6 +869,8 @@ void FanUpPatternMesh::BuildIndices(std::vector<WORD>& indices)
 {
     WORD tess = 16;
     WORD quadCount = tess * tess;
+    // ⚡ Bolt: Pre-allocate memory to avoid multiple O(N) reallocations during push_back
+    indices.reserve(quadCount * 6);
     for (WORD q = 0; q < quadCount; ++q)
     {
         WORD base = q * 4;
@@ -834,6 +886,8 @@ void FanOutPatternMesh::BuildVertices(std::vector<PatternVertex>& vertices, UINT
 {
     (void)width; (void)height;
     const UINT tess = 16;
+    // ⚡ Bolt: Pre-allocate memory to avoid multiple O(N) reallocations during push_back
+    vertices.reserve(tess * tess * 4);
     float cellW = 2.0f / tess;
     float cellH = 2.0f / tess;
 
@@ -870,6 +924,8 @@ void FanOutPatternMesh::BuildIndices(std::vector<WORD>& indices)
 {
     WORD tess = 16;
     WORD quadCount = tess * tess;
+    // ⚡ Bolt: Pre-allocate memory to avoid multiple O(N) reallocations during push_back
+    indices.reserve(quadCount * 6);
     for (WORD q = 0; q < quadCount; ++q)
     {
         WORD base = q * 4;
@@ -885,6 +941,8 @@ void HeartPatternMesh::BuildVertices(std::vector<PatternVertex>& vertices, UINT 
 {
     (void)width; (void)height;
     const UINT tess = 20;
+    // ⚡ Bolt: Pre-allocate memory to avoid multiple O(N) reallocations during push_back
+    vertices.reserve(tess * tess * 4);
     float cellW = 2.0f / tess;
     float cellH = 2.0f / tess;
 
@@ -926,6 +984,8 @@ void HeartPatternMesh::BuildIndices(std::vector<WORD>& indices)
 {
     WORD tess = 20;
     WORD quadCount = tess * tess;
+    // ⚡ Bolt: Pre-allocate memory to avoid multiple O(N) reallocations during push_back
+    indices.reserve(quadCount * 6);
     for (WORD q = 0; q < quadCount; ++q)
     {
         WORD base = q * 4;
@@ -941,6 +1001,8 @@ void FillVPatternMesh::BuildVertices(std::vector<PatternVertex>& vertices, UINT 
 {
     (void)width; (void)height;
     const UINT tess = 8;
+    // ⚡ Bolt: Pre-allocate memory to avoid multiple O(N) reallocations during push_back
+    vertices.reserve(tess * tess * 4);
     float cellW = 2.0f / tess;
     float cellH = 2.0f / tess;
 
@@ -975,6 +1037,8 @@ void FillVPatternMesh::BuildIndices(std::vector<WORD>& indices)
 {
     WORD tess = 8;
     WORD quadCount = tess * tess;
+    // ⚡ Bolt: Pre-allocate memory to avoid multiple O(N) reallocations during push_back
+    indices.reserve(quadCount * 6);
     for (WORD q = 0; q < quadCount; ++q)
     {
         WORD base = q * 4;
@@ -990,6 +1054,8 @@ void KeyholePatternMesh::BuildVertices(std::vector<PatternVertex>& vertices, UIN
 {
     (void)width; (void)height;
     const UINT tess = 16;
+    // ⚡ Bolt: Pre-allocate memory to avoid multiple O(N) reallocations during push_back
+    vertices.reserve(tess * tess * 4);
     float cellW = 2.0f / tess;
     float cellH = 2.0f / tess;
 
@@ -1036,6 +1102,8 @@ void KeyholePatternMesh::BuildIndices(std::vector<WORD>& indices)
 {
     WORD tess = 16;
     WORD quadCount = tess * tess;
+    // ⚡ Bolt: Pre-allocate memory to avoid multiple O(N) reallocations during push_back
+    indices.reserve(quadCount * 6);
     for (WORD q = 0; q < quadCount; ++q)
     {
         WORD base = q * 4;
@@ -1051,6 +1119,8 @@ void IrisPatternMesh::BuildVertices(std::vector<PatternVertex>& vertices, UINT w
 {
     (void)width; (void)height;
     const UINT tess = 16;
+    // ⚡ Bolt: Pre-allocate memory to avoid multiple O(N) reallocations during push_back
+    vertices.reserve(tess * tess * 4);
     float cellW = 2.0f / tess;
     float cellH = 2.0f / tess;
     const int numBlades = 6;
@@ -1094,6 +1164,8 @@ void IrisPatternMesh::BuildIndices(std::vector<WORD>& indices)
 {
     WORD tess = 16;
     WORD quadCount = tess * tess;
+    // ⚡ Bolt: Pre-allocate memory to avoid multiple O(N) reallocations during push_back
+    indices.reserve(quadCount * 6);
     for (WORD q = 0; q < quadCount; ++q)
     {
         WORD base = q * 4;
@@ -1147,6 +1219,8 @@ void RectanglesPatternMesh::BuildVertices(std::vector<PatternVertex>& vertices, 
 void RectanglesPatternMesh::BuildIndices(std::vector<WORD>& indices)
 {
     WORD quadCount = m_cols * m_rows;
+    // ⚡ Bolt: Pre-allocate memory to avoid multiple O(N) reallocations during push_back
+    indices.reserve(quadCount * 6);
     for (WORD q = 0; q < quadCount; ++q)
     {
         WORD base = q * 4;
@@ -1162,6 +1236,8 @@ void RectanglePatternMesh::BuildVertices(std::vector<PatternVertex>& vertices, U
 {
     (void)width; (void)height;
     const UINT tess = 12;
+    // ⚡ Bolt: Pre-allocate memory to avoid multiple O(N) reallocations during push_back
+    vertices.reserve(tess * tess * 4);
     float cellW = 2.0f / tess;
     float cellH = 2.0f / tess;
 
@@ -1199,6 +1275,8 @@ void RectanglePatternMesh::BuildIndices(std::vector<WORD>& indices)
 {
     WORD tess = 12;
     WORD quadCount = tess * tess;
+    // ⚡ Bolt: Pre-allocate memory to avoid multiple O(N) reallocations during push_back
+    indices.reserve(quadCount * 6);
     for (WORD q = 0; q < quadCount; ++q)
     {
         WORD base = q * 4;
@@ -1214,6 +1292,8 @@ void StarsPatternMesh::BuildVertices(std::vector<PatternVertex>& vertices, UINT 
 {
     (void)width; (void)height;
     const UINT tess = 16;
+    // ⚡ Bolt: Pre-allocate memory to avoid multiple O(N) reallocations during push_back
+    vertices.reserve(tess * tess * 4);
     float cellW = 2.0f / tess;
     float cellH = 2.0f / tess;
 
@@ -1273,6 +1353,8 @@ void StarsPatternMesh::BuildIndices(std::vector<WORD>& indices)
 {
     WORD tess = 16;
     WORD quadCount = tess * tess;
+    // ⚡ Bolt: Pre-allocate memory to avoid multiple O(N) reallocations during push_back
+    indices.reserve(quadCount * 6);
     for (WORD q = 0; q < quadCount; ++q)
     {
         WORD base = q * 4;
@@ -1288,6 +1370,8 @@ void StarPatternMesh::BuildVertices(std::vector<PatternVertex>& vertices, UINT w
 {
     (void)width; (void)height;
     const UINT tess = 16;
+    // ⚡ Bolt: Pre-allocate memory to avoid multiple O(N) reallocations during push_back
+    vertices.reserve(tess * tess * 4);
     float cellW = 2.0f / tess;
     float cellH = 2.0f / tess;
     const int numPoints = 5;
@@ -1333,6 +1417,8 @@ void StarPatternMesh::BuildIndices(std::vector<WORD>& indices)
 {
     WORD tess = 16;
     WORD quadCount = tess * tess;
+    // ⚡ Bolt: Pre-allocate memory to avoid multiple O(N) reallocations during push_back
+    indices.reserve(quadCount * 6);
     for (WORD q = 0; q < quadCount; ++q)
     {
         WORD base = q * 4;
@@ -1348,6 +1434,8 @@ void SweepInPatternMesh::BuildVertices(std::vector<PatternVertex>& vertices, UIN
 {
     (void)width; (void)height;
     const UINT tess = 16;
+    // ⚡ Bolt: Pre-allocate memory to avoid multiple O(N) reallocations during push_back
+    vertices.reserve(tess * tess * 4);
     float cellW = 2.0f / tess;
     float cellH = 2.0f / tess;
 
@@ -1382,6 +1470,8 @@ void SweepInPatternMesh::BuildIndices(std::vector<WORD>& indices)
 {
     WORD tess = 16;
     WORD quadCount = tess * tess;
+    // ⚡ Bolt: Pre-allocate memory to avoid multiple O(N) reallocations during push_back
+    indices.reserve(quadCount * 6);
     for (WORD q = 0; q < quadCount; ++q)
     {
         WORD base = q * 4;
@@ -1397,6 +1487,8 @@ void SweepOutPatternMesh::BuildVertices(std::vector<PatternVertex>& vertices, UI
 {
     (void)width; (void)height;
     const UINT tess = 16;
+    // ⚡ Bolt: Pre-allocate memory to avoid multiple O(N) reallocations during push_back
+    vertices.reserve(tess * tess * 4);
     float cellW = 2.0f / tess;
     float cellH = 2.0f / tess;
 
@@ -1433,6 +1525,8 @@ void SweepOutPatternMesh::BuildIndices(std::vector<WORD>& indices)
 {
     WORD tess = 16;
     WORD quadCount = tess * tess;
+    // ⚡ Bolt: Pre-allocate memory to avoid multiple O(N) reallocations during push_back
+    indices.reserve(quadCount * 6);
     for (WORD q = 0; q < quadCount; ++q)
     {
         WORD base = q * 4;
@@ -1446,6 +1540,8 @@ void SweepOutPatternMesh::BuildIndices(std::vector<WORD>& indices)
 // ============================================================================
 void WheelPatternMesh::BuildVertices(std::vector<PatternVertex>& vertices, UINT width, UINT height)
 {
+    // ⚡ Bolt: Pre-allocate memory to avoid multiple O(N) reallocations during push_back
+    vertices.reserve(m_spokes + 1);
     (void)width; (void)height;
     float anglePerSpoke = 2.0f * (float)M_PI / m_spokes;
 
@@ -1475,6 +1571,8 @@ void WheelPatternMesh::BuildVertices(std::vector<PatternVertex>& vertices, UINT 
 
 void WheelPatternMesh::BuildIndices(std::vector<WORD>& indices)
 {
+    // ⚡ Bolt: Pre-allocate memory to avoid multiple O(N) reallocations during push_back
+    indices.reserve(m_spokes * 3);
     for (WORD i = 1; i <= m_spokes; ++i)
     {
         WORD next = (i % m_spokes) + 1;
@@ -1491,6 +1589,8 @@ void SweepUpPatternMesh::BuildVertices(std::vector<PatternVertex>& vertices, UIN
 {
     (void)width; (void)height;
     const UINT tess = 16;
+    // ⚡ Bolt: Pre-allocate memory to avoid multiple O(N) reallocations during push_back
+    vertices.reserve(tess * tess * 4);
     float cellW = 2.0f / tess;
     float cellH = 2.0f / tess;
 
@@ -1525,6 +1625,8 @@ void SweepUpPatternMesh::BuildIndices(std::vector<WORD>& indices)
 {
     WORD tess = 16;
     WORD quadCount = tess * tess;
+    // ⚡ Bolt: Pre-allocate memory to avoid multiple O(N) reallocations during push_back
+    indices.reserve(quadCount * 6);
     for (WORD q = 0; q < quadCount; ++q)
     {
         WORD base = q * 4;
@@ -1538,6 +1640,8 @@ void SweepUpPatternMesh::BuildIndices(std::vector<WORD>& indices)
 // ============================================================================
 void ZigzagPatternMesh::BuildVertices(std::vector<PatternVertex>& vertices, UINT width, UINT height)
 {
+    // ⚡ Bolt: Pre-allocate memory to avoid multiple O(N) reallocations during push_back
+    vertices.reserve(m_zigzagRows * 4);
     float rowH = 2.0f / m_zigzagRows;
 
     for (UINT y = 0; y < m_zigzagRows; ++y)
@@ -1567,6 +1671,8 @@ void ZigzagPatternMesh::BuildVertices(std::vector<PatternVertex>& vertices, UINT
 
 void ZigzagPatternMesh::BuildIndices(std::vector<WORD>& indices)
 {
+    // ⚡ Bolt: Pre-allocate memory to avoid multiple O(N) reallocations during push_back
+    indices.reserve(m_zigzagRows * 6);
     for (WORD y = 0; y < m_zigzagRows; ++y)
     {
         WORD base = y * 4;

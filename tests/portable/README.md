@@ -20,7 +20,8 @@ copyrighted reference DLLs are stored in the repository.
 - #20: failed undo/redo retains retryable entries and successful operations preserve order.
 - #22: actual recovery control flow with fake loader/state and save destination.
 - #23: actual close/shutdown/loop methods with handle shims enforcing join-before-close
-  and terminating on WAIT_FAILED. This is not a slow-disk Windows integration test.
+  and terminating on WAIT_FAILED. A second harness runs 100 actual-thread open/close
+  cycles with event shims and handle/live-worker counters. Not a Windows disk test.
 - #24: production row-copy helper, short/padded/inverted/overflow inputs; actual
   ReadNextSample with null/error/format-change/EOF and ref-counted sample shims.
 - #26/#27: synthetic PE32/PE32+ export/import tables, ordinal holes, malformed

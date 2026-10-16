@@ -378,6 +378,54 @@ int main(){
 }
 ''')
 
+    def test_autosave_open_close_cycles_real_threads_23(self):
+        cpp = source('src/MovieMakerCore/SundanceApp/AutoSaveManager.cpp')
+        methods = (body(cpp, 'void AutoSaveManager::Shutdown()', '// OnProjectOpened') +
+                   body(cpp, 'void AutoSaveManager::OnProjectOpened()', '// OnProjectClosed') +
+                   body(cpp, 'void AutoSaveManager::OnProjectClosed()', '// OnProjectSaved') +
+                   cpp[cpp.index('DWORD WINAPI AutoSaveManager::AutoSaveThreadProc'):])
+        self.compile_run(r'''
+#include <condition_variable>
+#include <chrono>
+#define WINAPI
+using LPVOID=void*;
+struct TestHandle {bool isThread=false,signaled=false;std::mutex lock;std::condition_variable cv;std::thread thread;};
+using HANDLE=TestHandle*;
+constexpr DWORD INFINITE=0xffffffff,WAIT_TIMEOUT=258,WAIT_OBJECT_0=0;
+static std::atomic<int> handles{0},workers{0};
+DWORD GetTickCount(){return 1;}
+HANDLE CreateThread(void*,size_t,DWORD(*proc)(LPVOID),LPVOID self,DWORD,void*){
+ auto h=new TestHandle;h->isThread=true;++handles;
+ h->thread=std::thread([=]{assert(workers.fetch_add(1)==0);proc(self);--workers;});return h;
+}
+void SetEvent(HANDLE h){std::lock_guard<std::mutex> lock(h->lock);h->signaled=true;h->cv.notify_all();}
+void ResetEvent(HANDLE h){std::lock_guard<std::mutex> lock(h->lock);h->signaled=false;}
+DWORD WaitForSingleObject(HANDLE h,DWORD timeout){
+ if(h->isThread){assert(timeout==INFINITE);h->thread.join();return WAIT_OBJECT_0;}
+ std::unique_lock<std::mutex> lock(h->lock);
+ return h->cv.wait_for(lock,std::chrono::milliseconds(timeout),[=]{return h->signaled;})?WAIT_OBJECT_0:WAIT_TIMEOUT;
+}
+void CloseHandle(HANDLE h){if(h->isThread)assert(!h->thread.joinable());delete h;--handles;}
+struct AutoSaveManager {
+ HANDLE m_hStopEvent=nullptr,m_hTimerThread=nullptr;void* m_pAppMain=nullptr;
+ bool m_bEnabled=true,m_bSaving=false;DWORD m_dwIntervalMs=1,m_dwLastSaveTick=0;
+ void Shutdown();void OnProjectOpened();void OnProjectClosed();void AutoSaveLoop();
+ static DWORD AutoSaveThreadProc(LPVOID);
+ void DeleteRecoveryFile(){assert(workers==0);}
+ void SaveNow(){std::this_thread::sleep_for(std::chrono::milliseconds(2));}
+};
+''' + methods + r'''
+int main(){
+ AutoSaveManager manager;manager.m_hStopEvent=new TestHandle;++handles;
+ for(int i=0;i<100;++i){
+   manager.OnProjectOpened();manager.OnProjectOpened(); // never create a second worker
+   if(i%10==0)std::this_thread::sleep_for(std::chrono::milliseconds(3));
+   manager.OnProjectClosed();assert(workers==0 && handles==1);
+ }
+ manager.OnProjectOpened();manager.Shutdown();assert(workers==0 && handles==0);
+}
+''')
+
     def test_recover_edit_save_retains_original_destination_22(self):
         cpp = source('src/MovieMakerCore/StoryboardManager/MovieProject.cpp')
         recovery = body(cpp, 'HRESULT MovieProject::RecoverAutoSave()', 'void MovieProject::DeleteAutoSaveFile()')

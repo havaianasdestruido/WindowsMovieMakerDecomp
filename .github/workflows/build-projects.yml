@@ -101,6 +101,6 @@ jobs:
           python -m unittest discover -s tests/portable -v > portable-tests.log 2>&1 || status=$?
           cat portable-tests.log
           if [ "$status" -ne 0 ]; then
-            python -c 'from pathlib import Path; text = Path("portable-tests.log").read_text(); print("::error::" + text.replace("%", "%25").replace("\r", "%0D").replace("\n", "%0A"))'
+            python -c 'from pathlib import Path; text = Path("portable-tests.log").read_text()[-3800:]; print("::error::" + text.replace("%", "%25").replace("\r", "%0D").replace("\n", "%0A"))'
           fi
           exit "$status"

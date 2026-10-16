@@ -294,7 +294,7 @@ HRESULT AudioQueue::SetMaxItems(DWORD dwMaxItems)
 
         m_dwMaxItems = dwMaxItems;
         m_dwHead = 0;
-        m_dwTail = dwCopyCount;
+        m_dwTail = dwCopyCount % dwMaxItems;
         m_dwCount = dwCopyCount;
         m_dwTotalDropped += dwDropped;
 

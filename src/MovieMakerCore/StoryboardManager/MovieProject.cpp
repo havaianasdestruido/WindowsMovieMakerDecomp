@@ -866,10 +866,7 @@ HRESULT MovieProject::AutoSave()
     if (!m_state.IsDirty())
         return S_FALSE; // nothing to auto-save
 
-    // Build auto-save path: <project>.wlmp.autosave
-    ATL::CString strAutoSavePath = m_strProjectPath + kAutoSaveExtension;
-
-    return Save(strAutoSavePath);
+    return WriteAutoSave();
 }
 
 bool MovieProject::HasAutoSaveFile() const
@@ -887,7 +884,13 @@ HRESULT MovieProject::RecoverAutoSave()
         return S_FALSE;
 
     ATL::CString strAutoSavePath = m_strProjectPath + kAutoSaveExtension;
-    return Load(strAutoSavePath);
+    ATL::CString strOriginalPath = m_strProjectPath;
+    HRESULT hr = Load(strAutoSavePath);
+    // Recovery adopts content, never the temporary file as the save destination (#22).
+    m_strProjectPath = strOriginalPath;
+    if (SUCCEEDED(hr))
+        m_state.SetDirty(ProjectDirtyFlagAll);
+    return hr;
 }
 
 void MovieProject::DeleteAutoSaveFile()
@@ -1861,7 +1864,14 @@ HRESULT MovieProject::WriteAutoSave()
         return E_UNEXPECTED;
 
     ATL::CString strAutoSavePath = m_strProjectPath + kAutoSaveExtension;
-    return Save(strAutoSavePath);
+    IStream* pStream = nullptr;
+    HRESULT hr = SHCreateStreamOnFileW(strAutoSavePath, STGM_WRITE | STGM_CREATE, &pStream);
+    if (SUCCEEDED(hr))
+    {
+        hr = SaveToStream(pStream);
+        pStream->Release();
+    }
+    return hr;
 }
 
 HRESULT MovieProject::ReadAutoSaveFile(LPCWSTR pszAutoSavePath)

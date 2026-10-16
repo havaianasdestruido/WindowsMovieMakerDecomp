@@ -1,66 +1,18 @@
 ---
 sidebar_position: 4
-title: ProjectManager (static library)
-description: The engine-layer project model — create, load, save over a simple media/clip/timeline schema.
+title: ProjectManager (removed scaffolding)
+description: The unused parallel project model was removed in favor of MovieProject.
 ---
 
-# ProjectManager
+# ProjectManager (removed scaffolding)
 
-| | |
-|---|---|
-| **Source** | `src/Project/` |
-| **CMake target** | `ProjectManager` (static library) |
-| **Type** | Static lib (linked into consumers) |
-| **Family** | [DirectUI engine layer](../dui-engine) |
+The standalone `src/Project` / `ProjectManager` static library was removed in
+issue #21. It had no consumers, its locale-dependent wide-stream serializer could
+write empty files, and it duplicated the timeline `Clip` definition. It was never
+a working substitute for the engine's `.wlmp` model.
 
-## At a glance
-
-The engine-layer project model: a minimal `Project` schema with media references and
-clips, plus a manager for create/load/save. Distinct from MovieMakerCore's
-`MovieProject` (which implements the full `.wlmp` model) — this is the simplified model
-used by the engine-layer targets and their demo apps.
-
-## Public surface (header `Project.h`)
-
-```cpp
-struct MediaRef { std::wstring id; std::wstring path; };
-
-struct Clip {
-    std::wstring mediaId;
-    double start;
-    double duration;
-    int track;
-};
-
-struct Project {
-    std::wstring title;
-    std::vector<MediaRef> media;
-    std::vector<Clip> timeline;
-};
-
-class ProjectManager {
-public:
-    bool CreateNew(const std::wstring& title);
-    bool Load(const std::wstring& filePath);
-    bool Save(const std::wstring& filePath) const;
-    const Project& GetProject() const;
-};
-```
-
-## Implementation notes
-
-- Clips reference media by `mediaId` — same reference pattern as
-  [MediaCatalog](./mediacatalog.md).
-- Load/Save is a simple file format sufficient for the engine-layer apps; the full
-  `.wlmp` XML format belongs to
-  [MovieMakerCore serialization](../../architecture/moviemakercore/serialization.md).
-- No exports — static library, CI target name `ProjectManager`.
-
-## Testing
-
-Built in the CI matrix; exercised by engine-layer apps.
-
-## Analysis artifacts
-
-Engine-layer reconstruction; no dedicated original binary. See
-`analysis/MovieMakerCore/` for the in-engine equivalent.
+Use [MovieMakerCore serialization](../../architecture/moviemakercore/serialization.md)
+(`StoryboardManager::MovieProject`) and the in-core SundanceApp `ProjectManager`
+for application project I/O. The latter is a different class and remains intact.
+This page preserves incoming documentation links; there is no longer a standalone
+CMake or CI target named `ProjectManager`.

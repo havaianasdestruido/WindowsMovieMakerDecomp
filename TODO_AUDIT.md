@@ -87,3 +87,17 @@ are not externally observable (internal classes, static-library helpers, and
 `__thiscall` member functions the ctypes harness cannot bind) are resolved by
 implementation plus a recreation note at the call site; when such a behavior
 becomes export-observable, pin it with a contract in `tests/mmr-python`.
+
+## Arena audit deferrals (#21, #25)
+
+The unused `src/Project` target was deleted: `StoryboardManager::MovieProject`
+is the authoritative .wlmp serializer, not a second wide-stream project model.
+
+The standalone `src/Renderer`, `src/Playback`, and `src/Timeline` libraries are
+experimental scaffolding, **not a functioning application preview**. Core no
+longer constructs or links this disconnected stack (no catalog or UI tick was
+ever supplied). Existing optional getters return null. `PlaybackController`
+(MF Media Session) remains the sole application playback path. Future preview
+integration needs a real catalog, cursor/seek commands, timer, renderer window,
+and Windows GPU/WARP integration tests before ownership is restored. Standalone
+targets remain buildable for that work; no unused MFStartup occurs in core.

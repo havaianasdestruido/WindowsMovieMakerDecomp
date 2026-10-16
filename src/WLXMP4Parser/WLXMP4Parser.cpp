@@ -139,7 +139,7 @@ public:
     // Returns the next child box; false when exhausted or malformed.
     bool Next(UINT32* pType, const BYTE** ppPayload, UINT64* pcbPayload)
     {
-        while (m_pos + 8 <= m_cbData)
+        while (m_cbData - m_pos >= 8)
         {
             UINT64 size = ReadBE32(m_pData + m_pos);
             UINT32 type = ReadBE32(m_pData + m_pos + 4);
@@ -147,7 +147,7 @@ public:
 
             if (size == 1)
             {
-                if (m_pos + 16 > m_cbData)
+                if (m_cbData - m_pos < 16)
                     break;
                 size = ReadBE64(m_pData + m_pos + 8);
                 headerSize = 16;
@@ -157,7 +157,7 @@ public:
                 size = m_cbData - m_pos;
             }
 
-            if (size < headerSize || m_pos + size > m_cbData)
+            if (size < headerSize || size > m_cbData - m_pos)
                 break;
 
             if (pType)
@@ -248,7 +248,7 @@ private:
 
         m_uCodecFourCC = ReadBE32(pData + offset + 4);
 
-        if (bIsVideo && offset + 34 <= cbData)
+        if (bIsVideo && offset + 36 <= cbData)
         {
             // VisualSampleEntry: 6 reserved + 2 data_ref_idx (8),
             // then pre_defined(2) + reserved(2) + pre_defined(12) (16),
@@ -360,12 +360,12 @@ private:
 
         if (version == 1)
         {
-            if (cbData < 28)
+            if (cbData < 36)
                 return;
             m_info.uTrackId = ReadBE32(pData + offset + 16);
             m_info.uDuration = (UINT32)ReadBE64(pData + offset + 24);
             // v1 tkhd: width/height at +88/+92
-            if (cbData >= 92)
+            if (cbData >= 96)
             {
                 m_info.uWidth  = ReadBE32(pData + 88) >> 16;
                 m_info.uHeight = ReadBE32(pData + 92) >> 16;
@@ -373,12 +373,12 @@ private:
         }
         else
         {
-            if (cbData < 20)
+            if (cbData < 24)
                 return;
-            m_info.uTrackId = ReadBE32(pData + offset + 4);
+            m_info.uTrackId = ReadBE32(pData + offset + 8);
             m_info.uDuration = ReadBE32(pData + offset + 16);
             // v0 tkhd: width/height at +76/+80
-            if (cbData >= 80)
+            if (cbData >= 84)
             {
                 m_info.uWidth  = ReadBE32(pData + 76) >> 16;
                 m_info.uHeight = ReadBE32(pData + 80) >> 16;
@@ -422,7 +422,7 @@ private:
         BYTE version = pData[0];
         if (version == 1)
         {
-            if (cbData < 28)
+            if (cbData < 32)
                 return;
             m_info.uTimeScale = ReadBE32(pData + 20);
             m_info.uDuration  = (UINT32)ReadBE64(pData + 24);
@@ -580,7 +580,7 @@ private:
         BYTE version = pData[0];
         if (version == 1)
         {
-            if (cbData < 28)
+            if (cbData < 32)
                 return;
             m_uTimeScale = ReadBE32(pData + 20);
             m_llDuration = (LONGLONG)ReadBE64(pData + 24);
@@ -666,6 +666,7 @@ public:
         if (!pszFilePath || !pszFilePath[0])
             return E_INVALIDARG;
 
+        Close();
         m_strFilePath = pszFilePath;
 
         HANDLE hFile = CreateFileW(pszFilePath, GENERIC_READ, FILE_SHARE_READ,
@@ -687,12 +688,12 @@ public:
 
         // Stream the top-level boxes. moov may appear before mdat
         // (fast-start) or after it (non-fast-start).
-        HRESULT hr = S_OK;
+        HRESULT hr = E_FAIL;
         UINT64 pos = 0;
         bool bSawMdat = false;
         bool bFoundMoov = false;
 
-        while (pos + 8 <= cbFile)
+        while (cbFile - pos >= 8)
         {
             LARGE_INTEGER liPos;
             liPos.QuadPart = (LONGLONG)pos;
@@ -720,8 +721,12 @@ public:
                 boxSize = cbFile - pos;
             }
 
-            if (boxSize < headerSize || pos + boxSize > cbFile)
+            if (boxSize < headerSize || boxSize > cbFile - pos)
+            {
+                hr = E_FAIL;
+                bFoundMoov = false;
                 break;
+            }
 
             UINT64 cbPayload = boxSize - headerSize;
 
@@ -745,7 +750,7 @@ public:
                     {
                         m_moov.reset(new MoovBox());
                         hr = m_moov->Parse(moovData.data(), cbPayload);
-                        bFoundMoov = true;
+                        bFoundMoov = SUCCEEDED(hr);
                         m_bFastStart = !bSawMdat;
                     }
                 }

@@ -25,7 +25,7 @@ flowchart TB
     subgraph DUI["DirectUI engine layer (7 targets)"]
         UX["UXCore.dll / uxctl.dll"]
         GPU["GPURenderer.dll"]
-        MEDIA["MediaCatalog / ProjectManager /<br/>TimelineEngine / PlaybackEngine (static libs)"]
+        MEDIA["MediaCatalog /<br/>TimelineEngine / PlaybackEngine (static libs)"]
     end
 
     subgraph MF["Media Foundation (5 targets)"]

@@ -20,8 +20,11 @@ param(
 )
 
 $ErrorActionPreference = "Stop"
-$ProjectRoot = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
+$ProjectRoot = Split-Path -Parent $PSScriptRoot
 $BuildDir = Join-Path $ProjectRoot "build"
+if (-not (Test-Path (Join-Path $ProjectRoot "CMakeLists.txt"))) {
+    throw "Project root resolved to '$ProjectRoot', which has no CMakeLists.txt"
+}
 $CMakeExe = "C:\Program Files\CMake\bin\cmake.exe"
 
 Write-Host ""
@@ -37,7 +40,7 @@ if ($Clean -or !(Test-Path "$BuildDir\CMakeCache.txt")) {
     if ($Clean -and (Test-Path $BuildDir)) {
         Remove-Item -Recurse -Force $BuildDir
     }
-    & $CMakeExe -S $ProjectRoot -B $BuildDir -DCMAKE_BUILD_TYPE=$Config
+    & $CMakeExe -S $ProjectRoot -B $BuildDir -G "Visual Studio 17 2022" -A Win32
     if ($LASTEXITCODE -ne 0) {
         Write-Host "  CMake configure FAILED" -ForegroundColor Red
         exit 1

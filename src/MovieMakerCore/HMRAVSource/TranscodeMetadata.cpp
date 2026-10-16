@@ -72,7 +72,7 @@ static const WCHAR* const* GetWicPathsForKey(REFPROPERTYKEY key)
         return kCommentPaths;
     if (IsEqualPropertyKey(key, PKEY_Copyright))
         return kCopyrightPaths;
-    if (IsEqualPropertyKey(key, PKEY_DateTaken))
+    if (IsEqualPropertyKey(key, PKEY_Photo_DateTaken))
         return kDateTakenPaths;
     if (IsEqualPropertyKey(key, PKEY_Rating))
         return kRatingPaths;
@@ -118,17 +118,18 @@ static HRESULT GetPropertyStringViaWic(LPCWSTR pszFilePath, REFPROPERTYKEY key, 
     CComPtr<IWICMetadataQueryReader> spContainerReader;
     spDecoder->GetMetadataQueryReader(&spContainerReader);
 
-    CComPtr<IWICMetadataQueryReader>* readers[2] = { &spFrameReader, &spContainerReader };
+    // Borrow interface pointers while the two owning CComPtrs remain in scope.
+    IWICMetadataQueryReader* readers[2] = { spFrameReader, spContainerReader };
     for (int r = 0; r < 2; ++r)
     {
-        if (!readers[r] || !*readers[r])
+        if (!readers[r])
             continue;
 
         for (int p = 0; pPaths[p] != nullptr; ++p)
         {
             PROPVARIANT var;
             PropVariantInit(&var);
-            hr = (*readers[r])->GetMetadataByName(pPaths[p], &var);
+            hr = readers[r]->GetMetadataByName(pPaths[p], &var);
             if (SUCCEEDED(hr))
             {
                 hr = AssignStringVariant(var, pstrValue);
@@ -384,7 +385,7 @@ HRESULT TranscodeMetadataParser::WriteMetadata(LPCWSTR pszFilePath, const MediaM
 
     // The date-taken is stored as a string; the property system coerces it to
     // the canonical FILETIME type for System.Photo.DateTaken.
-    hr = SetStringProperty(spStore, PKEY_DateTaken, metadata.strDateTaken);
+    hr = SetStringProperty(spStore, PKEY_Photo_DateTaken, metadata.strDateTaken);
     if (FAILED(hr))
         return hr;
 

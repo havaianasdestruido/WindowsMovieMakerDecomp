@@ -18,6 +18,7 @@
 
 #include "../pch.h"
 #include "../MovieMakerCore.h"
+#include <atomic>
 
 class SundanceAppMain;
 
@@ -71,10 +72,10 @@ private:
     static const DWORD kMinAutoSaveIntervalMs     = 30000;  // 30 seconds minimum
 
     // State
-    bool                m_bEnabled;
-    bool                m_bSaving;
-    DWORD               m_dwIntervalMs;
-    DWORD               m_dwLastSaveTick;
+    std::atomic<bool> m_bEnabled;
+    std::atomic<bool> m_bSaving;
+    std::atomic<DWORD> m_dwIntervalMs;
+    std::atomic<DWORD> m_dwLastSaveTick;
     SundanceAppMain*    m_pAppMain;
     ATL::CString        m_strRecoveryDir;
     ATL::CString        m_strRecoveryFile;

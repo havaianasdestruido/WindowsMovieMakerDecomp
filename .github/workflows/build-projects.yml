@@ -1,10 +1,10 @@
 name: Build projects
 
 on:
-  #push:
-    #branches:
-      #- main
-  #pull_request:
+  push:
+    branches:
+      - main
+  pull_request:
   workflow_dispatch:
 
 permissions:
@@ -30,7 +30,6 @@ jobs:
           - MovieMakerLang
           - MovieMakerPreviewClient
           - PlaybackEngine
-          - ProjectManager
           - GPURenderer
           - TimelineEngine
           - UXCore
@@ -63,8 +62,45 @@ jobs:
           -A Win32
 
       - name: Build project
-        run: >
-          cmake --build build
-          --config Debug
-          --target ${{ matrix.project }}
-          --parallel
+        shell: pwsh
+        run: |
+          cmake --build build --config Debug --target ${{ matrix.project }} --parallel 2>&1 |
+            Tee-Object -FilePath build-project.log
+          $buildExit = $LASTEXITCODE
+          if ($buildExit -ne 0) {
+            Get-Content build-project.log | Select-String 'error [A-Z]+[0-9]+|fatal error' |
+              Select-Object -First 30 | ForEach-Object {
+                $message = $_.Line.Replace('%', '%25').Replace("`r", '%0D').Replace("`n", '%0A')
+                Write-Output "::error::$message"
+              }
+          }
+          exit $buildExit
+
+      - name: Verify build wrapper from outside the repository
+        if: matrix.project == 'MediaCatalog'
+        shell: pwsh
+        run: |
+          Push-Location $env:RUNNER_TEMP
+          & "$env:GITHUB_WORKSPACE/tools/build.ps1" -Clean -Target MediaCatalog -Verbose
+          $buildExit = $LASTEXITCODE
+          Pop-Location
+          exit $buildExit
+
+  portable-regressions:
+    name: Portable audit regressions
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Run Python and C++14 ASan/UBSan regressions
+        shell: bash
+        run: |
+          status=0
+          python -m unittest discover -s tests/portable -v > portable-tests.log 2>&1 || status=$?
+          cat portable-tests.log
+          if [ "$status" -ne 0 ]; then
+            python -c 'from pathlib import Path; text = Path("portable-tests.log").read_text()[-3800:]; print("::error::" + text.replace("%", "%25").replace("\r", "%0D").replace("\n", "%0A"))'
+          fi
+          exit "$status"

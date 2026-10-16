@@ -27,7 +27,6 @@ Every CMake target in the reconstruction has its own page, grouped into five fam
 | `UXCore` | `UXCore.dll` | DLL | DirectUI engine | [UXCore.dll](dui-engine/uxcore.md) |
 | `uxctl` | `uxctl.dll` | DLL | DirectUI engine | [uxctl.dll](dui-engine/uxctl.md) |
 | `MediaCatalog` | `MediaCatalog.lib` | static lib | DirectUI engine | [MediaCatalog](dui-engine/mediacatalog.md) |
-| `ProjectManager` | `ProjectManager.lib` | static lib | DirectUI engine | [ProjectManager](dui-engine/projectmanager.md) |
 | `TimelineEngine` | `TimelineEngine.lib` | static lib | DirectUI engine | [TimelineEngine](dui-engine/timelineengine.md) |
 | `GPURenderer` | `GPURenderer.dll` | DLL | DirectUI engine | [GPURenderer.dll](dui-engine/gpurenderer.md) |
 | `PlaybackEngine` | `PlaybackEngine.lib` | static lib | DirectUI engine | [PlaybackEngine](dui-engine/playbackengine.md) |

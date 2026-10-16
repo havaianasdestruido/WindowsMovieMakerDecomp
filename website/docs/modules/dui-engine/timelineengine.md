@@ -13,6 +13,10 @@ description: Timeline clip arithmetic — add, move, trim with snapping and over
 | **Type** | Static lib (linked into consumers) |
 | **Family** | [DirectUI engine layer](../dui-engine) |
 
+> **Integration status (#25):** standalone experimental scaffolding. MovieMakerCore
+> no longer constructs or links this stack; MF `PlaybackController` is the live
+> application playback path. A future integration needs a catalog and UI tick.
+
 ## At a glance
 
 The engine-layer timeline: clip placement with **snapping** and **overlap detection**,

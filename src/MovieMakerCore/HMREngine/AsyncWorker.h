@@ -48,7 +48,12 @@ namespace HMREngine
         void Cancel();
 
         using CompleteCallback = std::function<void(const std::wstring&, HRESULT)>;
-        void SetCompleteCallback(CompleteCallback cb) { m_completeCallback = cb; }
+        // Lifecycle methods and destruction belong to the owner thread, not the callback.
+        void SetCompleteCallback(CompleteCallback cb)
+        {
+            std::lock_guard<std::mutex> lock(m_callbackMutex);
+            m_completeCallback = std::move(cb);
+        }
 
     protected:
         std::wstring m_filePath;
@@ -56,7 +61,9 @@ namespace HMREngine
         CComPtr<ID3D11ShaderResourceView> m_srv;
         ID3D11Device* m_device = nullptr;
         std::atomic<bool> m_complete{ false };
-        HRESULT m_result = S_OK;
+        std::atomic<HRESULT> m_result{ S_OK };
+        std::atomic<bool> m_cancelled{ false };
+        std::mutex m_callbackMutex;
         std::thread m_workerThread;
         CompleteCallback m_completeCallback;
 

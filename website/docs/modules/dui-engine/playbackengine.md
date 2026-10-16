@@ -13,6 +13,10 @@ description: Media Foundation playback — open, play, pause, seek, and per-fram
 | **Type** | Static lib (linked into consumers) |
 | **Family** | [DirectUI engine layer](../dui-engine) |
 
+> **Integration status (#25):** standalone experimental scaffolding. MovieMakerCore
+> no longer constructs or links this stack; MF `PlaybackController` is the live
+> application playback path. A future integration needs a catalog and UI tick.
+
 ## At a glance
 
 A compact **Media Foundation** playback engine in the `DirectUI` namespace: opens a media

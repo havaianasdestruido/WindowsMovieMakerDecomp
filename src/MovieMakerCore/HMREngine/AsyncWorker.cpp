@@ -3,6 +3,7 @@
 
 #include "AsyncWorker.h"
 #include <algorithm>
+#include <system_error>
 
 namespace HMREngine
 {
@@ -33,35 +34,63 @@ void GraphChanged::Reset()
 // ReloadImage
 // ============================================================================
 ReloadImage::ReloadImage() = default;
-ReloadImage::~ReloadImage() = default;
+ReloadImage::~ReloadImage()
+{
+    Cancel();
+    if (m_workerThread.joinable())
+        m_workerThread.join();
+}
 
 HRESULT ReloadImage::StartReload(const std::wstring& filePath, ID3D11Device* dev)
 {
     if (filePath.empty() || !dev) return E_INVALIDARG;
 
+    if (m_workerThread.joinable())
+    {
+        if (m_workerThread.get_id() == std::this_thread::get_id())
+            return E_UNEXPECTED;
+        m_workerThread.join();
+    }
+
+    m_cancelled = false;
     m_filePath = filePath;
     m_device = dev;
     m_complete = false;
     m_result = S_OK;
 
-    std::thread worker(&ReloadImage::WorkerThread, this);
-    m_workerThread = std::move(worker);
+    try
+    {
+        m_workerThread = std::thread(&ReloadImage::WorkerThread, this);
+    }
+    catch (const std::system_error&)
+    {
+        m_result = E_FAIL;
+        m_complete = true;
+        return E_FAIL;
+    }
 
     return S_OK;
 }
 
 void ReloadImage::WorkerThread()
 {
-    m_result = E_FAIL;
+    m_result = m_cancelled ? E_ABORT : E_FAIL;
+    CompleteCallback callback;
+    {
+        std::lock_guard<std::mutex> lock(m_callbackMutex);
+        callback = m_completeCallback;
+    }
+    if (!m_cancelled && callback)
+    {
+        try { callback(m_filePath, m_result); }
+        catch (...) { m_result = E_FAIL; }
+    }
     m_complete = true;
-
-    if (m_completeCallback)
-        m_completeCallback(m_filePath, m_result);
 }
 
 void ReloadImage::Cancel()
 {
-    m_complete = true;
+    m_cancelled = true;
 }
 
 HRESULT ReloadImage::GetTexture(ID3D11Texture2D** ppTex) const

@@ -11,206 +11,130 @@ Usage:
 import struct
 import sys
 import os
-import json
 from pathlib import Path
-from dataclasses import dataclass, field
-from typing import List, Set, Dict, Tuple
+from typing import Set, Dict
+
+
+class PEFormatError(ValueError):
+    """Malformed/truncated PE input; never treat this as an empty table."""
+
+
+class PEReader:
+    def __init__(self, filepath):
+        self.data = Path(filepath).read_bytes()
+        if self.read(0, 2) != b"MZ":
+            raise PEFormatError("Missing DOS signature")
+        pe = self.unpack("<I", 0x3c)[0]
+        if self.read(pe, 4) != b"PE\0\0":
+            raise PEFormatError("Missing PE signature")
+        count = self.unpack("<H", pe + 6)[0]
+        opt_size = self.unpack("<H", pe + 20)[0]
+        opt = pe + 24
+        self.read(opt, opt_size)
+        magic = self.unpack("<H", opt)[0]
+        if magic not in (0x10b, 0x20b):
+            raise PEFormatError("Unsupported optional header")
+        directory_offset = 96 if magic == 0x10b else 112
+        if opt_size < directory_offset:
+            raise PEFormatError("Short optional header")
+        self.header_size = self.unpack("<I", opt + 60)[0]
+        directory_count = self.unpack("<I", opt + directory_offset - 4)[0]
+        if directory_count > (opt_size - directory_offset) // 8:
+            raise PEFormatError("Truncated data directories")
+        self.directories = [self.unpack("<II", opt + directory_offset + n * 8)
+                            for n in range(directory_count)]
+        self.sections = []
+        for n in range(count):
+            off = opt + opt_size + n * 40
+            self.read(off, 40)
+            vs, va, raw_size, raw_off = self.unpack("<IIII", off + 8)
+            self.read(raw_off, raw_size)
+            self.sections.append((va, raw_off, raw_size))
+
+    def read(self, off, size):
+        if off < 0 or size < 0 or off > len(self.data) or size > len(self.data) - off:
+            raise PEFormatError("Read outside file")
+        return self.data[off:off + size]
+
+    def unpack(self, fmt, off):
+        return struct.unpack(fmt, self.read(off, struct.calcsize(fmt)))
+
+    def region(self, rva):
+        if 0 <= rva < min(self.header_size, len(self.data)):
+            return rva, min(self.header_size, len(self.data)) - rva
+        for va, raw_off, raw_size in self.sections:
+            if va <= rva < va + raw_size:
+                return raw_off + rva - va, raw_size - (rva - va)
+        raise PEFormatError(f"Unmapped RVA 0x{rva:x}")
+
+    def offset(self, rva, size):
+        off, available = self.region(rva)
+        if size > available:
+            raise PEFormatError("RVA range exceeds raw section")
+        self.read(off, size)
+        return off
+
+    def string(self, rva):
+        off, available = self.region(rva)
+        end = self.data.find(b"\0", off, off + available)
+        if end < 0:
+            raise PEFormatError("Unterminated PE string")
+        return self.data[off:end].decode("ascii", errors="strict")
+
+    def directory(self, index):
+        rva, size = self.directories[index] if index < len(self.directories) else (0, 0)
+        if not rva and not size:
+            return None
+        if not rva or not size:
+            raise PEFormatError("Incomplete data directory")
+        return self.offset(rva, size), size
 
 
 def parse_exports(filepath: str) -> Dict[str, int]:
-    """Parse PE export table, return {name: ordinal}."""
-    exports = {}
-    try:
-        with open(filepath, "rb") as f:
-            dos_sig = struct.unpack("<H", f.read(2))[0]
-            if dos_sig != 0x5A4D:
-                return exports
-
-            f.seek(0x3C)
-            pe_offset = struct.unpack("<I", f.read(4))[0]
-            f.seek(pe_offset + 4)
-            machine = struct.unpack("<H", f.read(2))[0]
-            is_64 = (machine == 0x8664)
-
-            f.seek(pe_offset + 24)
-            opt_magic = struct.unpack("<H", f.read(2))[0]
-            if opt_magic == 0x20B:
-                data_dir_offset = pe_offset + 24 + 112
-            else:
-                data_dir_offset = pe_offset + 24 + 96
-
-            f.seek(data_dir_offset)
-            export_rva = struct.unpack("<I", f.read(4))[0]
-            export_size = struct.unpack("<I", f.read(4))[0]
-
-            if export_rva == 0:
-                return exports
-
-            # Find section
-            f.seek(pe_offset + 6)
-            num_sections = struct.unpack("<H", f.read(2))[0]
-            f.seek(pe_offset + 20)
-            opt_size = struct.unpack("<H", f.read(2))[0]
-            sections_start = pe_offset + 24 + opt_size
-
-            sections = []
-            f.seek(sections_start)
-            for _ in range(num_sections):
-                name = f.read(8).rstrip(b"\x00").decode("ascii", errors="replace")
-                vs = struct.unpack("<I", f.read(4))[0]
-                va = struct.unpack("<I", f.read(4))[0]
-                rs = struct.unpack("<I", f.read(4))[0]
-                ro = struct.unpack("<I", f.read(4))[0]
-                f.read(12)
-                ch = struct.unpack("<I", f.read(4))[0]
-                sections.append((name, va, vs, ro, rs, ch))
-
-            def rva_to_off(rva):
-                for _, va, vs, ro, rs, _ in sections:
-                    if va <= rva < va + vs:
-                        return rva - va + ro
-                return None
-
-            off = rva_to_off(export_rva)
-            if not off:
-                return exports
-
-            f.seek(off + 20)
-            num_names = struct.unpack("<I", f.read(4))[0]
-            funcs_rva = struct.unpack("<I", f.read(4))[0]
-            names_rva = struct.unpack("<I", f.read(4))[0]
-            ords_rva = struct.unpack("<I", f.read(4))[0]
-            base = struct.unpack("<I", f.read(4))[0]
-
-            # Read function RVAs
-            func_off = rva_to_off(funcs_rva)
-            if not func_off:
-                return exports
-            f.seek(func_off)
-            func_rvas = [struct.unpack("<I", f.read(4))[0] for _ in range(struct.unpack("<I", f.read(4))[0] if False else num_names + 100)]
-
-            # Actually read num_functions from export dir
-            f.seek(off + 20)
-            _ = struct.unpack("<I", f.read(4))[0]  # num_names again
-            num_funcs = struct.unpack("<I", f.read(4))[0]
-            f.seek(func_off)
-            func_rvas = []
-            for _ in range(num_funcs):
-                func_rvas.append(struct.unpack("<I", f.read(4))[0])
-
-            name_off = rva_to_off(names_rva)
-            ord_off = rva_to_off(ords_rva)
-
-            if name_off and ord_off:
-                for i in range(num_names):
-                    f.seek(name_off + i * 4)
-                    n_rva = struct.unpack("<I", f.read(4))[0]
-                    f.seek(ord_off + i * 2)
-                    idx = struct.unpack("<H", f.read(2))[0]
-
-                    n_off = rva_to_off(n_rva)
-                    if n_off:
-                        f.seek(n_off)
-                        name = b""
-                        while True:
-                            b = f.read(1)
-                            if not b or b == b"\x00":
-                                break
-                            name += b
-                        exports[name.decode("ascii", errors="replace")] = base + idx
-
-    except Exception as e:
-        print(f"  Error parsing {filepath}: {e}")
-
+    """Named exports and ordinal-only exports (#N), preserving aliases/holes (#26)."""
+    pe = PEReader(filepath)
+    directory = pe.directory(0)
+    if directory is None:
+        return {}
+    off, size = directory
+    if size < 40:
+        raise PEFormatError("Short export directory")
+    base, num_funcs, num_names, funcs, names, ords = pe.unpack("<IIIIII", off + 16)
+    func_off = pe.offset(funcs, num_funcs * 4) if num_funcs else 0
+    name_off = pe.offset(names, num_names * 4) if num_names else 0
+    ord_off = pe.offset(ords, num_names * 2) if num_names else 0
+    exports, named = {}, set()
+    for i in range(num_names):
+        idx = pe.unpack("<H", ord_off + i * 2)[0]
+        if idx >= num_funcs or not pe.unpack("<I", func_off + idx * 4)[0]:
+            raise PEFormatError("Invalid export ordinal index")
+        name = pe.string(pe.unpack("<I", name_off + i * 4)[0])
+        if name in exports:
+            raise PEFormatError("Duplicate export name")
+        exports[name] = base + idx
+        named.add(idx)
+    for idx in range(num_funcs):
+        if idx not in named and pe.unpack("<I", func_off + idx * 4)[0]:
+            exports[f"#{base + idx}"] = base + idx
     return exports
 
 
 def parse_imports(filepath: str) -> Set[str]:
-    """Parse PE import table, return set of DLL names."""
+    pe = PEReader(filepath)
+    directory = pe.directory(1)
+    if directory is None:
+        return set()
+    off, size = directory
     imports = set()
-    try:
-        with open(filepath, "rb") as f:
-            dos_sig = struct.unpack("<H", f.read(2))[0]
-            if dos_sig != 0x5A4D:
-                return imports
-
-            f.seek(0x3C)
-            pe_offset = struct.unpack("<I", f.read(4))[0]
-            f.seek(pe_offset + 4)
-            machine = struct.unpack("<H", f.read(2))[0]
-            is_64 = (machine == 0x8664)
-
-            f.seek(pe_offset + 24)
-            opt_magic = struct.unpack("<H", f.read(2))[0]
-            if opt_magic == 0x20B:
-                data_dir_offset = pe_offset + 24 + 112
-            else:
-                data_dir_offset = pe_offset + 24 + 96
-
-            f.seek(data_dir_offset + 8)  # skip export
-            import_rva = struct.unpack("<I", f.read(4))[0]
-            import_size = struct.unpack("<I", f.read(4))[0]
-
-            if import_rva == 0:
-                return imports
-
-            f.seek(pe_offset + 6)
-            num_sections = struct.unpack("<H", f.read(2))[0]
-            f.seek(pe_offset + 20)
-            opt_size = struct.unpack("<H", f.read(2))[0]
-
-            sections = []
-            f.seek(pe_offset + 24 + opt_size)
-            for _ in range(num_sections):
-                name = f.read(8).rstrip(b"\x00").decode("ascii", errors="replace")
-                vs = struct.unpack("<I", f.read(4))[0]
-                va = struct.unpack("<I", f.read(4))[0]
-                rs = struct.unpack("<I", f.read(4))[0]
-                ro = struct.unpack("<I", f.read(4))[0]
-                f.read(12)
-                ch = struct.unpack("<I", f.read(4))[0]
-                sections.append((name, va, vs, ro, rs, ch))
-
-            def rva_to_off(rva):
-                for _, va, vs, ro, rs, _ in sections:
-                    if va <= rva < va + vs:
-                        return rva - va + ro
-                return None
-
-            off = rva_to_off(import_rva)
-            if not off:
-                return imports
-
-            f.seek(off)
-            while True:
-                _ = struct.unpack("<I", f.read(4))[0]
-                _ = struct.unpack("<I", f.read(4))[0]
-                _ = struct.unpack("<H", f.read(2))[0]
-                _ = struct.unpack("<H", f.read(2))[0]
-                _ = struct.unpack("<H", f.read(2))[0]
-                dll_rva = struct.unpack("<I", f.read(4))[0]
-                _ = struct.unpack("<I", f.read(4))[0]
-
-                if dll_rva == 0:
-                    break
-
-                dll_off = rva_to_off(dll_rva)
-                if not dll_off:
-                    break
-
-                f.seek(dll_off)
-                dll_name = b""
-                while True:
-                    b = f.read(1)
-                    if not b or b == b"\x00":
-                        break
-                    dll_name += b
-                imports.add(dll_name.decode("ascii", errors="replace").lower())
-
-    except Exception as e:
-        print(f"  Error parsing {filepath}: {e}")
-
-    return imports
+    for cursor in range(0, size - 19, 20):
+        descriptor = pe.unpack("<IIIII", off + cursor)
+        if not any(descriptor):
+            return imports
+        dll_rva = descriptor[3]
+        if not dll_rva:
+            raise PEFormatError("Import descriptor without DLL name")
+        imports.add(pe.string(dll_rva).lower())
+    raise PEFormatError("Unterminated import descriptor table")
 
 
 def diff_binary(orig_path: str, recon_path: str):
@@ -232,6 +156,7 @@ def diff_binary(orig_path: str, recon_path: str):
     missing = orig_names - recon_names
     extra = recon_names - orig_names
     common = orig_names & recon_names
+    changed_ordinals = {name for name in common if orig_exports[name] != recon_exports[name]}
 
     print(f"  Common:    {len(common)}")
     print(f"  Missing:   {len(missing)}")
@@ -248,7 +173,10 @@ def diff_binary(orig_path: str, recon_path: str):
         for name in sorted(extra):
             print(f"    + {name}")
 
-    # Import diff
+    if changed_ordinals:
+        print(f"  Changed export ordinals: {sorted(changed_ordinals)}")
+
+    # Import differences are informational: reconstructed implementation dependencies may differ.
     orig_imports = parse_imports(orig_path)
     recon_imports = parse_imports(recon_path)
 
@@ -264,30 +192,45 @@ def diff_binary(orig_path: str, recon_path: str):
         print(f"  Extra DLLs: {sorted(extra_dlls)}")
 
     print()
+    return not (missing or extra or changed_ordinals)
+
+
+def main(argv=None):
+    import argparse
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--batch", action="store_true")
+    parser.add_argument("--exit-zero", action="store_true", help="Report-only: ignore parity differences, not input errors")
+    parser.add_argument("original")
+    parser.add_argument("recreation")
+    args = parser.parse_args(argv)
+    try:
+        pairs = [(args.original, args.recreation)]
+        missing_files = False
+        if args.batch:
+            def binaries(directory):
+                path = Path(directory)
+                if not path.is_dir():
+                    raise PEFormatError(f"Not a directory: {path}")
+                return {p.name.lower(): p for p in path.iterdir()
+                        if p.suffix.lower() in (".dll", ".exe") and p.is_file()}
+            original, recreation = binaries(args.original), binaries(args.recreation)
+            if not original or not recreation:
+                raise PEFormatError("No binaries to compare")
+            missing = set(original) ^ set(recreation)
+            if missing:
+                print(f"Unpaired binaries: {sorted(missing)}", file=sys.stderr)
+                missing_files = True
+            pairs = [(original[n], recreation[n]) for n in sorted(set(original) & set(recreation))]
+        matched = not missing_files
+        for original, recreation in pairs:
+            matched = diff_binary(str(original), str(recreation)) and matched
+        if missing_files:
+            return 1
+        return 0 if matched or args.exit_zero else 1
+    except (OSError, ValueError, struct.error) as error:
+        print(f"PE comparison failed: {error}", file=sys.stderr)
+        return 2
 
 
 if __name__ == "__main__":
-    if len(sys.argv) < 3:
-        print(__doc__)
-        sys.exit(1)
-
-    if sys.argv[1] == "--batch" and len(sys.argv) >= 4:
-        orig_dir = sys.argv[2]
-        recon_dir = sys.argv[3]
-
-        orig_files = {}
-        for f in Path(orig_dir).glob("*.dll"):
-            orig_files[f.stem.lower()] = str(f)
-        for f in Path(orig_dir).glob("*.exe"):
-            orig_files[f.stem.lower()] = str(f)
-
-        recon_files = {}
-        for f in Path(recon_dir).glob("*.dll"):
-            recon_files[f.stem.lower()] = str(f)
-        for f in Path(recon_dir).glob("*.exe"):
-            recon_files[f.stem.lower()] = str(f)
-
-        for name in sorted(set(orig_files.keys()) & set(recon_files.keys())):
-            diff_binary(orig_files[name], recon_files[name])
-    else:
-        diff_binary(sys.argv[1], sys.argv[2])
+    sys.exit(main())

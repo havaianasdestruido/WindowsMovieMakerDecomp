@@ -208,7 +208,7 @@ def parse_pe(filepath: str) -> PEData:
             f.read(4)
             f.read(4)
             data.entry_point_rva = struct.unpack("<I", f.read(4))[0]
-            f.read(4)
+            f.read(8)  # BaseOfCode + BaseOfData (PE32 only)
             data.image_base = struct.unpack("<I", f.read(4))[0]
         else:
             data.anomalies.append(f"Unknown optional header magic: 0x{opt_magic:04X}")

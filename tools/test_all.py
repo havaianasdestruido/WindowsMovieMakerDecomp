@@ -50,29 +50,33 @@ class LaunchResult:
 
 class TestHarness:
     def __init__(self, exe_path: str, timeout: int = 15):
-        self.exe_path = exe_path
+        self.exe_path = str(Path(exe_path).resolve())
         self.timeout = timeout
         self.results: List[TestResult] = []
-        self.build_dir = str(Path(exe_path).parent.parent.parent / "build" / "bin" / "Debug")
+        self.build_dir = str(Path(exe_path).resolve().parent)
 
-    def run_all(self):
+    def run_all(self, launch_only=False):
         print(f"\n{'='*70}")
         print(f"  WMMR Runtime Test Harness")
         print(f"  Target: {self.exe_path}")
         print(f"  Timeout: {self.timeout}s")
         print(f"{'='*70}\n")
 
-        self.test_file_exists()
-        self.test_dlls_present()
-        self.test_launch_clean()
-        self.test_launch_with_args()
-        self.test_stability()
-        self.test_single_instance()
-        self.test_window_creation()
-        self.test_memory_usage()
+        if launch_only:
+            self.test_launch_clean()
+        else:
+            self.test_file_exists()
+            self.test_dlls_present()
+            self.test_launch_clean()
+            self.test_launch_with_args()
+            self.test_stability()
+            self.test_single_instance()
+            self.test_window_creation()
+            self.test_memory_usage()
 
         self.print_summary()
         self.save_report()
+        return 0 if self.results and all(r.passed for r in self.results) else 1
 
     def test_file_exists(self):
         name = "File existence check"
@@ -427,36 +431,28 @@ class TestHarness:
         print(f"  Report saved to {report_path}")
 
 
-if __name__ == "__main__":
-    timeout = 15
-    exe_path = None
-
-    args = sys.argv[1:]
-    i = 0
-    while i < len(args):
-        if args[i] == "--timeout" and i + 1 < len(args):
-            timeout = int(args[i + 1])
-            i += 2
-        elif args[i] == "--launch":
-            i += 1
-        elif not args[i].startswith("--"):
-            exe_path = args[i]
-            i += 1
-        else:
-            i += 1
-
+def main(argv=None):
+    import argparse
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("exe_path", nargs="?")
+    parser.add_argument("--timeout", type=int, default=15)
+    parser.add_argument("--launch", action="store_true", help="Only run the clean launch test")
+    args = parser.parse_args(argv)
+    if args.timeout < 0:
+        parser.error("--timeout must be non-negative")
+    exe_path = args.exe_path
     if not exe_path:
-        # Find the exe
-        project_root = str(Path(__file__).parent.parent)
+        project_root = Path(__file__).resolve().parent.parent
         for config in ["Debug", "Release"]:
-            candidate = os.path.join(project_root, "build", "bin", config, "MovieMaker.exe")
-            if os.path.isfile(candidate):
-                exe_path = candidate
+            candidate = project_root / "build" / "bin" / config / "MovieMaker.exe"
+            if candidate.is_file():
+                exe_path = str(candidate)
                 break
+    if not exe_path or not Path(exe_path).is_file():
+        print(f"Error: MovieMaker.exe not found: {exe_path or 'build first'}", file=sys.stderr)
+        return 1
+    return TestHarness(exe_path, args.timeout).run_all(launch_only=args.launch)
 
-    if not exe_path:
-        print("Error: MovieMaker.exe not found. Build first.")
-        sys.exit(1)
 
-    harness = TestHarness(exe_path, timeout)
-    harness.run_all()
+if __name__ == "__main__":
+    sys.exit(main())

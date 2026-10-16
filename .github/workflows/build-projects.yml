@@ -62,11 +62,19 @@ jobs:
           -A Win32
 
       - name: Build project
-        run: >
-          cmake --build build
-          --config Debug
-          --target ${{ matrix.project }}
-          --parallel
+        shell: pwsh
+        run: |
+          cmake --build build --config Debug --target ${{ matrix.project }} --parallel 2>&1 |
+            Tee-Object -FilePath build-project.log
+          $buildExit = $LASTEXITCODE
+          if ($buildExit -ne 0) {
+            Get-Content build-project.log | Select-String 'error [A-Z]+[0-9]+|fatal error' |
+              Select-Object -First 30 | ForEach-Object {
+                $message = $_.Line.Replace('%', '%25').Replace("`r", '%0D').Replace("`n", '%0A')
+                Write-Output "::error::$message"
+              }
+          }
+          exit $buildExit
 
   portable-regressions:
     name: Portable audit regressions
@@ -77,4 +85,15 @@ jobs:
         with:
           python-version: '3.11'
       - name: Run Python and C++14 ASan/UBSan regressions
-        run: python -m unittest discover -s tests/portable -v
+        shell: bash
+        run: |
+          status=0
+          python -m unittest discover -s tests/portable -v > portable-tests.log 2>&1 || status=$?
+          cat portable-tests.log
+          if [ "$status" -ne 0 ]; then
+            while IFS= read -r line; do
+              line="${line//'%'/'%25'}"
+              printf '::error::%s\n' "$line"
+            done < portable-tests.log
+          fi
+          exit "$status"

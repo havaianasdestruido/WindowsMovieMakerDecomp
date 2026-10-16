@@ -198,8 +198,8 @@ template<class T> struct CComPtr {T* value=nullptr; operator T*()const{return va
 int main() {
     ID3D11Device device;
     for(int i=0;i<100;++i) {
-        ReloadImage worker;
         std::atomic<int> calls{0};
+        ReloadImage worker;
         worker.SetCompleteCallback([&](const std::wstring&,HRESULT){++calls;});
         assert(worker.StartReload(L"first",&device)==S_OK);
         assert(worker.StartReload(L"second",&device)==S_OK);

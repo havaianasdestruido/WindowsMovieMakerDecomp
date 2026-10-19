@@ -60,7 +60,7 @@ namespace HMREngine
         std::vector<VertexAttributes> m_vertices;
         std::vector<UINT> m_indices;
 
-        void TriangulateFace(const std::vector<int>& faceIndices, std::vector<UINT>& outIndices);
+        void TriangulateFace(const std::vector<int>& faceIndices, std::vector<UINT>& outIndices) const;
         Vec3 ComputeFaceNormal(const Vec3& v0, const Vec3& v1, const Vec3& v2);
     };
 

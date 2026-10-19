@@ -82,6 +82,11 @@ namespace HMREngine
         if (!m_node->m_coordIndex.m_values.empty())
         {
             std::vector<int> currentFace;
+            // Pre-allocate to a reasonable typical face size
+            currentFace.reserve(4);
+
+            // Pre-allocate indices if possible
+            m_indices.reserve(m_node->m_coordIndex.m_values.size());
 
             for (int idx : m_node->m_coordIndex.m_values)
             {
@@ -142,9 +147,16 @@ namespace HMREngine
         return S_OK;
     }
 
-    void IndexedFaceSetImpl::TriangulateFace(const std::vector<int>& faceIndices, std::vector<UINT>& outIndices)
+    void IndexedFaceSetImpl::TriangulateFace(const std::vector<int>& faceIndices, std::vector<UINT>& outIndices) const
     {
         // Fan triangulation for convex polygons
+        // Bolt: Pre-allocate capacity to avoid multiple reallocations during push_back operations
+        if (faceIndices.size() >= 3)
+        {
+            size_t newIndicesCount = (faceIndices.size() - 2) * 3;
+            outIndices.reserve(outIndices.size() + newIndicesCount);
+        }
+
         for (size_t i = 1; i + 1 < faceIndices.size(); i++)
         {
             if (m_ccw)

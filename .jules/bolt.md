@@ -12,3 +12,6 @@
 ## 2024-05-18 - Mesh Resource Generation Bottleneck
 **Learning:** Generating mesh resources (like grids and wipe meshes) dynamically can cause unnecessary memory reallocations if the target vertex and index buffers are not pre-reserved. In `MeshResourceDX.cpp`, vectors for vertices and indices were populated via `push_back` inside nested loops without prior capacity reservations, causing O(N) allocation overhead for meshes with many subdivisions.
 **Action:** Always compute and `reserve()` the exact or maximum required size for `std::vector` before populating it in tight loops, particularly for procedural geometry generation (e.g., `(segmentsX + 1) * (segmentsY + 1)` for a grid).
+## 2024-12-05 - TextImpl Rebuild Pattern
+**Learning:** `TextImpl` bakes spatial position directly into vertices (e.g. `Vec3 p0(m_position.x + x, m_position.y - y, m_position.z);`) instead of using a constant buffer/transform matrix. This architectural choice means any positional update necessitates a full recreation of the vertex buffer.
+**Action:** When optimizing components like `TextImpl`, recognize that standard optimizations like avoiding buffer recreations might require significant architectural changes. For now, focus on optimizing the rebuild process itself (e.g., via `reserve`).

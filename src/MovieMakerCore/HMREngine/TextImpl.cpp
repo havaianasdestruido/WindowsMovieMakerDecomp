@@ -137,6 +137,8 @@ namespace HMREngine
         if (!m_device) return;
 
         std::vector<TextVertex> verts;
+        // ⚡ Bolt: Pre-allocate memory for 6 vertices per character to avoid multiple O(N) reallocations during push_back
+        verts.reserve(m_text.length() * 6);
         float x = 0;
         float y = 0;
 

@@ -124,11 +124,31 @@ HRESULT AudioRMSData::FeedSamplesInt16(const short* pSamples, DWORD dwSampleCoun
 {
     if (!m_fInitialized || !pSamples) return E_INVALIDARG;
 
-    std::vector<float> floatSamples(dwSampleCount);
-    for (DWORD i = 0; i < dwSampleCount; ++i)
-        floatSamples[i] = static_cast<float>(pSamples[i]) / 32767.0f;
+    const DWORD kChunkSamples = 4096;
+    float floatSamples[kChunkSamples];
 
-    return FeedSamples(floatSamples.data(), dwSampleCount / m_dwChannels);
+    DWORD dwTotalFrames = dwSampleCount / m_dwChannels;
+    DWORD dwFramesProcessed = 0;
+
+    while (dwFramesProcessed < dwTotalFrames)
+    {
+        DWORD dwFramesToProcess = dwTotalFrames - dwFramesProcessed;
+        if (dwFramesToProcess > kChunkSamples / m_dwChannels)
+            dwFramesToProcess = kChunkSamples / m_dwChannels;
+
+        DWORD dwSamplesToProcess = dwFramesToProcess * m_dwChannels;
+        DWORD dwSampleOffset = dwFramesProcessed * m_dwChannels;
+
+        for (DWORD i = 0; i < dwSamplesToProcess; ++i)
+            floatSamples[i] = static_cast<float>(pSamples[dwSampleOffset + i]) / 32767.0f;
+
+        HRESULT hr = FeedSamples(floatSamples, dwFramesToProcess);
+        if (FAILED(hr)) return hr;
+
+        dwFramesProcessed += dwFramesToProcess;
+    }
+
+    return S_OK;
 }
 
 float AudioRMSData::GetCurrentRmsLevel() const throw() { return m_flCurrentRms; }

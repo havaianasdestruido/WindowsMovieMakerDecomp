@@ -18,3 +18,6 @@
 ## 2024-05-24 - [Audio Processing Heap Allocation Bottleneck]
 **Learning:** Found that `ProcessBufferInt16` and `FeedSamplesInt16` in `HMRAVSource` were dynamically allocating memory on the heap (using `std::vector<float>`) for every incoming audio buffer. In high-frequency audio callbacks, this causes unnecessary heap fragmentation and lock contention, leading to performance bottlenecks.
 **Action:** Replaced dynamic heap allocations with stack-based fixed-size buffers and processed the audio in chunks. Always use stack arrays or pre-allocated buffers for per-frame or per-buffer operations in hot paths.
+## 2025-10-31 - Fast path for Audio Fade Processing
+**Learning:** Checking condition checks inside hot nested audio-buffer processing loops consumes significant CPU time, especially when most buffers (like an entire video's audio track outside of transitions) are untouched by an effect.
+**Action:** When working on audio effects or filters (like fades, volume adjustments), implement an early return or fast-path by calculating buffer boundary timestamps against effect active regions to skip the processing loop entirely when unnecessary.

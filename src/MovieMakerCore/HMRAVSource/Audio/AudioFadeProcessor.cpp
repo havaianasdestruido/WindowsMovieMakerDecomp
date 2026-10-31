@@ -167,6 +167,15 @@ HRESULT AudioFadeProcessor::ProcessBufferFloat(float* pBuffer, DWORD dwFrameCoun
     LONGLONG llHnsPerFrame = 10000000LL / static_cast<LONGLONG>(m_dwSampleRate);
     if (llHnsPerFrame <= 0) llHnsPerFrame = 1;
 
+    // Performance optimization: Check if the entire buffer is outside any fade region.
+    // If so, early return to save O(N) ComputeGain and memory access.
+    LONGLONG llEndHns = llPositionHns + static_cast<LONGLONG>(dwFrameCount) * llHnsPerFrame;
+    bool bInFadeIn = (m_llFadeInDurationHns > 0 && llPositionHns < m_llFadeInDurationHns);
+    bool bInFadeOut = (m_llFadeOutDurationHns > 0 && m_llTotalDurationHns > 0 &&
+                       llEndHns > (m_llTotalDurationHns - m_llFadeOutDurationHns));
+    if (!bInFadeIn && !bInFadeOut)
+        return S_OK;
+
     LONGLONG llCurrentHns = llPositionHns;
 
     for (DWORD f = 0; f < dwFrameCount; ++f)
@@ -196,6 +205,14 @@ HRESULT AudioFadeProcessor::ProcessBufferInt16(short* pBuffer, DWORD dwFrameCoun
 
     LONGLONG llHnsPerFrame = 10000000LL / static_cast<LONGLONG>(m_dwSampleRate);
     if (llHnsPerFrame <= 0) llHnsPerFrame = 1;
+
+    // Performance optimization: Check if the entire buffer is outside any fade region.
+    LONGLONG llEndHns = llPositionHns + static_cast<LONGLONG>(dwFrameCount) * llHnsPerFrame;
+    bool bInFadeIn = (m_llFadeInDurationHns > 0 && llPositionHns < m_llFadeInDurationHns);
+    bool bInFadeOut = (m_llFadeOutDurationHns > 0 && m_llTotalDurationHns > 0 &&
+                       llEndHns > (m_llTotalDurationHns - m_llFadeOutDurationHns));
+    if (!bInFadeIn && !bInFadeOut)
+        return S_OK;
 
     LONGLONG llCurrentHns = llPositionHns;
 

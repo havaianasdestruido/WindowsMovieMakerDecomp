@@ -15,3 +15,6 @@
 ## 2024-12-05 - TextImpl Rebuild Pattern
 **Learning:** `TextImpl` bakes spatial position directly into vertices (e.g. `Vec3 p0(m_position.x + x, m_position.y - y, m_position.z);`) instead of using a constant buffer/transform matrix. This architectural choice means any positional update necessitates a full recreation of the vertex buffer.
 **Action:** When optimizing components like `TextImpl`, recognize that standard optimizations like avoiding buffer recreations might require significant architectural changes. For now, focus on optimizing the rebuild process itself (e.g., via `reserve`).
+## 2024-05-24 - [Audio Processing Heap Allocation Bottleneck]
+**Learning:** Found that `ProcessBufferInt16` and `FeedSamplesInt16` in `HMRAVSource` were dynamically allocating memory on the heap (using `std::vector<float>`) for every incoming audio buffer. In high-frequency audio callbacks, this causes unnecessary heap fragmentation and lock contention, leading to performance bottlenecks.
+**Action:** Replaced dynamic heap allocations with stack-based fixed-size buffers and processed the audio in chunks. Always use stack arrays or pre-allocated buffers for per-frame or per-buffer operations in hot paths.

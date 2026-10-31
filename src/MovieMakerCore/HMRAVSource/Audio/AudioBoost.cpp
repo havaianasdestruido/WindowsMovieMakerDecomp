@@ -153,22 +153,39 @@ HRESULT AudioBoost::ProcessBufferInt16(short* pBuffer, DWORD dwSampleCount)
     if (!m_fInitialized || !pBuffer)
         return E_INVALIDARG;
 
-    // Convert to float, process, convert back
-    DWORD dwFrameCount = dwSampleCount / m_dwChannels;
-    std::vector<float> floatBuf(dwSampleCount);
+    const DWORD kChunkSamples = 4096;
+    float floatBuf[kChunkSamples];
 
-    for (DWORD i = 0; i < dwSampleCount; ++i)
-        floatBuf[i] = static_cast<float>(pBuffer[i]) / 32767.0f;
+    DWORD dwTotalFrames = dwSampleCount / m_dwChannels;
+    DWORD dwFramesProcessed = 0;
 
-    HRESULT hr = ProcessBuffer(floatBuf.data(), dwFrameCount);
-    if (FAILED(hr)) return hr;
-
-    for (DWORD i = 0; i < dwSampleCount; ++i)
+    while (dwFramesProcessed < dwTotalFrames)
     {
-        float flSample = floatBuf[i];
-        if (flSample > 1.0f) flSample = 1.0f;
-        if (flSample < -1.0f) flSample = -1.0f;
-        pBuffer[i] = static_cast<short>(flSample * 32767.0f);
+        DWORD dwFramesToProcess = dwTotalFrames - dwFramesProcessed;
+        if (dwFramesToProcess > kChunkSamples / m_dwChannels)
+            dwFramesToProcess = kChunkSamples / m_dwChannels;
+
+        DWORD dwSamplesToProcess = dwFramesToProcess * m_dwChannels;
+        DWORD dwSampleOffset = dwFramesProcessed * m_dwChannels;
+
+        // Convert to float
+        for (DWORD i = 0; i < dwSamplesToProcess; ++i)
+            floatBuf[i] = static_cast<float>(pBuffer[dwSampleOffset + i]) / 32767.0f;
+
+        // Process chunk
+        HRESULT hr = ProcessBuffer(floatBuf, dwFramesToProcess);
+        if (FAILED(hr)) return hr;
+
+        // Convert back to int16
+        for (DWORD i = 0; i < dwSamplesToProcess; ++i)
+        {
+            float flSample = floatBuf[i];
+            if (flSample > 1.0f) flSample = 1.0f;
+            if (flSample < -1.0f) flSample = -1.0f;
+            pBuffer[dwSampleOffset + i] = static_cast<short>(flSample * 32767.0f);
+        }
+
+        dwFramesProcessed += dwFramesToProcess;
     }
 
     return S_OK;

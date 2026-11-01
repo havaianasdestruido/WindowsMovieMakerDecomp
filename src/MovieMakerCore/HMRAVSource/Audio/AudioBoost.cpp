@@ -123,17 +123,18 @@ HRESULT AudioBoost::ProcessBuffer(float* pBuffer, DWORD dwFrameCount)
     {
         // Simple soft-knee compression
         float flThresholdLinear = powf(10.0f, m_flCompressionThresholdDb / 20.0f);
+        float flInvCompressionRatio = 1.0f / m_flCompressionRatio;
         for (DWORD i = 0; i < dwTotalSamples; ++i)
         {
             float flAbs = fabsf(pBuffer[i]);
             if (flAbs > flThresholdLinear)
             {
                 float flOver = flAbs / flThresholdLinear;
-                float flCompressed = powf(flOver, 1.0f / m_flCompressionRatio);
+                float flCompressed = powf(flOver, flInvCompressionRatio);
                 float flGain = (flThresholdLinear * flCompressed) / flAbs;
                 pBuffer[i] *= flGain;
             }
-            else
+            else if (flLinearGain != 1.0f)
             {
                 pBuffer[i] *= flLinearGain;
             }
@@ -158,6 +159,7 @@ HRESULT AudioBoost::ProcessBufferInt16(short* pBuffer, DWORD dwSampleCount)
 
     DWORD dwTotalFrames = dwSampleCount / m_dwChannels;
     DWORD dwFramesProcessed = 0;
+    const float kInvMaxInt16 = 1.0f / 32767.0f;
 
     while (dwFramesProcessed < dwTotalFrames)
     {
@@ -170,7 +172,7 @@ HRESULT AudioBoost::ProcessBufferInt16(short* pBuffer, DWORD dwSampleCount)
 
         // Convert to float
         for (DWORD i = 0; i < dwSamplesToProcess; ++i)
-            floatBuf[i] = static_cast<float>(pBuffer[dwSampleOffset + i]) / 32767.0f;
+            floatBuf[i] = static_cast<float>(pBuffer[dwSampleOffset + i]) * kInvMaxInt16;
 
         // Process chunk
         HRESULT hr = ProcessBuffer(floatBuf, dwFramesToProcess);
@@ -278,6 +280,8 @@ float AudioBoost::ComputeLinearGain(float flInputPeak)
 
 void AudioBoost::ApplyGain(float* pBuffer, DWORD dwFrameCount, float flLinearGain)
 {
+    if (flLinearGain == 1.0f) return;
+
     DWORD dwTotalSamples = dwFrameCount * m_dwChannels;
     for (DWORD i = 0; i < dwTotalSamples; ++i)
         pBuffer[i] *= flLinearGain;

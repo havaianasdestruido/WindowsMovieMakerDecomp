@@ -21,3 +21,6 @@
 ## 2025-10-31 - Fast path for Audio Fade Processing
 **Learning:** Checking condition checks inside hot nested audio-buffer processing loops consumes significant CPU time, especially when most buffers (like an entire video's audio track outside of transitions) are untouched by an effect.
 **Action:** When working on audio effects or filters (like fades, volume adjustments), implement an early return or fast-path by calculating buffer boundary timestamps against effect active regions to skip the processing loop entirely when unnecessary.
+## 2024-11-04 - Unreserved push_back loops
+**Learning:** Found loops using `push_back` without pre-reserving capacity. This results in multiple O(N) reallocations which are inefficient.
+**Action:** Use `reserve` when iterating over collections where the final size is known ahead of time.

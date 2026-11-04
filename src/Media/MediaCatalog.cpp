@@ -177,6 +177,8 @@ HBITMAP MediaCatalog::CreateThumbnail(const std::wstring& path) {
 
 std::vector<std::wstring> MediaCatalog::ImportFiles(const std::vector<std::wstring>& paths) {
     std::vector<std::wstring> ids;
+    // ⚡ Bolt: Pre-allocate memory to avoid multiple O(N) reallocations during push_back
+    ids.reserve(paths.size());
     for (const auto& p : paths) {
         MediaItem item;
         item.id = GenerateId();

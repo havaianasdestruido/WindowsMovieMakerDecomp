@@ -24,3 +24,7 @@
 ## 2024-11-04 - Unreserved push_back loops
 **Learning:** Found loops using `push_back` without pre-reserving capacity. This results in multiple O(N) reallocations which are inefficient.
 **Action:** Use `reserve` when iterating over collections where the final size is known ahead of time.
+
+## 2026-11-06 - [Loop Unswitching for 1D Convolution]
+**Learning:** Found a tight loop `ConvLine` in the face recognition code that did branch evaluation (`if (horizontal)`) in the very innermost calculation, multiplied by millions of pixels times kernel size per frame.
+**Action:** When inspecting tight numerical loops or image processing algorithms, look for boolean flags passed as arguments and branch evaluated within the inner loops. Hoist them out using loop unswitching to provide dedicated optimized paths, improving branch prediction and preventing pipeline stalls.

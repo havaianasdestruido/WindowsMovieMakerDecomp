@@ -96,32 +96,50 @@ void ConvLine(const std::vector<float>& src, UINT32 w, UINT32 h,
 {
     const INT r = static_cast<INT>(k.size()) / 2;
     dst.assign(static_cast<size_t>(w) * h, 0.0f);
-    for (UINT32 y = 0; y < h; ++y)
+
+    // ⚡ Bolt: Loop unswitching for `horizontal` check to avoid branching in inner loop
+    if (horizontal)
     {
-        for (UINT32 x = 0; x < w; ++x)
+        for (UINT32 y = 0; y < h; ++y)
         {
-            float acc = 0.0f;
-            for (INT i = -r; i <= r; ++i)
+            for (UINT32 x = 0; x < w; ++x)
             {
-                const float kv = k[static_cast<size_t>(i + r)];
-                if (kv == 0.0f)
-                    continue;
-                INT ci, cj;
-                if (horizontal)
+                float acc = 0.0f;
+                for (INT i = -r; i <= r; ++i)
                 {
-                    ci = static_cast<INT>(x) + i;
-                    cj = static_cast<INT>(y);
+                    const float kv = k[static_cast<size_t>(i + r)];
+                    if (kv == 0.0f)
+                        continue;
+
+                    INT ci = static_cast<INT>(x) + i;
+                    ci = (ci < 0) ? 0 : ((ci >= static_cast<INT>(w)) ? static_cast<INT>(w) - 1 : ci);
+
+                    acc += kv * src[static_cast<size_t>(y) * w + static_cast<size_t>(ci)];
                 }
-                else
-                {
-                    ci = static_cast<INT>(x);
-                    cj = static_cast<INT>(y) + i;
-                }
-                ci = (ci < 0) ? 0 : ((ci >= static_cast<INT>(w)) ? static_cast<INT>(w) - 1 : ci);
-                cj = (cj < 0) ? 0 : ((cj >= static_cast<INT>(h)) ? static_cast<INT>(h) - 1 : cj);
-                acc += kv * src[static_cast<UINT32>(cj) * w + static_cast<UINT32>(ci)];
+                dst[static_cast<size_t>(y) * w + x] = acc;
             }
-            dst[static_cast<size_t>(y) * w + x] = acc;
+        }
+    }
+    else
+    {
+        for (UINT32 y = 0; y < h; ++y)
+        {
+            for (UINT32 x = 0; x < w; ++x)
+            {
+                float acc = 0.0f;
+                for (INT i = -r; i <= r; ++i)
+                {
+                    const float kv = k[static_cast<size_t>(i + r)];
+                    if (kv == 0.0f)
+                        continue;
+
+                    INT cj = static_cast<INT>(y) + i;
+                    cj = (cj < 0) ? 0 : ((cj >= static_cast<INT>(h)) ? static_cast<INT>(h) - 1 : cj);
+
+                    acc += kv * src[static_cast<size_t>(cj) * w + static_cast<size_t>(x)];
+                }
+                dst[static_cast<size_t>(y) * w + x] = acc;
+            }
         }
     }
 }

@@ -28,3 +28,7 @@
 ## 2026-11-06 - [Loop Unswitching for 1D Convolution]
 **Learning:** Found a tight loop `ConvLine` in the face recognition code that did branch evaluation (`if (horizontal)`) in the very innermost calculation, multiplied by millions of pixels times kernel size per frame.
 **Action:** When inspecting tight numerical loops or image processing algorithms, look for boolean flags passed as arguments and branch evaluated within the inner loops. Hoist them out using loop unswitching to provide dedicated optimized paths, improving branch prediction and preventing pipeline stalls.
+
+## 2026-11-07 - [Zero-Copy XML Tag Extraction]
+**Learning:** In the X3DReader XML parsing, creating temporary std::string copies for every tag name to determine its type causes significant allocation overhead. Using pointer arithmetic and std::memcmp provides a faster, zero-copy alternative.
+**Action:** Use string views or std::memcmp equivalents when conditionally matching tags to avoid creating full std::string instances until a match is actually confirmed.

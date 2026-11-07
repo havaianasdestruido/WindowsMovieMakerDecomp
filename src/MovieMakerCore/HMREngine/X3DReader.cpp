@@ -147,22 +147,25 @@ namespace HMREngine
             if (!tagEndPtr) break;
             size_t tagEnd = tagEndPtr - data;
 
-            std::string tag(data + tagStart + 1, tagEnd - tagStart - 1);
+            size_t tagLen = tagEnd - tagStart - 1;
+            const char* tagStr = data + tagStart + 1;
             pos = tagEnd + 1;
 
-            if (tag.empty()) continue;
-            if (tag[0] == '/') continue; // closing tag
+            if (tagLen == 0) continue;
+            if (tagStr[0] == '/') continue; // closing tag
 
-            // Extract tag name
-            std::string tagName;
-            auto spacePos = tag.find(' ');
-            if (spacePos != std::string::npos)
-                tagName = tag.substr(0, spacePos);
-            else
-                tagName = tag;
+            // ⚡ Bolt: Extract tag name using zero-copy to avoid string allocation overhead
+            const char* spacePtr = static_cast<const char*>(std::memchr(tagStr, ' ', tagLen));
+            size_t tagNameLen = spacePtr ? static_cast<size_t>(spacePtr - tagStr) : tagLen;
 
-            if (tagName == "Scene" || tagName == "Group" || tagName == "Layer")
+            auto isMatch = [&](const char* expected) {
+                size_t expectedLen = std::strlen(expected);
+                return (tagNameLen == expectedLen) && (std::memcmp(tagStr, expected, expectedLen) == 0);
+            };
+
+            if (isMatch("Scene") || isMatch("Group") || isMatch("Layer"))
             {
+                std::string tagName(tagStr, tagNameLen);
                 X3DChildNode* node = CreateNode(tagName);
                 if (node)
                 {

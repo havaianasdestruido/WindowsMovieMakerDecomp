@@ -32,3 +32,7 @@
 ## 2026-11-07 - [Zero-Copy XML Tag Extraction]
 **Learning:** In the X3DReader XML parsing, creating temporary std::string copies for every tag name to determine its type causes significant allocation overhead. Using pointer arithmetic and std::memcmp provides a faster, zero-copy alternative.
 **Action:** Use string views or std::memcmp equivalents when conditionally matching tags to avoid creating full std::string instances until a match is actually confirmed.
+
+## 2025-05-15 - Unnecessary std::string copies and exceptions during scalar value parsing
+**Learning:** Using `std::stoi`, `std::stof`, `std::stod` along with `Trim(s)` in `X3DReader` scalar parsing creates `std::string` copies and throws expensive C++ exceptions for invalid formats. This leads to a performance bottleneck when parsing thousands of nodes.
+**Action:** Replace `std::stoi/stof/stod` with zero-allocation, non-throwing C alternatives (`std::strtol`, `std::strtof`, `std::strtod`), and replace `ParseBool` string manipulation with direct inline C-string character checking.

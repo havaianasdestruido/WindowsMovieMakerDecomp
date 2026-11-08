@@ -515,28 +515,58 @@ namespace HMREngine
     // Value parsers
     bool X3DReader::ParseBool(const std::string& s, bool& out)
     {
-        std::string l = ToLower(Trim(s));
-        if (l == "true" || l == "1" || l == "yes") { out = true; return true; }
-        if (l == "false" || l == "0" || l == "no") { out = false; return true; }
+        // ⚡ Bolt: Zero-allocation inline boolean parsing
+        const char* p = s.c_str();
+        while (*p == ' ' || *p == '\t' || *p == '\r' || *p == '\n') p++;
+
+        const char* end = p;
+        while (*end && *end != ' ' && *end != '\t' && *end != '\r' && *end != '\n') end++;
+        size_t len = end - p;
+
+        if (len == 4 && std::tolower(static_cast<unsigned char>(p[0])) == 't' && std::tolower(static_cast<unsigned char>(p[1])) == 'r' && std::tolower(static_cast<unsigned char>(p[2])) == 'u' && std::tolower(static_cast<unsigned char>(p[3])) == 'e') { out = true; return true; }
+        if (len == 5 && std::tolower(static_cast<unsigned char>(p[0])) == 'f' && std::tolower(static_cast<unsigned char>(p[1])) == 'a' && std::tolower(static_cast<unsigned char>(p[2])) == 'l' && std::tolower(static_cast<unsigned char>(p[3])) == 's' && std::tolower(static_cast<unsigned char>(p[4])) == 'e') { out = false; return true; }
+        if (len == 1 && p[0] == '1') { out = true; return true; }
+        if (len == 1 && p[0] == '0') { out = false; return true; }
+        if (len == 3 && std::tolower(static_cast<unsigned char>(p[0])) == 'y' && std::tolower(static_cast<unsigned char>(p[1])) == 'e' && std::tolower(static_cast<unsigned char>(p[2])) == 's') { out = true; return true; }
+        if (len == 2 && std::tolower(static_cast<unsigned char>(p[0])) == 'n' && std::tolower(static_cast<unsigned char>(p[1])) == 'o') { out = false; return true; }
+
         return false;
     }
 
     bool X3DReader::ParseInt(const std::string& s, int& out)
     {
-        try { out = std::stoi(Trim(s)); return true; }
-        catch (...) { return false; }
+        // ⚡ Bolt: Avoid exceptions and string allocations during int parsing
+        const char* p = s.c_str();
+        char* end;
+        errno = 0;
+        long val = std::strtol(p, &end, 10);
+        if (p == end || errno == ERANGE || val < INT_MIN || val > INT_MAX) return false;
+        out = static_cast<int>(val);
+        return true;
     }
 
     bool X3DReader::ParseFloat(const std::string& s, float& out)
     {
-        try { out = std::stof(Trim(s)); return true; }
-        catch (...) { return false; }
+        // ⚡ Bolt: Avoid exceptions and string allocations during float parsing
+        const char* p = s.c_str();
+        char* end;
+        errno = 0;
+        float val = std::strtof(p, &end);
+        if (p == end || errno == ERANGE) return false;
+        out = val;
+        return true;
     }
 
     bool X3DReader::ParseDouble(const std::string& s, double& out)
     {
-        try { out = std::stod(Trim(s)); return true; }
-        catch (...) { return false; }
+        // ⚡ Bolt: Avoid exceptions and string allocations during double parsing
+        const char* p = s.c_str();
+        char* end;
+        errno = 0;
+        double val = std::strtod(p, &end);
+        if (p == end || errno == ERANGE) return false;
+        out = val;
+        return true;
     }
 
     bool X3DReader::ParseVec2f(const std::string& s, Vec2& out)

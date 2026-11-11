@@ -82,25 +82,43 @@ namespace HMREngine
         return ParseX3DV1(data, length, ctx);
     }
 
-    struct MemBuf : std::streambuf {
-        MemBuf(const char* base, size_t size) {
-            char* p = const_cast<char*>(base);
-            this->setg(p, p, p + size);
-        }
-    };
-
     HRESULT X3DReader::ParseX3DV1(const char* data, size_t length, X3DParseContext& ctx)
     {
-        MemBuf sbuf(data, length);
-        std::istream stream(&sbuf);
-        std::string line;
         int lineNum = 0;
+        size_t pos = 0;
 
-        while (std::getline(stream, line))
+        while (pos < length)
         {
             lineNum++;
-            line = Trim(line);
-            if (line.empty() || line[0] == '#') continue;
+
+            // Find end of line
+            const char* nlPtr = static_cast<const char*>(std::memchr(data + pos, '\n', length - pos));
+            size_t endPos = nlPtr ? (nlPtr - data) : length;
+
+            // Extract line boundaries
+            size_t start = pos;
+            size_t end = endPos;
+
+            // Trim trailing \r if present
+            if (end > start && data[end - 1] == '\r') {
+                end--;
+            }
+
+            // Trim whitespace
+            while (start < end && (data[start] == ' ' || data[start] == '\t' || data[start] == '\r')) {
+                start++;
+            }
+            while (end > start && (data[end - 1] == ' ' || data[end - 1] == '\t' || data[end - 1] == '\r')) {
+                end--;
+            }
+
+            // Advance position for next iteration
+            pos = endPos + 1;
+
+            size_t lineLen = end - start;
+            if (lineLen == 0 || data[start] == '#') continue;
+
+            std::string line(data + start, lineLen);
 
             if (!ParseNodeLine(line, ctx))
             {
@@ -339,8 +357,17 @@ namespace HMREngine
         auto eqPos = line.find('=');
         if (eqPos == std::string::npos) return false;
 
-        std::string fieldName = Trim(line.substr(0, eqPos));
-        std::string valueStr = Trim(line.substr(eqPos + 1));
+        // Efficiently extract trimmed field name and value without creating intermediate string copies
+        size_t nameStart = line.find_first_not_of(" \t\r\n", 0);
+        size_t nameEnd = line.find_last_not_of(" \t\r\n", eqPos - 1);
+        if (nameStart == std::string::npos || nameStart >= eqPos) return false;
+        std::string fieldName = line.substr(nameStart, nameEnd - nameStart + 1);
+
+        size_t valueStart = line.find_first_not_of(" \t\r\n", eqPos + 1);
+        size_t valueEnd = line.find_last_not_of(" \t\r\n");
+        std::string valueStr = (valueStart != std::string::npos && valueStart < line.length())
+            ? line.substr(valueStart, valueEnd - valueStart + 1)
+            : "";
 
         X3DFieldNode* field = CreateField(fieldName);
         if (!field) return false;
@@ -750,20 +777,38 @@ namespace HMREngine
     std::string X3DReader::Trim(const std::string& s)
     {
         size_t start = s.find_first_not_of(" \t\r\n");
+        if (start == std::string::npos) return "";
         size_t end = s.find_last_not_of(" \t\r\n");
-        return start != std::string::npos ? s.substr(start, end - start + 1) : "";
+
+        // ⚡ Bolt: Return early if already trimmed to avoid copying
+        if (start == 0 && end == s.length() - 1) return s;
+
+        return s.substr(start, end - start + 1);
     }
 
     std::vector<std::string> X3DReader::Split(const std::string& s, char delim)
     {
         std::vector<std::string> tokens;
-        std::istringstream iss(s);
-        std::string token;
-        while (std::getline(iss, token, delim))
+        size_t start = 0;
+        size_t end = s.find(delim);
+
+        while (end != std::string::npos)
         {
-            auto trimmed = Trim(token);
-            if (!trimmed.empty()) tokens.push_back(trimmed);
+            if (end > start)
+            {
+                std::string token = Trim(s.substr(start, end - start));
+                if (!token.empty()) tokens.push_back(std::move(token));
+            }
+            start = end + 1;
+            end = s.find(delim, start);
         }
+
+        if (start < s.length())
+        {
+            std::string token = Trim(s.substr(start));
+            if (!token.empty()) tokens.push_back(std::move(token));
+        }
+
         return tokens;
     }
 
